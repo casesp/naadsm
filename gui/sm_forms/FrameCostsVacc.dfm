@@ -14,7 +14,7 @@ object FrameCostsVacc: TFrameCostsVacc
       Left = 16
       Top = 144
       Width = 241
-      Height = 41
+      Height = 26
       Caption = 
         'Additional cost for each animal vaccinated beyond the threshold ' +
         '(per animal):'
@@ -37,8 +37,8 @@ object FrameCostsVacc: TFrameCostsVacc
     object lblVaccThreshold: TLabel
       Left = 16
       Top = 96
-      Width = 249
-      Height = 33
+      Width = 237
+      Height = 26
       Caption = 
         'Number of animals that may be vaccinated before the cost increas' +
         'es:'
@@ -73,7 +73,6 @@ object FrameCostsVacc: TFrameCostsVacc
       EditAlign = eaLeft
       TabOrder = 3
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleVaccSetupPerUnit: TREEdit
       Left = 272
@@ -83,7 +82,6 @@ object FrameCostsVacc: TFrameCostsVacc
       EditAlign = eaLeft
       TabOrder = 0
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleVaccBaselinePerAnimal: TREEdit
       Left = 272
@@ -93,7 +91,6 @@ object FrameCostsVacc: TFrameCostsVacc
       EditAlign = eaLeft
       TabOrder = 1
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleVaccThreshold: TREEdit
       Left = 272

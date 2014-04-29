@@ -4,13 +4,13 @@ unit SMDatabase;
 SMDatabase.pas
 ---------------
 Begin: 2005/01/07
-Last revision: $Date: 2008/11/25 21:59:18 $ $Author: areeves $
-Version: $Revision: 1.104 $
+Last revision: $Date: 2012-10-01 19:59:42 $ $Author: areeves $
+Version: $Revision: 1.129.4.36 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2012 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -31,7 +31,10 @@ interface
     SqlClasses,
     ChartFunction,
     I88n,
-    RemoteMessenger
+    RemoteMessenger,
+
+    // The base class
+    ModelDatabase
   ;
 
   const
@@ -45,65 +48,31 @@ interface
     // versions may use the same database schema (e.g. applications 3.0.63
     // and 3.0.64 both used database schema 3.0.63).
     DB_SCHEMA_APPLICATION = 'NAADSMXXXX';
-    DB_SCHEMA_VERSION = '3.1.18';
-    DB_SCHEMA_DATE = '10/16/2008 6:25:03 PM';
-    DB_SCHEMA_ID = 1224203103; // Number of seconds from 1970-01-01 00:00:00 to 2008-10-16 18:25:xx
+    DB_SCHEMA_VERSION = '3.2.18';
+
+    DB_SCHEMA_DATE = '09/29/11 3:44:11 PM';
+    DB_SCHEMA_ID = '1317332651'; // Number of seconds from 1970-01-01 00:00:00 to schema date.
     DB_SCHEMA_INFO_URL = '';
-
-  type TDBCheckResult = (
-    DBVersionUnspecified,
-    DBVersionCurrent,
-    DBVersionUpdated,
-    DBVersionObsolete,
-    DBVersionUnrecognized
-  );
-
-
-  type TDBSchemaUpdateReason = ( // Listed in order of severity
-    DBUpdateUnspecified,
-    DBUpdateOK, // This is the current version of the DB schema
-    DBUpdateMinorChanges, // The reason for the database schema update has no real effect on the end user
-    DBUpdateOutputsAdded, // New outputs are generated, but existing outputs are still valid
-    DBUpdateSpecChange   // A fairly substantial change to the model specification occurred
-    //DBUpdateOutputsDropped // Some existing outputs are no longer available: this would be a good reason to save a backup copy!
-  );
 
 
   type TStopReason = (
-    ssStartAndStopAtEndOfOutBreak = 0,
-    ssStartAndStopAtFirstDetection = 1,
-    ssStartAndStopAtSpecificDay = 2,
-    ssStartAndStopAtDiseaseEnd = 3,
+    ssStopAtEndOfOutBreak = 0,
+    ssStopAtFirstDetection = 1,
+    ssStopAtSpecificDay = 2,
+    ssStopAtDiseaseEnd = 3,
+    ssStopReasonGuiDefined = 4,
     ssStopReasonUndefined = 6
   );
 
 
-  type TSMDatabase = class( TSqlDatabase )
+  type TSMDatabase = class( TModelDatabase )
     protected
-      _workingDBFileName: string;
-      _permanentDBFileName: string;
-      _workingDBHasChanged: boolean;
-      _dbSaved: boolean;
-      _frmMain: TForm;
-      _vNumber: string;
-      _isReadOnly: boolean;
-
       _remoteMessageID: integer;
       _remoteQuerySetCounter: integer;
       _remoteQuerySet: string;
 
-      procedure setSchemaVersion();
-
-      function getWorkingDBFileName(): string;
-      function getPermanentDBFileName(): string;
-      function getWorkingDBHasChanged(): boolean;
-      function getDBSaved(): boolean;
-
-      procedure setPermanentDBFileName( const val: string );
-      procedure setWorkingDBHasChanged( val: boolean );
-      procedure setDBSaved( val: boolean );
-
-      procedure makeDBTables();
+      // Database management
+      function executeWithoutChange( q: string ): boolean; override;
 
       { All *should* return true on success, false on failure. }
       //function processDDLCommands( resFileContents: string ): boolean; // Now a public function, for use with OldDatabaseFns
@@ -111,21 +80,20 @@ interface
       procedure setInControlsGlobalDefaults();
       procedure setupDynBlob();
 
-      procedure deleteUnusedContactModels();
+      procedure deleteUnusedContactSpreadParams();
 
       function saveDailyOutputsForIterations(): integer;
 
-      function setUpdateReason(): TDBSchemaUpdateReason;
-
-      function getDatabaseBoolean( const fieldName: string; const tableName: string ): boolean;
-      function getDatabaseCount( const tableName: string ): integer;
+      procedure makeDBTables(); override;
+      procedure fillChartFields(); override;
+      procedure setWorkingDBHasChanged( val: boolean ); override;
+      function setUpdateReason(): TDBSchemaUpdateReason; override;
+      function getSimulationComplete(): boolean; override;
+      function getContainsOutput(): boolean; override;
+      function getContainsValidOutput(): boolean;
 
       function getProdTypeCount(): integer;
       function getProdTypePairCount(): integer;
-
-      function getSimulationComplete(): boolean;
-
-      function getContainsOutput(): boolean;
 
       procedure setSimDays( numDays: integer );
       function getSimDays(): integer;
@@ -141,43 +109,46 @@ interface
 
       class function setSampleDatabaseLanguage( const fileName: string ): boolean;
 
+      function validDateAndNumber( vNumber: string; vDate: TDateTime ): boolean;
+      function schemaIDOK(): boolean; override;
+      function versionObsolete(): boolean; override;
+      function getCurrentDbSchemaVersion(): string; override;
+      function getLanguageCode(): string; override;
+
     public
       // WARNING: it is up to the interface to check for the existence of the permanent database file.
-      constructor create( fileName: string; dbAction: TSqlDBAction; errMsg: PChar = nil; parent: TForm = nil );
+      constructor create(
+        const fileName: string;
+        const dbAction: TSqlDBAction;
+        errMsg: PChar = nil;
+        parent: TForm = nil
+      ); override;
 
       destructor destroy(); override;
 
-			function execute( q: string ): boolean; override;
       procedure remoteExecute( q: string );
 
-      function save( newFileName: string = '' ): boolean;
+      function save( newFileName: string = '' ): boolean; override;
 
-      // Functions related to database schema
-      //--------------------------------------
-      function checkVersion( var updateReason: TDBSchemaUpdateReason ): TDBCheckResult;
+      // Function for checking that the database schema hasn't been screwed up by users
+      //-------------------------------------------------------------------------------
+      function tablesOK( errMsg: pstring = nil ): boolean;
 
-      function schemaIDOK( const vNumber: string ): boolean;
+      // Functions related to application version (which may or may not involve a database schema update)
+      //-------------------------------------------------------------------------------------------------
+      function checkVersion( var updateReason: TDBSchemaUpdateReason ): TDBCheckResult; override;
+      function versionUpdateReason( versionID: pstring = nil ): TVersionUpdateReason; override;
 
-      function validDateAndNumber( vNumber: string; vDate: TDateTime ): boolean;
-
-      function versionObsolete( vNumber: string ): boolean;
 
       { Update database to the latest schema. Return true if schema update was required.
         Set updateSuccess if update was attempted but unsuccessful. }
-      function updateSchema( var updateSuccess: boolean ): boolean;
-
-      { *Should* return true on success, false on failure. }
-      function processDDLCommands( resFileContents: string ): boolean;
+      function updateSchema( var updateSuccess: boolean ): boolean; override;
 
       function saveAllDailyOutputs(): boolean;
 
       // Functions related to model parameters
       //--------------------------------------
-      function compareFunctions( fieldName:String; Chart:TChartFunction; var nFunctionsWithSameName: integer ): Integer;
-
       function removeProductionType( const id: integer ): boolean;
-      procedure removeChartFunction( const id: integer );
-      procedure removeFunctionPoints( const id: integer );
       procedure removeProductionTypePairs();
       procedure removeZone( const id: integer );
 
@@ -189,14 +160,14 @@ interface
 
       function changeProductionTypeDescr( const ptid: integer; const newName: string ): boolean;
 
-			procedure makeProductionTypePair( src, dest: integer );
+      procedure makeProductionTypePair( src, dest: integer );
 
       procedure clearHerds();
 
       // Functions related to model output
       //----------------------------------
-      procedure setStartTime();
-      procedure setEndTime();
+      procedure recordStartTime( const versionNumber: string ); override;
+      procedure recordEndTime(); override;
 
       procedure initializeCustomOutputTables( list: TObject );
       procedure dropCustomOutputTables();
@@ -205,11 +176,11 @@ interface
       procedure dropSelectDailyOutputTables();
 
       procedure setRngSeed( const val: integer ); // Used to record the seed used by the RNG for the simulation
-      procedure initializeAllOutputRecords(); // Upon sim start
+      procedure initializeAllOutputRecords(); override; // Upon sim start
       procedure initializeRemoteDatabase();
       procedure prepareForIteration( currentIt: integer ); // Upon iteration start
       procedure clearExistingFinalHerdStates();
-      procedure incrementCompleteIterations();
+      procedure incrementCompleteIterations(); override;
       procedure simComplete(); // upon sim complete
 
       // Upon iteration end
@@ -240,7 +211,9 @@ interface
       //------------------------------------
       function lastHerdID(): integer;
       procedure makeTemporaryHerdTable();
-      procedure mergeHerdTables();
+
+      // Returns true on success, otherwise false.
+      function mergeHerdTables(): boolean;
 
 
       // Function for creating a populated sample database
@@ -251,32 +224,21 @@ interface
         errMsg: pstring = nil
       ): boolean;
 
-      
+
       // Properties and property-like functions
       //---------------------------------------
-      function completedIterations(): integer;
       function containsIncompleteIterations( completedIt: PInteger = nil; currentIt: PInteger = nil ): boolean;
       function lastIteration(): integer; // NOTE: this last iteration may or may not be complete!
+      property containsValidOutput: boolean read getContainsValidOutput;
 
       function daysInLongestIteration(): integer;
       function daysInIteration( const it: integer ): integer;
 
-      procedure quickUpdate( indexValue: variant; fieldName: string; newValue: variant ); override;
-      function quickInsert( dict: TQStringVariantMap; keyField: string = '' ): string; override;
-
-      property workingDBFileName: string read getWorkingDBFileName;
-      property permanentDBFileName: string read getPermanentDBFileName write setPermanentDBFileName;
-      property workingDBHasChanged: boolean read getWorkingDBHasChanged write setWorkingDBHasChanged;
-      property dbSaved: boolean read getDBSaved write setDBSaved;
-
-      property simulationComplete: boolean read getSimulationComplete;
+      function containsInitiallyVaccinatedUnits( const prodTypeID: integer = -1 ): boolean;
+      function containsInitiallyDestroyedUnits( const prodTypeID: integer = -1 ): boolean;
 
       property prodTypeCount: integer read getProdTypeCount;
       property prodTypePairCount: integer read getProdTypePairCount;
-
-      property containsOutput: boolean read getContainsOutput;
-
-      property isReadOnly: boolean read _isReadOnly;
 
       property simDays: integer read getSimDays write setSimDays;
       property simStopReason: TStopReason read getSimStopReason write setSimStopReason;
@@ -286,31 +248,33 @@ interface
   function stopReasonToString( const val: TStopReason ): string;
 
   const
-  	DBSMDATABASE: boolean = false; // Set to true to enable debugging messages in this unit.
+    DBSMDATABASE: boolean = false; // Set to true to enable debugging messages in this unit.
 
 implementation
 
-	{$R 'sm_database\DatabaseCreation.res' 'sm_database\DatabaseCreation.rc'}
+  {$R 'sm_database\DatabaseCreation.res' 'sm_database\DatabaseCreation.rc'}
 
-	uses
+  uses
     // Standard Delphi units
     Windows,
-  	SysUtils,
+    SysUtils,
     Variants,
     StrUtils,
     
     // General purpose units
-    CStringList,
     Resources,
     MyDialogs,
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     WindowsUtils,
     NetworkUtils,
     FunctionPointers,
     ProbDensityFunctions,
     ZipFunctions,
+    RoundToXReplacement_3c,
+
+    // QClasses
+    QVectors,
 
     // More database functions
     OldDatabaseFns,
@@ -343,10 +307,10 @@ implementation
   function stopReasonToString( const val: TStopReason ): string;
     begin
       case val of
-        ssStartAndStopAtEndOfOutBreak: result := 'outbreakEnd';
-        ssStartAndStopAtFirstDetection: result := 'firstDetection';
-        ssStartAndStopAtSpecificDay: result := 'specifiedDay';
-        ssStartAndStopAtDiseaseEnd: result := 'diseaseEnd';
+        ssStopAtEndOfOutBreak: result := 'outbreakEnd';
+        ssStopAtFirstDetection: result := 'firstDetection';
+        ssStopAtSpecificDay: result := 'specifiedDay';
+        ssStopAtDiseaseEnd: result := 'diseaseEnd';
       else
         begin
           dbmsg( 'Unrecognized stop reason in stopReasonToString', true );
@@ -365,17 +329,17 @@ implementation
       val2 := fixup( val );
 
       if( 'outbreakend' = val2 ) then
-        result := ssStartAndStopAtEndOfOutBreak
+        result := ssStopAtEndOfOutBreak
       else if( 'firstdetection' = val2 ) then
-        result := ssStartAndStopAtFirstDetection
+        result := ssStopAtFirstDetection
       else if( 'specifiedday' = val2 ) then
-        result := ssStartAndStopAtSpecificDay
+        result := ssStopAtSpecificDay
       else if( 'diseaseend' = val2 ) then
-        result := ssStartAndStopAtDiseaseEnd
+        result := ssStopAtDiseaseEnd
       else
         begin
           dbmsg( 'Unrecognized stop reason in stopReasonFromString', true );
-          result := ssStartAndStopAtEndOfOutBreak;
+          result := ssStopAtEndOfOutBreak;
         end
       ;
     end
@@ -387,103 +351,70 @@ implementation
 // ----------------------------------------------------------------------------
 // Construction/initialization/destruction
 // ----------------------------------------------------------------------------
-  constructor TSMDatabase.create( fileName: string; dbAction: TSqlDBAction; errMsg: PChar = nil; parent: TForm = nil  );
-  	var
-    	copied: boolean;
-      tmp: string;
-  	begin
-    	_frmMain := parent;
+  constructor TSMDatabase.create(
+        const fileName: string;
+        const dbAction: TSqlDBAction;
+        errMsg: PChar = nil;
+        parent: TForm = nil
+      );
+    begin
+      inherited create( fileName, dbAction, errMsg, parent );
 
       _remoteMessageID := 1;
       _remoteQuerySetCounter := 0;
       _remoteQuerySet := '';
-
-      // Network drives are unreliable.
-      // Make sure that the working file is saved to a local drive.
-      if( isNetworkDrive( currentDir() ) ) then
-        tmp := tempFileName( tempDir() )
-      else
-    	  tmp := tempFileName( currentDir() )
-      ;
-
-      if( dbAction = DBCreate ) then
-        begin
-        	_permanentDBFileName := fileName;
-          _workingDBFileName := directory( tmp ) + '$$$' + shortFileName( tmp );
-          workingDBHasChanged := true;
-          _dbSaved := false;
-
-          // Create the working database, not the permanent one.
-          inherited create( DBMSAccess, _workingDBFileName, DBCreate );
-
-          _isReadOnly := false;
-
-          makeDBTables();
-
-        end
-      else if( dbAction = DBOpen ) then
-      	begin
-          // Store some file names
-          _permanentDBFileName := fileName;
-          _workingDBFileName := directory( tmp ) + '$$$' + shortFileName( tmp );
-          workingDBHasChanged := false;
-          _dbSaved := true;
-
-          _isReadOnly := fileIsReadOnly( fileName );
-
-        	// Make a temporary copy of the selected database
-          copied := windowsCopyFile( _permanentDBFileName, _workingDBFileName );
-          if( not copied ) then
-          	raise exception.create( 'TSMDatabase.create: Could not copy the selected scenario file.' )
-          ;
-
-          // Open the copy
-      		inherited create( DBMSAccess, _workingDBFileName, DBOpen );
-
-          if( not _errorOnOpen ) then
-            begin
-              // Compact the database
-              // FIX ME: It would be better to compact the database upon saving, not opening.
-              // (This can be done, but it's harder )
-              compact( true ); // it's pointless to raise an exception if compact fails.
-
-              if( not(isOpen) ) then open();
-            end
-          else
-            _isOpen := false
-          ;
-
-        end
-      ;
-
     end
   ;
 
 
-	destructor TSMDatabase.destroy();
-  	begin
-      // FIX ME: for some reason, after an exception occurs, the temporary file just won't go away.
-      close();
+  procedure TSMDatabase.fillChartFields();
+    begin
+      // Table inDiseaseSpread
+      _chartFields.add( TChartField.create( 'inDiseaseSpread', 'movementControlRelID' ) );
+      _chartFields.add( TChartField.create( 'inDiseaseSpread', 'distancePdfID' ) );
+      _chartFields.add( TChartField.create( 'inDiseaseSpread', 'transportDelayPdfID' ) );
 
-   		if( 0 <> length( self.workingDBFileName ) ) then
-        begin
-          dbcout( 'Deleting ' + self.workingDBFileName, DBSMDATABASE );
+      // Table inProductionType
+      _chartFields.add( TChartField.create( 'inProductionType', 'disLatentPeriodPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'disSubclinicalPeriodPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'disClinicalPeriodPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'disImmunePeriodPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'disPrevalenceRelID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'detProbObsVsTimeClinicalRelID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'detProbReportVsFirstDetectionRelID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'traceDelayPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'vaccImmunePeriodPdfID' ) );
+      _chartFields.add( TChartField.create( 'inProductionType', 'testDelayPdfID' ) );
 
-          setFileReadWrite( self.workingDBFileName );
+      // Table inControlsGlobal
+      _chartFields.add( TChartField.create( 'inControlsGlobal', 'destrCapacityRelID' ) );
+      _chartFields.add( TChartField.create( 'inControlsGlobal', 'vaccCapacityRelID' ) );
 
-          if( fileExists( self.workingDBFileName ) ) then
-            begin
-              if( not deleteFile( self.workingDBFileName ) ) then
-                {$IFDEF DEBUG}
-                  msgOK( ansiReplaceStr( tr( 'The temporary file xyz could not be deleted.' ), 'xyz', self.workingDBFileName ) )
-                {$ENDIF}
-              ;
-            end
-          ;
-        end
-      ;
+      // Table inZoneProductionTypePair
+      _chartFields.add( TChartField.create( 'inZoneProductionTypePair', 'zoneDirectMovementRelID' ) );
+      _chartFields.add( TChartField.create( 'inZoneProductionTypePair', 'zoneIndirectMovementRelID' ) );
+    end
+  ;
 
+
+  destructor TSMDatabase.destroy();
+    begin
       inherited destroy();
+    end
+  ;
+// ----------------------------------------------------------------------------
+
+
+// ----------------------------------------------------------------------------
+// Database functionality
+// ----------------------------------------------------------------------------
+  function TSMDatabase.executeWithoutChange( q: string ): boolean;
+    begin
+      result := inherited executeWithoutChange( q );
+
+      if( not result ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:' ) + ' ' + q )
+      ;
     end
   ;
 // ----------------------------------------------------------------------------
@@ -561,18 +492,79 @@ implementation
           if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
         end
 
-        // There was no schema 3.1.14, 3.1.15, or 3.1.16
+        // There was no schema 3.1.14, 3.1.15, or 3.1.16.
 
       else if( '3.1.17' = _vNumber ) then
         begin
           if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
         end
 
+      // There was no schema 3.1.17.
+
+      else if( '3.1.18' = _vNumber ) then
+        begin
+          if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
+        end
+
+      // There was no schema 3.1.19.
+
+      else if( '3.1.20' = _vNumber ) then
+        begin
+          if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
+        end
+
+      // There was no schema 3.1.21.
+
+      else if( '3.1.22' = _vNumber ) then
+        begin
+          if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
+        end
+
+      // There were no schema updates for versions 3.1.23, 3.1.24, 3.1.25, or 3.1.26
+
+      else if( '3.2.0' = _vNumber ) then
+        begin
+          if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
+        end
+
+      else if( '3.2.1' = _vNumber ) then
+        begin
+          if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
+        end
+
+      else if( '3.2.2' = _vNumber ) then
+        begin
+          if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
+        end
+
+      // There were no schema updates for versions 3.2.3 or 3.2.4
+
+      else if( '3.2.5' = _vNumber ) then
+        begin
+          if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
+        end
+
+      // There were no schema updates for versions 3.2.6 through 3.2.10
+
+      else if( '3.2.11' = _vNumber ) then
+        begin
+          if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
+        end
+
+      // There was no schema update for versions 3.2.12
+
+      else if( '3.2.13' = _vNumber ) then
+        begin
+          if( DBUpdateOutputsAdded > result ) then result := DBUpdateOutputsAdded;
+        end
+
+      // There were no schema updates for versions 3.2.14 through 3.2.17
+
       // The last entry here should be the current schema version.
       // This exception ensures that someone doesn't get too carried away with copy/paste
       else if( DBUpdateOK = result ) then
         raise exception.create( 'Looks like you forgot something in TSMDatabase.setUpdateReason()')
-      else if( '3.1.18' = _vNumber ) then
+      else if( '3.2.18' = _vNumber ) then
         begin
           if( DBUpdateOK > result ) then result := DBUpdateOK;
         end
@@ -584,10 +576,10 @@ implementation
   {*
     Returns true if the database schema was actually updated.
   }
-	function TSMDatabase.updateSchema( var updateSuccess: boolean ): boolean;
+  function TSMDatabase.updateSchema( var updateSuccess: boolean ): boolean;
     var
       execSuccess: boolean;
-  	begin
+    begin
       updateSuccess := true;
 
       result := handleVeryOldDatabaseSchemas( self, _vNumber, updateSuccess );
@@ -1001,27 +993,311 @@ implementation
         end
       ;
 
+      // Update 3.1.18 to 3.1.20
+      //------------------------
+      if( '3.1.18' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.1.18', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_1_20' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.1.20';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+
+      // Update 3.1.20 to 3.1.22
+      //------------------------
+      if( '3.1.20' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.1.20', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_1_22' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.1.22';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+
+      // Update 3.1.22 to 3.2.0
+      //-----------------------
+      if( '3.1.22' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.1.22', true );
+
+            execSuccess :=
+              processDDLCommands( getResourceAsString( 'DBSchema3_2_0_NewInputs' ) )
+            and
+              processDDLCommands( getResourceAsString( 'DBSchema3_2_0_RenamedOutputs' ) )
+            and
+              processDDLCommands( getResourceAsString( 'DBSchema3_2_0_NewOutputs' ) )
+            and
+              processDDLCommands( getResourceAsString( 'DBSchema3_2_0_AlteredHerdTable' ) )
+            and
+              updateEventAndControlStateCodesFor3_2_0( self )
+            and
+              populateDefaultInputsFor3_2_0( self )
+            and
+              populateSelectDailyOutputsFor3_2_0( self )
+            and
+              projectZoneCoordinatesFor3_2_0( self )
+            ;
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.0';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Update 3.2.0 to 3.2.1
+      //----------------------
+      if( '3.2.0' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.0', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_2_1' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.1';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Update 3.2.1 to 3.2.2
+      //----------------------
+      if( '3.2.1' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.1', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_2_2' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.2';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Update 3.2.2 to 3.2.5
+      //----------------------
+      if( '3.2.2' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.2', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_2_5' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.5';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+
+      // Update 3.2.5 to 3.2.11
+      //-----------------------
+      if( '3.2.5' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.5', true );
+
+            execSuccess := (
+              processDDLCommands( getResourceAsString( 'DBSchema3_2_11' ) )
+            and
+              populateSelectDailyOutputsFor3_2_11( self )
+            );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.11';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Update 3.2.11 to 3.2.13
+      //------------------------
+      if( '3.2.11' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.11', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_2_13' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.13';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Double-check 3.2.13 to make sure that firstDetUInf and firstDetAInf actually exist
+      // (Due to some bugs in 3.2.13, 14, and 15, they didn't...)
+      //-----------------------------------------------------------------------------------
+      if( '3.2.13' = _vNumber ) then
+        begin
+          try
+            execSuccess := true;
+
+            if( not( self.fieldExists( 'firstDetUInf', 'outIterationByProductionType' ) ) ) then
+              execSuccess := execSuccess and self.execute( 'ALTER TABLE outIterationByProductionType ADD COLUMN firstDetUInf LONG' )
+            ;
+
+            if( not( self.fieldExists( 'firstDetAInf', 'outIterationByProductionType' ) ) ) then
+              execSuccess := execSuccess and self.execute( 'ALTER TABLE outIterationByProductionType ADD COLUMN firstDetAInf LONG' )
+            ;
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      // Update 3.2.13 to 3.2.18
+      //------------------------
+      if( '3.2.13' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.13', true );
+
+            execSuccess := processDDLCommands( getResourceAsString( 'DBSchema3_2_18' ) );
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.2.18';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
+      //--- IMPORTANT ---
+      // When updating this function, don't forget to update makeDBTables()
+      //--- IMPORTANT ---
 
       // (There will eventually be more to do here...)
 
       // Finally, restore constraints
       // and update the version numbers, etc.
-      //------------------------------------------
+      //-------------------------------------
       connectCustomOutputTables();
       connectSelectDailyOutputTables();
 
       if( result ) then
-        setSchemaVersion()
+        setSchemaVersion( DB_SCHEMA_VERSION, DB_SCHEMA_APPLICATION, DB_SCHEMA_DATE, DB_SCHEMA_INFO_URL, DB_SCHEMA_ID )
       ;
     end
   ;
 
 
-  function TSMDatabase.schemaIDOK( const vNumber: string ): boolean;
-  	var
+  function TSMDatabase.schemaIDOK(): boolean;
+    var
       row: TSqlRow;
-      vID: integer;
-  	begin
+    begin
+      // Recall that a database schema version corresponds to the
+      // application version in which it was introduced, and that
+      // not all new application versions introduce changes to the schema.
+      // Consequently, database schema versions are not necessarily sequential.
+
       result := false;
 
       if( nil = _sqlResult ) then
@@ -1031,24 +1307,42 @@ implementation
       _sqlResult.runQuery( 'SELECT `VersionID` FROM `DBSchemaVersion`' );
 
       if( _sqlResult.success ) then
-      	begin
+        begin
           row := _sqlResult.fetchArrayFirst();
           if( null <> row.field('VersionID') ) then
             begin
-              vID := row.field('VersionID');
+              _vID := row.field('VersionID');
 
               if
-                ( ( '3.1.9' = vNumber ) and ( 1176823233 = vID ) )
+                ( ( '3.1.9' = _vNumber ) and ( 1176823233 = _vID ) )
               or
-                ( ( '3.1.10' = vNumber ) and ( 1176836388 = vID ) )
+                ( ( '3.1.10' = _vNumber ) and ( 1176836388 = _vID ) )
               or
-                ( ( '3.1.12' = vNumber ) and ( 1177957221 = vID ) )
+                ( ( '3.1.12' = _vNumber ) and ( 1177957221 = _vID ) )
               or
-                ( ( '3.1.13' = vNumber ) and (  1178121515 = vID ) )
+                ( ( '3.1.13' = _vNumber ) and (  1178121515 = _vID ) )
               or
-                ( ( '3.1.17' = vNumber ) and ( 1189206366 = vID ) )
+                ( ( '3.1.17' = _vNumber ) and ( 1189206366 = _vID ) )
               or
-                ( ( '3.1.18' = vNumber ) and ( 1224203103 = vID ) )
+                ( ( '3.1.18' = _vNumber ) and ( 1224203103 = _vID ) )
+              or
+                ( ( '3.1.20' = _vNumber ) and ( 1231364931 = _vID ) )
+              or
+                ( ( '3.1.22' = _vNumber ) and ( 1233602101 = _vID ) )
+              or
+                ( ( '3.2.0' = _vNumber ) and ( 1253287889 = _vID ) )
+              or
+                ( ( '3.2.1' = _vNumber ) and ( 1256249352 = _vID ) )
+              or
+                ( ( '3.2.2' = _vNumber ) and ( 1257620055 = _vID ) )
+              or
+                ( ( '3.2.5' = _vNumber ) and ( 1274302573 = _vID ) )
+              or
+                ( ( '3.2.11' = _vNumber ) and ( 1305654509 = _vID ) )
+              or
+                ( ( '3.2.13' = _vNumber ) and ( 1309203153 = _vID ) )
+              or
+                ( ( '3.2.18' = _vNumber ) and ( 1317332651 = _vID ) )
               then
                 result := true
               ;
@@ -1063,15 +1357,11 @@ implementation
   function TSMDatabase.validDateAndNumber( vNumber: string; vDate: TDateTime ): boolean;
     var
       currentShortDateFormat: string;
-  	begin
-    	// Add more dates and numbers here as necessary.
+    begin
       // Recall that a database schema version corresponds to the
       // application version in which it was introduced, and that
       // not all new application versions introduce changes to the schema.
       // Consequently, database schema versions are not necessarily sequential.
-
-      // It would be nice if I could figure out how to consistently include the timestamp
-      // portion along with the date.
 
       currentShortDateFormat := ShortDateFormat;
       ShortDateFormat := 'mm/dd/yyyy';
@@ -1103,11 +1393,11 @@ implementation
       or
         // Beginning with version 3.1.9, use the schema ID instead of the schema date.
         // This solves some of the internationalization problems.
-        ( schemaIDOK( vNumber ) )
+        ( schemaIDOK() )
       then // the date and number/ID are valid.
-      	result := true
+        result := true
       else // the date and number/ID are not recognized as NAADSM databases.
-      	result := false
+        result := false
       ;
 
       ShortDateFormat := currentShortDateFormat;
@@ -1115,29 +1405,91 @@ implementation
   ;
 
 
-  function TSMDatabase.versionObsolete( vNumber: string ): boolean;
-  	begin
-    	// Add more numbers here, if it ever becomes necessary.
+  function TSMDatabase.versionObsolete(): boolean;
+    begin
+      // Add more numbers here, if it ever becomes necessary.
       // (Hopefully it won't for a long, long time.)
 
-    	if
-      	( '3.0.9' = vNumber )
+      if
+        ( '3.0.9' = _vNumber )
       or
-      	( '3.0.13' = vNumber )
+        ( '3.0.13' = _vNumber )
       then
-      	result := true
+        result := true
       else
-      	result := false
+        result := false
       ;
     end
   ;
 
 
+  function TSMDatabase.getCurrentDbSchemaVersion(): string;
+    begin
+      result := DB_SCHEMA_VERSION;
+    end
+  ;
+
+
+  // No language code is set in the database until it is saved.
+  // When saved for the first time, a database will get the language
+  // code of the running GUI.  This language code then sticks with
+  // the database for life.
+  function TSMDatabase.getLanguageCode(): string;
+    var
+      res: TSqlResult;
+      row: TSqlRow;
+      query: string;
+    begin
+      query := 'SELECT `language` FROM `inGeneral`';
+      res := TSqlResult.create( query, ( self as TSqlDatabase ) );
+      row := res.fetchArrayFirst();
+
+      if( null = row.field( 'language' ) ) then
+        result := ''
+      else
+        result := row.field( 'language' )
+      ;
+
+      res.Free();
+    end
+  ;
+
+
+  // There are many, many ways that users could screw up the database.
+  // This function checks for only the ones that have actually been reported.
+  // Updating it is not a high priority, but new capabilites could be added as needed.
+  function TSMDatabase.tablesOK( errMsg: pstring = nil ): boolean;
+    begin
+      if
+        ( 0 <> self.count( 'SELECT herdID FROM dynHerd WHERE productionTypeID IS NULL' ) )
+      or
+        ( 0 <> self.count( 'SELECT herdID FROM dynHerd WHERE latitude IS NULL' ) )
+      or
+        ( 0 <> self.count( 'SELECT herdID FROM dynHerd WHERE longitude IS NULL' ) )
+      or
+        ( 0 <> self.count( 'SELECT herdID FROM dynHerd WHERE initialSize IS NULL' ) )
+      or
+        ( 0 <> self.count( 'SELECT herdID FROM dynHerd WHERE initialStateCode IS NULL' ) )
+      then
+        begin
+          if( nil <> errMsg ) then
+            errMsg^ := tr( 'Some units are improperly specified.' );
+          result := false;
+        end
+      else
+        result := true
+      ;
+    end
+  ;
+
+
+  // This function overrides the function in the base class entirely:
+  // NAADSM needs to handle some obsolete situations that the base class can safely ignore.
   function TSMDatabase.checkVersion( var updateReason: TDBSchemaUpdateReason ): TDBCheckResult;
-  	var
+    var
       row: TSqlRow;
       vDate: TDateTime;
-  	begin
+    begin
       if( nil = _sqlResult ) then
         createSqlResult()
       ;
@@ -1145,21 +1497,21 @@ implementation
       _sqlResult.runQuery( 'SELECT `versionNumber`, `versionDate` FROM `DBSchemaVersion`' );
 
       if( not( _sqlResult.success ) ) then
-      	result := DBVersionUnrecognized
+        result := DBVersionUnrecognized
       else if( 1 <> _sqlResult.numRows ) then
-      	result := DBVersionUnrecognized
+        result := DBVersionUnrecognized
       else
-      	begin
+        begin
           row := _sqlResult.fetchArrayFirst();
           _vNumber := fixup( row.field('VersionNumber') );
           vDate := row.field('VersionDate');
 
           if( not( validDateAndNumber( _vNumber, vDate ) ) ) then
-						result := DBVersionUnrecognized
+            result := DBVersionUnrecognized
           else
-         		begin
-              if( versionObsolete( _vNumber ) ) then
-              	result := DBVersionObsolete
+            begin
+              if( versionObsolete() ) then
+                result := DBVersionObsolete
               else if( DB_SCHEMA_VERSION = _vNumber ) then
                 begin
                   updateReason := DBUpdateOK;
@@ -1167,7 +1519,7 @@ implementation
                 end
               else
                 begin
-                	// This database can be updated.
+                  // This database can be updated.
                   updateReason := setUpdateReason();
                   result := DBVersionUpdated;
                 end
@@ -1185,107 +1537,7 @@ implementation
 // ----------------------------------------------------------------------------
 // New database creation
 // ----------------------------------------------------------------------------
-  function TSMDatabase.processDDLCommands( resFileContents: string ): boolean;
-    var
-      str: string;
-      startingList: TCStringList;
-      ddlList: TCStringList;
-      ptr: pchar;
-      testStr: string;
-      cmd: PChar;
-  	begin
-      result := true;
-
-      startingList := TCStringList.create();
-      startingList.text := resFileContents;
-
-      // Remove SQL comments and empty lines from the starting list
-      ptr := startingList.first();
-
-      while ptr <> nil do
-        begin
-          testStr := trim( ptr );
-
-          if( leftStr( testStr, 2 ) = '--' ) or( length( testStr ) = 0 ) then
-            begin
-              startingList.remove();
-              ptr := startingList.current();
-            end
-          else
-            ptr := startingList.next()
-          ;
-
-        end
-      ;
-
-      // Explode remaining strings at each semicolon to produce the DDL table and key creation commands
-      str := startingList.text;
-      ddlList := TCStringList.create( str, ';', true );
-
-      //if( DBSMDATABASE ) then ddlList.debug( true );
-
-      // Execute the commands!
-      cmd := ddlList.first();
-
-      while( cmd <> nil ) do
-      	begin
-        	str := trim( cmd );
-
-          if( length( str ) > 0 ) then
-            begin
-              if( not( self.execute( str ) ) ) then
-                begin
-                  result := false;
-                  break;
-                end
-              ;
-            end
-          ;
-
-          cmd := ddlList.next();
-        end
-      ;
-
-      // clean up
-      startingList.Clear();
-      ddlList.Clear();
-      freeAndNil( startingList );
-      freeAndNil( ddlList );
-    end
-  ;
-
-
-  procedure TSMDatabase.setSchemaVersion();
-    var
-      currentShortDateFormat: string;
-      vDict: TQStringVariantMap;
-    begin
-      currentShortDateFormat := ShortDateFormat;
-      ShortDateFormat := 'mm/dd/yyyy';
-
-      vDict := TQStringVariantMap.Create();
-
-      execute( 'DELETE FROM `DBSchemaVersion`' );
-
-      startQuickInsert( 'DBSchemaVersion' );
-
-      vDict['VersionNumber'] := DB_SCHEMA_VERSION;
-      vDict['VersionApplication'] := DB_SCHEMA_APPLICATION;
-      vDict['VersionDate'] := VarToDateTime( DB_SCHEMA_DATE );
-      vDict['VersionInfoURL'] := DB_SCHEMA_INFO_URL;
-      vDict['VersionID'] := DB_SCHEMA_ID;
-
-      quickInsert( vDict );
-
-      endQuickInsert();
-
-      ShortDateFormat := currentShortDateFormat;
-      vDict.Free();
-    end
-  ;
-
-
-	procedure TSMDatabase.makeDBTables();
+  procedure TSMDatabase.makeDBTables();
     begin
       makeVeryOldTables( self );
 
@@ -1314,30 +1566,48 @@ implementation
       processDDLCommands( getResourceAsString( 'DBSchema3_1_18' ) );
       // Additional values for the table inSelectDailyOutputs are new in version 3.1.17
       populateSelectDailyOutputsFor3_1_18( self );
+      processDDLCommands( getResourceAsString( 'DBSchema3_1_20' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_1_22' ) );
+
+      // The jump was made here from version 3.1 to version 3.2.
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_0_NewInputs' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_0_RenamedOutputs' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_0_NewOutputs' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_0_AlteredHerdTable' ) );
+      updateEventAndControlStateCodesFor3_2_0( self );
+      populateSelectDailyOutputsFor3_2_0( self );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_1' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_2' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_5' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_11' ) );
+      populateSelectDailyOutputsFor3_2_11( self );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_13' ) );
+      processDDLCommands( getResourceAsString( 'DBSchema3_2_18' ) );
 
       // Add additional DDL 'files' here as needed
 
       // Populate the version table
-      setSchemaVersion();
+      setSchemaVersion( DB_SCHEMA_VERSION, DB_SCHEMA_APPLICATION, DB_SCHEMA_DATE, DB_SCHEMA_INFO_URL, DB_SCHEMA_ID );
 
       // Populate outGeneral
       self.execute(
-      	'INSERT INTO `outGeneral` ( `outGeneralID`, `simulationStartTime`, `simulationEndTime`, `version`, `completedIterations` ) '
-        	+ ' VALUES ( ' + sqlQuote( DB_SCHEMA_APPLICATION ) + ', NULL, NULL, NULL, 0 )'
-      	)
+        'INSERT INTO `outGeneral` ( `outGeneralID`, `simulationStartTime`, `simulationEndTime`, `version`, `completedIterations` ) '
+          + ' VALUES ( ' + sqlQuote( DB_SCHEMA_APPLICATION ) + ', NULL, NULL, NULL, 0 )'
+        )
       ;
 
-    	// Populate the database with any necessary default values.
+      // Populate the database with any necessary default values.
       setInGeneralDefaults();
       setInControlsGlobalDefaults();
       setupDynBlob();
     end
-	;
+  ;
 
 
   procedure TSMDatabase.setInGeneralDefaults();
     var
       dict: TQueryDictionary;
+      q: string;
     begin
       dict := TQueryDictionary.create();
 
@@ -1347,33 +1617,37 @@ implementation
       dict['iterations'] := intToStr( 1 );
       dict['days'] := intToStr( 10 );
 
-      dict['includeContactSpread'] := boolToStr( false );
-      dict['includeAirborneSpread'] := boolToStr( false );
-      dict['useAirborneExponentialDecay'] := boolToStr( false );
-      dict['useWithinHerdPrevalence'] := boolToStr( false );
+      dict['includeContactSpread'] := usBoolToText( false );
+      dict['includeAirborneSpread'] := usBoolToText( false );
+      dict['useAirborneExponentialDecay'] := usBoolToText( false );
+      dict['useWithinHerdPrevalence'] := usBoolToText( false );
 
-      dict['costTrackDestruction'] := boolToStr( false );
-      dict['costTrackVaccination'] := boolToStr( false );
-      dict['costTrackZoneSurveillance'] := boolToStr( false );
+      dict['costTrackDestruction'] := usBoolToText( false );
+      dict['costTrackVaccination'] := usBoolToText( false );
+      dict['costTrackZoneSurveillance'] := usBoolToText( false );
 
-      dict['useFixedRandomSeed'] := boolToStr( false );
+      dict['useFixedRandomSeed'] := usBoolToText( false );
       dict['randomSeed'] := intToStr( 527 );
 
-      dict['saveAllDailyOutputs'] := boolToStr( false );
+      dict['saveAllDailyOutputs'] := usBoolToText( false );
       dict['saveDailyOutputsForIterations'] := intToStr( 3 );
 
-      dict['writeDailyStatesFile'] := boolToStr( false );
+      dict['writeDailyStatesFile'] := usBoolToText( false );
       dict['dailyStatesFileName'] := DATABASE_NULL_VALUE;
 
-      dict['saveDailyEvents'] := boolToStr( false );
-      dict['saveDailyExposures'] := booltoStr( false );
+      dict['saveDailyEvents'] := usBoolToText( false );
+      dict['saveDailyExposures'] := usBoolToText( false );
+      dict['saveIterationOutputsForHerds'] := usBoolToText( false );
 
-      dict['useCustomOutputs'] := boolToStr( false );
+      dict['useCustomOutputs'] := usBoolToText( false );
 
-      dict['writeNAADSMapOutput'] := boolToStr( false );
+      dict['writeNAADSMapOutput'] := usBoolToText( false );
       dict['NAADSMapDirectory'] := DATABASE_NULL_VALUE;
 
-      execute( writeQuery( 'inGeneral', QInsert, dict ) );
+      q := writeQuery( 'inGeneral', QInsert, dict );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
       dict.Free();
     end
   ;
@@ -1382,17 +1656,23 @@ implementation
   procedure TSMDatabase.setInControlsGlobalDefaults();
     var
       dict: TQueryDictionary;
+      q: string;
     begin
       dict := TQueryDictionary.create();
 
       dict['controlsGlobalID']   := sqlQuote( DB_SCHEMA_APPLICATION );
-      dict['includeDestruction'] := boolToStr( false );
-      dict['includeDetection'] 	 := boolToStr( false );
-      dict['includeVaccination'] := boolToStr( false );
-      dict['includeTracing']     := boolToStr( false );
-      dict['includeZones']       := boolToStr( false );
+      dict['includeDestruction'] := usBoolToText( false );
+      dict['includeDetection']   := usBoolToText( false );
+      dict['includeVaccination'] := usBoolToText( false );
+      dict['includeTracing']     := usBoolToText( false );
+      dict['includeTracingHerdExam']     := usBoolToText( false );
+      dict['includeTracingTesting']     := usBoolToText( false );
+      dict['includeZones']       := usBoolToText( false );
 
-      execute( writeQuery( 'inControlsGlobal', QInsert, dict ) );
+      q := writeQuery( 'inControlsGlobal', QInsert, dict );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
       dict.Free();
     end
   ;
@@ -1401,20 +1681,23 @@ implementation
   procedure TSMDatabase.setupDynBlob();
     var
       dict: TQueryDictionary;
+      q: string;
     begin
       dict := TQueryDictionary.create();
 
       dict['dynBlobID'] := sqlQuote( DB_SCHEMA_APPLICATION );
       dict['zonePerimeters'] := DATABASE_NULL_VALUE;
 
-      execute( writeQuery( 'dynBlob', QInsert, dict ) );
-      
+      q := writeQuery( 'dynBlob', QInsert, dict );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
       dict.Free();
     end
   ;
 
 
-  procedure TSMDatabase.deleteUnusedContactModels();
+  procedure TSMDatabase.deleteUnusedContactSpreadParams();
     var
       q: string;
     begin
@@ -1427,12 +1710,12 @@ implementation
         (
         SELECT
           inDiseaseSpread.spreadID
-        #	inDiseaseSpread.spreadMethodCode AS code,
-        #	inProductionTypePair.directContactSpreadID AS ptpDirID,
-        #	inProductionTypePair.indirectContactSpreadID AS ptpIndID,
-        #	inProductionTypePair.airborneContactSpreadID AS ptpAirID,
-        #	inProductionTypePair.sourceProductionTypeID AS ptpSrcID,
-        #	inProductionTypePair.destProductionTypeID AS ptpDestID
+        # inDiseaseSpread.spreadMethodCode AS code,
+        # inProductionTypePair.directContactSpreadID AS ptpDirID,
+        # inProductionTypePair.indirectContactSpreadID AS ptpIndID,
+        # inProductionTypePair.airborneContactSpreadID AS ptpAirID,
+        # inProductionTypePair.sourceProductionTypeID AS ptpSrcID,
+        # inProductionTypePair.destProductionTypeID AS ptpDestID
         FROM  inProductionTypePair
         LEFT JOIN  inDiseaseSpread
           ON inDiseaseSpread.spreadID = inProductionTypePair.directContactSpreadID
@@ -1443,7 +1726,7 @@ implementation
       //--------------------------------------------
       *)
 
-      dbcout( '*** deleteUnusedContactModels', DBSMDATABASE );
+      dbcout( '*** deleteUnusedContactSpreadParams', DBSMDATABASE );
 
       q :=
         'DELETE FROM inDiseaseSpread'
@@ -1461,7 +1744,12 @@ implementation
       ;
 
       if( not isReadOnly ) then
-        inherited execute( q ) // Yes, there is a reason for this.
+        begin
+          // Yes, there is a reason for this inherited call.  (I don't remember what it is.)
+          if not( inherited execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
     end
   ;
@@ -1472,144 +1760,22 @@ implementation
 // ----------------------------------------------------------------------------
 // File I/O
 // ----------------------------------------------------------------------------
-	function TSMDatabase.save( newFileName: string = '' ): boolean;
-  	begin
-      // Right before saving, clean up the database
-      deleteUnusedContactModels();
-
-      if( 0 = length( newFileName ) ) then
-        newFileName := permanentDBFileName
-      ;
-
-    	if( ( 0 = length( workingDBFileName )  ) or ( 0 = length( newFileName ) ) ) then
-      	begin
-       		raise exception.create( 'Missing file name in SMDatabase.save()' );
-          result := false;
-          exit;
-        end
-      ;
-
-      dbcout( 'TSMDatabase.save()', DBSMDATABASE );
-
-      if( windowsCopyFile( self.workingDBFileName, newFileName ) ) then
-        begin
-          self.dbSaved := true;
-          self.workingDBHasChanged := false;
-          self.permanentDBFileName := newFileName;
-
-          if( _isReadOnly ) then // The database must be closed and reopened to allow read/write privileges
-            begin
-              close();
-
-              setFileReadWrite( newFileName );
-              setFileReadWrite( self.workingDBFileName );
-              _isReadOnly := false;
-
-              open();
-            end
-          ;
-
-          result := true;
-        end
-      else
-        begin
-          self.workingDBHasChanged := true;
-          result := false;
-        end
-      ;
- 		end
-  ;
-// ----------------------------------------------------------------------------
-
-
-
-// ----------------------------------------------------------------------------
-// PDF/REL function handling
-// ----------------------------------------------------------------------------
-  function TSMDatabase.compareFunctions( fieldName: String; Chart: TChartFunction; var nFunctionsWithSameName: integer ): Integer;
+  function TSMDatabase.save( newFileName: string = '' ): boolean;
     var
-      ret_val:Integer;
-    	q: string;
-      db2: TSqlDatabase;
-      res, res2: TSqlResult;
-      row: TSqlRow;
-      _chart: TChartFunction;
-      I, Count, chartID:Integer;
-      chartName: string;
-
-      // FIX ME: should this go into MyStrUtils?  See also ChartFunction.compare()
-      function stripParens( str: string ): string;
-        var
-          strLen: integer;
-          parenPos: integer;
-        begin
-          result := trim( str );
-
-          strLen := length( str );
-          if( ')' = charAt( result, strLen - 1 ) ) then
-            begin
-              parenPos := lastDelimiter( '(', result );
-              if( 0 < parenPos ) then
-                result := trim( leftStr( result, parenPos - 1 ) )
-              ;
-            end
-          ;
-        end
-      ;
+      q: string;
     begin
-      ret_val := -1;
+      // Right before saving, clean up the database
+      deleteUnusedContactSpreadParams();
 
-    	q := 'SELECT '
-        + 'inChart.chartID, inChart.fieldName '
-        //+ 'FROM inChart WHERE LEFT( inChart.fieldName, ' + intToStr( length( fieldName ) ) + ') = ' + SQLQuote( fieldName )
-        + 'FROM inChart WHERE inChart.fieldName = ' + SQLQuote( fieldName )
-      ;
-
-      db2 := self as TSqlDatabase;
-      res := TSqlResult.create( q, db2 );
-
-      Count := res.numRows;
-
-      if ( Count > 0 ) then
+      if( '' = languageCode ) then
         begin
-          // Are there other charts with a similar name?  If so, then the
-          // name suffix needs to be changed (e.g. from "Distance distribution" to "Distance distribution (1)"
-          chartName := stripParens( chart.name );
-          res2 := TSqlResult.create(
-            'SELECT inChart.chartID FROM inChart WHERE LEFT( inChart.chartName, ' + intToStr( length( chartName ) ) + ' ) = ' + sqlQuote( chartName ),
-            db2
-          );
-
-          nFunctionsWithSameName := res2.numRows;
-          res2.free();
-
-          row := res.fetchArrayFirst();
-
-          for I := 1 to Count do
-            begin
-              if ( row.field( 'chartID' ) ) then
-                begin
-                  chartID :=  StrToInt( row.field( 'chartID' ) );
-                  _chart := functionFromDB( self, chartID );
-
-                  if ( Chart.compare( _chart ) ) then
-                    begin
-                      ret_val := chartID;
-                      _chart.destroy();
-                      break;
-                    end;
-                  _chart.destroy();
-                end;
-
-              row := res.fetchArrayNext();
-            end
+          q := 'UPDATE `inGeneral` SET `language` = ' + sqlQuote( i88nLanguageCodeString() );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
           ;
         end
       ;
-
-      freeAndNil( res );
-
-      result := ret_val;
+      result := inherited save( newFileName );
     end
   ;
 // ----------------------------------------------------------------------------
@@ -1619,22 +1785,6 @@ implementation
 // ----------------------------------------------------------------------------
 // Database modification
 // ----------------------------------------------------------------------------
-	function TSMDatabase.execute( q: string ): boolean;
-		begin
-      // If the file/database is read-only, don't even attempt to make changes.
-      
-      if( _isReadOnly ) then
-        result := false
-      else
-        begin
-          workingDBHasChanged := true;
-          result := inherited execute( q );
-        end
-      ;
-		end
-	;
-
-
   procedure TSMDatabase.remoteExecute( q: string );
     begin
       if( nil <> _rm ) then
@@ -1668,34 +1818,11 @@ implementation
   ;
 
 
-  procedure TSMDatabase.quickUpdate( indexValue: variant; fieldName: string; newValue: variant );
-    begin
-      workingDBHasChanged := true;
-      inherited quickUpdate( indexValue, fieldName, newValue );
-    end
-  ;
-
-
-  function TSMDatabase.quickInsert( dict: TQStringVariantMap; keyField: string = '' ): string;
-    begin
-      workingDBHasChanged := true;
-      result := inherited quickInsert( dict, keyField );
-    end
-  ;
-
-
-  procedure TSMDatabase.setStartTime();
-  	var
-    	q: string;
+  procedure TSMDatabase.recordStartTime( const versionNumber: string );
+    var
+      q: string;
       begin
-      {$IF Defined( CHEYENNE ) }
-        q := 'UPDATE `outGeneral` SET `simulationStartTime` = NOW(), `version` = "' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Cheyenne"';
-      {$ELSEIF Defined( LARAMIE ) }
-        q := 'UPDATE `outGeneral` SET `simulationStartTime` = NOW(), `version` = "' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Laramie"';
-      {$ELSE}
-        q := 'UPDATE `outGeneral` SET `simulationStartTime` = NOW(), `version` = "' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '"';
-      {$IFEND}
-    	execute( q );
+      inherited recordStartTime( versionNumber );
 
       // Set up the remote database, if necessary
       //-----------------------------------------
@@ -1705,7 +1832,7 @@ implementation
             + ' ( `jobID`, `outGeneralID`, `simulationStartTime`, `simulationEndTime`, `completedIterations`, `version` )'
             + ' VALUES ( '
             + intToStr( remoteDBParams.jobID )
-            + ', ''NAADSMXXXX'', NOW(), NULL, 0, ''' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ''' )'
+            + ', ''NAADSMXXXX'', NOW(), NULL, 0, ''' + versionNumber + ''' )'
           ;
           remoteExecute( q );
         end
@@ -1714,16 +1841,15 @@ implementation
   ;
 
 
-  procedure TSMDatabase.setEndTime();
-  	var
-    	q: string;
-  	begin
-      q := 'UPDATE `outGeneral` SET `simulationEndTime` = NOW()';
-    	execute( q );
+  procedure TSMDatabase.recordEndTime();
+    var
+      q: string;
+    begin
+      inherited recordEndTime();
 
       if( remoteDBParams.useRemoteDatabase ) then
         begin
-          q := q + ' WHERE `jobID` = ' + intToStr( remoteDBParams.jobID );
+          q := 'UPDATE `outGeneral` SET `simulationEndTime` = NOW() WHERE `jobID` = ' + intToStr( remoteDBParams.jobID );
           remoteExecute( q );
         end
       ;
@@ -1731,11 +1857,13 @@ implementation
   ;
 
   procedure TSMDatabase.setRngSeed( const val: integer );
-  	var
-    	q: string;
-  	begin
+    var
+      q: string;
+    begin
       q := 'UPDATE `inGeneral` SET `randomSeed` = ' + intToStr( val );
-    	execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       (*
       // FIX ME: Right now, remote databases don't contain table inGeneral.
@@ -1756,14 +1884,16 @@ implementation
       q: string;
     begin
       q := 'UPDATE `inGeneral` SET `simStopReason` = "' + stopReasonToString( val ) + '"';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
 
   function TSMDatabase.getSimStopReason(): TStopReason;
     var
-    	q: string;
+      q: string;
       db2: TSqlDatabase;
       res: TSqlResult;
       row: TSqlRow;
@@ -1784,15 +1914,21 @@ implementation
 
 
   procedure TSMDatabase.setSimDays( numDays: integer );
-  	begin
-   		execute( 'UPDATE `inGeneral` SET `days` = ' + intToStr( numDays ) );
+    var
+      q: string;
+    begin
+      q := 'UPDATE `inGeneral` SET `days` = ' + intToStr( numDays );
+      
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
 
   function TSMDatabase.getSimDays(): integer;
     var
-    	q: string;
+      q: string;
       db2: TSqlDatabase;
       res: TSqlResult;
       row: TSqlRow;
@@ -1813,11 +1949,18 @@ implementation
 
 
   procedure TSMDatabase.incrementCompleteIterations();
-  	begin
+    var
+      q: string;
+    begin
       if( remoteDBParams.useRemoteDatabase ) then
         remoteExecute( 'UPDATE outGeneral SET completedIterations = completedIterations + 1 WHERE jobID = ' + intToStr( remoteDBParams.jobID ) )
       else
-			  execute( 'UPDATE outGeneral SET completedIterations = completedIterations + 1' )
+        begin
+          q := 'UPDATE outGeneral SET completedIterations = completedIterations + 1';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
     end
   ;
@@ -1842,7 +1985,7 @@ implementation
       qDict := TQueryDictionary.create();
 
       // if -1 = _outbreakEnd, the outbreak did not end before time ran out.
-      qDict['outbreakEnded'] := boolToStr( outbreakEnded );
+      qDict['outbreakEnded'] := usBoolToText( outbreakEnded );
       if( outbreakEnded ) then
         qDict['outbreakEndDay'] := intToStr( outbreakEndDay )
       else
@@ -1851,14 +1994,14 @@ implementation
 
       // if -1 = _diseaseEndDay, the active disease phase of the outbreak
       // did not end before time ran out.
-      qDict['diseaseEnded'] := boolToStr( diseaseEnded );
+      qDict['diseaseEnded'] := usBoolToText( diseaseEnded );
       if( diseaseEnded ) then
         qDict['diseaseEndDay'] := intToStr( diseaseEndDay )
       else
         qDict['diseaseEndDay'] := DATABASE_NULL_VALUE
       ;
 
-      qDict['zoneFociCreated'] := boolToStr( zoneFociCreated );
+      qDict['zoneFociCreated'] := usBoolToText( zoneFociCreated );
 
       if( remoteDBParams.useRemoteDatabase ) then
         begin
@@ -1874,7 +2017,10 @@ implementation
         begin
           qDict['iteration'] := intToStr( it ); // Remember that iterations are 1-indexed in the database
           q := sqlClasses.writeQuery( 'outIteration', QInsert, qDict );
-          execute( q );
+
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
@@ -1924,7 +2070,11 @@ implementation
           if( remoteDBParams.useRemoteDatabase ) then
             q2 := q2 + q + ';' + endl
           else
-            execute( q )
+            begin
+              if not( execute( q ) ) then
+                raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+              ;
+            end
           ;
 
           row := _sqlResult.fetchArrayNext();
@@ -1954,17 +2104,18 @@ implementation
                 + ' `iteration`, `day`, `productionTypeID`,'
                 + ' `infnUDir` + `infnUInd` + `infnUAir`,'
                 + ' `infnADir` + `infnAInd` + `infnAAir`,'
-                + ' `detnUClin`,'
-                + ' `detnAClin`,'
-                + ' `tsdUSubc` + `tsdUClin` AS `infectiousUnits`,'
-                + ' `appUInfectious`'
+                + ' `detnUClin` + `detnUTest`,'
+                + ' `detnAClin` + `detnATest`,'
+                + ' `tsdUSubc` + `tsdUClin`,'
+                + ' `appdUInfectious`'
               + ' FROM `outDailyByProductionType`'
               + ' WHERE '
                 + ' `iteration` = ' + intToStr( it )
-              //+ ' AND '
-              //+ ' day > 1'
           ;
-          execute( q );
+
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       else if( remoteDBParams.useRemoteDatabase and saveAllDailyOutputs() ) then
         begin
@@ -1981,10 +2132,10 @@ implementation
                 + ' `iteration`, `day`, `productionTypeID`, `jobID`,'
                 + ' `infnUDir` + `infnUInd` + `infnUAir`,'
                 + ' `infnADir` + `infnAInd` + `infnAAir`,'
-                + ' `detnUClin`,'
-                + ' `detnAClin`,'
-                + ' `tsdUSubc` + `tsdUClin` AS `infectiousUnits`,'
-                + ' `appUInfectious`'
+                + ' `detnUClin` + `detnUTest`,'
+                + ' `detnAClin` + `detnATest`,'
+                + ' `tsdUSubc` + `tsdUClin`,'
+                + ' `appdUInfectious`'
               + ' FROM `outDailyByProductionType`'
               + ' WHERE '
                 + ' `iteration` = ' + intToStr( it )
@@ -1999,9 +2150,9 @@ implementation
             + '   `infnUDir` + `infnUInd` + `infnUAir` AS `infectedUnits`,'
             + '   `infnADir` + `infnAInd` + `infnAAir` AS `infectedAnimals`,'
             + '   `tsdUSubc` + `tsdUClin` AS `infectiousUnits`,'
-            + '   `appUInfectious`,'
-            + '   `detnUClin`,'
-            + '   `detnAClin`'
+            + '   `appdUInfectious`,'
+            + '   `detnUClin` + `detnUTest` AS `detectedUnits`,'
+            + '   `detnAClin` + `detnATest` AS `detectedAnimals`'
             + ' FROM `outDailyByProductionType`'
             + ' WHERE '
             + '   `iteration` = ' + intToStr( it )
@@ -2020,10 +2171,10 @@ implementation
               qDict['productionTypeID'] := string( row.field('productionTypeID') );
               qDict['infectedUnits'] := string( row.field('infectedUnits') );
               qDict['infectedAnimals'] := string( row.field('infectedAnimals') );
-              qDict['detectedUnits'] := string( row.field('detnUClin') );
-              qDict['detectedAnimals'] := string( row.field('detnAClin') );
+              qDict['detectedUnits'] := string( row.field('detectedUnits') );
+              qDict['detectedAnimals'] := string( row.field('detectedAnimals') );
               qDict['infectiousUnits'] := string( row.field('infectiousUnits') );
-              qDict['apparentInfectiousUnits'] := string( row.field('appUInfectious') );
+              qDict['apparentInfectiousUnits'] := string( row.field('appdUInfectious') );
               qDict['jobID'] := intToStr( remoteDBParams.jobID );
 
               q := sqlClasses.writeQuery( 'outEpidemicCurves', QInsert, qDict );
@@ -2081,18 +2232,29 @@ implementation
       itStr := intToStr( currentIt );
 
       q := 'DELETE FROM outDailyByProductionType WHERE iteration = ' + itStr;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyByZone WHERE iteration = ' + itStr;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyEvents WHERE iteration = ' + itStr;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyExposures WHERE iteration = ' + itStr;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyByZoneAndProductionType WHERE iteration = ' + itStr;
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Add any other daily tables here.
 
@@ -2128,7 +2290,9 @@ implementation
       ;
       q := q + 'CONSTRAINT `outCustIteration_PK` PRIMARY KEY (`iteration`) )';
 
-      self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Add the columns in the remote database, if necessary
       if( remoteDBParams.useRemoteDatabase ) then
@@ -2165,7 +2329,9 @@ implementation
       ;
       q := q + 'CONSTRAINT `outCustIterationByProductionType_PK` PRIMARY KEY (`iteration`, `productionTypeID`) )';
 
-      self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
        //  Add foreign key constraint to table outCustIterationByProductionType
        q := 'ALTER TABLE `outCustIterationByProductionType`'
@@ -2173,7 +2339,9 @@ implementation
         + ' FOREIGN KEY (`productionTypeID`) '
         + ' REFERENCES `inProductionType` (`productionTypeID`)'
        ;
-       self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Add the columns in the remote database, if necessary
       if( remoteDBParams.useRemoteDatabase ) then
@@ -2210,7 +2378,9 @@ implementation
       ;
       q := q + 'CONSTRAINT `outCustIterationByZone_PK` PRIMARY KEY (`iteration`, `zoneID`) )';
 
-      self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
        //  Add foreign key constraint to table outCustIterationByProductionType
        q := 'ALTER TABLE `outCustIterationByZone`'
@@ -2218,7 +2388,9 @@ implementation
         + ' FOREIGN KEY (`zoneID`) '
         + ' REFERENCES `inZone` (`zoneID`)'
        ;
-       self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Add the columns in the remote database, if necessary
       if( remoteDBParams.useRemoteDatabase ) then
@@ -2255,7 +2427,9 @@ implementation
       ;
       q := q + 'CONSTRAINT `outCustIterationByZoneAndProductionType_PK` PRIMARY KEY (`iteration`, `zoneID`, `productionTypeID`) )';
 
-      self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
        //  Add zone foreign key constraint to table outCustIterationByZoneAndProductionType
        q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
@@ -2263,7 +2437,9 @@ implementation
         + ' FOREIGN KEY (`zoneID`) '
         + ' REFERENCES `inZone` (`zoneID`)'
        ;
-       self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
        //  Add PT foreign key constraint to table outCustIterationByZoneAndProductionType
        q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
@@ -2271,7 +2447,9 @@ implementation
         + ' FOREIGN KEY (`productionTypeID`) '
         + ' REFERENCES `inProductionType` (`productionTypeID`)'
        ;
-       self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Add the columns in the remote database, if necessary
       if( remoteDBParams.useRemoteDatabase ) then
@@ -2314,13 +2492,17 @@ implementation
     var
       q: string;
     begin
+      // Use executeWithoutChange() below.
+      // Otherwise, the database file will appear to have been modified even when
+      // nothing of consequence has actually happened.
+
       // Table outCustIteration currently has no constraints to worry about.
 
       // Drop foreign key constraint from table outCustIterationByProductionType
       if( tableExists( 'outCustIterationByProductionType' ) ) then
         begin
           q := 'ALTER TABLE `outCustIterationByProductionType` DROP CONSTRAINT `inProductionType_outCustIterationByProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
         end
       ;
 
@@ -2328,7 +2510,7 @@ implementation
       if( tableExists( 'outCustIterationByZone' ) ) then
         begin
           q := 'ALTER TABLE `outCustIterationByZone` DROP CONSTRAINT `inZone_outCustIterationByZone_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
         end
       ;
 
@@ -2336,9 +2518,9 @@ implementation
       if( tableExists( 'outCustIterationByZoneAndProductionType' ) ) then
         begin
           q := 'ALTER TABLE `outCustIterationByZoneAndProductionType` DROP CONSTRAINT `inZone_outCustIterationByZoneAndProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
           q := 'ALTER TABLE `outCustIterationByZoneAndProductionType` DROP CONSTRAINT `inProductionType_outCustIterationByZoneAndProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
         end
       ;
     end
@@ -2349,48 +2531,52 @@ implementation
     var
       q: string;
     begin
+      // Use the executeWithoutChange() below.
+      // Otherwise, the database file will appear to have been modified even when
+      // nothing of consequence has actually happened.
+
       // Table outCustIteration currently has no constraints to worry about.
 
       // Add foreign key constraint to table outCustIterationByProductionType
       if( tableExists( 'outCustIterationByProductionType' ) ) then
         begin
-           q := 'ALTER TABLE `outCustIterationByProductionType`'
+          q := 'ALTER TABLE `outCustIterationByProductionType`'
             + ' ADD CONSTRAINT `inProductionType_outCustIterationByProductionType_FK1`'
             + ' FOREIGN KEY (`productionTypeID`) '
             + ' REFERENCES `inProductionType` (`productionTypeID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
         end
       ;
 
       // Add foreign key constraint to table outCustIterationByZone
       if( tableExists( 'outCustIterationByZone' ) ) then
         begin
-           q := 'ALTER TABLE `outCustIterationByZone`'
+          q := 'ALTER TABLE `outCustIterationByZone`'
             + ' ADD CONSTRAINT `inZone_outCustIterationByZone_FK1`'
             + ' FOREIGN KEY (`zoneID`) '
             + ' REFERENCES `inZone` (`zoneID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
         end
       ;
 
       // Add foreign key constraints to table outCustIterationByZoneAndProductionType
       if( tableExists( 'outCustIterationByZoneAndProductionType' ) ) then
         begin
-           q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
+          q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
             + ' ADD CONSTRAINT `inZone_outCustIterationByZoneAndProductionType_FK1`'
             + ' FOREIGN KEY (`zoneID`) '
             + ' REFERENCES `inZone` (`zoneID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
 
-           q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
+          q := 'ALTER TABLE `outCustIterationByZoneAndProductionType`'
             + ' ADD CONSTRAINT `inProductionType_outCustIterationByZoneAndProductionType_FK1`'
             + ' FOREIGN KEY (`productionTypeID`) '
             + ' REFERENCES `inProductionType` (`productionTypeID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
         end
       ;
     end
@@ -2401,11 +2587,15 @@ implementation
     var
       q: string;
     begin
+      // Use the executeWithoutChange() below.
+      // Otherwise, the database file will appear to have been modified even when
+      // nothing of consequence has actually happened.
+
       // Drop foreign key constraint from table outSelectDailyByProductionType
       if( tableExists( 'outSelectDailyByProductionType' ) ) then
         begin
           q := 'ALTER TABLE `outSelectDailyByProductionType` DROP CONSTRAINT `inProductionType_outSelectDailyByProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
         end
       ;
 
@@ -2413,9 +2603,9 @@ implementation
       if( tableExists( 'outSelectDailyByZoneAndProductionType' ) ) then
         begin
           q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType` DROP CONSTRAINT `inZone_outSelectDailyByZoneAndProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
           q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType` DROP CONSTRAINT `inProductionType_outSelectDailyByZoneAndProductionType_FK1`';
-          self.execute( q );
+          executeWithoutChange( q );
         end
       ;
     end
@@ -2426,74 +2616,113 @@ implementation
     var
       q: string;
     begin
+      // Use the executeWithoutChange() below.
+      // Otherwise, the database file will appear to have been modified even when
+      // nothing of consequence has actually happened.
+
       // Add foreign key constraint to table outSelectDailyByProductionType
       if( tableExists( 'outSelectDailyByProductionType' ) ) then
         begin
-           q := 'ALTER TABLE `outSelectDailyByProductionType`'
+          q := 'ALTER TABLE `outSelectDailyByProductionType`'
             + ' ADD CONSTRAINT `inProductionType_outSelectDailyByProductionType_FK1`'
             + ' FOREIGN KEY (`productionTypeID`) '
             + ' REFERENCES `inProductionType` (`productionTypeID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
         end
       ;
 
       // Add foreign key constraint to table outSelectDailyByZoneAndProductionType
       if( tableExists( 'outSelectDailyByZoneAndProductionType' ) ) then
         begin
-           q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType`'
+          q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType`'
             + ' ADD CONSTRAINT `inZone_outSelectDailyByZoneAndProductionType_FK1`'
             + ' FOREIGN KEY (`zoneID`) '
             + ' REFERENCES `inZone` (`zoneID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
 
-           q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType`'
+          q := 'ALTER TABLE `outSelectDailyByZoneAndProductionType`'
             + ' ADD CONSTRAINT `inProductionType_outSelectDailyByZoneAndProductionType_FK1`'
             + ' FOREIGN KEY (`productionTypeID`) '
             + ' REFERENCES `inProductionType` (`productionTypeID`)'
-           ;
-           self.execute( q );
+          ;
+          executeWithoutChange( q );
         end
       ;
     end
   ;
 
+  
   procedure TSMDatabase.dropCustomOutputTables();
+    var
+      q: string;
     begin
       // Remove constraints involving custom output tables before dropping them.
       // (This step may not be necessary, but it seems like a good idea.)
       disconnectCustomOutputTables();
 
       if( self.tableExists( 'outCustIteration' ) ) then
-        self.execute( 'DROP TABLE outCustIteration' )
+        begin
+          q := 'DROP TABLE outCustIteration';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
 
       if( self.tableExists( 'outCustIterationByProductionType' ) ) then
-        self.execute( 'DROP TABLE outCustIterationByProductionType' )
+        begin
+          q := 'DROP TABLE outCustIterationByProductionType';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
 
       if( self.tableExists( 'outCustIterationByZone' ) ) then
-        self.execute( 'DROP TABLE outCustIterationByZone' )
+        begin
+          q := 'DROP TABLE outCustIterationByZone';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
 
       if( self.tableExists( 'outCustIterationByZoneAndProductionType' ) ) then
-        self.execute( 'DROP TABLE outCustIterationByZoneAndProductionType' )
+        begin
+          q := 'DROP TABLE outCustIterationByZoneAndProductionType';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
     end
   ;
 
 
   procedure TSMDatabase.dropSelectDailyOutputTables();
+    var
+      q: string;
     begin
       disconnectSelectDailyOutputTables();
 
       if( self.tableExists( 'outSelectDailyByProductionType' ) ) then
-        self.execute( 'DROP TABLE outSelectDailyByProductionType' )
+        begin
+          q := 'DROP TABLE outSelectDailyByProductionType';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
 
       if( self.tableExists( 'outSelectDailyByZoneAndProductionType' ) ) then
-        self.execute( 'DROP TABLE outSelectDailyByZoneAndProductionType' )
+        begin
+          q := 'DROP TABLE outSelectDailyByZoneAndProductionType';
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
     end
   ;
@@ -2576,7 +2805,11 @@ implementation
       if( remoteDBParams.useRemoteDatabase ) then
         remoteExecute( insertQuery )
       else
-        execute( insertQuery )
+        begin
+          if not( execute( insertQuery ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + insertQuery )
+          ;
+        end
       ;
 
       res.free();
@@ -2659,6 +2892,7 @@ implementation
                 end
               else
                 begin
+                  (*
                   row := res.fetchArrayFirst();
                   while( nil <> row ) do
                     begin
@@ -2666,6 +2900,7 @@ implementation
                       row := res.fetchArrayNext();
                     end
                   ;
+                  *)
 
                   row := res.fetchArrayFirst();
 
@@ -2717,7 +2952,11 @@ implementation
           if( remoteDBParams.useRemoteDatabase ) then
             remoteExecute( insertQuery )
           else
-            execute( insertQuery )
+            begin
+              if not( execute( insertQuery ) ) then
+                raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + insertQuery )
+              ;
+            end
           ;
         end
       ;
@@ -2802,13 +3041,15 @@ implementation
                 end
               else
                 begin
+                  (*
                   row := res.fetchArrayFirst();
                   while( nil <> row ) do
                     begin
-                      row.debug();
+                      //row.debug();
                       row := res.fetchArrayNext();
                     end
                   ;
+                  *)
 
                   row := res.fetchArrayFirst();
 
@@ -2860,7 +3101,11 @@ implementation
           if( remoteDBParams.useRemoteDatabase ) then
             remoteExecute( insertQuery )
           else
-            execute( insertQuery )
+            begin
+              if not( execute( insertQuery ) ) then
+                raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + insertQuery )
+              ;
+            end
           ;
         end
       ;
@@ -2962,6 +3207,7 @@ implementation
                 end
               else // The results of the custom SQL query look OK.  Write an insert query with the real values.
                 begin
+                  (*
                   row := res.fetchArrayFirst();
                   while( nil <> row ) do
                     begin
@@ -2969,6 +3215,7 @@ implementation
                       row := res.fetchArrayNext();
                     end
                   ;
+                  *)
 
                   row := res.fetchArrayFirst();
 
@@ -3030,7 +3277,11 @@ implementation
               if( remoteDBParams.useRemoteDatabase ) then
                 remoteExecute( insertQuery )
               else
-                execute( insertQuery )
+                begin
+                  if not( execute( insertQuery ) ) then
+                    raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + insertQuery )
+                  ;
+                end
               ;
             end
           ;
@@ -3081,100 +3332,125 @@ implementation
   ;
 
 
-	procedure TSMDatabase.initializeAllOutputRecords();
-  	var
-    	q: string;
-  	begin
+  procedure TSMDatabase.initializeAllOutputRecords();
+    var
+      q: string;
+    begin
       dbcout( 'initializeAllOutputRecords', DBSMDATABASE );
 
-    	// Clear status times and other general properties
-      //------------------------------------------------
-      q := 'UPDATE `outGeneral` SET'
-      	+ ' `simulationStartTime` = NULL,'
-        + ' `simulationEndTime` = NULL,'
-        + ' `completedIterations` = 0,'
-        + ' `version` = NULL'
-      ;
-			execute( q );
+      inherited initializeAllOutputRecords();
 
       q := 'UPDATE `dynHerd` SET '
         + ' `finalStateCode` = NULL,'
-        + ' `finalApparentStateCode` = NULL,'
-        + ' `cumInfected` = 0,'
-        + ' `cumDetected` = 0,'
-        + ' `cumDestroyed` = 0,'
-        + ' `cumVaccinated` = 0'
+        + ' `finalControlStateCode` = NULL,'
+        + ' `finalDetectionStateCode` = NULL,'
+        + ' `cumulInfected` = 0,'
+        + ' `cumulDetected` = 0,'
+        + ' `cumulDestroyed` = 0,'
+        + ' `cumulVaccinated` = 0'
       ;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       clearExistingFinalHerdStates();
 
       // Clear daily outputs
       //---------------------
       q := 'DELETE FROM outDailyByProductionType';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyEvents';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyExposures';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyByZoneAndProductionType';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outDailyByZone';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Clear iteration output records
       //-------------------------------
       q := 'DELETE FROM outIteration';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outIterationByProductionType';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outIterationCosts';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outIterationByZoneAndProductionType';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM outIterationByZone';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Clear epidemic curves
       //----------------------
       q := 'DELETE FROM outEpidemicCurves';
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       // Clear custom outputs
       //---------------------
       if( self.tableExists( 'outCustIteration' ) ) then
         begin
           q := 'DELETE FROM outCustIteration';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
       if( self.tableExists( 'outCustIterationByProductionType' ) ) then
         begin
           q := 'DELETE FROM outCustIterationByProductionType';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
       if( self.tableExists( 'outCustIterationByZone' ) ) then
         begin
           q := 'DELETE FROM outCustIterationByZone';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
       if( self.tableExists( 'outCustIterationByZoneAndProductionType' ) ) then
         begin
           q := 'DELETE FROM outCustIterationByZoneAndProductionType';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
@@ -3183,14 +3459,18 @@ implementation
       if( self.tableExists( 'outSelectDailyByProductionType' ) ) then
         begin
           q := 'DELETE FROM outSelectDailyByProductionType';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
       if( self.tableExists( 'outSelectDailyByZoneAndProductionType' ) ) then
         begin
           q := 'DELETE FROM outSelectDailyByZoneAndProductionType';
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
@@ -3217,19 +3497,29 @@ implementation
           iterationsToDelete := intToStr( currentIt - leaveIterations );
 
           q := 'DELETE FROM outDailyByProductionType WHERE iteration < ' + iterationsToDelete;
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
 
           q := 'DELETE FROM outDailyEvents WHERE iteration < ' + iterationsToDelete;
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
 
           q := 'DELETE FROM outDailyExposures WHERE iteration < ' + iterationsToDelete;
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
 
           q := 'DELETE FROM outDailyByZone WHERE iteration < ' + iterationsToDelete;
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
 
           q := 'DELETE FROM outDailyByZoneAndProductionType WHERE iteration < ' + iterationsToDelete;
-          execute( q );
+          if not( execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
         end
       ;
 
@@ -3255,10 +3545,13 @@ implementation
     begin
       q := 'UPDATE `dynHerd` SET '
         + ' `finalStateCode` = initialStateCode,'
-        + ' `finalApparentStateCode` = "U"'
+        + ' `finalControlStateCode` = "U",'
+        + ' `finalDetectionStateCode` = NULL'
       ;
       dbcout( q, DBSMDATABASE );
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
       clearZonePerimeters();
     end
   ;
@@ -3279,16 +3572,16 @@ implementation
 
 
   function TSMDatabase.removeProductionType( const id: integer ): boolean;
-  	var
-    	q: string;
+    var
+      q: string;
       ptid: string;
       success1, success2, success3, success4, success5: boolean;
     begin
-    	initializeAllOutputRecords();
+      initializeAllOutputRecords();
 
-    	ptid := intToStr( id );
+      ptid := intToStr( id );
 
-    	q := 'DELETE FROM `dynHerd` WHERE `productionTypeID` = ' + ptid;
+      q := 'DELETE FROM `dynHerd` WHERE `productionTypeID` = ' + ptid;
       success1 := execute( q );
 
       q := 'DELETE FROM `inProductionTypePair` WHERE `sourceProductionTypeID` = ' + ptid;
@@ -3310,67 +3603,15 @@ implementation
 
   procedure TSMDatabase.removeProductionTypePairs();
     var
-    	q: string;
+      q: string;
     begin
       q := 'Delete from inProductionTypePair';
-      execute( q );
-    end;
-
-	procedure TSMDatabase.removeChartFunction( const id: integer );
-  	var
-    	q: string;
-  	begin
-      // Update any/all fields that might use this chart.
-      //-------------------------------------------------
-
-      // Table inDiseaseSpread
-      q := 'UPDATE `inDiseaseSpread` SET `movementControlRelID` = NULL WHERE `movementControlRelID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inDiseaseSpread` SET `distancePdfID` = NULL WHERE `distancePdfID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inDiseaseSpread` SET `transportDelayPdfID` = NULL WHERE `transportDelayPdfID` = ' + intToStr( id );
-      execute( q );
-
-      // Table inProductionType
-      q := 'UPDATE `inProductionType` SET `disLatentPeriodPdfID` = NULL WHERE `disLatentPeriodPdfID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `disSubclinicalPeriodPdfID` = NULL WHERE `disSubclinicalPeriodPdfID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `disClinicalPeriodPdfID` = NULL WHERE `disClinicalPeriodPdfID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `disImmunePeriodPdfID` = NULL WHERE `disImmunePeriodPdfID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `detProbObsVsTimeClinicalRelID` = NULL WHERE `detProbObsVsTimeClinicalRelID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `detProbReportVsFirstDetectionRelID` = NULL WHERE `detProbReportVsFirstDetectionRelID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inProductionType` SET `vaccImmunePeriodPdfID` = NULL WHERE `vaccImmunePeriodPdfID` = ' + intToStr( id );
-      execute( q );
-
-      // Table inControlsGlobal
-      q := 'UPDATE `inControlsGlobal` SET `destrCapacityRelID` = NULL WHERE `destrCapacityRelID` = ' + intToStr( id );
-      execute( q );
-      q := 'UPDATE `inControlsGlobal` SET `vaccCapacityRelID` = NULL WHERE `vaccCapacityRelID` = ' + intToStr( id );
-      execute( q );
-
-      // Remove the chart points
-      removeFunctionPoints( id );
-
-      // Finally, delete the chart itself
-   		q := 'DELETE FROM `inChart` WHERE `chartID` = ' + intToStr( id );
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
-
-  procedure TSMDatabase.removeFunctionPoints( const id: integer );
-    var
-    	q: string;
-  	begin
-   		q := 'DELETE FROM `inChartDetail` WHERE `chartID` = ' + intToStr( id );
-      execute( q );
-    end
-  ;
 
 
   procedure TSMDatabase.removeZone( const id: integer );
@@ -3378,15 +3619,19 @@ implementation
       q: string;
       zoneID: string;
     begin
-    	initializeAllOutputRecords();
+      initializeAllOutputRecords();
 
       zoneID := intToStr( id );
 
       q := 'DELETE FROM `inZoneProductionTypePair` WHERE `zoneID` = ' + zoneID;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
 
       q := 'DELETE FROM `inZone` WHERE `zoneID` = ' + zoneID;
-      execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
@@ -3396,70 +3641,79 @@ implementation
       simulateTransition: boolean = false;
       ptid: integer = -1
     ): integer;
-  	var
-    	q: string;
-  	begin
-    	initializeAllOutputRecords();
+    var
+      q: string;
+    begin
+      initializeAllOutputRecords();
       
       if( ptid < 1 ) then
-      	begin
+        begin
           q := 'INSERT INTO `inProductionType` (`descr`, `useDiseaseTransition`) VALUES ('
             + sqlQuote( descr )
             + ', '
-            + boolToStr( simulateTransition )
+            + usBoolToText( simulateTransition )
             + ')'
           ;
         end
       else
-      	begin
-        	q := 'INSERT INTO `inProductionType` (`productionTypeID`, `descr`, `useDiseaseTransition`) VALUES ('
-          	+ intToStr( ptid )
+        begin
+          q := 'INSERT INTO `inProductionType` (`productionTypeID`, `descr`, `useDiseaseTransition`) VALUES ('
+            + intToStr( ptid )
             + ', '
             + sqlQuote( descr )
             + ', '
-            + boolToStr( simulateTransition )
+            + usBoolToText( simulateTransition )
             + ')'
           ;
         end
       ;
 
       if( execute( q ) ) then
-      	result := lastInsertID()
+        result := lastInsertID()
       else
-      	result := -75
+        result := -75
       ;
 
     end
   ;
 
   procedure TSMDatabase.makeProductionTypePair( src, dest: integer );
-  	var
-      q: string;
-  	begin
+    var
+      q, q2: string;
+    begin
      if( nil = _sqlResult ) then
       createSqlResult()
      ;
 
       q := 'SELECT `sourceProductionTypeID` FROM `inProductionTypePair` '
-      	+ 'WHERE `sourceProductionTypeID` = ' + intToStr( src ) + ' '
+        + 'WHERE `sourceProductionTypeID` = ' + intToStr( src ) + ' '
         + 'AND `destProductionTypeID` = ' + intToStr( dest )
       ;
 
       _sqlResult.runQuery( q );
 
       if( _sqlResult.numRows = 0 ) then
-      	self.execute(
-        	'INSERT INTO `inProductionTypePair` ( `sourceProductionTypeID`, `destProductionTypeID` ) '
-        		+ 'VALUES( ' + intToStr( src ) + ', ' + intToStr( dest ) + ' )'
-        )
+        begin
+          q2 := 'INSERT INTO `inProductionTypePair` ( `sourceProductionTypeID`, `destProductionTypeID` ) '
+            + 'VALUES( ' + intToStr( src ) + ', ' + intToStr( dest ) + ' )'
+          ;
+          if not( execute( q2 ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q2 )
+          ;
+        end
       ;
     end
   ;
 
   procedure TSMDatabase.clearHerds();
+    var
+      q: string;
     begin
       initializeAllOutputRecords();
-      execute( 'DELETE FROM `dynHerd`' );
+      q := 'DELETE FROM `dynHerd`';
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 // ----------------------------------------------------------------------------
@@ -3480,9 +3734,9 @@ implementation
       _sqlResult.runQuery( 'SELECT MAX(herdID) as maxID FROM `dynHerd`' );
 
       if( not( _sqlResult.success ) ) then
-      	result := 0
+        result := 0
       else
-      	begin
+        begin
           row := _sqlResult.fetchArrayFirst();
 
           if( null <> row.field('maxID') ) then
@@ -3506,32 +3760,36 @@ implementation
         + ' `latitude` DOUBLE,'
         + ' `longitude` DOUBLE,'
         + ' `initialStateCode` CHAR(1),'
+        + ' `daysInInitialState` INTEGER,'
         + ' `daysLeftInInitialState` INTEGER,'
         + ' `initialSize` INTEGER'
         + ' )'
       ;
 
-      self.execute( q );
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
 
-  procedure TSMDatabase.mergeHerdTables();
+  function TSMDatabase.mergeHerdTables(): boolean;
     var
       q: string;
     begin
-      q := 'INSERT INTO  `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `initialStateCode`, `daysLeftInInitialState`, `initialSize`)'
+      q := 'INSERT INTO  `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `initialStateCode`, `daysInInitialState`, `daysLeftInInitialState`, `initialSize`)'
         + ' SELECT `dynHerd2`.`herdID`,'
         + ' `dynHerd2`.`productionTypeID`,'
         + ' `dynHerd2`.`latitude`,'
         + ' `dynHerd2`.`longitude`,'
         + ' `dynHerd2`.`initialStateCode`,'
+        + ' `dynHerd2`.`daysInInitialState`,'
         + ' `dynHerd2`.`daysLeftInInitialState`,'
         + ' `dynHerd2`.`initialSize`'
         + ' FROM `dynHerd2`'
       ;
 
-      self.execute( q );
+      result := self.execute( q );
 
       self.execute( 'DROP TABLE dynHerd2' );
     end
@@ -3544,8 +3802,13 @@ implementation
 // Functions for handling BLOBs
 // ----------------------------------------------------------------------------
   procedure TSMDatabase.clearZonePerimeters();
+    var
+      q: string;
     begin
-      self.execute( 'UPDATE `dynBlob` SET `zonePerimeters` = NULL' );
+      q := 'UPDATE `dynBlob` SET `zonePerimeters` = NULL';
+      if not( execute( q ) ) then
+        raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+      ;
     end
   ;
 
@@ -3563,8 +3826,12 @@ implementation
 
       if( nil = row ) then
         result := false
-      else if( unassigned = row.field('zonePerimeters') ) then
+      else if( null = row.field('zonePerimeters') ) then
         result := false
+      // For reasons that I don't understand, "unassigned" no longer works since implementing
+      // the faster code for handling SELECT queries in SqlClasses (AR 1/26/11)
+      //else if( unassigned = row.field('zonePerimeters') ) then
+        //result := false
       else
         result := true
       ;
@@ -3624,6 +3891,7 @@ implementation
 
   class function TSMDatabase.setSampleDatabaseLanguage( const fileName: string ): boolean;
     var
+      q: string;
       db: TSqlDatabase;
       res: TSqlResult;
       row: TSqlRow;
@@ -3643,9 +3911,16 @@ implementation
         begin
           res := TSqlResult.create( db );
 
+          // Set the language code
+          //----------------------
+          q := 'UPDATE `inGeneral` SET `language` = ' + db.sqlQuote( i88nLanguageCodeString() );
+          if not( db.execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+
           // Rename production types
           //------------------------
-          query := 'SELECT productionTypeID, descr FROM inProductionType';
+          query := 'SELECT `productionTypeID`, `descr` FROM `inProductionType`';
           res.runQuery( query );
           if( res.success ) then
             begin
@@ -3655,8 +3930,8 @@ implementation
                   name := row.field(1);
                   id := row.field(0);
                   updateStatement :=
-                    'UPDATE inProductionType SET descr = ' + db.sqlQuote( tr( name ) )
-                      + ' WHERE productionTypeID = ' + intToStr( id )
+                    'UPDATE `inProductionType` SET `descr` = ' + db.sqlQuote( tr( name ) )
+                      + ' WHERE `productionTypeID` = ' + intToStr( id )
                   ;
                   result := db.execute( updateStatement );
 
@@ -3676,7 +3951,7 @@ implementation
           //-------------
           if( result ) then
             begin
-              query := 'SELECT zoneID, descr FROM inZone';
+              query := 'SELECT `zoneID`, `descr` FROM `inZone`';
               res.runQuery( query );
               if( res.success ) then
                 begin
@@ -3686,8 +3961,8 @@ implementation
                       name := row.field(1);
                       id := row.field(0);
                       updateStatement :=
-                        'UPDATE inZone SET descr = ' + db.sqlQuote( tr( name ) )
-                          + ' WHERE zoneID = ' + intToStr( id )
+                        'UPDATE `inZone` SET `descr` = ' + db.sqlQuote( tr( name ) )
+                          + ' WHERE `zoneID` = ' + intToStr( id )
                       ;
                       result := db.execute( updateStatement );
 
@@ -3709,7 +3984,7 @@ implementation
           //----------------
           if( result ) then
             begin
-              query := 'SELECT chartID, chartName FROM inChart';
+              query := 'SELECT `chartID`, `chartName` FROM `inChart`';
               res.runQuery( query );
               if( res.success ) then
                 begin
@@ -3719,8 +3994,8 @@ implementation
                       name := row.field(1);
                       id := row.field(0);
                       updateStatement :=
-                        'UPDATE inChart SET chartName = ' + db.sqlQuote( tr( name ) )
-                          + ' WHERE chartID = ' + intToStr( id )
+                        'UPDATE `inChart` SET `chartName` = ' + db.sqlQuote( tr( name ) )
+                          + ' WHERE `chartID` = ' + intToStr( id )
                       ;
                       result := db.execute( updateStatement );
 
@@ -3742,7 +4017,7 @@ implementation
           //--------------------------
           if( result ) then
             begin
-              updateStatement := 'UPDATE inGeneral SET scenarioDescr = '
+              updateStatement := 'UPDATE `inGeneral` SET `scenarioDescr` = '
                 + db.sqlQuote( tr(
                   'This file contains a sample scenario for an outbreak of a highly contagious disease.'
                   + '  This file may serve as an example that can be modified for other uses, but parameters'
@@ -3769,25 +4044,18 @@ implementation
 // ----------------------------------------------------------------------------
 // Properties
 // ----------------------------------------------------------------------------
-  function TSMDatabase.getWorkingDBFileName(): string; begin result := _workingDBFileName end;
-  function TSMDatabase.getPermanentDBFileName(): string; begin result := _permanentDBFileName end;
-  function TSMDatabase.getWorkingDBHasChanged(): boolean; begin result := _workingDBHasChanged end;
-  function TSMDatabase.getDBSaved(): boolean; begin result := _dbSaved end;
-  procedure TSMDatabase.setDBSaved( val: boolean ); begin _dbSaved := val; end;
-
-
   procedure TSMDatabase.setWorkingDBHasChanged( val: boolean );
     {$IFNDEF CONSOLEAPP}
-  	var
-    	frm: TFormMain;
+    var
+      frm: TFormMain;
     {$ENDIF}
     begin
-    	_workingDBHasChanged := val;
+      inherited setWorkingDBHasChanged( val );
 
       {$IFNDEF CONSOLEAPP}
-			if( _frmMain <> nil ) then
-      	begin
-       		frm := _frmMain as TFormMain;
+      if( _frmMain <> nil ) then
+        begin
+          frm := _frmMain as TFormMain;
           frm.updateCaption();
         end
       ;
@@ -3796,50 +4064,10 @@ implementation
   ;
 
 
-  procedure TSMDatabase.setPermanentDBFileName( const val: string ); begin _permanentDBFileName := val; end;
-
-
-  function TSMDatabase.getDatabaseBoolean( const fieldName: string; const tableName: string ): boolean;
-  	var
-      row: TSqlRow;
-  	begin
-      if( nil = _sqlResult ) then
-        createSqlResult()
-      ;
-
-      _sqlResult.runQuery( 'SELECT ' + fieldName + ' FROM ' + tableName );
-
-      row := _sqlResult.fetchArrayFirst();
-      if( true = row.field(0) ) then
-      	result := true
-      else
-      	result := false
-      ;
-    end
-  ;
-
-  
-  function TSMDatabase.getDatabaseCount( const tableName: string ): integer;
-  	var
-      row: TSqlRow;
-  	begin
-      if( nil = _sqlResult ) then
-        createSqlResult()
-      ;
-
-      _sqlResult.runQuery( 'SELECT COUNT(*) AS val FROM ' + tableName );
-
-      row := _sqlResult.fetchArrayFirst();
-
-      result := row.field('val');
-    end
-  ;
-
-
   function TSMDatabase.getSimulationComplete(): boolean;
-  	var
+    var
       row: TSqlRow;
-  	begin
+    begin
       if( nil = _sqlResult ) then
         createSqlResult()
       ;
@@ -3848,6 +4076,144 @@ implementation
       row := _sqlResult.fetchArrayFirst();
 
       result := not ( null = row.field('simulationEndTime') );
+    end
+  ;
+
+
+  function TSMDatabase.getContainsValidOutput(): boolean;
+    var
+      nExpectedIterations: integer;
+      nPTs, nZones: integer;
+      nExpectedPTRecords, nExpectedZoneRecords, nExpectedZonePTRecords: integer;
+      useCosts, useZones: boolean;
+      row: TSqlRow;
+    begin
+      result := true; // until shown otherwise
+
+      // Confirm that the number of outputs recorded in each output table is the expected number.
+      // Instances have arisen where the numbers don't match, which wreaks havoc with the rest of the application.
+
+      if( nil = _sqlResult ) then
+        createSqlResult()
+      ;
+
+      _sqlResult.runQuery( 'SELECT completedIterations FROM outGeneral' );
+      row := _sqlResult.fetchArrayFirst();
+      nExpectedIterations := row.field( 'completedIterations' );
+
+      if( 0 = nExpectedIterations ) then
+        begin
+          result := true;
+          exit;
+        end
+      ;
+
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nPts FROM inProductionType' );
+      row := _sqlResult.fetchArrayFirst();
+      nPTs := row.field( 'nPts' );
+
+       _sqlResult.runQuery( 'SELECT includeZones FROM inControlsGlobal' );
+      row := _sqlResult.fetchArrayFirst();
+      useZones := boolean( row.field('includeZones' ));
+
+      if ( useZones ) then
+        begin
+          _sqlResult.runQuery( 'SELECT COUNT(*) AS nZones FROM inZone' );
+          row := _sqlResult.fetchArrayFirst();
+          nZones := row.field( 'nZones' );
+        end
+      else nZones := 0;  // Issue 2468
+
+      _sqlResult.runQuery( 'SELECT costTrackDestruction, costTrackVaccination, costTrackZoneSurveillance FROM inGeneral' );
+      row := _sqlResult.fetchArrayFirst();
+      useCosts := boolean( row.field('costTrackDestruction') ) or boolean( row.field('costTrackVaccination') ) or boolean( row.field('costTrackZoneSurveillance') );
+
+      nExpectedPTRecords :=   nPTs * nExpectedIterations;
+      nExpectedZoneRecords := nZones * nExpectedIterations;
+      nExpectedZonePTRecords := nZones * nPTs * nExpectedIterations;
+
+      if( 0 = nPTs ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+      // The following tables should have nExpectedIterations
+      //----------------------------------------------------
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIteration' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedIterations <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+      // The following tables should have nExpectedPTRecords
+      //----------------------------------------------------
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIterationByProductionType' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedPTRecords <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+      if( useCosts ) then
+        begin
+          _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIterationCosts' );
+          row := _sqlResult.fetchArrayFirst();
+          if( nExpectedPTRecords <> row.field( 'nRecords' ) ) then
+            begin
+              result := false;
+              exit;
+            end
+          ;
+        end
+      ;
+
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIterationByProductionType' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedPTRecords <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM (SELECT DISTINCT iteration, productionTypeID FROM outEpidemicCurves)' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedPTRecords <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+
+      // The following tables should have nExpectedZoneRecords
+      //------------------------------------------------------
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIterationByZone' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedZoneRecords <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
+
+      // The following tables should have nExpectedZonePTRecords
+      //--------------------------------------------------------
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS nRecords FROM outIterationByZoneAndProductionType' );
+      row := _sqlResult.fetchArrayFirst();
+      if( nExpectedZonePTRecords <> row.field( 'nRecords' ) ) then
+        begin
+          result := false;
+          exit;
+        end
+      ;
     end
   ;
 
@@ -3877,28 +4243,6 @@ implementation
         result := 0
       else
         result := row.field('lastIteration')
-      ;
-    end
-  ;
-
-
-  function TSMDatabase.completedIterations(): integer;
-    var
-      row: TSqlRow;
-    begin
-      if( nil = _sqlResult ) then
-        createSqlResult()
-      ;
-
-      _sqlResult.runQuery( 'SELECT completedIterations FROM outGeneral' );
-      row := _sqlResult.fetchArrayFirst();
-
-      if( nil = row ) then
-        result := 0
-      else if( null = row.field('completedIterations') ) then
-        result := 0
-      else
-        result := row.field('completedIterations')
       ;
     end
   ;
@@ -4031,6 +4375,57 @@ implementation
 
   function TSMDatabase.getProdTypeCount(): integer; begin result := getDatabaseCount( 'inProductionType' ); end;
   function TSMDatabase.getProdTypePairCount(): integer; begin result := getDatabaseCount( 'inProductionTypePair' ); end;
+
+  function TSMDatabase.containsInitiallyVaccinatedUnits( const prodTypeID: integer = -1 ): boolean;
+    var
+      row: TSqlRow;
+      val: integer;
+      prodTypeClause: string;
+    begin
+      if( nil = _sqlResult ) then
+        createSqlResult()
+      ;
+
+      if( -1 <> prodTypeID ) then
+        prodTypeClause := ' AND productionTypeID = ' + intToStr( prodTypeID )
+      else
+        prodTypeClause := ''
+      ;
+
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS val FROM dynHerd WHERE initialStateCode = "V"' + prodTypeClause );
+      row := _sqlResult.fetchArrayFirst();
+
+      val := integer( row.field('val') );
+
+      result := ( 0 <> val );
+    end
+  ;
+
+
+  function TSMDatabase.containsInitiallyDestroyedUnits( const prodTypeID: integer = -1 ): boolean;
+    var
+      row: TSqlRow;
+      val: integer;
+      prodTypeClause: string;
+    begin
+      if( nil = _sqlResult ) then
+        createSqlResult()
+      ;
+
+      if( -1 <> prodTypeID ) then
+        prodTypeClause := ' AND productionTypeID = ' + intToStr( prodTypeID )
+      else
+        prodTypeClause := ''
+      ;
+
+      _sqlResult.runQuery( 'SELECT COUNT(*) AS val FROM dynHerd WHERE initialStateCode = "D"' + prodTypeClause );
+      row := _sqlResult.fetchArrayFirst();
+
+      val := integer( row.field('val') );
+
+      result := ( 0 <> val );
+    end
+  ;
 // ----------------------------------------------------------------------------
 
 
@@ -4074,6 +4469,620 @@ implementation
           if( null <> row.field('saveDailyOutputsForIterations') ) then result := integer( row.field('saveDailyOutputsForIterations') );
         end
       ;
+    end
+  ;
+
+
+//-----------------------------------------------------------------------------
+//  Why does a version of NAADSM need to be updated?
+//-----------------------------------------------------------------------------
+  (*
+  "Private" functions used to determine update reason:
+    function cheyenneUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    function laramieUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
+    function rivertonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
+    function torringtonUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    function wheatlandUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+
+  "Private" functions used to check from bugs related to very specialized conditions:
+    function bug3_1_20( db: TSMDatabase ): boolean;
+  *)
+
+
+  // Returns true if the scenario database contains any shipping or airborne transport delay pdfs
+  // that are something other than fixe value( 0 ) or fixe value( 1 )
+  function bug3_1_25( db: TSMDatabase ): boolean;
+    var
+      db2: TSqlDatabase;
+      res: TSqlResult;
+      row: TSqlRow;
+      q: string;
+      badCharts: TQIntegerVector;
+      mode: integer;
+      i: integer;
+    begin
+      // If this scenario uses a bad delay pdf AND if at least
+      // one airborne spread or contact spread model uses that pdf,
+      // then there is a problem. Otherwise, calculations are fine.
+
+      db2 := db as TSqlDatabase;
+      res := TSqlResult.create( 'SELECT `chartID`, `chartType`, `mode` FROM `inChart` WHERE `fieldName` = "CMDelayDirect" OR `fieldName`="CMDelayIndirect" OR `fieldName`="AIRDelay"', db2 );
+      row := res.fetchArrayFirst();
+
+      badCharts := TQIntegerVector.create();
+
+      while( nil <> row ) do
+        begin
+          if( 'Point' <> row.field( 'chartType' ) ) then
+            badCharts.append( integer( row.field( 'chartID' ) ) )
+          else
+            begin
+              if( null = row.field( 'mode' ) ) then
+                badCharts.append( integer( row.field( 'chartID' ) ) )
+              else
+                begin
+                  mode := RoundDbl( double( row.field( 'mode' ) ) );
+
+                  if( ( 0 <> mode ) and ( 1 <> mode ) ) then
+                    badCharts.append( integer( row.field( 'chartID' ) ) )
+                  ;
+                end
+              ;
+            end
+          ;
+
+          row := res.fetchArrayNext();
+        end
+      ;
+
+      result := false; // Until shown otherwise
+
+      if( 0 <> badCharts.count ) then
+        begin
+          for i := 0 to badCharts.count - 1 do
+            begin
+              q := 'SELECT COUNT(*) AS n FROM `inDiseaseSpread` WHERE `transportDelayPdfID` = ' + intToStr( badCharts.at( i ) );
+              res.runQuery( q );
+              row := res.fetchArrayFirst();
+
+              if( 0 < integer( row.field( 'n' ) ) ) then
+                begin
+                  result := true;
+                  break;
+                end
+              ;
+            end
+          ;
+        end
+      ;
+
+      badCharts.Free();
+      res.free();
+    end
+  ;
+
+
+  // Returns true if there is a calculation problem as a result of the bug concerning
+  // max distance of airborne spread set to 1 km
+  function bug3_1_22( db: TSMDatabase ): boolean;
+    var
+      db2: TSqlDatabase;
+      res: TSqlResult;
+      row: TSqlRow;
+      q: string;
+      usesLinearDecline: boolean;
+      nModelsWithProblems: integer;
+    begin
+      // If this scenario uses airborne spread with linear decline  AND if at least
+      // one airborne spread model has a max distance of spread of 1 km or less
+      // then there is a problem. Otherwise, calculations are fine.
+
+      db2 := db as TSqlDatabase;
+      res := TSqlResult.create( 'SELECT `includeAirborneSpread`, `useAirborneExponentialDecay` FROM `inGeneral`', db2 );
+      row := res.fetchArrayFirst();
+
+      usesLinearDecline := ( row.field( 'includeAirborneSpread' ) ) and ( not( row.field( 'useAirborneExponentialDecay' ) ) );
+
+      if( usesLinearDecline ) then
+        begin
+          q := 'SELECT COUNT(*) AS n FROM `inDiseaseSpread` WHERE'
+             + '`spreadID` IN (SELECT `airborneContactSpreadID` FROM `inProductionTypePair` WHERE useAirborneSpread = TRUE)'
+             + ' AND `spreadMethodCode` = "A"'
+             + ' AND `maxDistAirborneSpread` <= 1'
+          ;
+
+          res.runQuery( q );
+          row := res.fetchArrayFirst();
+          nModelsWithProblems := row.field( 'n' );
+
+          result := ( 0 < nModelsWithProblems ); // There is at least one model with a max distance of 1 km or less.
+        end
+      else
+        result := false
+      ;
+
+      res.free();
+    end
+  ;
+
+
+  // Returns true if there is a calculation problem as a result the bug concerning days-left-in-status and within-unit prevalence.
+  function bug3_1_19( db: TSMDatabase ): boolean;
+    var
+      db2: TSqlDatabase;
+      res: TSqlResult;
+      row: TSqlRow;
+      usesPrevalence: boolean;
+      usesDaysLeftInInitialState: integer;
+    begin
+      // If this scenario uses within-unit prevalence
+      // AND if at least one unit has a daysLeftInInitialState of something other than -1,
+      // then there is a problem. Otherwise, calculations are fine.
+
+      db2 := db as TSqlDatabase;
+      res := TSqlResult.create( 'SELECT `useWithinHerdPrevalence` FROM `inGeneral`', db2 );
+      row := res.fetchArrayFirst();
+
+      usesPrevalence := row.field( 'useWithinHerdPrevalence' );
+
+      if( usesPrevalence ) then
+        begin
+          res.runQuery( 'SELECT COUNT(*) AS n FROM `DynHerd` WHERE `daysLeftInInitialState` > -1');
+          row := res.fetchArrayFirst();
+          usesDaysLeftInInitialState := row.field( 'n' );
+          
+          if( 0 < usesDaysLeftInInitialState ) then
+            result := true
+          else
+            result := false
+          ;
+        end
+      else
+        result := false
+      ;
+
+      res.Free();
+    end
+  ;
+
+
+  function cheyenneUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    begin
+      if( rightStr( oldVersion, 8 ) <> 'Cheyenne' ) then
+        result := VERSModelSpecChange
+      else if
+        ( '3.0.80-Cheyenne' = oldVersion )
+      or
+        // There was no 3.0.81-Cheyenne
+        ( '3.0.82-Cheyenne' = oldVersion )
+      or
+        // There was no 3.0.83-Cheyenne
+        ( '3.0.84-Cheyenne' = oldVersion )
+      then
+        begin
+          // See comment below RE specification change for version 3.1.15.
+          result := VERSModelSpecChange;
+        end
+      else if
+        // There was no 3.0.85-Cheyenne
+        // There were no versions of Cheyenne that correspond to 3.1.0 through 3.1.12.
+        ( '3.1.13-Cheyenne' = oldVersion )
+      or
+        ( '3.1.14-Cheyenne' = oldVersion )
+      or
+        ( '3.1.15-Cheyenne' = oldVersion )
+      then
+        begin
+          // See comments below RE bugs in versions 3.1.0 - 3.1.15.
+          result := VERSBUG;
+        end
+      else
+        // There have been no versions of Cheyenne since 3.1.15.
+        begin
+          result := VERSUnrecognized;
+        end
+      ;
+    end
+  ;
+
+
+  function laramieUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
+    begin
+      if( rightStr( oldVersion, 7 ) <> 'Laramie' ) then
+        result := VERSModelSpecChange
+      else if
+        ( '3.1.18-Laramie' = oldVersion )
+      or
+        ( '3.1.19-Laramie' = oldVersion )
+      then
+        begin
+          if( bug3_1_19( db ) or bug3_1_25( db ) ) then
+            result := VERSBUG
+          else
+            result := VERSOK
+          ;
+        end
+      else
+        begin
+          // There have been no versions of Laramie since 3.1.19.
+          result := VERSUnrecognized;
+        end
+      ;
+    end
+  ;
+
+
+  function rivertonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
+    begin
+      if( rightStr( oldVersion, 8 ) <> 'Riverton' ) then
+        result := VERSModelSpecChange
+      else if ( '3.1.22-Riverton' = oldVersion ) then
+        begin
+          if( bug3_1_22( db ) or bug3_1_25( db ) ) then
+            result := VERSBUG
+          else
+            result := VERSOK
+          ;
+        end
+      else if( '3.1.23-Riverton' = oldVersion ) then
+        result := VERSOK
+      else // There are no other versions of Riverton
+        result := VERSUnrecognized
+      ;
+    end
+  ;
+
+
+  function torringtonUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    begin
+      if( rightStr( oldVersion, 10 ) <> 'Torrington' ) then
+        result := VERSModelSpecChange
+
+      else if
+        ( '3.1.28-Torrington' = oldVersion )
+      or
+        ( '3.2.14-Torrington' = oldVersion )
+      or
+        ( '3.2.15-Torrington' = oldVersion )
+      then
+        result := VERSBUG
+      else if
+        ( '3.2.16-Torrington' = oldVersion )
+      or
+        ( '3.2.17-Torrington' = oldVersion )
+      or
+        ( '3.2.18-Torrington' = oldVersion )
+      then
+        result := VERSOK
+      else // There are no other versions of Torrington
+        result := VERSUnrecognized
+      ;
+    end
+  ;
+
+
+  function wheatlandUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    begin
+      if( rightStr( oldVersion, 9 ) <> 'Wheatland' ) then
+        result := VERSModelSpecChange
+
+      else if
+        ( '3.2.18-Wheatland' = oldVersion )
+      then
+        result := VERSOK
+      else // There are no other versions of Wheatland
+        result := VERSUnrecognized
+      ;
+    end
+  ;
+
+
+  function TSMDatabase.versionUpdateReason( versionID: pstring = nil ): TVersionUpdateReason;
+    var
+      res: TSqlResult;
+      row: TSqlRow;
+      oldVersion: string;
+      usingCheyenne, usingLaramie, usingRiverton, usingTorrington, usingWheatland: boolean;
+    begin
+      {$IFDEF CHEYENNE}
+        usingCheyenne := true;
+      {$ELSE}
+        usingCheyenne := false;
+      {$ENDIF}
+
+      {$IFDEF LARAMIE}
+        usingLaramie := true;
+      {$ELSE}
+        usingLaramie := false;
+      {$ENDIF}
+
+      {$IFDEF RIVERTON}
+        usingRiverton := true;
+      {$ELSE}
+        usingRiverton := false;
+      {$ENDIF}
+
+      {$IFDEF TORRINGTON}
+        usingTorrington := true;
+      {$ELSE}
+        usingTorrington := false;
+      {$ENDIF}
+
+      {$IFDEF WHEATLAND}
+        usingWheatland := true;
+      {$ELSE}
+        usingWheatland := false;
+      {$ENDIF}
+
+      res := TSqlResult.create( 'SELECT `version` FROM `outGeneral`', self );
+
+      result := VERSUnrecognized;
+
+      // Versions through 3.0.58 are automatically updated.
+      // (outGeneral.version wasn't introduced until 3.0.59)
+
+      if( not res.success ) then
+        begin
+          if( nil <> versionID ) then versionID^ := '';
+          // Do nothing else
+        end
+      else
+        begin
+          row := res.fetchArrayFirst();
+
+          if( nil = row ) then
+            begin
+              if( nil <> versionID ) then versionID^ := '';
+              result := VERSOK;
+              // Do nothing else
+            end
+          else if( null = row.field('version') ) then
+            begin
+              if( nil <> versionID ) then versionID^ := '';
+              result := VERSOK;
+              // Do nothing else
+            end
+          else
+            begin
+              oldVersion := trim( row.field('version') );
+
+              if( nil <> versionID ) then
+                versionID^ := oldVersion
+              ;
+
+              // As new versions are released into the wild, add items here to describe the reasons for the updates.
+
+              // Take care of experimental versions first...
+              if( usingCheyenne ) then
+                result := cheyenneUpdateReason( oldVersion )
+              else if( usingLaramie ) then
+                result := laramieUpdateReason( self, oldVersion )
+              else if( usingRiverton ) then
+                result := rivertonUpdateReason( self, oldVersion )
+              else if( usingTorrington ) then
+                result := torringtonUpdateReason( oldVersion )
+              else if( usingWheatland ) then
+                result := wheatlandUpdateReason( oldVersion )
+
+              // ...then deal with standard versions.
+              else if
+                ( '3.0.59' = oldVersion )
+              or
+                ( '3.0.60' = oldVersion )
+              or
+                ( '3.0.61' = oldVersion )
+              or
+                ( '3.0.62' = oldVersion )
+              or
+                ( '3.0.63' = oldVersion )
+              or
+                ( '3.0.64' = oldVersion )
+              or
+                ( '3.0.65' = oldVersion )
+              or
+                ( '3.0.66' = oldVersion )
+              or
+                ( '3.0.67' = oldVersion )
+              or
+                ( '3.0.68' = oldVersion )
+              or
+                ( '3.0.69' = oldVersion )
+              or
+                ( '3.0.70' = oldVersion )
+              or
+                ( '3.0.71' = oldVersion )
+              or
+                ( '3.0.72' = oldVersion )
+              or
+                ( '3.0.73' = oldVersion )
+              or
+                ( '3.0.74' = oldVersion )
+              or
+                ( '3.0.75' = oldVersion )
+              or
+                ( '3.0.76' = oldVersion )
+              or
+                ( '3.0.77' = oldVersion )
+              then
+                begin
+                  // Anything prior to the first public release (3.0.78) should be
+                  // considered "buggy" for one reason or another: see _ReleaseNotes.txt.
+                  // (Since these versions were never used for analytical purposes, it's not
+                  // a problem to treat them as invalid.)
+                  result := VERSBug;
+                end
+              else if
+                ( '3.0.78' = oldVersion )
+              or
+                ( '3.0.79' = oldVersion )
+              or
+                ( '3.0.80' = oldVersion )
+              or
+                ( '3.0.81' = oldVersion )
+              or
+                ( '3.0.82' = oldVersion )
+              or
+                ( '3.0.83' = oldVersion )
+              or
+                ( '3.0.84' = oldVersion )
+              or
+                ( '3.0.85' = oldVersion )
+              then
+                begin
+                  // Released versions 3.0.78 and 3.0.85 introduce some new features,
+                  // but don't invalidate anything done in a previous "good" release.
+                  // Version 3.1.15 fixes a problem with RTree searches in the core model.
+                  // The problem existed but was not detected in versions 3.0.78 through 3.0.84.
+                  // Becasuse results from version 3.1.15 may vary from older versions,
+                  // version 3.1.15 should be considered a specification change.
+                  result := VERSModelSpecChange;
+                end
+              else if
+                ( '3.1.0' = oldVersion )
+              or
+                ( '3.1.1' = oldVersion )
+              or
+                ( '3.1.2' = oldVersion )
+              or
+                ( '3.1.3' = oldVersion )
+              or
+                ( '3.1.4' = oldVersion )
+              or
+                ( '3.1.5' = oldVersion )
+              or
+                ( '3.1.6' = oldVersion )
+              or
+                ( '3.1.7' = oldVersion )
+              or
+                ( '3.1.8' = oldVersion )
+              or
+                ( '3.1.9' = oldVersion )
+              or
+                ( '3.1.10' = oldVersion )
+              or
+                ( '3.1.11' = oldVersion )
+              or
+                ( '3.1.12' = oldVersion )
+              or
+                ( '3.1.13' = oldVersion )
+              or
+                ( '3.1.14' = oldVersion )
+              or
+                ( '3.1.15' = oldVersion ) // First public release of 3.1.x. Fixes bugs related to RTree searches.
+              or
+                ( '3.1.16' = oldVersion ) // Version 3.1.16 fixes more bugs related to RTree searches.
+              then
+                begin
+                  result := VERSBUG;
+                end
+              else if
+                ( '3.1.17' = oldVersion )
+              or
+                ( '3.1.18' = oldVersion )
+              or
+                ( '3.1.19' = oldVersion )
+              then
+                begin
+                  if( bug3_1_19( self ) or bug3_1_25( self ) ) then
+                    result := VERSBUG
+                  else
+                    result := VERSOK
+                  ;
+                end
+              else if
+                ( '3.1.20' = oldVersion )
+              or
+                ( '3.1.21' = oldVersion )
+              or
+                ( '3.1.22' = oldVersion )
+              then
+                begin
+                  if( bug3_1_22( self ) or bug3_1_25( self ) ) then
+                    result := VERSBUG
+                  else
+                    result := VERSOK
+                  ;
+                end
+              else if
+                ( '3.1.23' = oldVersion )
+              or
+                ( '3.1.24' = oldVersion )
+              or
+                ( '3.1.25' = oldVersion )
+              then
+                begin
+                  if( bug3_1_25( self ) ) then
+                    result := VERSBUG
+                  else
+                    result := VERSOK
+                  ;
+                end
+              else if
+                ( '3.1.26' = oldVersion )
+              or
+                ( '3.1.27' = oldVersion )
+              or
+                ( '3.1.28' = oldVersion )
+              then
+                result := VERSOK
+
+
+              // Make the jump here to 3.2.x
+              //----------------------------
+              else if
+                ( '3.2.0' = oldVersion )
+              or
+                ( '3.2.1' = oldVersion )
+              or
+                ( '3.2.2' = oldVersion )
+              or
+                ( '3.2.3' = oldVersion )
+              or
+                ( '3.2.4' = oldVersion )
+              or
+                ( '3.2.5' = oldVersion )
+              or
+                ( '3.2.6' = oldVersion )
+              or
+                ( '3.2.7' = oldVersion )
+              or
+                ( '3.2.8' = oldVersion )
+              or
+                ( '3.2.9' = oldVersion )
+              or
+                ( '3.2.10' = oldVersion )
+              or
+                ( '3.2.11' = oldVersion )
+              or
+                ( '3.2.12' = oldVersion )
+              or
+                ( '3.2.13' = oldVersion )
+              or
+                ( '3.2.14' = oldVersion )
+              or
+                ( '3.2.15' = oldVersion )
+              then
+                result := VERSBUG
+
+              else if
+                ( '3.2.16' = oldVersion )
+              or
+                ( '3.2.17' = oldVersion )
+              or
+                ( '3.2.18' = oldVersion )                
+              then
+                result := VERSOK
+
+              // If oldVersion is anything else, something is screwed up.
+              else
+                result :=  VERSUnrecognized
+              ;
+            end
+          ;
+        end
+      ;
+
+      res.free();
     end
   ;
 

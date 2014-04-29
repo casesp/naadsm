@@ -56,7 +56,7 @@ object FrameContactSpread: TFrameContactSpread
       object cbxSubclinicalCanInfect: TCheckBox
         Left = 8
         Top = 32
-        Width = 313
+        Width = 377
         Height = 17
         Caption = 'Subclinical units can spread disease'
         TabOrder = 1
@@ -80,7 +80,6 @@ object FrameContactSpread: TFrameContactSpread
         TabOrder = 3
         Visible = False
         OnExit = processText
-        OnKeyDown = rleKeyDown
       end
       object rleMeanContactRate: TREEdit
         Left = 360
@@ -90,7 +89,6 @@ object FrameContactSpread: TFrameContactSpread
         EditAlign = eaLeft
         TabOrder = 4
         OnExit = processText
-        OnKeyDown = rleKeyDown
       end
     end
     object pnlSimpleParamsBottom: TPanel
@@ -116,7 +114,6 @@ object FrameContactSpread: TFrameContactSpread
         EditAlign = eaLeft
         TabOrder = 0
         OnExit = processText
-        OnKeyDown = rleKeyDown
       end
     end
   end

@@ -38,7 +38,7 @@ object FrameZoneProdTypeParams: TFrameZoneProdTypeParams
       object lblDirectMovement: TLabel
         Left = 36
         Top = 10
-        Width = 377
+        Width = 292
         Height = 13
         Caption = 'Effect on baseline direct movement rate from units of this type:'
         Font.Charset = DEFAULT_CHARSET
@@ -151,7 +151,7 @@ object FrameZoneProdTypeParams: TFrameZoneProdTypeParams
       object lblIndirectMovement: TLabel
         Left = 36
         Top = 10
-        Width = 385
+        Width = 300
         Height = 13
         Caption = 
           'Effect on baseline indirect movement rate from units of this typ' +
@@ -260,7 +260,6 @@ object FrameZoneProdTypeParams: TFrameZoneProdTypeParams
         Height = 21
         EditAlign = eaLeft
         TabOrder = 0
-        OnKeyDown = rleKeyDown
       end
     end
   end

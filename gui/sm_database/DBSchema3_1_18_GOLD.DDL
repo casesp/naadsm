@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Update existing table `outDailyByProductionType`.
 create table `outDailyByProductionType_IM0` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -187,94 +184,6 @@ alter table `outDailyByProductionType`
 
 drop table `outDailyByProductionType`; 
 
-
--- `outDailyByProductionType` : Table of outDailyByProductionType
--- 	`iteration` : The iteration during which the outputs in this record were generated.  The first iteration is iteration number 1.
--- 	`day` : The day within the iteration on which these outputs were generated.  The first day of an iteration is day number 1.
--- 	`productionTypeID` : The ID number of the production type to which the outputs in this record apply.  This field references inProductionType.productionTypeID.
--- 	`tsdUSusc` : Number of units that are susceptible on the indicated day.
--- 	`tsdASusc` : Total number of animals in susceptible units on the indicated day.
--- 	`tsdULat` : Number of units that are latent on the indicated day.
--- 	`tsdALat` : Total number of animals in latent units on the indicated day.
--- 	`tsdUSubc` : Number of units that are subclinically infectious on the indicated day.
--- 	`tsdASubc` : Total number of animals in subclinically infectious units on the indicated day.
--- 	`tsdUClin` : Number of units that have clinical signs on the indicated day.
--- 	`tsdAClin` : Total number of animals in clinically infectious units on the indicated day.
--- 	`tsdUNImm` : Number of units that are naturally immune on the indicated day.
--- 	`tsdANImm` : Total number of animals in naturally immune units on the indicated day
--- 	`tsdUVImm` : Number of units that are vaccine immune on the indicated day.
--- 	`tsdAVImm` : Total number of animals in vaccine immune units on the indicated day.
--- 	`tsdUDest` : Number of units in the "destroyed" state on the indicated day: this is NOT the number of units destroyed on the indicated day.
--- 	`tsdADest` : Total number of animals in destroyed units on the indicated day: this is NOT the number of animals in units destroyed on the indicated day.
--- 	`tscUSusc` : Running total number of units that are initially susceptible and those that have become susceptible.
--- 	`tscASusc` : Running total number of animals in units as described immediately above.
--- 	`tscULat` : Running total number of units that are initially latent and those that have become latent.
--- 	`tscALat` : Running total number of animals in units as described immediately above.
--- 	`tscUSubc` : Running total number of units that are initially subclinical and those that have become subclinical.
--- 	`tscASubc` : Running total number of animals in units as described immediately above.
--- 	`tscUClin` : Running total number of units that are initially clinical and those that have become clinical.
--- 	`tscAClin` : Running total number of animals in units as described immediately above.
--- 	`tscUNImm` : Running total number of units that are initially naturally immune and those that have become naturally immune.
--- 	`tscANImm` : Running total number of animals in units as described immediately above.
--- 	`tscUVImm` : Running total number of units that are initially vaccine immune and those that have become vaccine immune.
--- 	`tscAVImm` : Running total number of animals in units as described immediately above.
--- 	`tscUDest` : Number of units that are destroyed over the course of an iterationRunning total number of units that are initially in the "destroyed" state and those that have been destroyed.
--- 	`tscADest` : Running total number of animals in units as described immediately above.
--- 	`infnUAir` : Number of units that became infected by airborne spread on the indicated day.
--- 	`infnAAir` : Total number of animals in units newly infected by airborne spread on the indicated day.
--- 	`infnUDir` : Number of units that became infected by direct contact on the indicated day.
--- 	`infnADir` : Total number of animals in units newly infected by direct contact on the indicated day.
--- 	`infnUInd` : Number of units that became infected by indirect contact on the indicated day.
--- 	`infnAInd` : Total number of animals in units newly infected by indirect contact on the indicated day.
--- 	`infcUIni` : Number of units that are initially infected at the beginning of an iteration.
--- 	`infcAIni` : Number of animals in initially infected units at the beginning of an iteration.
--- 	`infcUAir` : Running total number of units that become infected by airborne spread over the course of an iteration.
--- 	`infcAAir` : Running total number of animals in units that become infected by airborne spread over the course of an iteration.
--- 	`infcUDir` : Running total number of units that become infected by direct contact over the course of an iteration.
--- 	`infcADir` : Running total number of animals in units that become infected by direct contact over the course of an iteration.
--- 	`infcUInd` : Running total number of units that become infected by indirect contact over the course of an iteration.
--- 	`infcAInd` : Running total number of animals in units that become infected by indirect contact over the course of an iteration.
--- 	`expcUDir` : Running total number of units directly exposed to any infected unit over the course of an iteration.
--- 	`expcADir` : Running total number of animals in directly exposed units over the course of an iteration.
--- 	`expcUInd` : Running total number of units indirectly exposed to any infected unit over the course of an iteration.
--- 	`expcAInd` : Running total number of animals in indirectly exposed units over the course of an iteration.
--- 	`trcUDir` : Running total number of units directly exposed and successfully traced over the course of an iteration.
--- 	`trcADir` : Running total number of animals in directly exposed and successfully traced units over the course of an iteration.
--- 	`trcUInd` : Running total number of units indirectly exposed and successfully traced over the course of an iteration.
--- 	`trcAInd` : Running total number of animals in indirectly exposed and successfully traced units over the course of an iteration.
--- 	`trcUDirp` : Running total number of directly exposed units that possibly could have been traced over the course of an iteration.
--- 	`trcADirp` : Running total number of animals in all directly exposed units that possibly could have been traced over the course of an iteration.
--- 	`trcUIndp` : Running total number of indirectly exposed units that possibly could have been traced over the course of an iteration.
--- 	`trcAIndp` : Running total number of animals in all indirectly exposed units that possibly could have been traced over the course of an iteration.
--- 	`trnUDir` : Number of units exposed by direct contact on the indicated day.
--- 	`trnADir` : Number of animals in units exposed by direct contact on the indicated day.
--- 	`trnUInd` : Number of units exposed by indirect contact on the indicated day.
--- 	`trnAInd` : Number of animals in units exposed by indirect contact on the indicated day.
--- 	`detnUClin` : Number of units newly detected by clinical signs on the indicated day.
--- 	`detnAClin` : Total number of animals in newly detected clinical units.
--- 	`desnUAll` : Number of units newly destroyed for any reason on the indicated day.
--- 	`desnAAll` : Total number of animals in newly destroyed units.
--- 	`vaccnUAll` : Number of units newly vaccinated for any reason on the indicated day.
--- 	`vaccnAAll` : Total number of animals in newly vaccinated units.
--- 	`detcUClin` : Running total number of clinical units detected over the course of an iteration.
--- 	`detcAClin` : Running total number of animals in detected clinical units over the course of an iteration.
--- 	`descUIni` : Total number of units in the "destroyed" state at the outset of an iteration (i.e., units destroyed prior to the point in time when the simulation began).
--- 	`descAIni` : Total number of animals in units in the "destroyed" state at the outset of an iteration.
--- 	`descUDet` : Running total number of units destroyed because they were detected based on clinical signs over the course of an iteration.
--- 	`descADet` : Running total number of animals in all units destroyed for the reason listed immediately above.
--- 	`descUDir` : Running total number of units destroyed because of direct contact with an infected unit over the course of an iteration.
--- 	`descADir` : Running total number of animals in all units destroyed for the reason listed immediately above.
--- 	`descUInd` : Running total number of units destroyed because of indirect contact with an infected unit over the course of an iteration.
--- 	`descAInd` : Running total number of animals in all units destroyed for the reason listed immediately above.
--- 	`descURing` : Running total number of units destroyed because they were within a destruction ring over the course of an iteration.
--- 	`descARing` : Running total number of animals in units destroyed for the reason listed immediately above.
--- 	`vaccUIni` : Total number of units in the "vaccine immune" state at the outset of an iteration (i.e., units vaccinated prior to the point in time when the simulation began).
--- 	`vaccAIni` : Total number of animals in vaccine immune units at the outset of an iteration.
--- 	`vaccURing` : Running total number of units vaccinated because they were within a vaccination ring over the course of an iteration.
--- 	`vaccARing` : Running total number of animals in units vaccinated for the reason listed immediately above.
--- 	`zonnFoci` : zonnFoci is of outDailyByProductionType
--- 	`zoncFoci` : zoncFoci is of outDailyByProductionType
--- 	`appUInfectious` : appUInfectious is of outDailyByProductionType  
 create table `outDailyByProductionType` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -362,15 +271,6 @@ create table `outDailyByProductionType` (
 	`zonnFoci` LONG,
 	`zoncFoci` LONG,
 	`appUInfectious` LONG); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyByProductionType' :
--- 	`iteration`
--- 	`day`
--- 	`productionTypeID`
-
 
 insert into `outDailyByProductionType` (`iteration`, `day`, `productionTypeID`, `tsdUSusc`, `tsdASusc`, `tsdULat`, `tsdALat`, `tsdUSubc`, `tsdASubc`, `tsdUClin`, `tsdAClin`, `tsdUNImm`, `tsdANImm`, `tsdUVImm`, `tsdAVImm`, `tsdUDest`, `tsdADest`, `tscUSusc`, `tscASusc`, `tscULat`, `tscALat`, `tscUSubc`, `tscASubc`, `tscUClin`, `tscAClin`, `tscUNImm`, `tscANImm`, `tscUVImm`, `tscAVImm`, `tscUDest`, `tscADest`, `infnUAir`, `infnAAir`, `infnUDir`, `infnADir`, `infnUInd`, `infnAInd`, `infcUIni`, `infcAIni`, `infcUAir`, `infcAAir`, `infcUDir`, `infcADir`, `infcUInd`, `infcAInd`, `expcUDir`, `expcADir`, `expcUInd`, `expcAInd`, `trcUDir`, `trcADir`, `trcUInd`, `trcAInd`, `trcUDirp`, `trcADirp`, `trcUIndp`, `trcAIndp`, `detnUClin`, `detnAClin`, `desnUAll`, `desnAAll`, `vaccnUAll`, `vaccnAAll`, `detcUClin`, `detcAClin`, `descUIni`, `descAIni`, `descUDet`, `descADet`, `descUDir`, `descADir`, `descUInd`, `descAInd`, `descURing`, `descARing`, `vaccUIni`, `vaccAIni`, `vaccURing`, `vaccARing`, `zonnFoci`, `zoncFoci`, `appUInfectious`) 
     select `outDailyByProductionType_IM0`.`iteration`, 
@@ -464,8 +364,6 @@ drop table `outDailyByProductionType_IM0`;
 alter table `outDailyByProductionType`
 	add constraint `outDailyEpiByProductionType_PK` primary key (`day`, `iteration`, `productionTypeID`) ; 
 
-
--- Update existing table `inSelectDailyOutputs`.
 create table `inSelectDailyOutputs_IM0` ( 
 	`inSelectDailyOutputID` CHAR(10),
 	`stsdUSusc` BIT,
@@ -642,8 +540,6 @@ insert into `inSelectDailyOutputs_IM0` (`inSelectDailyOutputID`, `stsdUSusc`, `s
 
 drop table `inSelectDailyOutputs`; 
 
-
--- `inSelectDailyOutputs` : Table of inSelectDailyOutputs  
 create table `inSelectDailyOutputs` ( 
 	`inSelectDailyOutputID` CHAR(10),
 	`stsdUSusc` BIT,
@@ -733,13 +629,6 @@ create table `inSelectDailyOutputs` (
 	`sanimalDaysInZone` BIT,
 	`sunitsInZone` BIT,
 	`sanimalsInZone` BIT); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inSelectDailyOutputs`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inSelectDailyOutputs' :
--- 	`inSelectDailyOutputID`
-
 
 insert into `inSelectDailyOutputs` (`inSelectDailyOutputID`, `stsdUSusc`, `stsdASusc`, `stsdULat`, `stsdALat`, `stsdUSubc`, `stsdASubc`, `stsdUClin`, `stsdAClin`, `stsdUNImm`, `stsdANImm`, `stsdUVImm`, `stsdAVImm`, `stsdUDest`, `stsdADest`, `stscUSusc`, `stscASusc`, `stscULat`, `stscALat`, `stscUSubc`, `stscASubc`, `stscUClin`, `stscAClin`, `stscUNImm`, `stscANImm`, `stscUVImm`, `stscAVImm`, `stscUDest`, `stscADest`, `sinfnUAir`, `sinfnAAir`, `sinfnUDir`, `sinfnADir`, `sinfnUInd`, `sinfnAInd`, `sinfcUIni`, `sinfcAIni`, `sinfcUAir`, `sinfcAAir`, `sinfcUDir`, `sinfcADir`, `sinfcUInd`, `sinfcAInd`, `sexpcUDir`, `sexpcADir`, `sexpcUInd`, `sexpcAInd`, `strcUDir`, `strcADir`, `strcUInd`, `strcAInd`, `strcUDirp`, `strcADirp`, `strcUIndp`, `strcAIndp`, `sdetnUClin`, `sdetnAClin`, `sdesnUAll`, `sdesnAAll`, `svaccnUAll`, `svaccnAAll`, `sdetcUClin`, `sdetcAClin`, `sdescUIni`, `sdescAIni`, `sdescUDet`, `sdescADet`, `sdescUDir`, `sdescADir`, `sdescUInd`, `sdescAInd`, `sdescURing`, `sdescARing`, `svaccUIni`, `svaccAIni`, `svaccURing`, `svaccARing`, `szonnFoci`, `szoncFoci`, `sappUInfectious`, `sunitDaysInZone`, `sanimalDaysInZone`, `sunitsInZone`, `sanimalsInZone`) 
     select `inSelectDailyOutputs_IM0`.`inSelectDailyOutputID`, 
@@ -835,13 +724,8 @@ drop table `inSelectDailyOutputs_IM0`;
 alter table `inSelectDailyOutputs`
 	add constraint `inSelectDailyOutput_PK` primary key (`inSelectDailyOutputID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `outDailyByProductionType`
 	add constraint `inProductionType_outDailyByProductionType_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

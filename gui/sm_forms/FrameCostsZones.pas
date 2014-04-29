@@ -4,13 +4,13 @@ unit FrameCostsZones;
 FrameCostsZones.pas/dfm
 -----------------------
 Begin: 2007/04/18
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version number: $Revision: 1.5 $
+Last revision: $Date: 2009-08-17 17:38:17 $ $Author: areeves $
+Version number: $Revision: 1.9 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,33 +19,33 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-		Windows, 
-		Messages, 
-		SysUtils, 
-		Variants, 
-		Classes, 
-		Graphics, 
-		Controls,
-		Forms, 
-		Dialogs,
+  uses
+    Windows, 
+    Messages, 
+    SysUtils, 
+    Variants, 
+    Classes, 
+    Graphics, 
+    Controls,
+    Forms, 
+    Dialogs,
     StdCtrls,
     ExtCtrls,
 
     QIntegerMaps,
 
     ProductionType
-	;
+  ;
 
 
-	type TFrameCostsZones = class( TFrame )
+  type TFrameCostsZones = class( TFrame )
       pnlZoneEffects: TPanel;
       pnlZoneEffectsBody: TPanel;
 
       procedure processTextEntry( Sender: TObject );
 
-		protected
-    	// properties
+    protected
+      // properties
       _prodType: TProductionType;
 
       // for internal use
@@ -58,7 +58,7 @@ interface
       procedure setProdType( val: TProductionType );
       function getProdType(): TProductionType;
 
-		public
+    public
       paramFrameList: TQIntegerObjectMap;
 
       constructor create( AOwner: TComponent ); override;
@@ -70,8 +70,8 @@ interface
 
       // properties
       property prodType: TProductionType read getProdType write setProdType;
-		end
-	;
+    end
+  ;
 
 implementation
 
@@ -80,13 +80,12 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
     FunctionEnums,
     Zone,
-    ZoneParams,
+    ProdTypeZoneParams,
 
     FormSMWizardBase,
     FormCostsZones,
@@ -128,7 +127,7 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFrameCostsZones.processTextEntry( Sender: TObject );
     var
-      zpt: TZoneProdTypeParams;
+      zpt: TZoneProdTypeComboParams;
       zptFrame: TFrameCostsZoneProdTypeParams;
       it: TZPTListIterator;
     begin
@@ -140,9 +139,9 @@ implementation
             if( nil <> it.value() ) then
               begin
                 zptFrame := paramFrameList.value( it.key() ) as TFrameCostsZoneProdTypeParams;
-                zpt := it.value() as TZoneProdTypeParams;
+                zpt := it.value();
 
-                zpt.costSurvPerAnimalDay := myStrToFloat( zptFrame.rleCostPerAnimalDay.Text, -1.0 );
+                zpt.costSurvPerAnimalDay := uiStrToFloat( zptFrame.rleCostPerAnimalDay.Text, -1.0 );
 
                 (_myParent as TFormSMWizardBase).showStar();
               end
@@ -205,7 +204,7 @@ implementation
 
 
   procedure TFrameCostsZones.updateDisplay();
-  	begin
+    begin
       // Do nothing, for now
     end
   ;
@@ -225,21 +224,21 @@ implementation
   
 
   function TFrameCostsZones.getProdType(): TProductionType;
-  	begin
-    	result := _prodType;
+    begin
+      result := _prodType;
     end
   ;
 
 
   procedure TFrameCostsZones.setProdType( val: TProductionType );
     var
-      zpt: TZoneProdTypeParams;
+      zpt: TZoneProdTypeComboParams;
       zptFrame: TFrameCostsZoneProdTypeParams;
       it: TZPTListIterator;
-  	begin
-    	_loading := true;
+    begin
+      _loading := true;
 
-    	_prodType := val;
+      _prodType := val;
 
       it := TZPTListIterator.create( _prodType.zoneParams.zonePtParamsList );
 
@@ -248,10 +247,10 @@ implementation
           begin
             zptFrame := paramFrameList.value( it.key() ) as TFrameCostsZoneProdTypeParams;
 
-            zpt := it.value() as TZoneProdTypeParams;
+            zpt := it.value();
 
             if( 0.0 <= zpt.costSurvPerAnimalDay ) then
-              zptFrame.rleCostPerAnimalDay.Text := uiFloatToStr( zpt.costSurvPerAnimalDay )
+              zptFrame.rleCostPerAnimalDay.Text := uiFloatToStrZeroPadded( zpt.costSurvPerAnimalDay, 2 )
             else
               zptFrame.rleCostPerAnimalDay.Text := ''
             ;

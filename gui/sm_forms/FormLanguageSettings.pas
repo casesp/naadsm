@@ -4,8 +4,8 @@ unit FormLanguageSettings;
 FormLanguageSettings.pas/dfm
 ----------------------------
 Begin: 2007/03/08
-Last revision: $Date$ $Author$
-Version number: $Revision$
+Last revision: $Date: 2008-03-12 22:10:52 $ $Author: areeves $
+Version number: $Revision: 1.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>

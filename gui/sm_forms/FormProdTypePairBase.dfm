@@ -1,5 +1,5 @@
 inherited FormProdTypePairBase: TFormProdTypePairBase
-  Left = 713
+  Left = 856
   Caption = 'Scenario parameters'
   PixelsPerInch = 96
   TextHeight = 13

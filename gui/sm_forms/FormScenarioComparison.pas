@@ -4,14 +4,14 @@ unit FormScenarioComparison;
 FormScenarioComparison.pas/dfm
 ------------------------------
 Begin: 2006/10/31
-Last revision: $Date: 2008/04/18 20:35:17 $ $Author: areeves $
-Version: $Revision: 1.13 $
+Last revision: $Date: 2011-02-05 21:09:00 $ $Author: areeves $
+Version: $Revision: 1.17.4.8 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -50,13 +50,11 @@ interface
     FormSMOutputBase,
     FrameOutputStats,
     FrameArrayHistogram,
-    FrameArrayConvergence,
     SMSimulationInput,
     SMDatabase,
     ProductionType,
 
-    SMSimulationStats,
-    SMZoneStats,
+    IterationOutputs,
     OutputDescriptions
   ;
 
@@ -70,6 +68,8 @@ interface
       fraStatsEpiA: TFrameOutputStats;
       tabCostOutputsA: TTabSheet;
       fraStatsCostA: TFrameOutputStats;
+      tabPTZoneOutputsA: TTabSheet;
+      fraStatsPTZonesA: TFrameOutputStats;
       tabZoneOutputsA: TTabSheet;
       fraStatsZonesA: TFrameOutputStats;
 
@@ -80,75 +80,19 @@ interface
       fraStatsEpiB: TFrameOutputStats;
       tabCostOutputsB: TTabSheet;
       fraStatsCostB: TFrameOutputStats;
+      tabPTZoneOutputsB: TTabSheet;
+      fraStatsPTZonesB: TFrameOutputStats;
       tabZoneOutputsB: TTabSheet;
       fraStatsZonesB: TFrameOutputStats;
 
       procedure pgcOutputsAMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
       procedure pgcOutputsBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-
       procedure FormResize(Sender: TObject);
 
     protected
-      // A whole mess of function pointers...
-      // ...for the epi frames...
-      rleHistoBinsEnterEpiPtrA: TPtr;
-      rleHistoBinsEnterEpiPtrB: TPtr;
-      btnCancelClickEpiPtrA: TPtr;
-      btnCancelClickEpiPtrB: TPtr;
-      btnAcceptClickEpiPtrA: TPtr;
-      btnAcceptClickEpiPtrB: TPtr;
-      cbxClickEpiPtrA: TPtrBool;
-      cbxClickEpiPtrB: TPtrBool;
-      rdgConvergenceParamClickEpiPtrA: TPtr;
-      rdgConvergenceParamClickEpiPtrB: TPtr;
-      fraTablestgOutputStatsSelectCellEpiPtrA: TPtrGrid;
-      fraTablestgOutputStatsSelectCellEpiPtrB: TPtrGrid;
-      Splitter1MovedEpiPtrA: TPtr;
-      Splitter2MovedEpiPtrA: TPtr;
-      Splitter1MovedEpiPtrB: TPtr;
-      Splitter2MovedEpiPtrB: TPtr;
-
-      // ...for the cost frames...
-      rleHistoBinsEnterCostPtrA: TPtr;
-      rleHistoBinsEnterCostPtrB: TPtr;
-      btnCancelClickCostPtrA: TPtr;
-      btnCancelClickCostPtrB: TPtr;
-      btnAcceptClickCostPtrA: TPtr;
-      btnAcceptClickCostPtrB: TPtr;
-      cbxClickCostPtrA: TPtrBool;
-      cbxClickCostPtrB: TPtrBool;
-      rdgConvergenceParamClickCostPtrA: TPtr;
-      rdgConvergenceParamClickCostPtrB: TPtr;
-      fraTablestgOutputStatsSelectCellCostPtrA: TPtrGrid;
-      fraTablestgOutputStatsSelectCellCostPtrB: TPtrGrid;
-      Splitter1MovedCostPtrA: TPtr;
-      Splitter2MovedCostPtrA: TPtr;
-      Splitter1MovedCostPtrB: TPtr;
-      Splitter2MovedCostPtrB: TPtr;
-
-      // ...and for the zone frames.
-      rleHistoBinsEnterZonesPtrA: TPtr;
-      rleHistoBinsEnterZonesPtrB: TPtr;
-      btnCancelClickZonesPtrA: TPtr;
-      btnCancelClickZonesPtrB: TPtr;
-      btnAcceptClickZonesPtrA: TPtr;
-      btnAcceptClickZonesPtrB: TPtr;
-      cbxClickZonesPtrA: TPtrBool;
-      cbxClickZonesPtrB: TPtrBool;
-      rdgConvergenceParamClickZonesPtrA: TPtr;
-      rdgConvergenceParamClickZonesPtrB: TPtr;
-      fraTablestgOutputStatsSelectCellZonesPtrA: TPtrGrid;
-      fraTablestgOutputStatsSelectCellZonesPtrB: TPtrGrid;
-      Splitter1MovedZonesPtrA: TPtr;
-      Splitter2MovedZonesPtrA: TPtr;
-      Splitter1MovedZonesPtrB: TPtr;
-      Splitter2MovedZonesPtrB: TPtr;
-
       _resizingForm: boolean;
 
-      _superListA: TSMIterationOutputSuperList;
       _scenarioStatsA: TScenarioOutputSet;
-      _superListB: TSMIterationOutputSuperList;
       _scenarioStatsB: TScenarioOutputSet;
 
       _smSimB: TSMSimulationInput;
@@ -192,11 +136,12 @@ implementation
     Math,
     
     MyStrUtils,
-    GuiStrUtils,
     SqlClasses,
     DebugWindow,
     MyDialogs,
     I88n,
+
+    HistogramData,
 
     FrameOutputStatsTable
   ;
@@ -215,10 +160,15 @@ implementation
       inherited create( AOwner );
       translateUI();
 
+      lblIteration.Visible := false;
+      cboIteration.Visible := false;
+
       fraStatsEpiA.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       fraStatsEpiB.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       fraStatsCostA.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       fraStatsCostB.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
+      fraStatsPTZonesA.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
+      fraStatsPTZonesB.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       fraStatsZonesA.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       fraStatsZonesB.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
 
@@ -226,6 +176,8 @@ implementation
       fraStatsEpiB.setAxisValuesPtr := rescaleChartAxes;
       fraStatsCostA.setAxisValuesPtr := rescaleChartAxes;
       fraStatsCostB.setAxisValuesPtr := rescaleChartAxes;
+      fraStatsPTZonesA.setAxisValuesPtr := rescaleChartAxes;
+      fraStatsPTZonesB.setAxisValuesPtr := rescaleChartAxes;
       fraStatsZonesA.setAxisValuesPtr := rescaleChartAxes;
       fraStatsZonesB.setAxisValuesPtr := rescaleChartAxes;
 
@@ -236,6 +188,7 @@ implementation
       //------------------------------------------------
       makeSyncGridPair( self.fraStatsEpiA.fraTable.stgGrid, self.fraStatsEpiB.fraTable.stgGrid );
       makeSyncGridPair( self.fraStatsCostA.fraTable.stgGrid, self.fraStatsCostB.fraTable.stgGrid );
+      makeSyncGridPair( self.fraStatsPTZonesA.fraTable.stgGrid, self.fraStatsPTZonesB.fraTable.stgGrid );
       makeSyncGridPair( self.fraStatsZonesA.fraTable.stgGrid, self.fraStatsZonesB.fraTable.stgGrid );
 
       // Set the first database
@@ -326,7 +279,7 @@ implementation
       _resizingForm := false;
 
       dbcout( 'Setting up combo box...', debug );
-      setupComboBox();
+      setupProdTypeComboBox();
 
       pgcOutputsA.ActivePage := tabEpiOutputsA;
       pgcOutputsB.ActivePage := tabEpiOutputsB;
@@ -337,46 +290,26 @@ implementation
 
       // Function Pointers for Epidemiology tab
       //---------------------------------------
-      rleHistoBinsEnterEpiPtrA := fraStatsEpiA.fraHistogram.rleHistoBinsEnter;
-      rleHistoBinsEnterEpiPtrB := fraStatsEpiB.fraHistogram.rleHistoBinsEnter;
-      fraStatsEpiA.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterEpiPtrB;
-      fraStatsEpiB.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterEpiPtrA;
+      fraStatsEpiA.fraHistogram.rdoHistoTypeClickPtr := fraStatsEpiB.fraHistogram.rdoBinNumberClick;
+      fraStatsEpiB.fraHistogram.rdoHistoTypeClickPtr := fraStatsEpiA.fraHistogram.rdoBinNumberClick;
 
-      btnCancelClickEpiPtrA := fraStatsEpiA.fraHistogram.btnCancelClick;
-      btnCancelClickEpiPtrB := fraStatsEpiB.fraHistogram.btnCancelClick;
-      fraStatsEpiA.fraHistogram.btnCancelClickPtr := btnCancelClickEpiPtrB;
-      fraStatsEpiB.fraHistogram.btnCancelClickPtr := btnCancelClickEpiPtrA;
+      fraStatsEpiA.fraHistogram.cbx3DViewClickPtr := fraStatsEpiB.fraHistogram.cbx3DViewClick;
+      fraStatsEpiB.fraHistogram.cbx3DViewClickPtr := fraStatsEpiA.fraHistogram.cbx3DViewClick;
 
-      btnAcceptClickEpiPtrA := fraStatsEpiA.fraHistogram.btnAcceptClick;
-      btnAcceptClickEpiPtrB := fraStatsEpiB.fraHistogram.btnAcceptClick;
-      fraStatsEpiA.fraHistogram.btnAcceptClickPtr := btnAcceptClickEpiPtrB;
-      fraStatsEpiB.fraHistogram.btnAcceptClickPtr := btnAcceptClickEpiPtrA;
+      fraStatsEpiA.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsEpiB.fraHistogram.rleHistoBinsEnter;
+      fraStatsEpiB.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsEpiA.fraHistogram.rleHistoBinsEnter;
 
-      cbxClickEpiPtrA := fraStatsEpiB.changeCheck;
-      cbxClickEpiPtrB := fraStatsEpiA.changeCheck;
-      fraStatsEpiA.cbxClickPtr := cbxClickEpiPtrA;
-      fraStatsEpiB.cbxClickPtr := cbxClickEpiPtrB;
+      fraStatsEpiA.fraHistogram.btnCancelClickPtr := fraStatsEpiB.fraHistogram.btnCancelClick;
+      fraStatsEpiB.fraHistogram.btnCancelClickPtr := fraStatsEpiA.fraHistogram.btnCancelClick;
 
-      rdgConvergenceParamClickEpiPtrA := fraStatsEpiA.fraConvergence.rdgConvergenceParamClick;
-      rdgConvergenceParamClickEpiPtrB := fraStatsEpiB.fraConvergence.rdgConvergenceParamClick;
-      fraStatsEpiA.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickEpiPtrB;
-      fraStatsEpiB.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickEpiPtrA;
+      fraStatsEpiA.fraHistogram.btnAcceptClickPtr := fraStatsEpiB.fraHistogram.btnAcceptClick;
+      fraStatsEpiB.fraHistogram.btnAcceptClickPtr := fraStatsEpiA.fraHistogram.btnAcceptClick;
 
-      fraStatsEpiA.fraHistogram.entryPtr := @fraStatsEpiB.fraHistogram._entry;
-      fraStatsEpiB.fraHistogram.entryPtr := @fraStatsEpiA.fraHistogram._entry;
-
-      fraStatsEpiA.fraConvergence.rdgItemIndexPtr := @fraStatsEpiB.fraConvergence.rdgConvergenceParam.ItemIndex;
-      fraStatsEpiB.fraConvergence.rdgItemIndexPtr := @fraStatsEpiA.fraConvergence.rdgConvergenceParam.ItemIndex;
-
-      fraTablestgOutputStatsSelectCellEpiPtrA := fraStatsEpiA.fraTablestgOutputStatsSelectCell;
-      fraTablestgOutputStatsSelectCellEpiPtrB := fraStatsEpiB.fraTablestgOutputStatsSelectCell;
-      fraStatsEpiA.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellEpiPtrB;
-      fraStatsEpiB.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellEpiPtrA;
+      fraStatsEpiA.cbxClickPtr := fraStatsEpiB.changeCheck;
+      fraStatsEpiB.cbxClickPtr := fraStatsEpiA.changeCheck;
 
       fraStatsEpiA.Splitter1TopPtr := @fraStatsEpiB.Splitter1.Top;
       fraStatsEpiB.Splitter1TopPtr := @fraStatsEpiA.Splitter1.Top;
-      fraStatsEpiA.Splitter2TopPtr := @fraStatsEpiB.Splitter2.Top;
-      fraStatsEpiB.Splitter2TopPtr := @fraStatsEpiA.Splitter2.Top;
 
       fraStatsEpiA.pnlTableHeightPtr := @fraStatsEpiB.pnlTable.Height;
       fraStatsEpiB.pnlTableHeightPtr := @fraStatsEpiA.pnlTable.Height;
@@ -384,58 +317,35 @@ implementation
       fraStatsEpiA.pnlTopSectionHeightPtr := @fraStatsEpiB.pnlTopSection.Height;
       fraStatsEpiB.pnlTopSectionHeightPtr := @fraStatsEpiA.pnlTopSection.Height;
 
-      Splitter1MovedEpiPtrA := fraStatsEpiA.Splitter1Moved;
-      Splitter1MovedEpiPtrB := fraStatsEpiB.Splitter1Moved;
-      fraStatsEpiA.Splitter1MovedPtr := Splitter1MovedEpiPtrB;
-      fraStatsEpiB.Splitter1MovedPtr := Splitter1MovedEpiPtrA;
+      fraStatsEpiA.Splitter1MovedPtr := fraStatsEpiB.Splitter1Moved;
+      fraStatsEpiB.Splitter1MovedPtr := fraStatsEpiA.Splitter1Moved;
 
-      Splitter2MovedEpiPtrA := fraStatsEpiA.Splitter2Moved;
-      Splitter2MovedEpiPtrB := fraStatsEpiB.Splitter2Moved;
-      fraStatsEpiA.Splitter2MovedPtr := Splitter2MovedEpiPtrB;
-      fraStatsEpiB.Splitter2MovedPtr := Splitter2MovedEpiPtrA;
+      fraStatsEpiA.selectCellPtr := fraStatsEpiB.selectCell;
+      fraStatsEpiB.selectCellPtr := fraStatsEpiA.selectCell;
+
 
       // Function Pointers for Cost Tab
       //-------------------------------
-      rleHistoBinsEnterCostPtrA := fraStatsCostA.fraHistogram.rleHistoBinsEnter;
-      rleHistoBinsEnterCostPtrB := fraStatsCostB.fraHistogram.rleHistoBinsEnter;
-      fraStatsCostA.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterCostPtrB;
-      fraStatsCostB.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterCostPtrA;
+      fraStatsCostA.fraHistogram.rdoHistoTypeClickPtr := fraStatsCostB.fraHistogram.rdoBinNumberClick;
+      fraStatsCostB.fraHistogram.rdoHistoTypeClickPtr := fraStatsCostA.fraHistogram.rdoBinNumberClick;
 
-      btnCancelClickCostPtrA := fraStatsCostA.fraHistogram.btnCancelClick;
-      btnCancelClickCostPtrB := fraStatsCostB.fraHistogram.btnCancelClick;
-      fraStatsCostA.fraHistogram.btnCancelClickPtr := btnCancelClickCostPtrB;
-      fraStatsCostB.fraHistogram.btnCancelClickPtr := btnCancelClickCostPtrA;
+      fraStatsCostA.fraHistogram.cbx3DViewClickPtr := fraStatsCostB.fraHistogram.cbx3DViewClick;
+      fraStatsCostB.fraHistogram.cbx3DViewClickPtr := fraStatsCostA.fraHistogram.cbx3DViewClick;
 
-      btnAcceptClickCostPtrA := fraStatsCostA.fraHistogram.btnAcceptClick;
-      btnAcceptClickCostPtrB := fraStatsCostB.fraHistogram.btnAcceptClick;
-      fraStatsCostA.fraHistogram.btnAcceptClickPtr := btnAcceptClickCostPtrB;
-      fraStatsCostB.fraHistogram.btnAcceptClickPtr := btnAcceptClickCostPtrA;
+      fraStatsCostA.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsCostB.fraHistogram.rleHistoBinsEnter;
+      fraStatsCostB.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsCostA.fraHistogram.rleHistoBinsEnter;
 
-      cbxClickCostPtrA := fraStatsCostB.changeCheck;
-      cbxClickCostPtrB := fraStatsCostA.changeCheck;
-      fraStatsCostA.cbxClickPtr := cbxClickCostPtrA;
-      fraStatsCostB.cbxClickPtr := cbxClickCostPtrB;
+      fraStatsCostA.fraHistogram.btnCancelClickPtr := fraStatsCostB.fraHistogram.btnCancelClick;
+      fraStatsCostB.fraHistogram.btnCancelClickPtr := fraStatsCostA.fraHistogram.btnCancelClick;
 
-      rdgConvergenceParamClickCostPtrA := fraStatsCostA.fraConvergence.rdgConvergenceParamClick;
-      rdgConvergenceParamClickCostPtrB := fraStatsCostB.fraConvergence.rdgConvergenceParamClick;
-      fraStatsCostA.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickCostPtrB;
-      fraStatsCostB.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickCostPtrA;
+      fraStatsCostA.fraHistogram.btnAcceptClickPtr := fraStatsCostB.fraHistogram.btnAcceptClick;
+      fraStatsCostB.fraHistogram.btnAcceptClickPtr := fraStatsCostA.fraHistogram.btnAcceptClick;
 
-      fraStatsCostA.fraHistogram.entryPtr := @fraStatsCostB.fraHistogram._entry;
-      fraStatsCostB.fraHistogram.entryPtr := @fraStatsCostA.fraHistogram._entry;
-
-      fraStatsCostA.fraConvergence.rdgItemIndexPtr := @fraStatsCostB.fraConvergence.rdgConvergenceParam.ItemIndex;
-      fraStatsCostB.fraConvergence.rdgItemIndexPtr := @fraStatsCostA.fraConvergence.rdgConvergenceParam.ItemIndex;
-
-      fraTablestgOutputStatsSelectCellCostPtrA := fraStatsCostA.fraTablestgOutputStatsSelectCell;
-      fraTablestgOutputStatsSelectCellCostPtrB := fraStatsCostB.fraTablestgOutputStatsSelectCell;
-      fraStatsCostA.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellCostPtrB;
-      fraStatsCostB.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellCostPtrA;
+      fraStatsCostA.cbxClickPtr := fraStatsCostB.changeCheck;
+      fraStatsCostB.cbxClickPtr := fraStatsCostA.changeCheck;
 
       fraStatsCostA.Splitter1TopPtr := @fraStatsCostB.Splitter1.Top;
       fraStatsCostB.Splitter1TopPtr := @fraStatsCostA.Splitter1.Top;
-      fraStatsCostA.Splitter2TopPtr := @fraStatsCostB.Splitter2.Top;
-      fraStatsCostB.Splitter2TopPtr := @fraStatsCostA.Splitter2.Top;
 
       fraStatsCostA.pnlTableHeightPtr := @fraStatsCostB.pnlTable.Height;
       fraStatsCostB.pnlTableHeightPtr := @fraStatsCostA.pnlTable.Height;
@@ -443,58 +353,69 @@ implementation
       fraStatsCostA.pnlTopSectionHeightPtr := @fraStatsCostB.pnlTopSection.Height;
       fraStatsCostB.pnlTopSectionHeightPtr := @fraStatsCostA.pnlTopSection.Height;
 
-      Splitter1MovedCostPtrA := fraStatsCostA.Splitter1Moved;
-      Splitter1MovedCostPtrB := fraStatsCostB.Splitter1Moved;
-      fraStatsCostA.Splitter1MovedPtr := Splitter1MovedCostPtrB;
-      fraStatsCostB.Splitter1MovedPtr := Splitter1MovedCostPtrA;
+      fraStatsCostA.Splitter1MovedPtr := fraStatsCostB.Splitter1Moved;
+      fraStatsCostB.Splitter1MovedPtr := fraStatsCostA.Splitter1Moved;
 
-      Splitter2MovedCostPtrA := fraStatsCostA.Splitter2Moved;
-      Splitter2MovedCostPtrB := fraStatsCostB.Splitter2Moved;
-      fraStatsCostA.Splitter2MovedPtr := Splitter2MovedCostPtrB;
-      fraStatsCostB.Splitter2MovedPtr := Splitter2MovedCostPtrA;
+      fraStatsCostA.selectCellPtr := fraStatsCostB.selectCell;
+      fraStatsCostB.selectCellPtr := fraStatsCostA.selectCell;
 
-      // Function Pointers for Zones Tab
+      // Function pointers for Zones/production types tab
+      //-------------------------------------------------
+      fraStatsPTZonesA.fraHistogram.rdoHistoTypeClickPtr := fraStatsPTZonesB.fraHistogram.rdoBinNumberClick;
+      fraStatsPTZonesB.fraHistogram.rdoHistoTypeClickPtr := fraStatsPTZonesA.fraHistogram.rdoBinNumberClick;
+
+      fraStatsPTZonesA.fraHistogram.cbx3DViewClickPtr := fraStatsPTZonesB.fraHistogram.cbx3DViewClick;
+      fraStatsPTZonesB.fraHistogram.cbx3DViewClickPtr := fraStatsPTZonesA.fraHistogram.cbx3DViewClick;
+
+      fraStatsPTZonesA.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsPTZonesB.fraHistogram.rleHistoBinsEnter;
+      fraStatsPTZonesB.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsPTZonesA.fraHistogram.rleHistoBinsEnter;
+
+      fraStatsPTZonesA.fraHistogram.btnCancelClickPtr := fraStatsPTZonesB.fraHistogram.btnCancelClick;
+      fraStatsPTZonesB.fraHistogram.btnCancelClickPtr := fraStatsPTZonesA.fraHistogram.btnCancelClick;
+
+      fraStatsPTZonesA.fraHistogram.btnAcceptClickPtr := fraStatsPTZonesB.fraHistogram.btnAcceptClick;
+      fraStatsPTZonesB.fraHistogram.btnAcceptClickPtr := fraStatsPTZonesA.fraHistogram.btnAcceptClick;
+
+      fraStatsPTZonesA.cbxClickPtr := fraStatsPTZonesB.changeCheck;
+      fraStatsPTZonesB.cbxClickPtr := fraStatsPTZonesA.changeCheck;
+
+      fraStatsPTZonesA.Splitter1TopPtr := @fraStatsPTZonesB.Splitter1.Top;
+      fraStatsPTZonesB.Splitter1TopPtr := @fraStatsPTZonesA.Splitter1.Top;
+
+      fraStatsPTZonesA.pnlTableHeightPtr := @fraStatsPTZonesB.pnlTable.Height;
+      fraStatsPTZonesB.pnlTableHeightPtr := @fraStatsPTZonesA.pnlTable.Height;
+
+      fraStatsPTZonesA.pnlTopSectionHeightPtr := @fraStatsPTZonesB.pnlTopSection.Height;
+      fraStatsPTZonesB.pnlTopSectionHeightPtr := @fraStatsPTZonesA.pnlTopSection.Height;
+
+      fraStatsPTZonesA.Splitter1MovedPtr := fraStatsPTZonesB.Splitter1Moved;
+      fraStatsPTZonesB.Splitter1MovedPtr := fraStatsPTZonesA.Splitter1Moved;
+
+      fraStatsPTZonesA.selectCellPtr := fraStatsPTZonesB.selectCell;
+      fraStatsPTZonesB.selectCellPtr := fraStatsPTZonesA.selectCell;
+
+      // Function pointers for Zones tab
       //--------------------------------
-      rleHistoBinsEnterZonesPtrA := fraStatsZonesA.fraHistogram.rleHistoBinsEnter;
-      rleHistoBinsEnterZonesPtrB := fraStatsZonesB.fraHistogram.rleHistoBinsEnter;
-      fraStatsZonesA.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterZonesPtrB;
-      fraStatsZonesB.fraHistogram.rleHistoBinsEnterPtr :=  rleHistoBinsEnterZonesPtrA;
+      fraStatsZonesA.fraHistogram.rdoHistoTypeClickPtr := fraStatsZonesB.fraHistogram.rdoBinNumberClick;
+      fraStatsZonesB.fraHistogram.rdoHistoTypeClickPtr := fraStatsZonesA.fraHistogram.rdoBinNumberClick;
 
-      btnCancelClickZonesPtrA := fraStatsZonesA.fraHistogram.btnCancelClick;
-      btnCancelClickZonesPtrB := fraStatsZonesB.fraHistogram.btnCancelClick;
-      fraStatsZonesA.fraHistogram.btnCancelClickPtr := btnCancelClickZonesPtrB;
-      fraStatsZonesB.fraHistogram.btnCancelClickPtr := btnCancelClickZonesPtrA;
+      fraStatsZonesA.fraHistogram.cbx3DViewClickPtr := fraStatsZonesB.fraHistogram.cbx3DViewClick;
+      fraStatsZonesB.fraHistogram.cbx3DViewClickPtr := fraStatsZonesA.fraHistogram.cbx3DViewClick;
 
-      btnAcceptClickZonesPtrA := fraStatsZonesA.fraHistogram.btnAcceptClick;
-      btnAcceptClickZonesPtrB := fraStatsZonesB.fraHistogram.btnAcceptClick;
-      fraStatsZonesA.fraHistogram.btnAcceptClickPtr := btnAcceptClickZonesPtrB;
-      fraStatsZonesB.fraHistogram.btnAcceptClickPtr := btnAcceptClickZonesPtrA;
+      fraStatsZonesA.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsZonesB.fraHistogram.rleHistoBinsEnter;
+      fraStatsZonesB.fraHistogram.rleHistoBinsEnterPtr :=  fraStatsZonesA.fraHistogram.rleHistoBinsEnter;
 
-      cbxClickZonesPtrA := fraStatsZonesB.changeCheck;
-      cbxClickZonesPtrB := fraStatsZonesA.changeCheck;
-      fraStatsZonesA.cbxClickPtr := cbxClickZonesPtrA;
-      fraStatsZonesB.cbxClickPtr := cbxClickZonesPtrB;
+      fraStatsZonesA.fraHistogram.btnCancelClickPtr := fraStatsZonesB.fraHistogram.btnCancelClick;
+      fraStatsZonesB.fraHistogram.btnCancelClickPtr := fraStatsZonesA.fraHistogram.btnCancelClick;
 
-      rdgConvergenceParamClickZonesPtrA := fraStatsZonesA.fraConvergence.rdgConvergenceParamClick;
-      rdgConvergenceParamClickZonesPtrB := fraStatsZonesB.fraConvergence.rdgConvergenceParamClick;
-      fraStatsZonesA.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickZonesPtrB;
-      fraStatsZonesB.fraConvergence.rdgConvergenceParamClickPtr := rdgConvergenceParamClickZonesPtrA;
+      fraStatsZonesA.fraHistogram.btnAcceptClickPtr := fraStatsZonesB.fraHistogram.btnAcceptClick;
+      fraStatsZonesB.fraHistogram.btnAcceptClickPtr := fraStatsZonesA.fraHistogram.btnAcceptClick;
 
-      fraStatsZonesA.fraHistogram.entryPtr := @fraStatsZonesB.fraHistogram._entry;
-      fraStatsZonesB.fraHistogram.entryPtr := @fraStatsZonesA.fraHistogram._entry;
-
-      fraStatsZonesA.fraConvergence.rdgItemIndexPtr := @fraStatsZonesB.fraConvergence.rdgConvergenceParam.ItemIndex;
-      fraStatsZonesB.fraConvergence.rdgItemIndexPtr := @fraStatsZonesA.fraConvergence.rdgConvergenceParam.ItemIndex;
-
-      fraTablestgOutputStatsSelectCellZonesPtrA := fraStatsZonesA.fraTablestgOutputStatsSelectCell;
-      fraTablestgOutputStatsSelectCellZonesPtrB := fraStatsZonesB.fraTablestgOutputStatsSelectCell;
-      fraStatsZonesA.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellZonesPtrB;
-      fraStatsZonesB.fraTablestgOutputStatsSelectCellPtr := fraTablestgOutputStatsSelectCellZonesPtrA;
+      fraStatsZonesA.cbxClickPtr := fraStatsZonesB.changeCheck;
+      fraStatsZonesB.cbxClickPtr := fraStatsZonesA.changeCheck;
 
       fraStatsZonesA.Splitter1TopPtr := @fraStatsZonesB.Splitter1.Top;
       fraStatsZonesB.Splitter1TopPtr := @fraStatsZonesA.Splitter1.Top;
-      fraStatsZonesA.Splitter2TopPtr := @fraStatsZonesB.Splitter2.Top;
-      fraStatsZonesB.Splitter2TopPtr := @fraStatsZonesA.Splitter2.Top;
 
       fraStatsZonesA.pnlTableHeightPtr := @fraStatsZonesB.pnlTable.Height;
       fraStatsZonesB.pnlTableHeightPtr := @fraStatsZonesA.pnlTable.Height;
@@ -502,16 +423,14 @@ implementation
       fraStatsZonesA.pnlTopSectionHeightPtr := @fraStatsZonesB.pnlTopSection.Height;
       fraStatsZonesB.pnlTopSectionHeightPtr := @fraStatsZonesA.pnlTopSection.Height;
 
-      Splitter1MovedZonesPtrA := fraStatsZonesA.Splitter1Moved;
-      Splitter1MovedZonesPtrB := fraStatsZonesB.Splitter1Moved;
-      fraStatsZonesA.Splitter1MovedPtr := Splitter1MovedZonesPtrB;
-      fraStatsZonesB.Splitter1MovedPtr := Splitter1MovedZonesPtrA;
+      fraStatsZonesA.Splitter1MovedPtr := fraStatsZonesB.Splitter1Moved;
+      fraStatsZonesB.Splitter1MovedPtr := fraStatsZonesA.Splitter1Moved;
 
-      Splitter2MovedZonesPtrA := fraStatsZonesA.Splitter2Moved;
-      Splitter2MovedZonesPtrB := fraStatsZonesB.Splitter2Moved;
-      fraStatsZonesA.Splitter2MovedPtr := Splitter2MovedZonesPtrB;
-      fraStatsZonesB.Splitter2MovedPtr := Splitter2MovedZonesPtrA;
+      fraStatsZonesA.selectCellPtr := fraStatsZonesB.selectCell;
+      fraStatsZonesB.selectCellPtr := fraStatsZonesA.selectCell;
 
+      // Finishing the contruction
+      //--------------------------
       pgcOutputsA.Visible := true;
       pgcOutputsB.Visible := true;
 
@@ -544,10 +463,12 @@ implementation
           pnlFileNameB.Caption := tr( 'FileNameB' );
           tabEpiOutputsB.Caption := tr( 'Epidemiology' );
           tabCostOutputsB.Caption := tr( 'Cost accounting' );
+          tabPTZoneOutputsB.Caption := tr( 'Zones/production types' );
           tabZoneOutputsB.Caption := tr( 'Zones' );
           pnlFileNameA.Caption := tr( 'FileNameA' );
           tabEpiOutputsA.Caption := tr( 'Epidemiology' );
           tabCostOutputsA.Caption := tr( 'Cost accounting' );
+          tabPTZoneOutputsA.Caption := tr( 'Zones/production types' );
           tabZoneOutputsA.Caption := tr( 'Zones' );
         end
       ;
@@ -559,22 +480,20 @@ implementation
   procedure TFormScenarioComparison.initialize();
     begin
       dbcout( 'Creating output list A...', debug );
-      _superListA := TSMIterationOutputSuperList.create( _smdbA );
-      _scenarioStatsA := TScenarioOutputSet.create( _smdbA, _smSimA.includeCostsGlobal, _smSimA.includeZonesGlobal );
+      _scenarioStatsA := TScenarioOutputSet.create( _smdbA, _smSimA.includeCostsGlobal, _smSimA.includeZonesGlobal, _smSimA.costTrackZoneSurveillance );
 
       dbcout( 'Creating output list B...', debug );
-      _superListB := TSMIterationOutputSuperList.create( _smdbB );
-      _scenarioStatsB := TScenarioOutputSet.create( _smdbB, _smSimB.includeCostsGlobal, _smSimB.includeZonesGlobal );
+      _scenarioStatsB := TScenarioOutputSet.create( _smdbB, _smSimB.includeCostsGlobal, _smSimB.includeZonesGlobal, _smSimB.costTrackZoneSurveillance );
 
       dbcout( 'Setting up frame A...', debug );
       fraStatsEpiA.setOutputType( StatsEpi );
-			fraStatsEpiA.setSuperList( _superListA );
+			fraStatsEpiA.setEpiStats( _scenarioStatsA.epiStats );
 			fraStatsEpiA.setProdType( _selectedPT );
       fraStatsEpiA.resizeContents();
 
       dbcout( 'Setting up frame B...', debug );
       fraStatsEpiB.setOutputType( StatsEpi );
-			fraStatsEpiB.setSuperList( _superListB );
+			fraStatsEpiB.setEpiStats( _scenarioStatsB.epiStats );
 			fraStatsEpiB.setProdType( _selectedPT );
       fraStatsEpiB.resizeContents();
 
@@ -613,11 +532,19 @@ implementation
       if( not( _showZoneTabs ) or not( _smSimA.includeZonesGlobal ) ) then
         begin
           pgcOutputsA.ActivePage := tabEpiOutputsA;
+          tabPTZoneOutputsA.Enabled := false;
           tabZoneOutputsA.Enabled := false;
         end
       else
         begin
-          tabZoneOutputsA.enabled := true;
+          tabPTZoneOutputsA.enabled := true;
+          fraStatsPTZonesA.setOutputType( StatsPTZones );
+          fraStatsPTZonesA.setZonePTStats( _scenarioStatsA.zonePTStats );
+          fraStatsPTZonesA.setProdType( _selectedPT );
+          fraStatsPTZonesA.setZone( nil );
+          fraStatsPTZonesA.resizeContents();
+
+          tabZoneOutputsA.Enabled := true;
           fraStatsZonesA.setOutputType( StatsZones );
           fraStatsZonesA.setZoneStats( _scenarioStatsA.zoneStats );
           fraStatsZonesA.setProdType( _selectedPT );
@@ -629,10 +556,18 @@ implementation
       if( not( _showZoneTabs ) or not( _smSimA.includeZonesGlobal ) ) then
         begin
           pgcOutputsA.ActivePage := tabEpiOutputsA;
+          tabPTZoneOutputsB.Enabled := false;
           tabZoneOutputsB.Enabled := false;
         end
       else
         begin
+          tabPTZoneOutputsB.enabled := true;
+          fraStatsPTZonesB.setOutputType( StatsPTZones );
+          fraStatsPTZonesB.setZonePTStats( _scenarioStatsB.zonePTStats );
+          fraStatsPTZonesB.setProdType( _selectedPT );
+          fraStatsPTZonesB.setZone( nil );
+          fraStatsPTZonesB.resizeContents();
+
           tabZoneOutputsB.enabled := true;
           fraStatsZonesB.setOutputType( StatsZones );
           fraStatsZonesB.setZoneStats( _scenarioStatsB.zoneStats );
@@ -644,18 +579,12 @@ implementation
 
       pgcOutputsA.forceRepaint();
       pgcOutputsB.forceRepaint();
-
-      //pgcOutputsChange( nil );
-      //pgcOutputsChange( nil );
     end
   ;
 
 
   destructor TFormScenarioComparison.destroy();
     begin
-      freeAndNil( _superListA );
-      freeAndNil( _superListB );
-      
       freeAndNil( _scenarioStatsA );
       freeAndNil( _scenarioStatsB );
 
@@ -678,7 +607,8 @@ implementation
       inherited;
       ActiveIndex := pgcOutputsA.ActivePageIndex;
       pgcOutputsB.ActivePageIndex := ActiveIndex;
-      cboZones.Visible := ( pgcOutputsA.ActivePage = tabZoneOutputsA );
+      cboZones.Visible := ( ( pgcOutputsA.ActivePage = tabPTZoneOutputsA ) or ( pgcOutputsA.ActivePage = tabZoneOutputsA ) );
+      cboProdTypes.Visible := ( not( pgcOutputsA.ActivePage = tabZoneOutputsA ) );
     end
   ;
 
@@ -691,7 +621,8 @@ implementation
       inherited;
       ActiveIndex := pgcOutputsB.ActivePageIndex;
       pgcOutputsA.ActivePageIndex := ActiveIndex;
-      cboZones.Visible := ( pgcOutputsA.ActivePage = tabZoneOutputsA );
+      cboZones.Visible := ( ( pgcOutputsA.ActivePage = tabPTZoneOutputsA ) or ( pgcOutputsA.ActivePage = tabZoneOutputsA ) );
+      cboProdTypes.Visible := ( not( pgcOutputsA.ActivePage = tabZoneOutputsA ) );
     end
   ;
 
@@ -710,12 +641,19 @@ implementation
 
         if( _smSim.includeZonesGlobal ) then
           begin
+            fraStatsPTZonesA.setZone( _selectedZone );
             fraStatsZonesA.setZone( _selectedZone );
 
             if( nil = _selectedZone ) then
-              fraStatsZonesB.setZone( nil )
+              begin
+                fraStatsPTZonesB.setZone( nil );
+                fraStatsZonesB.setZone( nil );
+              end
             else
-              fraStatsZonesB.setZone( _smSimB.zoneList.find( _selectedZone.id ) )
+              begin
+                fraStatsPTZonesB.setZone( _smSimB.zoneList.find( _selectedZone.id ) );
+                fraStatsZonesB.setZone( _smSimB.zoneList.find( _selectedZone.id ) );
+              end
             ;
             pgcOutputsA.ActivePageIndex := activePage;
             pgcOutputsB.ActivePageIndex := activePage;
@@ -780,12 +718,19 @@ implementation
 
         if( _smSim.includeZonesGlobal ) then
           begin
+            fraStatsPTZonesA.setProdType( _selectedPT );
             fraStatsZonesA.setProdType( _selectedPT );
 
             if( nil = _selectedPT ) then
-              fraStatsZonesB.setProdType( nil )
+              begin
+                fraStatsPTZonesB.setProdType( nil );
+                fraStatsZonesB.setProdType( nil );
+              end
             else
-              fraStatsZonesB.setProdType( _smSimB.ptList.findProdType( _selectedPT.productionTypeID ) )
+              begin
+                fraStatsPTZonesB.setProdType( _smSimB.ptList.findProdType( _selectedPT.productionTypeID ) );
+                fraStatsZonesB.setProdType( _smSimB.ptList.findProdType( _selectedPT.productionTypeID ) );
+              end
             ;
             pgcOutputsA.ActivePageIndex := activePage;
             pgcOutputsB.ActivePageIndex := activePage;
@@ -809,32 +754,67 @@ implementation
 
 
   procedure TFormScenarioComparison.setHistogramBinNumbers( sender: TComponent; const nBins: integer );
+    var
+      frame: TFrameArrayHistogram;
     begin
-      if( sender <> self.fraStatsEpiA.fraHistogram ) then
-        self.fraStatsEpiA.fraHistogram.nHistogramBins := nBins
-      ;
-      if( sender <> self.fraStatsEpiB.fraHistogram ) then
-        self.fraStatsEpiB.fraHistogram.nHistogramBins := nBins
-      ;
-
-      if( sender <> self.fraStatsCostA.fraHistogram ) then
-        self.fraStatsCostA.fraHistogram.nHistogramBins := nBins
-      ;
-      if( sender <> self.fraStatsCostB.fraHistogram ) then
-        self.fraStatsCostB.fraHistogram.nHistogramBins := nBins
+      if( sender is TFrameArrayHistogram ) then
+        frame := sender as TFrameArrayHistogram
+      else
+        begin
+          raise exception.create( 'Unexpected sender type in TFormScenarioComparison.setHistogramBinNumbers()' );
+          exit;
+        end
       ;
 
-      if( sender <> self.fraStatsZonesA.fraHistogram ) then
-        self.fraStatsZonesA.fraHistogram.nHistogramBins := nBins
+      if( frame <> self.fraStatsEpiA.fraHistogram ) then
+        self.fraStatsEpiA.fraHistogram.setBinNumber( frame.breakType, nBins )
       ;
-      if( sender <> self.fraStatsZonesB.fraHistogram ) then
-        self.fraStatsZonesB.fraHistogram.nHistogramBins := nBins
+      if( frame <> self.fraStatsEpiB.fraHistogram ) then
+        self.fraStatsEpiB.fraHistogram.setBinNumber( frame.breakType, nBins )
+      ;
+
+      if( frame <> self.fraStatsCostA.fraHistogram ) then
+        begin
+          if( _smSimA.includeCostsGlobal ) then
+            self.fraStatsCostA.fraHistogram.setBinNumber( frame.breakType, nBins )
+          ;
+        end
+      ;
+      if( frame <> self.fraStatsCostB.fraHistogram ) then
+        begin
+          if( _smSimB.includeCostsGlobal ) then
+            self.fraStatsCostB.fraHistogram.setBinNumber( frame.breakType, nBins )
+          ;
+        end
+      ;
+
+      if( _showZoneTabs ) then
+        begin
+          if( _smSimA.includeZonesGlobal ) then
+            begin
+              if( frame <> self.fraStatsPTZonesA.fraHistogram ) then
+                self.fraStatsPTZonesA.fraHistogram.setBinNumber( frame.breakType, nBins )
+              ;
+              if( frame <> self.fraStatsZonesA.fraHistogram ) then
+                self.fraStatsZonesA.fraHistogram.setBinNumber( frame.breakType, nBins )
+              ;
+            end
+          ;
+
+          if( _smSimB.includeZonesGlobal ) then
+            begin
+              if( frame <> self.fraStatsPTZonesB.fraHistogram ) then
+                self.fraStatsPTZonesB.fraHistogram.setBinNumber( frame.breakType, nBins )
+              ;
+              if( frame <> self.fraStatsPTZonesB.fraHistogram ) then
+                self.fraStatsZonesB.fraHistogram.setBinNumber( frame.breakType, nBins )
+              ;
+            end
+          ;
+        end
       ;
 
       rescaleChartAxes();
-
-      //self.fraStatsEpiA.fraHistogram.repaint();
-      //self.fraStatsEpiB.fraHistogram.repaint();
     end
   ;
 
@@ -842,20 +822,17 @@ implementation
   procedure TFormScenarioComparison.rescaleChartAxes();
     begin
       rescaleChartAxes( fraStatsEpiA.fraHistogram.chtHistogram.series[0], fraStatsEpiB.fraHistogram.chtHistogram.series[0], true );
-      rescaleChartAxes( fraStatsEpiA.fraConvergence.chtConvergence.Series[0], fraStatsEpiB.fraConvergence.chtConvergence.Series[0], false );
 
       if( pgcOutputsA.Pages[1].Enabled ) then
-        begin
-          rescaleChartAxes( fraStatsCostA.fraHistogram.chtHistogram.Series[0], fraStatsCostB.fraHistogram.chtHistogram.Series[0], true );
-          rescaleChartAxes( fraStatsCostA.fraConvergence.chtConvergence.Series[0], fraStatsCostB.fraConvergence.chtConvergence.Series[0], false );
-        end
+        rescaleChartAxes( fraStatsCostA.fraHistogram.chtHistogram.Series[0], fraStatsCostB.fraHistogram.chtHistogram.Series[0], true )
       ;
 
-      if( pgcOutputsB.Pages[2].Enabled ) then
-        begin
-          rescaleChartAxes( fraStatsZonesA.fraHistogram.chtHistogram.Series[0], fraStatsZonesB.fraHistogram.chtHistogram.Series[0], true );
-          rescaleChartAxes( fraStatsZonesA.fraConvergence.chtConvergence.Series[0], fraStatsZonesB.fraConvergence.chtConvergence.Series[0], false );
-        end
+      if( pgcOutputsA.Pages[2].Enabled ) then
+        rescaleChartAxes( fraStatsPTZonesA.fraHistogram.chtHistogram.Series[0], fraStatsPTZonesB.fraHistogram.chtHistogram.Series[0], true )
+      ;
+
+      if( pgcOutputsA.Pages[3].Enabled ) then
+        rescaleChartAxes( fraStatsZonesA.fraHistogram.chtHistogram.Series[0], fraStatsZonesB.fraHistogram.chtHistogram.Series[0], true )
       ;
     end
   ;
@@ -905,6 +882,7 @@ implementation
       pnlA.Width := pnlFrames.ClientWidth div 2;
     end
   ;
+
 
 end.
 

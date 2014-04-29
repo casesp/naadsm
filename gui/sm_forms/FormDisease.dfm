@@ -1,6 +1,6 @@
 inherited FormDisease: TFormDisease
-  Left = 960
-  Top = 18
+  Left = 592
+  Top = 347
   Caption = 'Scenario Parameters: Disease'
   ClientHeight = 473
   ClientWidth = 632

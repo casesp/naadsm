@@ -4,13 +4,13 @@ unit FormCustomOutputs;
 FormCustomOutputs.pas/dfm
 -------------------------
 Begin: 2006/10/14
-Last revision: $Date: 2008/10/21 21:12:48 $ $Author: areeves $
-Version: $Revision: 1.11 $
+Last revision: $Date: 2010-03-27 19:40:02 $ $Author: areeves $
+Version: $Revision: 1.12.6.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -125,7 +125,6 @@ implementation
     MyDialogs,
     DebugWindow,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n
   ;
@@ -481,7 +480,13 @@ implementation
       newDesc: string;
       d : TCustomOutputDefinition;
     begin
-      newDesc := inputBox('', 'Name of new output definition: ', '');
+      newDesc := msgInput(
+        tr( 'Name of new output definition:' ),
+        '', // regexp
+        '', // caption
+        IMGQuestion,
+        self
+      );
       newDesc := trim( newDesc );
 
       if( newDesc = '' ) then
@@ -550,9 +555,12 @@ implementation
         begin
           oldDefName := _selectedDefinition.outputName;
 
-          newDefName := InputBox(
-            '',
-            'Modify custom output name for ' + oldDefName + '.' + endl,
+          newDefName := msgInput(
+            ansiReplaceStr( tr( 'Modify custom output name for xyz.' ), 'xyz', oldDefName ),
+            '', // regexp
+            '', // caption
+            IMGQuestion,
+            self,
             oldDefName
           );
           newDefName := trim( newDefName );

@@ -4,13 +4,13 @@ unit FormLatLonRange;
 FormLatLonRange.pas/dfm
 -----------------------
 Begin: 2006/02/27
-Last revision: $Date: 2008/03/12 22:10:46 $ $Author: areeves $
-Version number: $Revision: 1.8 $
+Last revision: $Date: 2009-07-13 21:58:50 $ $Author: areeves $
+Version number: $Revision: 1.10 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -84,8 +84,6 @@ interface
 
 			procedure FormCreate( Sender: TObject );
 
-      { This function deals with a little bug in TREEdit. }
-      procedure rleKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure rdoShapeClick(Sender: TObject);
       procedure rdoIncludeClick(Sender: TObject);
       procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -170,7 +168,6 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     BasicGIS,
     I88n,
 
@@ -235,7 +232,7 @@ implementation
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          Caption := tr( 'Lat/Lon range selection' );
+          Caption := tr( 'Lat/lon range selection' );
           gbxIncludeExclude.Caption := tr( 'Inclusion/exclusion' );
           rdoInclude.Caption := tr( 'Select units within the specified area' );
           rdoExclude.Caption := tr( 'Select units that are NOT within the specified area' );
@@ -348,12 +345,12 @@ implementation
 
       result := true;
 
-      latN := myStrToFloat( rleLatNW.Text, LAT_LON_UNDEFINED );
-      latS := myStrToFloat( rleLatSE.Text, LAT_LON_UNDEFINED );
-      lonW := myStrToFloat( rleLonNW.Text, LAT_LON_UNDEFINED );
-      lonE := myStrToFloat( rleLonSE.Text, LAT_LON_UNDEFINED );
-      latC := myStrToFloat( rleLatCenter.Text, LAT_LON_UNDEFINED );
-      lonC := myStrToFloat( rleLonCenter.Text, LAT_LON_UNDEFINED );
+      latN := uiStrToFloat( rleLatNW.Text, LAT_LON_UNDEFINED );
+      latS := uiStrToFloat( rleLatSE.Text, LAT_LON_UNDEFINED );
+      lonW := uiStrToFloat( rleLonNW.Text, LAT_LON_UNDEFINED );
+      lonE := uiStrToFloat( rleLonSE.Text, LAT_LON_UNDEFINED );
+      latC := uiStrToFloat( rleLatCenter.Text, LAT_LON_UNDEFINED );
+      lonC := uiStrToFloat( rleLonCenter.Text, LAT_LON_UNDEFINED );
 
       case _shape of
         rsRectangle:
@@ -385,7 +382,7 @@ implementation
             if( not( isValidLat( latC, rleLatCenter ) ) ) then begin result := false; exit; end;
             if( not( isValidLon( lonC, rleLonCenter ) ) ) then begin result := false; exit; end;
 
-            if( not( 0 < myStrToFloat( rleRadius.Text, -1 ) ) ) then
+            if( not( 0.0 < uiStrToFloat( rleRadius.Text, -1 ) ) ) then
               begin
                 result := false;
                 msgOK( 
@@ -450,17 +447,6 @@ implementation
 //-----------------------------------------------------------------------------
 // GUI event handlers
 //-----------------------------------------------------------------------------
-  { This function deals with a little bug in TREEdit. }
-  procedure TFormLatLonRange.rleKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-    var
-      rle: TREEdit;
-    begin
-      rle := sender as TREEdit;
-      if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-    end
-  ;
-
-
   procedure TFormLatLonRange.rdoShapeClick(Sender: TObject);
     begin
       if( rdoRect.Checked ) then
@@ -545,13 +531,13 @@ implementation
   procedure TFormLatLonRange.setLonCenter( val: double ); begin _lonCenter := val; rleLonCenter.Text := uiFloatToStr( val, LAT_LON_PRECISION ); end;
   procedure TFormLatLonRange.setRadius( val: double ); begin _radius := val; rleRadius.Text := uiFloatToStr( val, LAT_LON_PRECISION ); end;
 
-  function TFormLatLonRange.getLatNW(): double; begin result := myStrToFloat( rleLatNW.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getLonNW(): double; begin result := myStrToFloat( rleLonNW.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getLatSE(): double; begin result := myStrToFloat( rleLatSE.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getLonSE(): double; begin result := myStrToFloat( rleLonSE.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getLatCenter(): double; begin result := myStrToFloat( rleLatCenter.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getLonCenter(): double; begin result := myStrToFloat( rleLonCenter.Text, LAT_LON_UNDEFINED ); end;
-  function TFormLatLonRange.getRadius(): double; begin result := myStrToFloat( rleRadius.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLatNW(): double; begin result := uiStrToFloat( rleLatNW.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLonNW(): double; begin result := uiStrToFloat( rleLonNW.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLatSE(): double; begin result := uiStrToFloat( rleLatSE.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLonSE(): double; begin result := uiStrToFloat( rleLonSE.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLatCenter(): double; begin result := uiStrToFloat( rleLatCenter.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getLonCenter(): double; begin result := uiStrToFloat( rleLonCenter.Text, LAT_LON_UNDEFINED ); end;
+  function TFormLatLonRange.getRadius(): double; begin result := uiStrToFloat( rleRadius.Text, LAT_LON_UNDEFINED ); end;
 //-----------------------------------------------------------------------------
 
 

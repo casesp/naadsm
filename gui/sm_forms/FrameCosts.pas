@@ -4,7 +4,7 @@ unit FrameCosts;
 FrameCosts.pas/dfm
 ------------------
 Begin: 2005/12/15
-Last revision: $Date: 2008/03/12 22:10:49 $ $Author: areeves $
+Last revision: $Date: 2008-03-12 22:10:49 $ $Author: areeves $
 Version number: $Revision: 1.12 $
 Project: NAADSM
 Website: http://www.naadsm.org

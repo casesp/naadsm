@@ -4,13 +4,13 @@ unit FormProdTypeBase;
 FormProdTypeBase.pas/dfm
 ------------------------
 Begin: 2005/06/17
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version number: $Revision: 1.34 $
+Last revision: $Date: 2010-06-15 01:12:06 $ $Author: areeves $
+Version number: $Revision: 1.35.6.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -109,7 +109,6 @@ implementation
     SysUtils,
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     DebugWindow,
     ChartFunction,
@@ -241,8 +240,7 @@ implementation
        		if( it.current().updated ) then
             begin
               result := true;
-              it.free();
-              exit;
+              break;
             end
           ;
 
@@ -250,7 +248,7 @@ implementation
         end
       ;
 
-      if ( _fnDict.updated ) then
+      if( ( not result ) and _fnDict.updated ) then
         result := true
       ;
 
@@ -391,7 +389,7 @@ implementation
         end
       ;
 
-      frm.Free();
+      frm.Release();
     end
   ;
 //-----------------------------------------------------------------------------

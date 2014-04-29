@@ -4,13 +4,13 @@ unit FormSpreadOptions;
 FormSpreadOptions.pas/dfm
 --------------------------
 Begin: 2005/05/03
-Last revision: $Date: 2008/03/12 22:10:48 $ $Author: areeves $
-Version: $Revision: 1.21 $
+Last revision: $Date: 2011-06-27 22:31:39 $ $Author: areeves $
+Version: $Revision: 1.22.6.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -80,7 +80,6 @@ implementation
     RegExpDefs,
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     I88n
   ;
 
@@ -109,7 +108,7 @@ implementation
         begin
           Caption := tr( 'Scenario parameters: Spread options' );
           pnlCaption.Caption := tr( 'Spread options' );
-          grpSpreadOptions.Caption := tr( 'What type of SPREAD would you like to model during simulation runs? ' );
+          grpSpreadOptions.Caption := tr( 'Which type(s) of SPREAD would you like to model during simulation runs?' ) + ' ';
           rdoAirborne.Caption := tr( 'Airborne' );
           rdoContact.Caption := tr( 'Contact' );
           rdoBoth.Caption := tr( 'Both airborne and contact' );

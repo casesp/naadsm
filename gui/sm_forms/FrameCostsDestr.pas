@@ -4,13 +4,13 @@ unit FrameCostsDestr;
 FrameCostsDestr.pas/dfm
 ------------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version number: $Revision: 1.3 $
+Last revision: $Date: 2009-08-17 17:38:17 $ $Author: areeves $
+Version number: $Revision: 1.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -60,9 +60,6 @@ interface
 
       procedure processTextEntry( Sender: TObject );
 
-      { This function deals with a little bug in TREEdit.}
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-
 		protected
     	// properties
       _prodType: TProductionType;
@@ -94,7 +91,6 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n
   ;
@@ -156,28 +152,13 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFrameCostsDestr.processTextEntry( Sender: TObject );
   	begin
-      _prodType.costParams.destrAppraisalPerUnit := myStrToFloat( rleDestrAppraisalPerUnit.text, -1.0 );
-      _prodType.costParams.destrCleaningPerUnit := myStrToFloat( rleDestrCleaningPerUnit.text, -1.0 );
-      _prodType.costParams.destrEuthanasiaPerAnimal := myStrToFloat( rleDestrEuthanasiaPerAnimal.text, -1.0 );
-      _prodType.costParams.destrIndemnificationPerAnimal := myStrToFloat( rleDestrIndemnificationPerAnimal.text, -1.0 );
-      _prodType.costParams.destrDisposalPerAnimal := myStrToFloat( rleDestrDisposalPerAnimal.text, -1.0 );
+      _prodType.costParams.destrAppraisalPerUnit := uiStrToFloat( rleDestrAppraisalPerUnit.text, -1.0 );
+      _prodType.costParams.destrCleaningPerUnit := uiStrToFloat( rleDestrCleaningPerUnit.text, -1.0 );
+      _prodType.costParams.destrEuthanasiaPerAnimal := uiStrToFloat( rleDestrEuthanasiaPerAnimal.text, -1.0 );
+      _prodType.costParams.destrIndemnificationPerAnimal := uiStrToFloat( rleDestrIndemnificationPerAnimal.text, -1.0 );
+      _prodType.costParams.destrDisposalPerAnimal := uiStrToFloat( rleDestrDisposalPerAnimal.text, -1.0 );
 
       _prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameCostsDestr.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -218,33 +199,33 @@ implementation
           _loading := true;
 
           if( 0.0 <= _prodType.costParams.DestrAppraisalPerUnit ) then
-            rleDestrAppraisalPerUnit.text := uiFloatToStr( _prodType.costParams.DestrAppraisalPerUnit, 2, true )
+            rleDestrAppraisalPerUnit.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrAppraisalPerUnit, 2, true )
           else
             rleDestrAppraisalPerUnit.text := ''
           ;
 
           if( 0.0 <= _prodType.costParams.DestrCleaningPerUnit ) then
-            rleDestrCleaningPerUnit.text := uiFloatToStr( _prodType.costParams.DestrCleaningPerUnit, 2, true )
+            rleDestrCleaningPerUnit.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrCleaningPerUnit, 2, true )
           else
             rleDestrCleaningPerUnit.text := ''
           ;
 
           if( 0.0 <= _prodType.costParams.DestrDisposalPerAnimal ) then
-            rleDestrDisposalPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrDisposalPerAnimal, 2, true )
+            rleDestrDisposalPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrDisposalPerAnimal, 2, true )
           else
             rleDestrDisposalPerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.DestrEuthanasiaPerAnimal ) then
-            rleDestrEuthanasiaPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrEuthanasiaPerAnimal, 2, true )
+            rleDestrEuthanasiaPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrEuthanasiaPerAnimal, 2, true )
           else
             rleDestrEuthanasiaPerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.DestrIndemnificationPerAnimal ) then
-            rleDestrIndemnificationPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrIndemnificationPerAnimal, 2, true )
+            rleDestrIndemnificationPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrIndemnificationPerAnimal, 2, true )
           else
             rleDestrIndemnificationPerAnimal.text := ''
           ;

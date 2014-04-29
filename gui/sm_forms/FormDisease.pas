@@ -4,13 +4,13 @@ unit FormDisease;
 FormDisease.pas/dfm
 -------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.34 $
+Last revision: $Date: 2009-07-12 23:48:57 $ $Author: areeves $
+Version: $Revision: 1.36 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,7 +76,6 @@ implementation
     SysUtils,
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     ChartFunction,
     ControlUtils,
@@ -158,11 +157,11 @@ implementation
 
           if( _selectedPT.simulateTransition ) then
             begin
-              fraParams.smcLatent.showChart( _selectedPT, _selectedPT.diseaseLatent, DLatent );
-              fraParams.smcSubclinical.showChart( _selectedPT, _selectedPT.diseaseSubclinical, DSubclinical );
-              fraParams.smcClinical.showChart( _selectedPT, _selectedPT.diseaseClinical, DClinical );
-              fraParams.smcImmune.showChart( _selectedPT, _selectedPT.diseaseImmune, DImmune );
-              fraParams.smrPrevalence.showChart( _selectedPT, _selectedPT.diseasePrevalence, DPrevalence );
+              fraParams.smcLatent.showChart( _selectedPT, _selectedPT.pdfDiseaseLatent, DLatent );
+              fraParams.smcSubclinical.showChart( _selectedPT, _selectedPT.pdfDiseaseSubclinical, DSubclinical );
+              fraParams.smcClinical.showChart( _selectedPT, _selectedPT.pdfDiseaseClinical, DClinical );
+              fraParams.smcImmune.showChart( _selectedPT, _selectedPT.pdfDiseaseImmune, DImmune );
+              fraParams.smrPrevalence.showChart( _selectedPT, _selectedPT.relDiseasePrevalence, DPrevalence );
             end
           ;
         end
@@ -179,8 +178,6 @@ implementation
 
   procedure TFormDisease.prepFunctionDicts();
   	var
-    	pt: TProductionType;
-      i: integer;
       it: TFunctionDictionaryIterator;
   	begin
     	dbcout( 'Updating master display.  Chart function editors should be cleared.', DBFORMDISEASE );
@@ -202,38 +199,15 @@ implementation
           begin
             if ( not it.value().removed ) then
               begin
-                case ( it.value().fn.dbField ) of
-                  integer( DLatent ):
-                    begin
-                       it.value().refCounter := 0;
-                       fraParams.smcLatent.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DSubclinical ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcSubclinical.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DClinical ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcClinical.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DImmune ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcImmune.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DPrevalence ):
-                    begin
-                      it.value().refCounter := 0;
-                      fraParams.smrPrevalence.appendFunction( it.value().fn );
-                    end;
+                case( it.value().fn.dbField ) of
+                  integer( DLatent ): fraParams.smcLatent.appendFunction( it.value().fn );
+                  integer( DSubclinical ): fraParams.smcSubclinical.appendFunction( it.value().fn );
+                  integer( DClinical ): fraParams.smcClinical.appendFunction( it.value().fn );
+                  integer( DImmune ): fraParams.smcImmune.appendFunction( it.value().fn );
+                  integer( DPrevalence ): fraParams.smrPrevalence.appendFunction( it.value().fn );
                 end;
-              end;
+              end
+            ;
           end
         ;
 
@@ -241,19 +215,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-
-      // Set the reference counters, based on how many times a function is actually used.
-      for i := 0 to _ptList.Count-1 do
-      	begin
-        	pt := _ptList.at(i);
-          if( nil <> pt.diseaseLatent ) then _fnDict.value( pt.latentName ).incrRefCounter();
-          if( nil <> pt.diseaseSubclinical ) then _fnDict.value( pt.subclinicalName).incrRefCounter();
-          if( nil <> pt.diseaseClinical ) then _fnDict.value( pt.clinicalName ).incrRefCounter();
-          if( nil <> pt.diseaseImmune ) then _fnDict.value( pt.immuneName ).incrRefCounter();
-          if( nil <> pt.diseasePrevalence ) then _fnDict.value( pt.prevalenceName ).incrRefCounter();
-        end
-      ;
     end
   ;
 

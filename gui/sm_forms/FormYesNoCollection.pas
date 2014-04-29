@@ -4,13 +4,13 @@ unit FormYesNoCollection;
 FormYesNoCollection.pas/dfm
 ---------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/04/18 20:35:17 $ $Author: areeves $
-Version: $Revision: 1.24 $
+Last revision: $Date: 2010-09-09 14:29:37 $ $Author: rhupalo $
+Version: $Revision: 1.25.6.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -116,7 +116,6 @@ implementation
   uses
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n
   ;
@@ -310,17 +309,29 @@ implementation
     var
       frm:TForm;
     begin
-      _settingUp := true;
-      frm := self as TForm;
-      formDisplayed := true;
-      _originalVal := _smScenarioCopy.simInput.includeZonesGlobal;
-      btnYes.Checked := _smScenarioCopy.simInput.includeZonesGlobal;
-      btnNo.Checked := not _smScenarioCopy.simInput.includeZonesGlobal;
-   		nextForm := nextFormToShow;
-      _settingUp := false;
-      _currentFormIndex := currentFormIndex;
+      // must first detect disease in order to implement zone restrictions
+      if ( _smScenarioCopy.simInput.includeDetectionGlobal ) then
+        begin
+          _settingUp := true;
+          frm := self as TForm;
+          formDisplayed := true;
+          _originalVal := _smScenarioCopy.simInput.includeZonesGlobal;
+          btnYes.Checked := _smScenarioCopy.simInput.includeZonesGlobal;
+          btnNo.Checked := not _smScenarioCopy.simInput.includeZonesGlobal;
+          nextForm := nextFormToShow;
+          _settingUp := false;
+          _currentFormIndex := currentFormIndex;
 
-      result := frm.showModal();
+          result := frm.showModal();
+        end
+      else
+        begin
+          formDisplayed := false;
+      		nextForm := nextFormToShow;
+          _currentFormIndex := currentFormIndex;
+          result := 0;
+        end
+      ;
     end
   ;
 //-----------------------------------------------------------------------------

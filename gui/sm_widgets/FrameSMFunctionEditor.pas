@@ -4,13 +4,13 @@ unit FrameSMFunctionEditor;
 FrameSMFunctionEditor.pas/dfm
 -----------------------------
 Begin: 2006/01/04
-Last revision: $Date: 2008/11/25 22:01:58 $ $Author: areeves $
-Version number: $Revision: 1.27 $
+Last revision: $Date: 2009-07-12 23:48:58 $ $Author: areeves $
+Version number: $Revision: 1.29 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -38,7 +38,7 @@ interface
 
   {*
     This class implements an NAADSM-specific version of FrameFunctionEditor.  The primary
-    responsibility of this class is to interact with the data structures used by the application.
+    responsibility of this class is to interact with several specialized GUI components in the application.
 
     See FrameFunctionEditor for more information.
   }
@@ -63,7 +63,6 @@ implementation
   uses
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -126,7 +125,7 @@ implementation
 
       // Make sure that the user knows that there will be multiple effects
       //------------------------------------------------------------------
-      if( ( listItem.refCounter > 1 ) and (_myForm as TFormSMWizardBase).showMultiUseWarning ) then
+      if( ( 1 < listItem.refCounter ) and (_myForm as TFormSMWizardBase).showMultiUseWarning ) then
       	begin
           response := msgYesNoCheckbox(
             tr( 'This function is used in several places.  Altering it will affect all of them.  Continue?' ),

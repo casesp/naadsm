@@ -4,13 +4,13 @@ unit FormTracingGlobal;
 FormTracingGlobal.pas/dfm
 -------------------------
 Begin: 2006/02/05
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.7 $
+Last revision: $Date: 2010-09-09 14:29:37 $ $Author: rhupalo $
+Version: $Revision: 1.8.6.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -46,8 +46,8 @@ interface
       pnlCaption: TPanel;
       fraParams: TFrameTracingGlobal;
 
-  	protected
-    	_ctrlParams: TGlobalControlParams;
+    protected
+      _ctrlParams: TGlobalControlParams;
 
       procedure translateUI();  
       procedure translateUIManual();
@@ -64,7 +64,9 @@ interface
       constructor create( AOwner: TComponent ); override;
       destructor destroy(); override;
 
-			property ctrlParams: TGlobalControlParams read getCtrlParams write setCtrlParams;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+
+      property ctrlParams: TGlobalControlParams read getCtrlParams write setCtrlParams;
     end
   ;
 
@@ -73,10 +75,9 @@ implementation
 
 {$R *.dfm}
 
-	uses
-  	ControlUtils,
+  uses
+    ControlUtils,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -86,20 +87,19 @@ implementation
   ;
 
   const
-  	DBSHOWMSG: boolean = false; // set to true to enable debugging messages for this unit.
+    DBSHOWMSG: boolean = false; // set to true to enable debugging messages for this unit.
 
 //-----------------------------------------------------------------------------
 // construction/initialization/destruction
 //-----------------------------------------------------------------------------
   constructor TFormTracingGlobal.create( AOwner: TComponent );
-  	begin
+    begin
       inherited create( AOwner );
       translateUI();
-      
-    	_ctrlParams := nil;
+
+      _ctrlParams := nil;
     end
   ;
-
 
   procedure TFormTracingGlobal.translateUI();
     begin
@@ -131,7 +131,26 @@ implementation
 
   destructor TFormTracingGlobal.destroy();
     begin
-    	inherited destroy();
+      inherited destroy();
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// Display functions
+//-----------------------------------------------------------------------------
+  function TFormTracingGlobal.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+  	begin
+      // need detection in order to conduct tracing
+    	if( _smScenarioCopy.simInput.includeDetectionGlobal ) then
+    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+      else
+      	begin
+          formDisplayed := false;
+      		nextForm := nextFormToShow;
+          result := 0;
+        end
+      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -147,8 +166,8 @@ implementation
 
 
   function TFormTracingGlobal.dataIsValid(): boolean;
-  	begin
-    	result := true;
+    begin
+      result := true;
     end
   ;
 

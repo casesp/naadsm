@@ -21,6 +21,10 @@ object DMOutputActionManager: TDMOutputActionManager
                 ImageIndex = 67
               end
               item
+                Action = acnExportRawData
+                Caption = '&Export raw data to file...'
+              end
+              item
                 Caption = '-'
               end
               item
@@ -55,6 +59,9 @@ object DMOutputActionManager: TDMOutputActionManager
                 Action = acnCopyCharts
                 Caption = 'C&opy chart(s) to clipboard'
                 ImageIndex = 66
+              end
+              item
+                Action = acnCopyRawData
               end>
             Caption = '&Edit'
             ImageIndex = 71
@@ -73,6 +80,10 @@ object DMOutputActionManager: TDMOutputActionManager
       Category = '&File'
       Caption = 'Save chart(s) to file...'
       ImageIndex = 67
+    end
+    object acnExportRawData: TAction
+      Category = '&File'
+      Caption = 'Export &raw data to file...'
     end
     object acnPrintData: TAction
       Category = '&File'
@@ -98,6 +109,10 @@ object DMOutputActionManager: TDMOutputActionManager
       Category = '&File'
       Caption = 'Close'
       ImageIndex = 38
+    end
+    object acnCopyRawData: TAction
+      Category = '&Edit'
+      Caption = 'Copy &raw data to clipboard'
     end
   end
   object ImageList1: TImageList

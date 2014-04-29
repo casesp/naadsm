@@ -8,16 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
--- Create new table `outEpidemicCurves`.
--- `outEpidemicCurves` : Table of outEpidemicCurves
--- 	`iteration` : iteration identifies outEpidemicCurves
--- 	`day` : day partly identifies outEpidemicCurves
--- 	`productionTypeID` : productionTypeID partly identifies outEpidemicCurves
--- 	`infectedUnits` : infectedUnits is of outEpidemicCurves
--- 	`infectedAnimals` : infectedAnimals is of outEpidemicCurves
--- 	`detectedUnits` : detectedUnits is of outEpidemicCurves
--- 	`detectedAnimals` : detectedAnimals is of outEpidemicCurves  
 create table `outEpidemicCurves` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -27,20 +17,8 @@ create table `outEpidemicCurves` (
 	`detectedUnits` INTEGER,
 	`detectedAnimals` INTEGER, constraint `outEpidemicCurves_PK` primary key (`iteration`, `day`, `productionTypeID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outEpidemicCurves`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outEpidemicCurves' :
--- 	`iteration`
--- 	`day`
--- 	`productionTypeID`
-
-
--- Drop primary key, unique and non-unique index constraints from table `DBSchemaVersion`.
 alter table `DBSchemaVersion` drop constraint `DBSchemaVersion_PK`; 
 
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -60,11 +38,8 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
            `inGeneral`.`includeEconomics`  
     from `inGeneral`;
 
-
 drop table `inGeneral`; 
-
-
--- `inGeneral` : Table of inGeneral  
+ 
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -92,59 +67,22 @@ insert into `inGeneral` (`inGeneralID`, `scenarioDescr`, `iterations`, `days`, `
            `inGeneral_IM0`.`includeEconomics`  
     from `inGeneral_IM0`;
 
-
 drop table `inGeneral_IM0`; 
-
 
 alter table `inGeneral`
 	add constraint `inGeneral_PK` primary key (`inGeneralID`) ; 
 
-
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Update existing table `DBSchemaVersion`.
--- create table `DBSchemaVersion_IM0` ( 
--- 	`VersionNumber` VARCHAR(255),
--- 	`VersionDate` DATETIME,
--- 	`VersionInfoURL` VARCHAR(255)); 
-
--- insert into `DBSchemaVersion_IM0` (`VersionNumber`, `VersionDate`, `VersionInfoURL`) 
---     select `DBSchemaVersion`.`VersionNumber`, 
---            `DBSchemaVersion`.`VersionDate`, 
---            `DBSchemaVersion`.`VersionInfoURL`  
---     from `DBSchemaVersion`;
-
-
 drop table `DBSchemaVersion`; 
-
-
--- `DBSchemaVersion` : Table of DBSchemaVersion  
+ 
 create table `DBSchemaVersion` ( 
 	`VersionNumber` VARCHAR(255),
 	`VersionApplication` CHAR(10),
 	`VersionDate` DATETIME,
 	`VersionInfoURL` VARCHAR(255)); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`DBSchemaVersion`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'DBSchemaVersion' :
--- 	`VersionApplication`
-
-
---    Data is not migrated because the DBMS does not support the data conversion function
---    necessary to convert the data, OR
---    column(s) are of LARGE/AUTOINC datatype, OR
---    newly added not nullable column(s) are involved in the primary key or unique index(constraint).
---    The temporary table '`DBSchemaVersion_IM0`' has the old values.  You must manually move the data and
---    drop the temporary table.
-
--- Add the remaining keys, constraints and indexes for the table `DBSchemaVersion`.
 alter table `DBSchemaVersion`
 	add constraint `DBSchemaVersion_PK` primary key (`VersionNumber`, `VersionApplication`) ; 
 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

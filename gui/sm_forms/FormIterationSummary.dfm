@@ -1,7 +1,6 @@
 inherited FormIterationSummary: TFormIterationSummary
-  Left = -842
-  Top = 99
-  Width = 755
+  Left = 421
+  Top = 164
   Height = 818
   Caption = 'Summary of 1 iteration'
   Constraints.MinHeight = 600
@@ -11,34 +10,14 @@ inherited FormIterationSummary: TFormIterationSummary
   PixelsPerInch = 96
   TextHeight = 13
   inherited pnlControls: TPanel
-    Width = 747
     TabOrder = 2
     inherited pnlProdTypes: TPanel
-      Width = 445
-      object lblIteration: TLabel [0]
-        Left = 328
-        Top = 8
-        Width = 41
-        Height = 13
-        Caption = 'Iteration:'
-      end
       inherited cboProdTypes: TComboBox
         Width = 169
       end
       inherited cboZones: TComboBox
         Left = 192
         Width = 129
-        TabOrder = 4
-      end
-      object cboIteration: TComboBox
-        Left = 384
-        Top = 4
-        Width = 57
-        Height = 21
-        Style = csDropDownList
-        ItemHeight = 13
-        TabOrder = 3
-        OnChange = cboIterationChange
       end
     end
   end
@@ -77,7 +56,7 @@ inherited FormIterationSummary: TFormIterationSummary
             inherited tabGraphs: TTabSheet
               inherited pnlInapparentChart: TPanel
                 Width = 727
-                Height = 363
+                Height = 392
                 Anchors = [akLeft, akTop, akRight, akBottom]
                 inherited pnlInapparent: TPanel
                   Width = 725
@@ -87,29 +66,30 @@ inherited FormIterationSummary: TFormIterationSummary
                 end
                 inherited fraInapparent: TFrameSingleEpiCurve
                   Width = 725
-                  Height = 343
+                  Height = 372
                   inherited chtCurve: TChart
                     Width = 725
-                    Height = 343
+                    Height = 372
                   end
                 end
               end
               inherited pnlApparentChart: TPanel
-                Top = 363
+                Top = 392
                 Width = 727
-                Height = 315
+                Height = 286
                 inherited pnlApparent: TPanel
                   Width = 725
                   inherited cbxApparent: TCheckBox
+                    Width = 492
                     OnClick = fraEpiIterationSummarycbxApparentClick
                   end
                 end
                 inherited fraApparent: TFrameSingleEpiCurve
                   Width = 725
-                  Height = 295
+                  Height = 266
                   inherited chtCurve: TChart
                     Width = 725
-                    Height = 295
+                    Height = 266
                   end
                 end
               end
@@ -153,10 +133,10 @@ inherited FormIterationSummary: TFormIterationSummary
               end
               inherited pnlAsterisk: TPanel
                 Width = 727
-                Height = 213
+                Height = 185
                 inherited lblAsterisk: TLabel
                   Width = 717
-                  Height = 203
+                  Height = 175
                 end
               end
               inherited pnlDestr: TPanel
@@ -231,29 +211,30 @@ inherited FormIterationSummary: TFormIterationSummary
           inherited pbpGraphTableTabs: TPBPageControl
             Width = 735
             Height = 706
+            ActivePage = fraCostIterationSummary.tabGraph
             inherited tabGraph: TTabSheet
               Caption = 'Graph View'
               inherited pnlChart: TPanel
-                Width = 783
-                Height = 573
+                Width = 727
+                Height = 678
                 inherited fraChart: TFrameSingleCostCurve
-                  Width = 781
-                  Height = 571
+                  Width = 725
+                  Height = 676
                   Constraints.MinWidth = 567
                   inherited pnlCumulCosts: TPanel
-                    Width = 781
+                    Width = 725
                   end
                   inherited pnlChart: TPanel
-                    Width = 781
-                    Height = 451
+                    Width = 725
+                    Height = 539
                     inherited chtCosts: TChart
-                      Width = 781
-                      Height = 451
+                      Width = 725
+                      Height = 539
                     end
                   end
                   inherited pnlCostCategories: TPanel
-                    Top = 476
-                    Width = 781
+                    Top = 564
+                    Width = 725
                     inherited lineVaccSubtotal: TPanel
                       TabOrder = 18
                     end
@@ -275,21 +256,27 @@ inherited FormIterationSummary: TFormIterationSummary
             end
             inherited tabTable: TTabSheet
               inherited pnlTable: TPanel
-                Width = 783
+                Width = 727
+                Height = 678
                 inherited pnlTableFrameContainer: TPanel
-                  Width = 781
+                  Width = 725
+                  Height = 676
                   inherited fraTable: TFrameSingleCostTable
-                    Width = 779
+                    Width = 723
+                    Height = 674
                     inherited pnlShowCumul: TPanel
-                      Width = 779
+                      Width = 723
                     end
                     inherited fraGrid: TFrameStringGridBase
-                      Width = 779
+                      Width = 723
+                      Height = 649
                       inherited stgGrid: TARSyncGrid
-                        Width = 769
+                        Width = 713
+                        Height = 649
                       end
                       inherited pnlSpacer: TPanel
-                        Left = 769
+                        Left = 713
+                        Height = 649
                       end
                     end
                   end

@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -55,8 +52,6 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
 
 drop table `inGeneral`; 
 
-
--- `inGeneral` : Table of inGeneral  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -98,17 +93,11 @@ insert into `inGeneral` (`inGeneralID`, `scenarioDescr`, `iterations`, `days`, `
            `inGeneral_IM0`.`saveDailyExposures`  
     from `inGeneral_IM0`;
 
-
 drop table `inGeneral_IM0`; 
-
 
 alter table `inGeneral`
 	add constraint `inGeneral_PK` primary key (`inGeneralID`) ; 
 
-
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

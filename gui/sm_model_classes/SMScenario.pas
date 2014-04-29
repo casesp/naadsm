@@ -4,8 +4,8 @@ unit SMScenario;
 SMScenario.pas
 --------------
 Begin: 2005/09/01
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.17 $
+Last revision: $Date: 2009-10-27 17:23:45 $ $Author: scase $
+Version number: $Revision: 1.19.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
@@ -27,6 +27,8 @@ interface
     ProductionTypeList
   ;
 
+  type TSMSimulationInputPtr = ^TSMSimulationInput;
+  
   type TSMScenario = class( TObject )
     protected
       _herdList: THerdList;
@@ -34,6 +36,7 @@ interface
 
       function getHerdList(): THerdList;
       function getSimInput(): TSMSimulationInput;
+      function getSimInputPtr(): TSMSimulationInputPtr;
 
       function getUpdated(): boolean;
 
@@ -44,12 +47,13 @@ interface
 
       destructor destroy(); override;
 
-      procedure resetSimInput( val: TSMSimulationInput );
+      procedure resetSimInput( sim: TSMSimulationInput );
 
       procedure resetPtList( list: TProductionTypeList );
 
       property herdList: THerdList read getHerdList;
       property simInput: TSMSimulationInput read getSimInput; // write setSimInput;
+      property simInputPtr: TSMSimulationInputPtr read getSimInputPtr;
 
       property updated: boolean read getUpdated;
     end
@@ -60,8 +64,7 @@ implementation
 
   uses
     SysUtils,
-    MyStrUtils,
-    USStrUtils
+    MyStrUtils
   ;
 
   constructor TSMScenario.create();
@@ -121,17 +124,18 @@ implementation
   ;
 
 
-  procedure TSMScenario.resetSimInput( val: TSMSimulationInput );
+  procedure TSMScenario.resetSimInput( sim: TSMSimulationInput );
     begin
       if( nil <> _simInput ) then freeAndNil( _simInput );
       
-      _simInput := TSMSimulationInput.create( val );
+      _simInput := TSMSimulationInput.create( sim );
     end
   ;
 
   
   function TSMScenario.getHerdList(): THerdList; begin result := _herdList; end;
   function TSMScenario.getSimInput(): TSMSimulationInput; begin result := _simInput; end;
+  function TSMScenario.getSimInputPtr(): TSMSimulationInputPtr; begin result := @_simInput; end;
 
   function TSMScenario.getUpdated(): boolean;
     begin

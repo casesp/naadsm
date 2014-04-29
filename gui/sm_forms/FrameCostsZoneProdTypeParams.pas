@@ -4,13 +4,13 @@ unit FrameCostsZoneProdTypeParams;
 FrameCostsZoneProdTypeParams.pas/dfm
 ------------------------------------
 Begin: 2007/04/18
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version number: $Revision: 1.3 $
+Last revision: $Date: 2009-07-13 21:58:50 $ $Author: areeves $
+Version number: $Revision: 1.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -42,8 +42,6 @@ interface
       lblCostPerAnimalDay: TLabel;
       lblDollar: TLabel;
       rleCostPerAnimalDay: TREEdit;
-
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
     
     protected
       procedure translateUI();
@@ -91,20 +89,5 @@ implementation
     end
   ;
 
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameCostsZoneProdTypeParams.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
-    end
-  ;
 
 end.

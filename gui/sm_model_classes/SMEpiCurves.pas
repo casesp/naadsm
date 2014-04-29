@@ -4,13 +4,13 @@ unit SMEpiCurves;
 SMEpiCurves.pas
 ---------------
 Begin: 2005/10/14
-Last revision: $Date: 2008/03/12 22:10:53 $ $Author: areeves $
-Version number: $Revision: 1.17 $
+Last revision: $Date: 2009-06-05 19:52:37 $ $Author: areeves $
+Version number: $Revision: 1.18 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -191,7 +191,6 @@ implementation
     Variants,
 
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     ARMath,
     SqlClasses,

@@ -2,7 +2,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
   Left = 0
   Top = 0
   Width = 472
-  Height = 1002
+  Height = 944
   TabOrder = 0
   object pnlDirectContact: TPanel
     Left = 0
@@ -41,10 +41,6 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
             end
             inherited pnlSimpleParamsBottom: TPanel
               Width = 452
-              inherited lblInfectionProbability: TLabel
-                Width = 268
-                Height = 13
-              end
             end
           end
           inherited pnlCharts: TPanel
@@ -93,7 +89,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
     Left = 0
     Top = 489
     Width = 472
-    Height = 513
+    Height = 455
     Align = alClient
     TabOrder = 1
     object pnlUseIndirectContact: TPanel
@@ -123,7 +119,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
       Left = 1
       Top = 29
       Width = 470
-      Height = 483
+      Height = 425
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
@@ -131,7 +127,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
         Left = 0
         Top = 0
         Width = 470
-        Height = 483
+        Height = 425
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 0
@@ -139,7 +135,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
           Left = 0
           Top = 0
           Width = 16
-          Height = 483
+          Height = 425
           Align = alLeft
           BevelOuter = bvNone
           Constraints.MaxWidth = 16
@@ -150,7 +146,7 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
           Left = 16
           Top = 0
           Width = 454
-          Height = 483
+          Height = 425
           Align = alClient
           TabOrder = 1
           inherited pnlSimpleParams: TPanel
@@ -160,15 +156,11 @@ object FrameContactSpreadMaster: TFrameContactSpreadMaster
             end
             inherited pnlSimpleParamsBottom: TPanel
               Width = 452
-              inherited lblInfectionProbability: TLabel
-                Width = 268
-                Height = 13
-              end
             end
           end
           inherited pnlCharts: TPanel
             Width = 454
-            Height = 322
+            Height = 264
           end
         end
       end

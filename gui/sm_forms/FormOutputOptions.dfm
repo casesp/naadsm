@@ -205,8 +205,8 @@ inherited FormOutputOptions: TFormOutputOptions
         Width = 537
         Height = 17
         Caption = 
-          'Save information for each exposure (scenario files may be very l' +
-          'arge)'
+          'Save information for each exposure and trace (scenario files may' +
+          ' be very large)'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11

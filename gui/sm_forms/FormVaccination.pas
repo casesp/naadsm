@@ -4,13 +4,13 @@ unit FormVaccination;
 FormVaccination.pas/dfm
 -----------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.31 $
+Last revision: $Date: 2010-09-09 14:29:37 $ $Author: rhupalo $
+Version: $Revision: 1.34.4.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -46,9 +46,9 @@ interface
     protected
       procedure translateUI();
       
-  		procedure updateDisplay(); override;
+      procedure updateDisplay(); override;
 
-  		procedure giveListsToEditors(); override;
+      procedure giveListsToEditors(); override;
       procedure prepFunctionDicts(); override;
 
       function dataIsValid(): boolean; override;
@@ -56,17 +56,17 @@ interface
       procedure copyParameters( const src: TProductionType; dest: TProductionType ); override;
 
     public
-    	constructor create( Aowner: TComponent ); override;
+      constructor create( Aowner: TComponent ); override;
       destructor destroy(); override;
 
-			function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
     end
   ;
 
 
   const
-  	DBFORMVACCINATION: boolean = false; // set to true to enable debugging messages for this unit.
+    DBFORMVACCINATION: boolean = false; // set to true to enable debugging messages for this unit.
 
 
 implementation
@@ -77,7 +77,6 @@ implementation
     SysUtils,
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     ChartFunction,
     ControlUtils,
     FunctionEnums,
@@ -119,8 +118,8 @@ implementation
   
 
   destructor TFormVaccination.destroy();
-  	begin
-   		inherited destroy();
+    begin
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -130,14 +129,15 @@ implementation
 //-----------------------------------------------------------------------------
 // Display functions
 //-----------------------------------------------------------------------------
-	function TFormVaccination.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
-  	begin
-    	if( _smScenarioCopy.simInput.includeVaccinationGlobal ) then
-    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+  function TFormVaccination.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+    begin
+      // need detection of disease in order to conduct vaccination campaign
+      if (( _smScenarioCopy.simInput.includeVaccinationGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
+        result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
-      	begin
+        begin
           formDisplayed := false;
-      		nextForm := nextFormToShow;
+          nextForm := nextFormToShow;
           result := 0;
         end
       ;
@@ -146,9 +146,9 @@ implementation
 
 
   procedure TFormVaccination.updateDisplay();
-  	begin
-    	if( nil <> _selectedPT ) then
-      	begin
+    begin
+      if( nil <> _selectedPT ) then
+        begin
           lblProdType.Caption := _selectedPT.productionTypeDescr;
           fraParams.Visible := true;
 
@@ -159,11 +159,11 @@ implementation
             VacImmunePeriod
           );
 
-					fraParams.prodType := _selectedPT;
+          fraParams.prodType := _selectedPT;
         end
       else
         begin
-      	  fraParams.visible := false;
+          fraParams.visible := false;
           lblProdType.Caption := '';
         end
       ;
@@ -172,13 +172,10 @@ implementation
 
 
   procedure TFormVaccination.prepFunctionDicts();
-  	var
-    	pt: TProductionType;
-      i: integer;
+    var
       it: TFunctionDictionaryIterator;
-  	begin
-			fraParams.smcVaccImmunePeriod.cboChartList.clear();
-
+    begin
+      fraParams.smcVaccImmunePeriod.cboChartList.clear();
 
       it := TFunctionDictionaryIterator.create( _fnDict );
 
@@ -187,14 +184,11 @@ implementation
           begin
             if ( not it.value().removed ) then
               begin
-                case ( it.value().fn.dbField ) of
-                  word(TSMChart( VacImmunePeriod )):
-                    begin
-                      fraParams.smcVaccImmunePeriod.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
-                    end;
+                case( it.value().fn.dbField ) of
+                  integer( VacImmunePeriod ): fraParams.smcVaccImmunePeriod.appendFunction( it.value().fn );
                 end;
-              end;
+              end
+            ;
           end
         ;
 
@@ -202,26 +196,15 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-
-      for i := 0 to _ptList.Count-1 do
-      	begin
-        	pt := _ptList.at(i);
-
-          if( nil <> pt.vaccinationParams.pdfVaccImmune ) then
-          	_fnDict.value( pt.vaccinationParams.vaccImmunePdfName ).incrRefCounter()
-          ;
-        end
-      ;
     end
   ;
 
 
   procedure TFormVaccination.giveListsToEditors();
-  	begin
-   		with fraParams do
-      	begin
-        	smcVaccImmunePeriod.setFunctionDict( _fnDict );
+    begin
+      with fraParams do
+        begin
+          smcVaccImmunePeriod.setFunctionDict( _fnDict );
           smcVaccImmunePeriod.setModelList( _ptList );
         end
       ;
@@ -235,8 +218,8 @@ implementation
 // Data and database functions
 //-----------------------------------------------------------------------------
   function TFormVaccination.dataIsValid(): boolean;
-		begin
-   		result := fraParams.isValid();
+    begin
+      result := fraParams.isValid();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -255,6 +238,7 @@ implementation
       dest.ringVaccParams.minTimeBetweenVacc := src.ringVaccParams.minTimeBetweenVacc;
       dest.ringVaccParams.ringRadius := src.ringVaccParams.ringRadius;
       dest.ringVaccParams.useRing := src.ringVaccParams.useRing;
+      dest.ringVaccParams.vaccinateDetected := src.ringVaccParams.vaccinateDetected;
 
       dest.updated := true;
     end
@@ -263,7 +247,7 @@ implementation
 
 
 initialization
-	RegisterClass( TFormVaccination );
+  RegisterClass( TFormVaccination );
 
 
 end.

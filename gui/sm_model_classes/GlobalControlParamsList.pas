@@ -4,8 +4,8 @@ unit GlobalControlParamsList;
 GlobalControlParamsList.pas
 ----------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.16 $
+Last revision: $Date: 2010-06-15 01:12:06 $ $Author: areeves $
+Version number: $Revision: 1.16.12.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
@@ -149,10 +149,7 @@ implementation
 
       while( nil <> it.current() ) do
         begin
-          if( it.current().hasChartName( oldChartName, whichChart ) ) then
-            it.current().setChart( whichChart, newChart, addlInfo )
-          ;
-
+          it.current().changeChart( whichChart, oldChartName, newChart, addlInfo );
           it.incr();
         end
       ;

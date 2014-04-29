@@ -53,7 +53,6 @@ object FrameCostsZoneProdTypeParams: TFrameCostsZoneProdTypeParams
       Height = 21
       EditAlign = eaLeft
       TabOrder = 0
-      OnKeyDown = rleKeyDown
     end
   end
 end

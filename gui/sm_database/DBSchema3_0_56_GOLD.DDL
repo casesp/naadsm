@@ -9,18 +9,11 @@
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
 
-
--- Drop foreign key constraints from table `dynHerd`.
 alter table `dynHerd`
 	drop constraint `inProductionType_dynHerd_FK1`;
 
-
--- Drop primary key, unique and non-unique index constraints from table `dynHerd`.
 alter table `dynHerd` drop constraint `dynHerd_PK`; 
-
-
--- Rename table from dynHerd to inHerd.
--- `inHerd` : Table of inHerd  
+ 
 create table `inHerd` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -28,20 +21,6 @@ create table `inHerd` (
 	`longitude` DOUBLE,
 	`initialStateCode` CHAR(1),
 	`initialSize` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inHerd`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inHerd' :
--- 	`productionTypeID`
-
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inHerd`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inHerd' :
--- 	`productionTypeID`
-
 
 insert into `inHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `initialStateCode`, `initialSize`) 
     select `dynHerd`.`herdID`, 
@@ -52,34 +31,20 @@ insert into `inHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `in
            `dynHerd`.`initialSize`  
     from `dynHerd`;
 
-
 drop table `dynHerd`; 
 
-
--- Add the remaining keys, constraints and indexes for the table `inHerd`.
 alter table `inHerd`
 	add constraint `dynHerd_PK` primary key (`herdID`) ; 
 
-
--- Add foreign key constraints to table `inHerd`.
 alter table `inHerd`
 	add constraint `inProductionType_dynHerd_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
-
-
--- Create new table `outHerd`.
--- `outHerd` : Table of outHerd
--- 	`outHerdID` : outHerdID identifies outHerd
--- 	`binDiseaseStates` : binDiseaseStates is of outHerd
--- 	`binApparentStates` : binApparentStates is of outHerd
--- 	`binCumTotals` : binCumTotals is of outHerd  
+ 
 create table `outHerd` ( 
 	`outHerdID` CHAR(10),
 	`binDiseaseStates` LONGBINARY,
 	`binApparentStates` LONGBINARY,
 	`binCumTotals` LONGBINARY, constraint `outHerd_PK` primary key (`outHerdID`) ); 
 	
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

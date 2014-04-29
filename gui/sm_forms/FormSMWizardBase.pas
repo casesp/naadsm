@@ -4,13 +4,13 @@ unit FormSMWizardBase;
 FormSMWizardBase.pas/dfm
 -------------------------
 Begin: 2005/03/03
-Last revision: $Date: 2008/03/12 22:10:48 $ $Author: areeves $
-Version: $Revision: 1.32 $
+Last revision: $Date: 2010-09-09 14:29:37 $ $Author: rhupalo $
+Version: $Revision: 1.38.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -37,6 +37,7 @@ interface
     ActnPopupCtrl,
     
     IniHandler,
+    FunctionPointers,
 
     SMScenario,
     SMSimulationInput
@@ -106,6 +107,8 @@ interface
       _showApplyToAllWarning: boolean;
       _selectedProdTypePairIndex: integer;
       _selectedProdTypeIndex: integer;
+      _selectedZoneIndex: integer;
+      
       _iniHandler: TIniHandler;
 
       _outputCleared: boolean;
@@ -131,8 +134,10 @@ interface
 
       procedure setSelectedProdTypePairIndex( val: integer ); virtual;
       procedure setSelectedProdTypeIndex( val: integer ); virtual;
+      procedure setSelectedZoneIndex( val:integer ); virtual;
       function getSelectedProdTypePairIndex(): integer; virtual;
       function getSelectedProdTypeIndex(): integer; virtual;
+      function getSelectedZoneIndex(): integer; virtual;
 
       procedure setIniHandler( val: TIniHandler );
       function getIniHandler(): TIniHandler;
@@ -171,6 +176,7 @@ interface
       property showApplyToAllWarning: boolean read getShowApplyToAllWarning write setShowApplyToAllWarning;
       property selectedProdTypePairIndex: integer read getSelectedProdTypePairIndex write setSelectedProdTypePairIndex;
       property selectedProdTypeIndex: integer read getSelectedProdTypeIndex write setSelectedProdTypeIndex;
+      property selectedZoneIndex: integer read getSelectedZoneIndex write setSelectedZoneIndex;
       property iniHandler: TIniHandler read getIniHandler write setIniHandler;
 
       property dataUpdated: boolean read getDataUpdated;
@@ -192,11 +198,12 @@ implementation
     ActnList,
 
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     ControlUtils,
     I88n,
+
+    ModelDatabase,
 
     FormMain
   ;
@@ -209,10 +216,10 @@ implementation
 //-----------------------------------------------------------------------------
   constructor TFormSMWizardBase.create( AOwner: TComponent );
     begin
+      dbcout( endl + 'Creating ' + self.name, DBSHOWMSG );
+
       inherited create( AOwner );
       translateUI();
-
-      dbcout( endl + 'Creating ' + self.name, DBSHOWMSG );
 
       _myForm := AOwner as TForm;
 
@@ -411,7 +418,30 @@ implementation
             begin
               subMenuItem := self.PopupActionBarEx1.Items[i].Items[j];
               if( not( ac.Items[i].Items[j].Separator ) ) then
-                subMenuItem.Enabled := (ac.Items[i].Items[j].Action as TAction).Enabled
+                begin
+                  { rbh: The ActionMainMenuBar and the PopupActionBar work differently.
+                    (I think there may be a bug in the PopupActionBar for disabling top-level menu items).
+                    The ActionMainMenu disables all submenu items when a menu item is disabled.
+                    In the example below, from code in FormMain.updateScenarioParamsMenuItems:
+                        ActionTracingMenu.Enabled := paramsEnabled and useDetection;
+                        ActionTracingOptions.Enabled := paramsEnabled;
+                    Access to the Tracing options form is disabled when useDetection is false.
+
+                    The popupActionBar does not follow this behavior - it looks at each
+                    submenu item in the loop below and sets each item according to the ActionMainMenuBar submenu item.
+                    Therefore, in the popup menu, access to the TracingOptions form is enabled ...
+                    ODDLY, the loop above has no ability to actually disable an menu item in the PopupActionBar,
+                    even though the enabled property is being set to false.
+
+                    The if statement below disables submenu items when the menu item's enabled property value is false,
+                    otherwise it sets it to the value of the parallel submenu item of the ActionMainMenuBar.
+                    Access to top-level menu items can not be prevented, but at least the submenu items are disabled.
+                  }
+                  if menuItem.Enabled then
+                    subMenuItem.Enabled := (ac.Items[i].Items[j].Action as TAction).Enabled
+                  else
+                    subMenuItem.Enabled := false;
+                end
               ;
             end
           ;
@@ -632,6 +662,8 @@ implementation
 
   procedure TFormSMWizardBase.updateScenarioData();
     begin
+      dbcout( '--- TFormSMWizardBase.updateScenarioData()', DBSHOWMSG );
+
       if( DBSHOWMSG ) then
         begin
           dbcout( '******** DEBUGGING the original simInput', DBSHOWMSG );
@@ -641,7 +673,6 @@ implementation
 
       _smScenarioOriginal.resetSimInput( _smScenarioCopy.simInput );
 
-
       if( DBSHOWMSG ) then
         begin
           dbcout( '******** DEBUGGING the copy of simInput', DBSHOWMSG );
@@ -649,7 +680,7 @@ implementation
         end
       ;
 
-      _smScenarioOriginal.simInput.populateDatabase();
+      _smScenarioOriginal.simInput.populateDatabase( MDBAAuto );
 
       // The herd list only needs to be updated by TFormHerdListEditor,
       // which handles the updates on its own.  Don't mess with it here.
@@ -660,6 +691,8 @@ implementation
       _smScenarioOriginal.herdList.resetSim( _smScenarioOriginal.simInput, false );
 
       hideStar();
+
+      dbcout( '--- Done TFormSMWizardBase.updateScenarioData()', DBSHOWMSG );
     end
   ;
 //-----------------------------------------------------------------------------
@@ -683,9 +716,11 @@ implementation
 
   procedure TFormSMWizardBase.setSelectedProdTypePairIndex( val: integer ); begin _selectedProdTypePairIndex := val; end;
   procedure TFormSMWizardBase.setSelectedProdTypeIndex( val: integer ); begin _selectedProdTypeIndex := val; end;
+  procedure TFormSMWizardBase.setSelectedZoneIndex( val: integer ); begin _selectedZoneIndex := val; end;
 
   function TFormSMWizardBase.getSelectedProdTypePairIndex(): integer; begin result := _selectedProdTypePairIndex; end;
   function TFormSMWizardBase.getSelectedProdTypeIndex(): integer; begin result := _selectedProdTypeIndex; end;
+  function TFormSMWizardBase.getSelectedZoneIndex(): integer; begin result := _selectedZoneIndex; end;
 
   procedure TFormSMWizardBase.setIniHandler( val: TIniHandler ); begin _iniHandler := val; end;
   function TFormSMWizardBase.getIniHandler(): TIniHandler; begin result := _iniHandler; end;

@@ -4,13 +4,13 @@ unit FrameSummaryEpiCurves;
 FrameSummaryEpiCurves.pas/dfm
 -----------------------------
 Begin: 2005/09/20
-Last revision: $Date: 2008/03/14 19:19:57 $ $Author: areeves $
-Version number: $Revision: 1.15 $
+Last revision: $Date: 2009-06-05 19:52:36 $ $Author: areeves $
+Version number: $Revision: 1.16 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -126,7 +126,6 @@ implementation
     StrUtils,
     
     MyStrUtils,
-    GuiStrUtils,
     I88n
   ;
 
@@ -175,7 +174,7 @@ implementation
           cbx25.Caption := tr( '25th percentile' );
           cbx5.Caption := tr( '5th percentile' );
           cbxCumulative.Caption := tr( 'Cumulative data' );
-          cbx3D.Caption := tr( '3-dimensional display' );
+          cbx3D.Caption := tr( '3-D View' );
         end
       ;
 

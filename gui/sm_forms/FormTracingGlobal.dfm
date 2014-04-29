@@ -26,12 +26,5 @@ inherited FormTracingGlobal: TFormTracingGlobal
     Height = 477
     Align = alClient
     TabOrder = 2
-    inherited pnlTracingGlobal: TPanel
-      Width = 702
-      Height = 477
-      inherited pnlUseTracingGlobal: TPanel
-        Width = 700
-      end
-    end
   end
 end

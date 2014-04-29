@@ -1,19 +1,19 @@
 object FrameDestruction: TFrameDestruction
   Left = 0
   Top = 0
-  Width = 485
-  Height = 397
+  Width = 565
+  Height = 430
   TabOrder = 0
   object lblDestrRingRadius: TLabel
     Left = 24
-    Top = 144
+    Top = 136
     Width = 79
     Height = 13
     Caption = 'Ring radius (km):'
   end
   object lblBasicDestrNote: TLabel
     Left = 24
-    Top = 48
+    Top = 40
     Width = 319
     Height = 13
     Caption = 
@@ -22,7 +22,7 @@ object FrameDestruction: TFrameDestruction
   end
   object lblTriggerNote: TLabel
     Left = 24
-    Top = 104
+    Top = 96
     Width = 441
     Height = 26
     Caption = 
@@ -32,7 +32,7 @@ object FrameDestruction: TFrameDestruction
   end
   object lblTracingNote: TLabel
     Left = 24
-    Top = 360
+    Top = 408
     Width = 349
     Height = 13
     Caption = 
@@ -40,10 +40,23 @@ object FrameDestruction: TFrameDestruction
       'e unavailable'
     WordWrap = True
   end
+  object lblPreempt: TLabel
+    Left = 8
+    Top = 176
+    Width = 473
+    Height = 13
+    Caption = 'Pre-emptive destuction of units of this production type'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
   object cbxDestrBasic: TCheckBox
     Left = 8
     Top = 8
-    Width = 473
+    Width = 553
     Height = 33
     Caption = 'Destroy detected diseased units of this production type'
     Font.Charset = DEFAULT_CHARSET
@@ -55,71 +68,55 @@ object FrameDestruction: TFrameDestruction
     TabOrder = 0
     OnClick = processClick
   end
-  object cbxDestrPreempt: TCheckBox
-    Left = 8
-    Top = 176
-    Width = 433
-    Height = 17
-    Caption = 'Pre-emptively destroy units of this production type'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = [fsBold]
-    ParentFont = False
-    TabOrder = 3
-    OnClick = processClick
-  end
-  object cbxDestrDirect: TCheckBox
-    Left = 32
-    Top = 208
-    Width = 393
+  object cbxDestrDirectForward: TCheckBox
+    Left = 24
+    Top = 200
+    Width = 521
     Height = 33
     Caption = 
       'Destroy units of this production type that have had DIRECT conta' +
-      'ct with a detected unit as identified by tracing*'
+      'ct with a detected unit as identified by TRACE FORWARD*'
+    TabOrder = 3
+    WordWrap = True
+    OnClick = processClick
+  end
+  object cbxDestrIndirectForward: TCheckBox
+    Left = 24
+    Top = 240
+    Width = 521
+    Height = 33
+    Caption = 
+      'Destroy units of this production type that have had INDIRECT con' +
+      'tact with a detected unit as identified by TRACE FORWARD*'
     TabOrder = 4
     WordWrap = True
     OnClick = processClick
   end
-  object cbxDestrIndirect: TCheckBox
-    Left = 32
-    Top = 256
-    Width = 393
-    Height = 33
-    Caption = 
-      'Destroy units of this production type that have had INDIRECT con' +
-      'tact with a detected unit as identified by tracing*'
-    TabOrder = 5
-    WordWrap = True
-    OnClick = processClick
-  end
   object cbxDestrRingTarget: TCheckBox
-    Left = 32
-    Top = 304
-    Width = 401
+    Left = 24
+    Top = 360
+    Width = 521
     Height = 33
     Caption = 
       'Destroy units of this type when they are within a destruction ri' +
       'ng around any unit that is a ring trigger'
-    TabOrder = 6
+    TabOrder = 7
     WordWrap = True
     OnClick = processClick
   end
   object rleDestrRingRadius: TREEdit
     Left = 160
-    Top = 144
+    Top = 136
     Width = 57
     Height = 21
     EditAlign = eaLeft
     TabOrder = 2
     OnExit = processTextEntry
-    OnKeyDown = rleKeyDown
   end
   object cbxDestrRingTrigger: TCheckBox
     Left = 8
-    Top = 72
-    Width = 465
+    Top = 64
+    Width = 545
     Height = 33
     Caption = 
       'Trigger ring destruction around detected units of this productio' +
@@ -131,6 +128,30 @@ object FrameDestruction: TFrameDestruction
     Font.Style = [fsBold]
     ParentFont = False
     TabOrder = 1
+    WordWrap = True
+    OnClick = processClick
+  end
+  object cbxDestrDirectBack: TCheckBox
+    Left = 24
+    Top = 280
+    Width = 521
+    Height = 33
+    Caption = 
+      'Destroy units of this production type that have had DIRECT conta' +
+      'ct with a detected unit as identified by TRACE BACK*'
+    TabOrder = 5
+    WordWrap = True
+    OnClick = processClick
+  end
+  object cbxDestrIndirectBack: TCheckBox
+    Left = 24
+    Top = 320
+    Width = 521
+    Height = 33
+    Caption = 
+      'Destroy units of this production type that have had INDIRECT con' +
+      'tact with a detected unit as identified by TRACE BACK*'
+    TabOrder = 6
     WordWrap = True
     OnClick = processClick
   end

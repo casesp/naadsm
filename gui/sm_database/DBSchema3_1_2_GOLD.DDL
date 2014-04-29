@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Update existing table `inProductionType`.
 create table `inProductionType_IM0` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -154,63 +151,14 @@ alter table `inProductionType`
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK5`;
 
-
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK6`;
-
 
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK7`;
 
-
 drop table `inProductionType`; 
 
-
--- `inProductionType` : Table of inProductionType
--- 	`productionTypeID` : A unique ID for each production type present in the scenario.
--- 	`descr` : A unique description of the production type.
--- 	`useDiseaseTransition` : Indicates whether units of this production type will undergo disease transition.
--- 	`disLatentPeriodPdfID` : ID number of the probability density function used to define the latent period for units of this production type.  This field references inChart.chartID.
--- 	`disSubclinicalPeriodPdfID` : ID number of the probability density function used to define the subclinical period for units of this production type.  This field references inChart.chartID.
--- 	`disClinicalPeriodPdfID` : ID number of the probability density function used to define the clinical period for units of this production type.  This field references inChart.chartID.
--- 	`disImmunePeriodPdfID` : ID number of the probability density function used to define the natural immune period for units of this production type.  This field references inChart.chartID.
--- 	`disPrevalenceRelID` : disPrevalenceRelID is of inProductionType
--- 	`useDetection` : Indicates whether disease detection will be modeled for units of this production type.
--- 	`detProbObsVsTimeClinicalRelID` : ID number of the relational function used to define the probability of observing clinical signs in units of this production type.  This field references inChart.chartID.
--- 	`detProbReportVsFirstDetectionRelID` : ID number of the relational function used to define the probabilty of reporting disease in units of this production type.  This field references inChart.chartID.
--- 	`traceDirect` : Indicates whether trace surveillance for direct contacts will be attempted.
--- 	`traceDirectSuccess` : The probability of success of identifying direct contacts by trace surveillance.
--- 	`traceDirectTracePeriod` : The period of time, in days, for which traceback surveillance of direct contacts will be attempted.
--- 	`traceIndirect` : Indicates whether trace surveillance for indirect contacts will be attempted.
--- 	`traceIndirectSuccess` : The probability of success of identifying indirect contacts by trace surveillance.
--- 	`traceIndirectTracePeriod` : The period of time, in days, for which traceback surveillance of indirect contacts will be attempted.
--- 	`useBasicDestruction` : Indicates whether detected clinical units of this production type will be destroyed.
--- 	`destrIsRingTrigger` : Indicates whether detection of a unit of this type will trigger the formation of destruction ring.
--- 	`destrRingRadius` : Radius, in kilometers, of the destruction ring.
--- 	`destrIsRingTarget` : Indicates whether units of this type will be subject to preemptive ring destruction.
--- 	`destrDirectTraces` : Indicates whether units of this type identified by traceback of direct contacts will be subject to preemptive destruction.
--- 	`destrIndirectTraces` : Indicates whether units of this type identified by traceback of indirect contacts will be subject to preemptive destruction.
--- 	`destrPriority` : The destruction priority of this production type, relative to other production types.  A lower number indicates higher priority.
--- 	`useVaccination` : Indicates whether units of this type will be subject to vaccination.
--- 	`vaccMinTimeBetweenVaccinations` : The minimum time, in days, between vaccinations for units of this production type.
--- 	`vaccDaysToImmunity` : The number of days required for the onset of vaccine immunity in a newly vaccinated unit of this type.
--- 	`vaccImmunePeriodPdfID` : ID number of the probability density function used to define the vaccine immune period for units of this production type.  This field references inChart.chartID.
--- 	`vaccRing` : Indicates whether detection of a clinical unit of this type will trigger a vaccination ring. 
--- 	`vaccRingRadius` : Radius, in kilometers, of the vaccination ring.
--- 	`vaccPriority` : The vaccination priority of this production type, relative to other production types. A lower number indicates higher priority.
--- 	`useCosts` : Indicates whether direct costs will be tracked for units of this production type.
--- 	`costDestrAppraisalPerUnit` : The cost associated with appraisal for each destroyed unit of this type.
--- 	`costDestrCleaningPerUnit` : The cost of cleaning and disinfection for each destroyed unit of this type.
--- 	`costDestrEuthanasiaPerAnimal` : The cost of euthanizing each destroyed animal of this type.
--- 	`costDestrIndemnificationPerAnimal` : The cost of indemnification for each destroyed animal of this type.
--- 	`costDestrDisposalPerAnimal` : The cost of carcass disposal for each destroyed animal of this type.
--- 	`costVaccSetupPerUnit` : The cost of site setup for each vaccinated unit of this type.
--- 	`costVaccThreshold` : The number of animals of this type that can be vaccinated before the cost of vaccination increases.
--- 	`costVaccBaselinePerAnimal` : The baseline cost of vaccination for each vaccinated animal of this type.  This cost applies to all vaccinations before the threshold set in costVaccThreshold is met.
--- 	`costVaccAdditionalPerAnimal` : The additional cost of vaccination for each vaccinated animal of this type, after the threshold is exceeded.
--- 	`zoneDetectionIsTrigger` : Indicates whether detection of units of this type will trigger the formation of a surveillance zone.
--- 	`zoneDirectTraceIsTrigger` : Indicates whether direct tracing of units of this type will trigger the formation of a surveillance zone.
--- 	`zoneIndirectTraceIsTrigger` : Indicates whether indirect tracing of units of this type will trigger the formation of a surveillance zone.  
 create table `inProductionType` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -310,8 +258,6 @@ drop table `inProductionType_IM0`;
 alter table `inProductionType`
 	add constraint `inProductionType_PK` primary key (`productionTypeID`) ; 
 
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -353,30 +299,8 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
            `inGeneral`.`useCustomOutputs`  
     from `inGeneral`;
 
-
 drop table `inGeneral`; 
-
-
--- `inGeneral` : Table of inGeneral
--- 	`inGeneralID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`scenarioDescr` : The description of the scenario.
--- 	`iterations` : The number of iterations of this scenario that should be run.
--- 	`days` : The number of days that iterations of this scenario should run, if the command Run->Start and run until specified day... is used.
--- 	`simStopReason` : The criterion used to end each iteration.  This may be that the specified number of days has passed, the first detection has occurred, or the outbreak has ended.
--- 	`includeContactSpread` : Indicates whether disease spread by direct or indirect contact is used in the scenario.
--- 	`includeAirborneSpread` : Indicates whether airborne spread is used in the model.
--- 	`useAirborneExponentialDecay` : Indicates whether exponential decay (TRUE) or linear decay (FALSE) is used with airborne spread.
--- 	`useWithinHerdPrevalence` : useWithinHerdPrevalence is of inGeneral
--- 	`includeCosts` : Indicates whether direct costs should be tracked in the model.
--- 	`useFixedRandomSeed` : Indicates whether a specified seed value for the random number generator should be used.
--- 	`randomSeed` : The specified seed value for the random number generator.
--- 	`saveAllDailyOutputs` : Indicates whether daily outputs should be stored for every iteration.
--- 	`saveDailyOutputsForIterations` : The number of iterations for which daily outputs should be stored.  The minimum value is 3.
--- 	`writeDailyStatesFile` : Indicates whether a plain text file with the state of each unit on each day of each iteration should be written.
--- 	`dailyStatesFileName` : The file name of the plain text file described above.
--- 	`saveDailyEvents` : Indicates whether all events should be recorded in the scenario database.
--- 	`saveDailyExposures` : Indicates whether all exposures should be recorded in the scenario database.
--- 	`useCustomOutputs` : Indicates whether custom outputs should be generated.  
+  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -430,8 +354,6 @@ alter table `inGeneral`
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inProductionType`
 	add constraint `FK1` foreign key (
 		`disLatentPeriodPdfID`)
@@ -522,12 +444,8 @@ alter table `inZoneProductionTypePair`
 	 references `inProductionType` (
 		`productionTypeID`); 
 
--- Add foreign key constraints to table `inProductionType`.
 alter table `inProductionType`
 	add constraint `inChart_inProductionType_FK8` foreign key (
 		`disPrevalenceRelID`)
 	 references `inChart` (
 		`chartID`); 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

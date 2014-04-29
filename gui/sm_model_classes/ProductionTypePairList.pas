@@ -4,13 +4,13 @@ unit ProductionTypePairList;
 ProductionTypePairList.pas
 ---------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.36 $
+Last revision: $Date: 2011-07-18 17:17:48 $ $Author: rhupalo $
+Version number: $Revision: 1.42.4.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,28 +19,41 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-  	Models,
-  	ProductionType,
-    ProductionTypeList,
+  uses
     Contnrs,
-    SMDatabase,
-		ProbDensityFunctions,
-    RelFunction,
-    FunctionEnums,
+
+    QLists,
+    
+    Sdew,
+
+    ModelDatabase,
+    Models,
+    FunctionDictionary,
     ChartFunction,
-    ProductionTypePair,
-    FunctionDictionary
+    ProbDensityFunctions,
+    RelFunction,
+
+    ProductionType,
+    ProductionTypeList,
+    SMDatabase,
+    FunctionEnums,
+    ProductionTypePair
   ;
 
   type TProductionTypePairList = class( TModelList )
     protected
+      _xmlModelList: TQStringList;
+
       function getUpdated():boolean;
 
-  	public
+      // XML import
+      function getXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+
+    public
       constructor create( db: TSMDatabase; sim: TObject ); overload;
       constructor create( const src: TProductionTypePairList; const ptList: TProductionTypeList; sim: TObject ); overload;
-
+      constructor create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil ); overload;
       constructor create( ptList: TProductionTypeList ); overload;
 
       destructor destroy(); override;
@@ -52,7 +65,7 @@ interface
 
       procedure debug(); override;
 
-    	// Needed for chart editing
+      // Needed for chart editing
       procedure removeChart( const chartName: string ); override;
       procedure changeChart(
           const whichChart: TSMChart;
@@ -68,7 +81,7 @@ interface
       function at( i: integer ): TProductionTypePair;
 
       // Other stuff
-      procedure populateDatabase( db: TSMDatabase; update: boolean = false );
+      procedure populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType );
 
       procedure subtract( ptp: TProductionTypePair ); overload;
       procedure subtract( ptpList: TProductionTypePairList ); overload;
@@ -76,6 +89,7 @@ interface
       function pairPosition( src, dst: TProductionType ): integer;
 
       property updated:boolean read getUpdated;
+      property xmlModelList: TQStringList read getXmlModelList;
     end
   ;
 
@@ -88,72 +102,66 @@ interface
     end
   ;
 
-  
-  const
-    DBPRODUCTIONTYPEPAIRLIST: boolean = false; // set to true to enable debugging messages for this unit
 
 implementation
 
-	uses
-  	SysUtils,
-    SqlClasses,
-    MyStrUtils,
-    USStrUtils,
-    DebugWindow,
+  uses
+    StrUtils,
+    SysUtils,
     Variants,
 
+    SqlClasses,
+    MyStrUtils,
+    DebugWindow,
+    I88n,
+    
     SMSimulationInput,
-    ContactModel,
-    AirborneSpreadModel
+    ContactSpreadParams,
+    AirborneSpreadParams
   ;
+
+  const
+    DBSHOWMSG: boolean = false; // set to true to enable debugging messages for this unit
+
 
 
 //-----------------------------------------------------------------------------
 // List: Construction/destruction
 //-----------------------------------------------------------------------------
   constructor TProductionTypePairList.create( ptList: TProductionTypeList );
-  	var
-    	itSrc, itDest: TProductionTypeListIterator;
+    var
+      itSrc, itDest: TProductionTypeListIterator;
       src, dest: TProductionType;
       ptPair: TProductionTypePair;
-      c: integer;
     begin
-      dbcout( 'TProductionTypePairList.create( ptList: TProductionTypeList )', DBPRODUCTIONTYPEPAIRLIST );
-    	inherited create();
+      dbcout( 'TProductionTypePairList.create( ptList: TProductionTypeList )', DBSHOWMSG );
+      inherited create();
+      _xmlModelList := nil;
       _sim := ptList.sim;
 
-    	itSrc := TProductionTypeListIterator.create( ptList );
+      itSrc := TProductionTypeListIterator.create( ptList );
       itDest := TProductionTypeListIterator.create( ptList );
 
-      dbcout2( 'Counting!' );
-      c := 0;
-
       while( itSrc.current() <> nil ) do
-      	begin
-        	src := itSrc.current();
+        begin
+          src := itSrc.current();
 
           while( itDest.current() <> nil ) do
-          	begin
-              inc( c );
-              dbcout2( c );
+            begin
               dest := itDest.current();
 
               ptPair := TProductionTypePair.create( src, dest, _sim );
               self.append( ptPair );
-
-              dbcout2( ptPair.pairDescr );
-
-            	itDest.incr();
+              
+              itDest.incr();
             end
           ;
 
-        	itSrc.incr();
+          itSrc.incr();
           itDest.toFirst();
         end
       ;
 
-      dbcout2( '' );
-      
       itSrc.free();
       itDest.free();
 
@@ -168,7 +176,7 @@ implementation
       newPTP: TProductionTypePair;
     begin
       inherited create( src );
-
+      _xmlModelList := nil;
       _sim := sim;
 
       it := TProductionTypePairListIterator.create( src );
@@ -187,9 +195,9 @@ implementation
   ;
 
 
-	constructor TProductionTypePairList.create( db: TSMDatabase; sim: TObject );
-  	var
-    	q: string;
+  constructor TProductionTypePairList.create( db: TSMDatabase; sim: TObject );
+    var
+      q: string;
       res: TSqlResult;
       row: TSqlRow;
       db2: TSqlDatabase;
@@ -198,18 +206,19 @@ implementation
       ptList: TProductionTypeList;
 
       cid: integer;
-  	begin
-      dbcout( 'TProductionTypePairList.create( ptList: TProductionTypeList; db: TSMDatabase )', DBPRODUCTIONTYPEPAIRLIST );
-    	inherited create();
-
+      ptSrc, ptDest: TProductionType;
+    begin
+      dbcout( 'TProductionTypePairList.create( ptList: TProductionTypeList; db: TSMDatabase )', DBSHOWMSG );
+      inherited create();
+      _xmlModelList := nil;
       _sim := sim;
       ptList := (sim as TSMSimulationInput).ptList;
 
-    	db2 := db as TSqlDatabase;
+      db2 := db as TSqlDatabase;
 
       q := 'SELECT '
-      		+ '`sourceProductionTypeID`, '
-        	+ '`destProductionTypeID`, '
+          + '`sourceProductionTypeID`, '
+          + '`destProductionTypeID`, '
           + '`useDirectContact`, '
           + '`directContactSpreadID`, '
           + '`useIndirectContact`, '
@@ -223,18 +232,23 @@ implementation
 
       row := res.fetchArrayFirst();
       while( row <> nil ) do
-      	begin
+        begin
           srcID := row.field( 'sourceProductionTypeID' );
           destID := row.field( 'destProductionTypeID' );
 
-          // FIX ME: there are no checks for nil values here.
-          // While nil values theoretically are OK, they probably pose a practical problem...
-          ptPair := TProductionTypePair.create( ptList.findProdType( srcID ), ptList.findProdType( destID ), _sim );
+          ptSrc := ptList.findProdType( srcID );
+          ptDest := ptList.findProdType( destID );
+
+          if( ( nil = ptSrc ) or ( nil = ptDest ) ) then
+            raise exception.create( 'A nil pt has been encountered in TProductionTypePairList.create()' )
+          ;
+
+          ptPair := TProductionTypePair.create( ptSrc, ptDest, _sim );
           ptPair.isInDB := true;
 
           ptPair.includeDirect := row.field( 'useDirectContact' );
 
-          // It is a bit awkward to create a TContactModel object even when contact
+          // It is a bit awkward to create a TContactSpreadParams object even when contact
           // is not being used, but it is somewhat easier (for the time being) when
           // it comes to using TFormContactSpread to set/change parameters.
           if( null = row.field( 'directContactSpreadID' ) ) then
@@ -243,7 +257,7 @@ implementation
             cid := row.field( 'directContactSpreadID' )
           ;
 
-          ptPair.direct := TContactModel.create(
+          ptPair.direct := TContactSpreadParams.create(
             db,
             cid,
             CMDirect,
@@ -256,7 +270,7 @@ implementation
           ptPair.includeIndirect := row.field( 'useIndirectContact' );
 
 
-          // It is a bit awkward to create a TContactModel object even when contact
+          // It is a bit awkward to create a TContactSpreadParams object even when contact
           // is not being used, but it is somewhat easier (for the time being) when
           // it comes to using TFormContactSpread to set/change parameters.
           if( null = row.field( 'indirectContactSpreadID' ) ) then
@@ -265,7 +279,7 @@ implementation
             cid := row.field( 'indirectContactSpreadID' )
           ;
 
-          ptPair.indirect := TContactModel.create(
+          ptPair.indirect := TContactSpreadParams.create(
             db,
             cid,
             CMIndirect,
@@ -276,7 +290,7 @@ implementation
           );
 
 
-          // It is a bit awkward to create a TAirborneSpreadModel object even when
+          // It is a bit awkward to create a TAirborneSpreadParams object even when
           // airborne spread is not being used, but it is somewhat easier (for the
           // time being) when it comes to using TFormAirborneSpread to set/change
           // parameters.
@@ -286,7 +300,7 @@ implementation
             cid := row.field( 'airborneContactSpreadID' )
           ;
 
-          ptPair.airborne := TAirborneSpreadModel.create(
+          ptPair.airborne := TAirborneSpreadParams.create(
             db,
             cid,
             _sim,
@@ -295,9 +309,11 @@ implementation
             ( null <> row.field( 'airborneContactSpreadID' ) ) // if not null, populate the object from the database
           );
 
-          ptPair.updated := false;
           self.append( ptPair );
-        	row := res.fetchArrayNext();
+
+          ptPair.updated := false;
+
+          row := res.fetchArrayNext();
         end
       ;
 
@@ -305,12 +321,41 @@ implementation
     end
   ;
 
+
+  constructor TProductionTypePairList.create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil );
+    var
+      i: integer;
+      model: pointer;
+      nModels: integer;
+      modelName: string;
+    begin
+      inherited create();
+      _sim := sim;
+      _xmlModelList := nil;
+
+      nModels := sdew.GetElementCount( models );
+
+      for i := 0 to nModels - 1 do
+        begin
+          model := sdew.GetElementByIndex( models, i );
+          modelName := sdew.GetElementName( model );
+
+          if( xmlModelList.contains( modelName ) ) then
+            importXml( model, sdew, errMsg )
+          ;
+        end
+      ;
+    end
+  ;
+
   
   destructor TProductionTypePairList.destroy();
-  	begin
-      dbcout( '*** Destroying TProductionTypePairList', DBPRODUCTIONTYPEPAIRLIST );
+    begin
+      dbcout( '*** Destroying TProductionTypePairList', DBSHOWMSG );
       // By default, TObjectList owns its objects and will free them.
-    	inherited destroy();
+      
+      freeAndNil( _xmlModelList );
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -342,7 +387,7 @@ implementation
   ;
 
 
-  procedure TProductionTypePairList.populateDatabase( db: TSMDatabase; update: boolean = false );
+  procedure TProductionTypePairList.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType );
     var
       it: TProductionTypePairListIterator;
       ptp: TProductionTypePair;
@@ -354,7 +399,7 @@ implementation
       while( nil <> it.current() ) do
         begin
           ptp := it.current();
-          ptp.populateDatabase( db, update );
+          ptp.populateDatabase( db, updateAction );
           if ( ptp.removed ) then
             begin
               remove( ptp );
@@ -376,11 +421,11 @@ implementation
     var
       it: TProductionTypePairListIterator;
       ptp: TProductionTypePair;
-      useContactModels: boolean;
-      useAirborneModels: boolean;
+      useContactSpread: boolean;
+      useAirborneSpread: boolean;
     begin
-      useContactModels := (_sim as TSMSimulationInput ).includeContactSpreadGlobal;
-      useAirborneModels := (_sim as TSMSimulationInput ).includeAirborneSpreadGlobal;
+      useContactSpread := (_sim as TSMSimulationInput ).includeContactSpreadGlobal;
+      useAirborneSpread := (_sim as TSMSimulationInput ).includeAirborneSpreadGlobal;
       result := '';
 
       it := TProductionTypePairListIterator.create( self );
@@ -389,23 +434,23 @@ implementation
       while( nil <> it.current() ) do
         begin
           ptp := it.current();
-          if( useContactModels ) then
+          if( useContactSpread ) then
             begin
-              dbcout( '*** Using contact models in TProductionTypePairList.ssXML', DBPRODUCTIONTYPEPAIRLIST );
+              dbcout( '*** Using contact models in TProductionTypePairList.ssXML', DBSHOWMSG );
               result := result + ptp.directContactXML();
               result := result + ptp.indirectContactXML();
             end
           else
-            dbcout( 'Not using contact models in TProductionTypePairList.ssXML', DBPRODUCTIONTYPEPAIRLIST )
+            dbcout( 'Not using contact models in TProductionTypePairList.ssXML', DBSHOWMSG )
           ;
 
-          if( useAirborneModels ) then
+          if( useAirborneSpread ) then
             begin
-              dbcout( '*** Using airborne spread models in TProductionTypePairList.ssXML', DBPRODUCTIONTYPEPAIRLIST );
+              dbcout( '*** Using airborne spread models in TProductionTypePairList.ssXML', DBSHOWMSG );
               result := result + ptp.airborneSpreadXML();
             end
           else
-            dbcout( 'Not using airborne spread models in TProductionTypePairList.ssXML', DBPRODUCTIONTYPEPAIRLIST )
+            dbcout( 'Not using airborne spread models in TProductionTypePairList.ssXML', DBSHOWMSG )
           ;
 
           it.incr();
@@ -425,8 +470,15 @@ implementation
   function TProductionTypePairList.validate( err: PString = nil ): boolean;
     var
       it: TProductionTypePairListIterator;
+      includeAirborneSpread: boolean;
+      includeDirectContactSpread: boolean;
+      includeIndirectContactSpread: boolean;
+
     begin
       result := true;
+      includeAirborneSpread := false;
+      includeDirectContactSpread := false;
+      includeIndirectContactSpread := false;
 
       it := TProductionTypePairListIterator.create( self );
       it.toFirst();
@@ -437,11 +489,35 @@ implementation
             result := false
           ;
 
+          if it.current().includeAirborne then includeAirborneSpread := true;
+          if it.current().includeDirect then includeDirectContactSpread := true;
+          if it.current().includeIndirect then includeIndirectContactSpread := true;
+
           it.incr();
         end
       ;
-
       it.free();
+
+      //rbh The following checks were added to address issue 2404
+
+      if (( (_sim as TSMSimulationInput).includeAirborneSpreadGlobal ) and ( not includeAirborneSpread )) then
+        begin
+          result := false;
+          if( nil <> err ) then
+            err^ := err^ + tr( 'Airborne disease spread is specified but is not used for any production type.' ) + endl
+          ;
+        end
+      ;
+
+      if (( (_sim as TSMSimulationInput).includeContactSpreadGlobal ) and not ( includeDirectContactSpread or includeIndirectContactSpread )) then
+        begin
+          result := false;
+          if( nil <> err ) then
+            err^ := err^ + tr( 'Contact disease spread is specified but is not used for any production type.' ) + endl
+          ;
+        end
+      ;
+
     end
   ;
 
@@ -501,15 +577,13 @@ implementation
       );
     var
       it: TProductionTypePairListIterator;
-      ptp: TProductionTypePair;
     begin
       it := TProductionTypePairListIterator.create( self );
       it.toFirst();
 
       while( nil <> it.current() ) do
         begin
-          ptp := it.current();
-          ptp.changeChart( whichChart, oldChartName, newChart );
+          it.current().changeChart( whichChart, oldChartName, newChart );
           it.incr();
         end
       ;
@@ -558,11 +632,11 @@ implementation
 
   
   function TProductionTypePairList.at( i: integer ): TProductionTypePair;
-  	begin
+    begin
       if( i > self.Count-1 ) then
-      	raise exception.Create( 'Index out of bounds (' + intToStr( i ) + ') in TProductionTypePairList with ' + intToStr( self.Count ) + ' items.' )
+        raise exception.Create( 'Index out of bounds (' + intToStr( i ) + ') in TProductionTypePairList with ' + intToStr( self.Count ) + ' items.' )
       else
-      	result := getObject( i ) as TProductionTypePair
+        result := getObject( i ) as TProductionTypePair
       ;
     end
   ;
@@ -575,17 +649,17 @@ implementation
 //-----------------------------------------------------------------------------
 
   procedure TProductionTypePairList.logicAndAdd( ptpList: TProductionTypePairList );
-  	var
+    var
       it: TProductionTypePairListIterator;
       optIt: TProductionTypePairListIterator;
-    	ptPair, optPair: TProductionTypePair;
+      ptPair, optPair: TProductionTypePair;
       found: boolean;
     begin
       it := TProductionTypePairListIterator.create( self );
       it.toFirst();
 
       while( nil <> it.current() ) do
-      	begin
+        begin
           it.current().removed := true;
           it.current().updated := true;
           it.incr();
@@ -655,28 +729,24 @@ implementation
   ;
 
 
-	procedure TProductionTypePairList.subtract( ptp: TProductionTypePair );
-  	var
+  procedure TProductionTypePairList.subtract( ptp: TProductionTypePair );
+    var
       it: TProductionTypePairListIterator;
-    	ptPair: TProductionTypePair;
-  	begin
+      ptPair: TProductionTypePair;
+    begin
       it := TProductionTypePairListIterator.create( self );
       it.toFirst();
 
       while( nil <> it.current() ) do
-      	begin
+        begin
           ptPair := it.current();
-       		if( ptPair.source = ptp.source ) then
-          	begin
-              if( ptPair.dest = ptp.dest ) then
-                begin
-                  self.remove( ptPair );
-                  // FIX ME: should the function stop after removing
-                  // a single instance, or should it remove all matches?
-                  // (Right now, it's doing the former.)
-                  break;
-                end
-              ;
+          if( ( ptPair.source = ptp.source ) and ( ptPair.dest = ptp.dest ) ) then
+            begin
+              self.remove( ptPair );
+              // FIX ME: should the function stop after removing
+              // a single instance, or should it remove all matches?
+              // (Right now, it's doing the former.)
+              break;
             end
           ;
           it.incr();
@@ -689,15 +759,15 @@ implementation
 
 
   procedure TProductionTypePairList.subtract( ptpList: TProductionTypePairList );
-  	var
+    var
       it: TProductionTypePairListIterator;
-  	begin
+    begin
       it := TProductionTypePairListIterator.create( ptpList );
       it.toFirst();
 
       while( nil <> it.current() ) do
-      	begin
-      		self.subtract( it.current() );
+        begin
+          self.subtract( it.current() );
           it.incr();
         end
       ;
@@ -707,24 +777,24 @@ implementation
   ;
 
 
-	function TProductionTypePairList.pairPosition( src, dst: TProductionType ): integer;
-  	var
+  function TProductionTypePairList.pairPosition( src, dst: TProductionType ): integer;
+    var
       it: TProductionTypePairListIterator;
-    	ptp: TProductionTypePair;
-  	begin
-    	result := -1;
+      ptp: TProductionTypePair;
+    begin
+      result := -1;
 
       it := TProductionTypePairListIterator.create( self );
       it.toFirst();
 
       while( nil <> it.current() ) do
-      	begin
+        begin
           ptp := it.current();
-       		if( ptp.source = src ) then
-          	begin
+          if( ptp.source = src ) then
+            begin
               if( ptp.dest = dst ) then
                 begin
-									result := it.currentIndex;
+                  result := it.currentIndex;
                   break;
                 end
               ;
@@ -735,6 +805,123 @@ implementation
       ;
 
       it.Free();
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// TProductionTypePairList: XML import
+//-----------------------------------------------------------------------------
+  function TProductionTypePairList.getXmlModelList(): TQStringList;
+    var
+      list: TQStringList;
+    begin
+      if( nil = _xmlModelList ) then
+        begin
+          list := TProductionTypePair.createXmlModelList();
+          _xmlModelList := TQStringList.create( list );
+          list.Free();
+        end
+      ;
+
+      result := _xmlModelList;
+    end
+  ;
+
+
+  procedure TProductionTypePairList.importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    var
+      prodTypeSrcName, prodTypeDestName, zoneName, modelName: string;
+      prodTypeSrc, prodTypeDest: TProductionType;
+      ptList: TProductionTypeList;
+      ptp: TProductionTypePair;
+      i: integer;
+    begin
+      // Do some preliminary error checking.
+      //------------------------------------
+      // Every model that this list will parse must have a "from" type.
+      // Some contact models will have a "zone" instead of a "to" type.
+      // These will be parsed elsewhere, but it might not hurt to flag the error condition here.
+
+      modelName := sdew.getElementName( model );
+      prodTypeSrcName :=  Sdew.GetElementAttribute( model, 'from-production-type' );
+      prodTypeDestName := Sdew.GetElementAttribute( model, 'to-production-type');
+      zoneName := Sdew.GetElementAttribute( model, 'zone' );
+
+      if( strIsEmpty( prodTypeSrcName ) ) then
+        begin
+          appendToPString(
+            errMsg,
+            ansiReplaceStr( tr( 'XML for xyz is missing a source production type.' ), 'xyz', modelName )
+          );
+          exit;
+        end
+      ;
+
+      if( ( not strIsEmpty( prodTypeDestName ) ) and ( not strIsEmpty( zoneName ) ) ) then
+        begin
+          appendToPString(
+            errMsg,
+            ansiReplaceStr( tr( 'XML for xyz is has both a destination production type and a zone.' ), 'xyz', modelName )
+          );
+          exit;
+        end
+      ;
+
+      if( strIsEmpty( prodTypeDestName ) and strIsEmpty( zoneName ) ) then
+        begin
+          appendToPString(
+            errMsg,
+            ansiReplaceStr( tr( 'XML for xyz specifies neither a destination production type nor a zone.' ), 'xyz', modelName )
+          );
+          exit;
+        end
+      ;
+
+      if( strIsEmpty( prodTypeDestName ) ) then
+        begin
+          // This is not an error, but this isn't a model that TProductionTypePairList should parse.
+          exit;
+        end
+      ;
+
+      // Find the production type pair to which this model belongs.
+      // Create new production types if necessary.
+      //-----------------------------------------------------------
+      ptList := (sim as TSMSimulationInput).ptList;
+
+      prodTypeSrc := ptList.findProdType( prodTypeSrcName );
+      if( nil = prodTypeSrc ) then
+        begin
+          prodTypeSrc := TProductionType.create( -1, prodTypeSrcName, false, sim );
+          ptList.append( prodTypeSrc );
+        end
+      ;
+
+      prodTypeDest := ptList.findProdType( prodTypeDestName );
+      if( nil = prodTypeDest ) then
+        begin
+          prodTypeDest := TProductionType.create( -1, prodTypeDestName, false, sim );
+          ptList.append( prodTypeDest );
+        end
+      ;
+
+      i := self.pairPosition( prodTypeSrc, prodTypeDest );
+
+      if( -1 = i ) then
+        begin
+          ptp := TProductionTypePair.create( prodTypeSrc, prodTypeDest, sim );
+          self.append( ptp );
+        end
+      else
+        ptp := self.at( i )
+      ;
+
+      // If we get this far, we can actually do something about this model.
+      //-------------------------------------------------------------------
+      ptp.importXml( model, sdew, errMsg );
     end
   ;
 //-----------------------------------------------------------------------------

@@ -4,13 +4,13 @@ program SpreadModel;
 SpreadModel.dpr
 ----------------
 Begin: 2004/07/15
-Last revision: $Date: 2008/11/25 22:03:19 $ $Author: areeves $
-Version: $Revision: 1.148 $
+Last revision: $Date: 2012-08-14 19:02:08 $ $Author: areeves $
+Version: $Revision: 1.164.4.17 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2004 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2004 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,9 +19,6 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 
 {$INCLUDE Defs.inc}
-
-{%ToDo 'SpreadModel.todo'}
-
 
 (*
 The Delphi interface overwrites user comments in the
@@ -32,16 +29,18 @@ special purpose, so don't mess with them.)
 
 
 uses
-  // Built-in units
-  //---------------
+  // Built-in units (including optional EurekaLog)
+  //----------------------------------------------
   Windows,
   Forms,
   SysUtils,
+  StrUtils,
   ComObj,
   Controls,
 
   // APHI General Purpose Delphi library
-  //------------------------------------
+  // See http://www.naadsm.org/opensource/generalpurpose
+  //----------------------------------------------------
   AppLog,
   ARMath,
   BasicGIS,
@@ -51,12 +50,11 @@ uses
   CsvParser,
   DebugWindow,
   FunctionPointers,
-  GuiStrUtils,
   I88n,
   ImageResources,
   IniHandler,
   MyDelphiArrayUtils,
-  myDialogs,
+  MyDialogs,
   MyGraphicsUtils,
   MyStrUtils,
   Points,
@@ -67,12 +65,12 @@ uses
   SqlClasses,
   StringSuperList,
   UnicodeDev,
-  USStrUtils,
   WindowsUtils,
   ZipFunctions,
 
   // APHI Delphi Library for Simulation Modeling
-  //--------------------------------------------
+  // See http://www.naadsm.org/opensource/libaphi
+  //---------------------------------------------
   AphiRng,
   ChartFunction,
   RelFunction,
@@ -80,13 +78,21 @@ uses
   FunctionDictionary,
   Models,
   SimInput,
+  ModelDatabase,
 
   // Simple Delphi Expat Wrapper
-  //----------------------------
+  // See http://www.naadsm.org/opensource/sdew
+  //------------------------------------------
   Sdew,
   XMLReader,
-  
+
+  // Proj.4 Delphi wrapper
+  // See http://www.naadsm.org/opensource/proj4wrapper
+  //--------------------------------------------------
+  Proj4,
+
   // QClasses: GPL-compatible data structures for use with Delphi
+  // See http://www.naadsm.org/opensource/qclasses
   //-------------------------------------------------------------
   QStringMaps,
   QIntegerMaps,
@@ -94,16 +100,12 @@ uses
   QLists,
   QOrderedDictionaries,
 
-  // General-purpose forms and GUI components
-  //-----------------------------------------
-  //FIX ME put this guy in with the others
-  FormFolderSelect,
-
   // Units for remote communication:
   // The path to RemoteMessenger should be specified in the Delphi Library path.
+  // See http://www.naadsm.org/opensource/remotemessenger
   //----------------------------------------------------------------------------
   RemoteMessenger,
-  
+
   {$IFNDEF CONSOLEAPP}
     // General-purpose units (graphical)
     //----------------------------------
@@ -113,28 +115,20 @@ uses
     FrameChartBase in 'general_purpose_gui\FrameChartBase.pas' {FrameChartBase: TFrame},
     FrameFileSelector in 'general_purpose_gui\FrameFileSelector.pas' {FrameFileSelector: TFrame},
     FrameStringGridBase in 'general_purpose_gui\FrameStringGridBase.pas' {FrameStringGridBase: TFrame},
-    
-    // FIX ME: Move these two forms to sm_forms: they are NOT general purpose!!
-    FormAppUpdate in 'general_purpose_gui\FormAppUpdate.pas' {FormAppUpdate},
-    FormRegistration in 'general_purpose_gui\FormRegistration.pas' {FormRegistration},
+    FormFolderSelect in 'general_purpose_gui\FormFolderSelect.pas' {FormFolderSelect},
 
     // PDF/relational function editing, part of the APHI modeling library
     //-------------------------------------------------------------------
     FrameFunctionParams2 in 'libaphi_delphi_gui\function_editor\FrameFunctionParams2.pas' {FrameFunctionParams2: TFrame},
     FrameChartPointsEditor in 'libaphi_delphi_gui\function_editor\FrameChartPointsEditor.pas' {FrameChartPointsEditor: TFrame},
-    FormChartPointsEditor2 in 'libaphi_delphi_gui\function_editor\FormChartPointsEditor2.pas' {FormChartPointsEditor2},
+    FormFunctionEditor in 'libaphi_delphi_gui\function_editor\FormFunctionEditor.pas' {FormFunctionEditor},
     FramePointEditorGrid in 'libaphi_delphi_gui\function_editor\FramePointEditorGrid.pas' {FramePointEditorGrid: TFrame},
     FrameFunctionEditor in 'libaphi_delphi_gui\function_editor\FrameFunctionEditor.pas' {FrameFunctionEditor: TFrame},
     
     // Model output displays from the APHI modeling library
     //-----------------------------------------------------
-    FrameArrayConvergence in 'libaphi_delphi_gui\FrameArrayConvergence.pas' {FrameArrayConvergence: TFrame},
     FrameArrayHistogram in 'libaphi_delphi_gui\FrameArrayHistogram.pas' {FrameArrayHistogram: TFrame},
-  {$ENDIF}
 
-  RemoteDatabaseParams in 'sm_database\RemoteDatabaseParams.pas',
-
-  {$IFNDEF CONSOLEAPP}  
     // The main form  
     //--------------
     FormMain in 'sm_forms\FormMain.pas' {FormMain},
@@ -145,17 +139,22 @@ uses
   FunctionEnums in 'sm_model_classes\FunctionEnums.pas',
   StringConsts in 'StringConsts.pas',
   StatusEnums in 'sm_model_classes\StatusEnums.pas',
+  SMI88nSettings in 'SMI88nSettings.pas',
 
   // NAADSM-specific model classes and data structures (non-graphical)  
   //------------------------------------------------------------------
   SMSimulationInput in 'sm_model_classes\SMSimulationInput.pas',
   SMDatabase in 'sm_database\SMDatabase.pas',
+  RemoteDatabaseParams in 'sm_database\RemoteDatabaseParams.pas',
   OldDatabaseFns in 'sm_database\OldDatabaseFns.pas',
   VaccinationParams in 'sm_model_classes\VaccinationParams.pas',
-  AirborneSpreadModel in 'sm_model_classes\AirborneSpreadModel.pas',
-  ContactModel in 'sm_model_classes\ContactModel.pas',
+  AirborneSpreadParams in 'sm_model_classes\AirborneSpreadParams.pas',
+  ContactSpreadParams in 'sm_model_classes\ContactSpreadParams.pas',
   DestructionParams in 'sm_model_classes\DestructionParams.pas',
+  TracingParams in 'sm_model_classes\TracingParams.pas',
+  TestingParams in 'sm_model_classes\TestingParams.pas',
   Herd in 'sm_model_classes\Herd.pas',
+  HerdControlActivities in 'sm_model_classes\HerdControlActivities.pas',
   ProductionType in 'sm_model_classes\ProductionType.pas',
   ProductionTypeList in 'sm_model_classes\ProductionTypeList.pas',
   DetectionParams in 'sm_model_classes\DetectionParams.pas',
@@ -172,21 +171,13 @@ uses
   CostParams in 'sm_model_classes\CostParams.pas',
   CustomOutputDefinitions in 'sm_model_classes\CustomOutputDefinitions.pas',
   Zone in 'sm_model_classes\Zone.pas',
-  ZoneParams in 'sm_model_classes\ZoneParams.pas',
-  SelectDailyOutputs in 'sm_model_classes\SelectDailyOutputs.pas',
-  
-  // Summary outputs
-  //----------------
-  SMSimulationStats in 'sm_model_classes\SMSimulationStats.pas',
-  SMZoneStats in 'sm_model_classes\SMZoneStats.pas',
-  OutputDescriptions in 'sm_model_classes\OutputDescriptions.pas',
+  ProdTypeZoneParams in 'sm_model_classes\ProdTypeZoneParams.pas',
 
-  // XML parsing
-  //------------
-  ReadXMLInput in 'sm_xml_classes\ReadXMLInput.pas',
-  xmlHerd in 'sm_xml_classes\xmlHerd.pas',
-  DiseaseModelStatMethods in 'sm_xml_classes\DiseaseModelStatMethods.pas',
-  Loc in 'sm_xml_classes\Loc.pas',  
+  // Simulation outputs
+  //-------------------
+  IterationOutputs in 'sm_output_classes\IterationOutputs.pas',
+  OutputDescriptions in 'sm_output_classes\OutputDescriptions.pas',
+  SelectDailyOutputs in 'sm_output_classes\SelectDailyOutputs.pas',
 
   // Data structures for drawing zones
   //----------------------------------
@@ -231,6 +222,10 @@ uses
     FormTracing in 'sm_forms\FormTracing.pas' {FormTracing},
     FrameTracingGlobal in 'sm_forms\FrameTracingGlobal.pas' {FrameTracingGlobal: TFrame},
     FormTracingGlobal in 'sm_forms\FormTracingGlobal.pas' {FormTracingGlobal},
+    FrameTracingHerdExam in 'sm_forms\FrameTracingHerdExam.pas' {FrameTracingHerdExam: TFrame},
+    FormTracingHerdExam in 'sm_forms\FormTracingHerdExam.pas' {FormTracingHerdExam},
+    FrameTracingTesting in 'sm_forms\FrameTracingTesting.pas' {FrameTracingTesting: TFrame},
+    FormTracingTesting in 'sm_forms\FormTracingTesting.pas' {FormTracingTesting},
 
     FormZoneCreation in 'sm_forms\FormZoneCreation.pas' {FormZoneCreation},
     FormZone in 'sm_forms\FormZone.pas' {FormZone},
@@ -269,17 +264,24 @@ uses
     // Output forms and widgets
     //-------------------------
     FormIterationSummary in 'sm_forms\FormIterationSummary.pas' {FormIterationSummary},
+    
     FormDailyStatusByProdType in 'sm_forms\FormDailyStatusByProdType.pas' {FormDailyStatusByProdType},
+    FrameDailyStatusByProdTypeDiseaseStats in 'sm_forms\FrameDailyStatusByProdTypeDiseaseStats.pas' {FrameDailyStatusByProdTypeDiseaseStats: TFrame},
+    FrameDailyStatusByProdTypeDetectionStats in 'sm_forms\FrameDailyStatusByProdTypeDetectionStats.pas' {FrameDailyStatusByProdTypeDetectionStats: TFrame},
+    FrameDailyStatusByProdTypeControlStats in 'sm_forms\FrameDailyStatusByProdTypeControlStats.pas' {FrameDailyStatusByProdTypeControlStats: TFrame},    
+    
     FormDailyZoneStatusByProdType in 'sm_forms\FormDailyZoneStatusByProdType.pas' {FormDailyZoneStatusByProdType},
+    FrameDailyZoneStatusByProdType in 'sm_forms\FrameDailyZoneStatusByProdType.pas' {FrameDailyZoneStatusByProdType: TFrame},
+    
     FormMap in 'sm_forms\FormMap.pas' {FormMap},
     FrameOutputStatsTable in 'sm_forms\FrameOutputStatsTable.pas' {FrameOutputStatsTable: TFrame},
     FormOutputStats in 'sm_forms\FormOutputStats.pas' {FormOutputStats},
     FrameOutputStats in 'sm_forms\FrameOutputStats.pas' {FrameOutputStats: TFrame},
-    FrameSummaryEpiCurves in 'sm_forms\FrameSummaryEpiCurves.pas' {FrameSummaryEpiCurves: TFrame},
+
     FormSummaryEpiCurves in 'sm_forms\FormSummaryEpiCurves.pas' {FormSummaryEpiCurves},
+    FrameSummaryEpiCurves in 'sm_forms\FrameSummaryEpiCurves.pas' {FrameSummaryEpiCurves: TFrame},
     FrameSummaryEpiCurveTable in 'sm_forms\FrameSummaryEpiCurveTable.pas' {FrameSummaryEpiCurveTable: TFrame},
-    FrameDailyStatusByProdType in 'sm_forms\FrameDailyStatusByProdType.pas' {FrameDailyStatusByProdType: TFrame},
-    FrameDailyZoneStatusByProdType in 'sm_forms\FrameDailyZoneStatusByProdType.pas' {FrameDailyZoneStatusByProdType: TFrame},
+
     FrameSingleEpiCurve in 'sm_forms\FrameSingleEpiCurve.pas' {FrameSingleEpiCurve: TFrame},
     FrameSingleCostCurve in 'sm_forms\FrameSingleCostCurve.pas' {FrameSingleCostCurve: TFrame},
     FrameSingleCostTable in 'sm_forms\FrameSingleCostTable.pas' {FrameSingleCostTable: TFrame},
@@ -291,31 +293,35 @@ uses
     FormOutputExposures in 'sm_forms\FormOutputExposures.pas' {FormOutputExposures},
     FormScenarioComparison in 'sm_forms\FormScenarioComparison.pas' {FormScenarioComparison},
 
-    // Miscellaneous forms and widgets  
+    // Miscellaneous forms and widgets
     //--------------------------------
-    // FIX ME: Move this guy
-    DialogRunSimException in 'DialogRunSimException.pas' {DialogRunSimException},
+    DialogRunSimException in 'sm_forms\DialogRunSimException.pas' {DialogRunSimException},
+
+    FormAppUpdate in 'sm_forms\FormAppUpdate.pas' {FormAppUpdate},
+    FormRegistration in 'sm_forms\FormRegistration.pas' {FormRegistration},
 
     FormImport in 'sm_forms\FormImport.pas' {FormImport},
     FormExport in 'sm_forms\FormExport.pas' {FormExport},
     FormHerdExportOptions in 'sm_forms\FormHerdExportOptions.pas' {FormHerdExportOptions},
     FormLanguageSettings in 'sm_forms\FormLanguageSettings.pas' {FormLanguageSettings},
+    FormRegionalSettings in 'sm_forms\FormRegionalSettings.pas' {FormRegionalSettings},
     FrameCredits in 'sm_forms\FrameCredits.pas' {FrameCredits: TFrame},
 
-    {$IF Defined( CHEYENNE ) }
-      FormAboutCheyenne in 'sm_forms\FormAboutCheyenne.pas' {FormAboutCheyenne},
-      FormSplashCheyenne in 'sm_forms\FormSplashCheyenne.pas' {FormSplashCheyenne},
-    {$ELSEIF Defined( LARAMIE ) }
-      FormAboutLaramie in 'sm_forms\FormAboutLaramie.pas' {FormAboutLaramie},
-      FormSplashLaramie in 'sm_forms\FormSplashLaramie.pas' {FormSplashLaramie},
-    {$ELSE}
-      FormAbout in 'sm_forms\FormAbout.pas' {FormAbout},
-      FormSplash in 'sm_forms\FormSplash.pas' {FormSplash},
-    {$IFEND}
+    FormAboutExperimental in 'sm_forms\FormAboutExperimental.pas' {FormAboutExperimental},
+    FormSplashExperimental in 'sm_forms\FormSplashExperimental.pas' {FormSplashExperimental},
+    FormAbout in 'sm_forms\FormAbout.pas' {FormAbout},
+    FormSplash in 'sm_forms\FormSplash.pas' {FormSplash},
+	
+	  HerdKML in 'sm_model_classes\HerdKML.pas',
 {$ENDIF}
 
+  // Exception handling, with the (optional) EurekaLog
+  SMExceptionHandler in 'SMExceptionHandler.pas',
+
   // The unit that manages all of the heavy lifting
-  ModelImplementation in 'ModelImplementation.pas'
+  //-----------------------------------------------
+  NAADSMLibrary in 'NAADSMLibrary.pas',
+  NAADSMLibraryTypes in 'NAADSMLibraryTypes.pas'
 ;
 
 {$R *.res}
@@ -336,18 +342,9 @@ var
     msg: string;
     stopReason: TStopReason;
     stopDay: integer;
+    exportXmlOnly: boolean;
     updateSuccess: boolean;
   {$ENDIF}
-
-
-  {$IF Defined( CHEYENNE ) }
-    {$IF Defined( LARAMIE ) }
-      This block will lead to compiler errors if symbols for both
-      experimental versions are defined. Note that these experimental
-      versions are currently mutually exlusive, and only one symbol
-      should be defined at a time.
-    {$IFEND}
-  {$IFEND}
 
 
   function requiredDllsOK( var msg: string ): boolean;
@@ -387,11 +384,13 @@ var
       // Check that the required DLLs are loaded
       //----------------------------------------
       if
-        ( not( sssimLoaded ) )  // sssim.dll (cheyenne.dll, laramie.dll) cannot be found, or is the wrong version
+        ( not( naadsmLibLoaded ) )  // naadsm.dll (cheyenne.dll, laramie.dll, riverton.dll, torrington.dll, wheatland.dll) cannot be found, or is the wrong version
       or
-        ( not( gslLoaded ) ) // libgsl.dll cannot be found or is the wrong version
+        ( not( pdfGslFnsLoaded() ) ) // libgsl.dll cannot be found or is the wrong version
       or
-        ( not( libAPHILoaded ) ) // libaphi.dll cannot be found or is the wrong version
+        ( not( pdfAphiFnsLoaded() ) ) // libaphi.dll cannot be found or is the wrong version
+      or
+        ( not( projLibLoaded() ) ) // proj.dll cannot be found
       or
         ( not( gisFunctionsLoaded ) ) // libaphi.dll cannot be found or is the wrong version
       or
@@ -404,19 +403,13 @@ var
         begin
           result := false;
 
-          if( not( sssimLoaded ) ) then inc( missingLibs ); // Count sssim as missing
-          if( not( gslLoaded ) ) then inc( missingLibs ); // Count libgsl as missing
-          if( not( libAPHILoaded ) or not( gisFunctionsLoaded ) ) then inc( missingLibs ); // count libaphi as missing
+          if( not( naadsmLibLoaded ) ) then inc( missingLibs ); // Count naadsm as missing
+          if( not( pdfGslFnsLoaded() ) ) then inc( missingLibs ); // Count libgsl as missing
+          if( not( pdfAphiFnsLoaded() ) or not( gisFunctionsLoaded ) ) then inc( missingLibs ); // count libaphi as missing
+          if( not( projLibLoaded() ) ) then inc( missingLibs ); // count proj.dll as missing
           if( not( sdewLoaded ) ) then inc( missingLibs ); // Count sdew.dll as missing
           if( not( qClassesLoaded ) ) then inc( missingLibs ); // count qclasses.dllHandle as missing
-
-          {$IF Defined( CHEYENNE ) }
-            if( not( sssimLoaded ) ) then msg := msg + 'cheyenne.dll';
-          {$ELSEIF Defined( LARAMIE ) }
-            if( not( sssimLoaded ) ) then msg := msg + 'laramie.dll';
-          {$ELSE}
-            if( not( sssimLoaded ) ) then msg := msg + 'sssim.dll';
-          {$IFEND}
+          if( not( naadsmLibLoaded ) ) then msg := msg + SIM_DLL_NAME;
 
           if ( not( remoteLoaded ) ) then
             begin
@@ -428,7 +421,7 @@ var
             end
           ;
 
-          if( not( gslLoaded ) ) then
+          if( not( pdfGslFnsLoaded() ) ) then
             begin
               if( 0 = length( msg ) ) then
                 msg := 'libgsl.dll'
@@ -438,12 +431,22 @@ var
             end
           ;
 
-          if( not( libAPHILoaded ) or not( gisFunctionsLoaded ) ) then
+          if( not( pdfAphiFnsLoaded() ) or not( gisFunctionsLoaded ) ) then
             begin
               if( 0 = length( msg ) ) then
                 msg := 'libaphi.dll'
               else
                 msg := msg + ', libaphi.dll'
+              ;
+            end
+          ;
+
+          if( not( projLibLoaded() ) ) then
+            begin
+              if( 0 = length( msg ) ) then
+                msg := 'proj.dll'
+              else
+                msg := msg + ', proj.dll'
               ;
             end
           ;
@@ -469,12 +472,12 @@ var
           ;
 
           if( 1 = missingLibs ) then
-            msg := 'A required program library (' + msg + ') cannot be found or is out of date. '
+            msg := ansiReplaceStr( tr( 'A required program library (xyz) cannot be found or is out of date.' ), 'xyz', msg )
           else
-            msg := 'Required program libraries (' + msg + ') cannot be found or are out of date. '
+            msg := ansiReplaceStr( tr( 'Required program libraries (xyz) cannot be found or are out of date.' ), 'xyz', msg )
           ;
 
-          msg := msg + endl + 'To solve this problem, please reinstall the application, or check with the developers.';
+          msg := msg + endl + tr( 'To solve this problem, please reinstall the application, or check with the developers.' );
         end
       ;
     end
@@ -486,77 +489,122 @@ var
   procedure launchGUI( cmdParams: TCmdLine {fileName: string = ''} );
     var
       msg: string;
-      frm: TFormLanguageSettings;
+      {$IFNDEF ENGLISHONLY}
+        frm: TFormLanguageSettings;
+      {$ENDIF}
     begin
       msg := '';
 
       Application.Initialize();
 
-      // DON'T FORGET:  This value must be set manually.  It cannot be set to an
-      // existing string constant.
-      {$IF Defined( CHEYENNE ) }
-        Application.Title := 'NAADSM-Cheyenne 3.1';
-      {$ELSEIF Defined( LARAMIE ) }
-        Application.Title := 'NAADSM-Laramie 3.1';
+      {$IFDEF ENGLISHONLY}
+        setLanguage( I88nEnglish );
       {$ELSE}
-        Application.Title := 'NAADSM 3.1';
-      {$IFEND}
+        // FIX ME: for now, only the GUI version of NAADSM/PC supports non-English language.
+        if( TFormLanguageSettings.usePreferredLanguage() ) then
+          begin
+            dbcout( 'Using user-preferred language.', true );
+            setLanguage( TFormLanguageSettings.preferredLanguage() );
+          end
+        else if( TFormLanguageSettings.useSystemLanguage() and languageSupported( systemLanguage() ) ) then
+          begin
+            dbcout( 'Using default system language.', true );
+            setLanguage( systemLanguage() );
+          end
+        else // Use the form and ask the user
+          begin
+            frm := TFormLanguageSettings.create( nil, false, false );
+            frm.ShowModal();
+            setLanguage( frm.language );
+            frm.Free(); // parent is nil, so use Free() instead of Release()!
+          end
+        ;
+      {$ENDIF}
 
-      // FIX ME: for now, only the GUI version of NAADSM/PC supports non-English language.
-      if( TFormLanguageSettings.usePreferredLanguage() ) then
-        begin
-          dbcout( 'Using user-preferred language.', true );
-          setLanguage( TFormLanguageSettings.preferredLanguage() );
-        end
-      else if( TFormLanguageSettings.useSystemLanguage() and languageSupported( systemLanguage() ) ) then
-        begin
-          dbcout( 'Using default system language.', true );
-          setLanguage( systemLanguage() );
-        end
-      else // Use the form and ask the user
-        begin
-          frm := TFormLanguageSettings.create( nil, false, false );
-          frm.ShowModal();
-          setLanguage( frm.language );
-          freeAndNil( frm );
-        end
-      ;
-
+      // Set up the main window
       // The Delphi IDE screws up this line once in a while.  It should read as follows:
       //Application.CreateForm( TFormMain, frmMain );
       Application.CreateForm( TFormMain, frmMain );
 
+      // Set up the window for displaying warnings generated by the DLL (declared in NAADSMLibrary.pas).
+      // With any luck, it will never be used.
+      Application.CreateForm( TDialogLongMessage, frmDllWarnings );
+      frmDllWarnings.caption := tr( 'Messages generated during simulation run' );
+      frmDllWarnings.header :=
+        tr( 'The following messages were generated by the running simulation.' )
+          + ' ' + tr( 'These may simply indicate warnings to the user.' )
+          + ' ' + tr( 'It is also possible that they indicate unanticipated error conditions, which might affect the validity of simulation output.' )
+          + ' ' + tr( 'If you believe that these messages represent errors, please copy the information below and send it to the NAADSM Development Team.' )
+          + ' ' + tr( 'Thank you for your assistance!' )
+      ;
+      //frmDllWarnings.BorderIcons := [ biSystemMenu, biMaximize ];
+      frmDllWarnings.hide();
+
+
       {$IFDEF DEBUG}
         // Don't show the splash screen while debugging: it is annoying.
       {$ELSE}
-        {$IF Defined( CHEYENNE ) }
-          Application.CreateForm( TFormSplashCheyenne, frmSplash );
-        {$ELSEIF Defined( LARAMIE ) }
-          Application.CreateForm( TFormSplashLaramie, frmSplash );
-        {$ELSE}
-          Application.CreateForm( TFormSplash, frmSplash );
-        {$IFEND}
+        if( IS_EXPERIMENTAL ) then
+          Application.CreateForm( TFormSplashExperimental, frmSplashExperimental )
+        else
+          Application.CreateForm( TFormSplash, frmSplash )
+        ;
       {$ENDIF}
 
-       // Check for required libraries.
-       // The application shouldn't/won't/can't run without them.
-       if( not( requiredDllsOK( msg ) ) ) then
+       // Check for experimental versions.
+       // The application should not run if there's a problem.
+       if( not( experimentalVersionDefinitionsOK( msg ) ) ) then
         begin
           if( nil <> frmSplash ) then
             begin
               if( frmSplash.Visible ) then frmSplash.Hide();
             end
           ;
+          if( nil <> frmSplashExperimental ) then
+            begin
+              if( frmSplashExperimental.Visible ) then frmSplashExperimental.Hide();
+            end
+          ;
 
           msgOK(
-              msg,
-              SHORTMASTERCAPTION,
-              IMGWarning,
-              frmMain
-            );
+            msg,
+            SHORTMASTERCAPTION,
+            IMGWarning,
+            frmMain
+          );
 
           {$IFDEF DEBUG}
-            dbcout( ssSimLoadErrors(), true );
+            dbcout( naadsmLibLoadErrors(), true );
+            Application.Run();
+          {$ELSE}
+            exit;
+          {$ENDIF}
+        end
+
+       // Check for required libraries.
+       // The application shouldn't/won't/can't run without them.
+       else if( not( requiredDllsOK( msg ) ) ) then
+        begin
+          if( nil <> frmSplash ) then
+            begin
+              if( frmSplash.Visible ) then frmSplash.Hide();
+            end
+          ;
+          if( nil <> frmSplashExperimental ) then
+            begin
+              if( frmSplashExperimental.Visible ) then frmSplashExperimental.Hide();
+            end
+          ;
+
+          msgOK(
+            msg,
+            SHORTMASTERCAPTION,
+            IMGWarning,
+            frmMain
+          );
+
+          {$IFDEF DEBUG}
+            dbcout( naadsmLibLoadErrors(), true );
             Application.Run();
           {$ELSE}
             exit;
@@ -565,8 +613,12 @@ var
        else
         begin
           try
+            outputDescriptionList := TOutputDescriptionList.create();
+
             frmMain.setCommandParams( cmdParams );
             Application.Run();
+
+            freeAndNil( outputDescriptionList );
           except
             // do nothing
           end;
@@ -594,7 +646,7 @@ var
       cout( endl );
       cout( APPNAME );
       cout(  vers );
-      cout( 'Copyright 2003 - 2008 Animal Population Health Institute at' );
+      cout( 'Copyright ' + COPYRIGHTDATES + ' Animal Population Health Institute at' );
       cout( 'Colorado State University and University of Guelph.' );
       cout( 'This is free software, released under the terms of the GNU General Public' );
       cout( 'License.  Please see the source or the following URL for copying conditions.' );
@@ -609,6 +661,7 @@ var
     end
   ;
 
+
   procedure showHelp();
     begin
       cout( 'USAGE:' );
@@ -620,6 +673,13 @@ var
       cout( '--silent:         Run without writing any output to the console.' );
       cout( '                  Optional: if not present, output will be written' );
       cout( '                  to the console.' );
+      cout( '--export, -e:     Generate XML files from the specfied database.' );
+      cout( '                  Optional: if specified, the simulation will not' );
+      cout( '                  run, but scenario and unit fileswill be generated' );
+      cout( '                  in the same directory and with the same file name' );
+      cout( '                  as the specified database.  If scenario' );
+      cout( '                  parameters are not valid, then no files will be' );
+      cout( '                  produced, and an error message may be displayed.' );
       cout( '--remote-database <ipaddress:port>, -rd <ipaddress:port>:' );
       cout( '                  Use the NAADSM Remote Database Server at the' );
       cout( '                  indicated address for output storage.  Optional:' );
@@ -647,7 +707,7 @@ var
       cout( '                  over, regardless of pending control measures.' );
       cout( '  firstDetection: End iterations upon the first detection of any' );
       cout( '                  clinically infectious unit.' );
-      cout( '  specDay x:      End iterations on day x, where x is a postiive' );
+      cout( '  specDay x:      End iterations on day x, where x is a positive' );
       cout( '                  integer value.' + endl );
     end
   ;
@@ -726,6 +786,14 @@ var
       dbFileName := cmdParams.getArgument( dbParam, 0 );
 
 
+      // Look for the (optional) 'export' switch
+      //----------------------------------------
+      if( cmdParams.hasSwitch( '--export' ) or cmdParams.hasSwitch( '-e' ) ) then
+        exportXmlOnly := true
+      else
+        exportXmlOnly := false
+      ;
+
       // Look for (optional) 'stop' switch and its associated argument(s)
       //-----------------------------------------------------------------
       if( cmdParams.hasSwitch( '--stop' ) and (cmdParams.hasSwitch( '-s' ) ) ) then
@@ -746,7 +814,7 @@ var
       ;
 
       if( 0 = length( stopParam ) ) then
-        stopReason := ssStartAndStopAtEndOfOutBreak
+        stopReason := ssStopAtEndOfOutBreak
       else if( 0 = cmdParams.getArgumentCount( stopParam ) ) then
         begin
           showVersion( extraMessage );
@@ -757,14 +825,14 @@ var
       else
         begin
           if( 'outbreakend' = lower( cmdParams.getArgument( stopParam, 0 ) ) ) then
-            stopReason := ssStartAndStopAtEndOfOutBreak
+            stopReason := ssStopAtEndOfOutBreak
           else if( 'firstdetection' = lower( cmdParams.getArgument( stopParam, 0 ) ) ) then
-            stopReason := ssStartAndStopAtFirstDetection
+            stopReason := ssStopAtFirstDetection
           else if( 'diseaseend' = lower( cmdParams.getArgument( stopParam, 0 ) ) ) then
-            stopReason := ssStartAndStopAtDiseaseEnd
+            stopReason := ssStopAtDiseaseEnd
           else if( 'specday' = lower( cmdParams.getArgument( stopParam, 0 ) ) ) then
             begin
-              stopReason := ssStartAndStopAtSpecificDay;
+              stopReason := ssStopAtSpecificDay;
               
               if( -1 = strToInt( cmdParams.getSafeArgument( stopParam, 1, '-1' ) ) ) then
                 begin
@@ -993,11 +1061,173 @@ var
       result := true;
     end
   ;
+
+
+  procedure exportModelFromConsole();
+    var
+      sfn, hfn: string;
+      errMsg: string;
+      success: boolean;
+    begin
+      // Create the objects.
+      //--------------------
+      sim := TSMSimulationInput.create( smdb );
+      hList := THerdList.create( smdb, sim );
+
+      if
+        sim.isValid( true, @errMsg )
+      and
+        hList.isValid( @errMsg )
+      then
+        begin
+          sfn := stripExtension( smdb.permanentDBFileName ) + '-scenario.xml';
+          hfn := stripExtension( smdb.permanentDBFileName ) + '-units.xml';
+
+          cout( 'Writing scenario XML file...' );
+          success := sim.writeXMLFile( sfn, true, stopReason, stopDay, @errMsg );
+
+          if( success ) then
+            begin
+              cout( 'Writing unit XML file...' );
+              success := hList.writeXMLFile( hfn, false, @errMsg );
+            end
+          ;
+
+          if ( not success ) then
+            begin
+              cout( 'XML files could not be written.  Please check permissions and available disk space:' + endl );
+              cout( errMsg + endl );
+              deleteFile( sfn );
+              deleteFile( hfn );
+            end
+          ;
+        end
+      else
+        begin
+          cout( 'The scenario contained in this database is not valid and could not be exported:' + endl );
+          cout( errMsg + endl );
+        end
+      ;
+
+      // Clean up.
+      //----------
+      freeAndNil( hList );
+      freeAndNil( sim );
+      freeAndNil( smdb );
+
+      cout( 'Done.' );
+    end
+  ;
+
+
+  procedure runModelFromConsole();
+    begin
+      // Clear any output.
+      //------------------
+      smdb.initializeAllOutputRecords();
+
+      // Set the remote seed, if necessary.
+      //-----------------------------------
+      if( -1 <> remoteDBParams.randomSeed ) then
+        smdb.execute( 'UPDATE `inGeneral` SET `useFixedRandomSeed` = true, `randomSeed` = ' + intToStr( remoteDBParams.randomSeed ) )
+      ;
+
+      // Create the objects.
+      //--------------------
+      sim := TSMSimulationInput.create( smdb );
+      hList := THerdList.create( smdb, sim );
+      smScen := TSMScenario.create( sim, hList );
+
+      // Record the number of days specified and the reason for stopping the simulation.
+      //--------------------------------------------------------------------------------
+      smScen.simInput.simStopReason := stopReason;
+      smdb.simStopReason := stopReason;
+
+      if( ssStopAtSpecificDay = stopReason ) then
+        begin
+          smScen.simInput.simDays := stopDay;
+          smdb.simDays := stopDay;
+        end
+      ;
+
+      // Launch the simulation.
+      //-----------------------
+      cout( 'Launching simulation...' );
+      runResult := startSim(
+        smScen.simInput,
+        smScen.herdList,
+        smdb,
+        errorMessage
+      );
+
+      // Check the result.
+      //------------------
+      case runResult of
+        ERRRUNSIMEXCEPTION:
+          begin
+            cout( 'An exception occurred:' + endl + errorMessage + endl );
+            cout( 'This simulation did not run to completion.' + endl );
+          end
+        ;
+        ERRINVALIDSCENARIO:
+          begin
+            cout( 'Problems were found with this scenario.  These problems must be corrected before this scenario can be run:' + endl );
+            cout( errorMessage + endl );
+          end
+        ;
+        ERRCANNOTWRITEFILES:
+          begin
+            cout(
+              'Temporary files required to launch this simulation were not written.  Please ensure that you have'
+              + ' adequate hard disk space and sufficient permissions to write files to your hard disk.  For'
+              + ' further assistance, please contact the developers.' + endl
+            );
+          end
+        ;
+        ERRNONE:
+          begin
+            cout( 'Simulation complete.' + endl );
+          end
+        ;
+        ERRNOTSET:
+          begin
+            // ignore this.
+          end
+        ;
+      end;
+      // Save the database file.
+      //------------------------
+      cout( 'Saving database...' + endl );
+      smdb.save();
+
+      // Clean up.
+      //----------
+      //cout( 'Freeing database...' + endl );
+      freeAndNil( smdb );
+
+      //cout( 'Freeing scenario....' + endl );
+      freeAndNil( smScen );
+
+      //cout( 'Freeing _rm...' + endl );
+      if( nil <> _rm ) then
+        freeAndNil( _rm )
+      ;
+
+      // Go home.
+      //---------
+      cout( 'Done.' );
+    end
+  ;
   {$ENDIF}
 
 begin // MAIN
   {$IFDEF DEBUG}
-    setDEBUGGING( true );
+    setDEBUGGING( true, true );
+    {$IFDEF EUREKALOG}
+      dbcout( 'Compiled with EurekaLog.', true );
+    {$ELSE}
+      dbcout( 'EurekaLog is not included.', true );
+    {$ENDIF}
   {$ELSE}
     setDEBUGGING( false );
   {$ENDIF}
@@ -1038,6 +1268,16 @@ begin // MAIN
     // Use the --silent switch in these situations to prevent them.
     consoleSilent := cmdParams.hasSwitch( '--silent' );
 
+    // Check for experimental versions.  The application should not run if there's a problem.
+    //---------------------------------------------------------------------------------------
+    if( not( experimentalVersionDefinitionsOK( msg ) ) ) then
+      begin
+        handleCmdParams( cmdParams, dbFileName, msg );
+        cmdParams.free();
+        exit;
+      end
+    ;
+
     // Check for required libraries.  The program shouldn't/won't/can't run without them.
     //-----------------------------------------------------------------------------------
     if( not( requiredDllsOK( msg ) ) ) then
@@ -1076,8 +1316,6 @@ begin // MAIN
         if( smdb.isReadOnly ) then
           begin
             cout( 'This scenario file is read-only.  NAADSM requires write access if you wish to modify or run this scenario.' + endl );
-            smdb.close();
-            deleteFile( smdb.workingDBFileName );
             freeAndNil( smdb );
             exit;
           end
@@ -1088,8 +1326,6 @@ begin // MAIN
         if( not( smdb.indexExists( 'dynHerd_PK', 'dynHerd' ) ) ) then
           begin
             cout( 'The schema of this scenario database has been altered.  NAADSM cannot run this scenario.' + endl );
-            smdb.close();
-            deleteFile( smdb.workingDBFileName );
             freeAndNil( smdb );
             exit;
           end
@@ -1102,8 +1338,6 @@ begin // MAIN
         if( not( dbUpdateResult in [DBVersionCurrent, DBVersionUpdated] ) ) then
           begin
             cout( 'The version of the scenario database is not recognized or cannot be updated.  This version of NAADSM cannot run this scenario.' + endl );
-            smdb.close();
-            deleteFile( smdb.workingDBFileName );
             freeAndNil( smdb );
             exit;
           end
@@ -1117,8 +1351,6 @@ begin // MAIN
             if( not( updateSuccess ) ) then
               begin
                 cout( 'An error occurred, and this database was not updated.  This version of NAADSM cannot run this scenario.  If the problem persists, please contact the developers.' + endl );
-                smdb.close();
-                deleteFile( smdb.workingDBFileName );
                 freeAndNil( smdb );
                 exit;
               end
@@ -1126,105 +1358,11 @@ begin // MAIN
           end
         ;
 
-        // Clear any output.
-        //------------------
-        smdb.initializeAllOutputRecords();
-
-        // Set the remote seed, if necessary.
-        //-----------------------------------
-        if( -1 <> remoteDBParams.randomSeed ) then
-          smdb.execute( 'UPDATE `inGeneral` SET `useFixedRandomSeed` = true, `randomSeed` = ' + intToStr( remoteDBParams.randomSeed ) )
+        if( exportXmlOnly ) then
+          exportModelFromConsole()
+        else
+          runModelFromConsole()
         ;
-
-        // Create the objects.
-        //--------------------
-        sim := TSMSimulationInput.create( smdb );
-        hList := THerdList.create( smdb, sim );
-        smScen := TSMScenario.create( sim, hList );
-
-        // Record the number of days specified and the reason for stopping the simulation.
-        //--------------------------------------------------------------------------------
-        smScen.simInput.simStopReason := stopReason;
-        smdb.simStopReason := stopReason;
-
-        if( ssStartAndStopAtSpecificDay = stopReason ) then
-          begin
-            smScen.simInput.simDays := stopDay;
-            smdb.simDays := stopDay;
-          end
-        ;
-
-        // Launch the simulation.
-        //-----------------------
-        cout( 'Launching simulation...' );
-        runResult := startSim(
-          smScen.simInput,
-          smScen.herdList,
-          smdb,
-          errorMessage
-        );
-
-        // Check the result.
-        //------------------
-        case runResult of
-          ERRRUNSIMEXCEPTION:
-            begin
-              cout( 'An exception occurred:' + endl + errorMessage + endl );
-              cout( 'This simulation did not run to completion.' + endl );
-            end
-          ;
-          ERRINVALIDSCENARIO:
-            begin
-              cout( 'Problems were found with this scenario.  These problems must be corrected before this scenario can be run:' + endl );
-              cout( errorMessage + endl );
-            end
-          ;
-          ERRCANNOTWRITEFILES:
-            begin
-              cout(
-                'Temporary files required to launch this simulation were not written.  Please ensure that you have'
-                + ' adequate hard disk space and sufficient permissions to write files to your hard disk.  For'
-                + ' further assistance, please contact the developers.' + endl
-              );
-            end
-          ;
-          ERRNONE:
-            begin
-              cout( 'Simulation complete.' + endl );
-            end
-          ;
-          ERRNOTSET:
-            begin
-              // ignore this.
-            end
-          ;
-        end;
-        // Save the database file.
-        //------------------------
-        cout( 'Saving database...' + endl );
-        smdb.save();
-
-        // Clean up.
-        //----------
-        cout( 'Freeing database...' + endl );
-        if( nil <> smdb ) then
-          freeAndNil( smdb )
-        ;
-
-        cout( 'Freeing scenario....' + endl );
-        if( nil <> smScen ) then
-          freeAndNil( smScen )
-        ;
-
-        cout( 'Freeing _rm...' + endl );
-        if( nil <> _rm ) then
-          freeAndNil( _rm )
-        ;
-
-        // Go home.
-        //---------
-        cout( 'Exiting.' );
-        exit;
       end
     else
       // Don't do anything: just let the app exit on its own.

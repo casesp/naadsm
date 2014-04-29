@@ -8,32 +8,11 @@
 --    Connected data source : naadsm3_0_x-template
 --    Connected server      : ACCESS
 --    Connected database    : C:\Documents and Settings\apreeves\My Documents\NAADSM\DatabaseSchemas\naadsm3_0_x.mdb
-
-
-
--- Create new table `readOutputTypeCodes`.
--- `readOutputTypeCodes` : Table of readOutputTypeCodes
--- 	`outputTypeCode` : outputTypeCode identifies readOutputTypeCodes
--- 	`outputType` : outputType is of readOutputTypeCodes  
+ 
 create table `readOutputTypeCodes` ( 
 	`outputTypeCode` CHAR(1),
 	`outputType` VARCHAR(25), constraint `readOutputTypeCodes_PK` primary key (`outputTypeCode`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readOutputTypeCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readOutputTypeCodes' :
--- 	`outputTypeCode`
-
-
--- Create new table `inCustomOutputDefinitions`.
--- `inCustomOutputDefinitions` : Table of inCustomOutputDefinitions
--- 	`defID` : defID identifies inCustomOutputDefinitions
--- 	`outputName` : outputName is of inCustomOutputDefinitions
--- 	`outputTypeCode` : outputTypeCode is of inCustomOutputDefinitions
--- 	`isProdTypeOutput` : isProdTypeOutput is of inCustomOutputDefinitions
--- 	`isIterationOutput` : isIterationOutput is of inCustomOutputDefinitions
--- 	`sql` : sql is of inCustomOutputDefinitions  
+ 
 create table `inCustomOutputDefinitions` ( 
 	`defID` COUNTER,
 	`outputName` VARCHAR(100),
@@ -42,15 +21,6 @@ create table `inCustomOutputDefinitions` (
 	`isIterationOutput` BIT,
 	`sql` LONGTEXT, constraint `inCustomOutputDefinitions_PK` primary key (`defID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inCustomOutputDefinitions`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inCustomOutputDefinitions' :
--- 	`defID`
--- 	`outputTypeCode`
-
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -90,29 +60,8 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
            `inGeneral`.`saveDailyExposures`  
     from `inGeneral`;
 
-
 drop table `inGeneral`; 
 
-
--- `inGeneral` : Table of inGeneral
--- 	`inGeneralID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`scenarioDescr` : The description of the scenario.
--- 	`iterations` : The number of iterations of this scenario that should be run.
--- 	`days` : The number of days that iterations of this scenario should run, if the command Run->Start and run until specified day... is used.
--- 	`simStopReason` : The criterion used to end each iteration.  This may be that the specified number of days has passed, the first detection has occurred, or the outbreak has ended.
--- 	`includeContactSpread` : Indicates whether disease spread by direct or indirect contact is used in the scenario.
--- 	`includeAirborneSpread` : Indicates whether airborne spread is used in the model.
--- 	`useAirborneExponentialDecay` : Indicates whether exponential decay (TRUE) or linear decay (FALSE) is used with airborne spread.
--- 	`includeCosts` : Indicates whether direct costs should be tracked in the model.
--- 	`useFixedRandomSeed` : Indicates whether a specified seed value for the random number generator should be used.
--- 	`randomSeed` : The specified seed value for the random number generator.
--- 	`saveAllDailyOutputs` : Indicates whether daily outputs should be stored for every iteration.
--- 	`saveDailyOutputsForIterations` : The number of iterations for which daily outputs should be stored.  The minimum value is 3.
--- 	`writeDailyStatesFile` : Indicates whether a plain text file with the state of each unit on each day of each iteration should be written.
--- 	`dailyStatesFileName` : The file name of the plain text file described above.
--- 	`saveDailyEvents` : Indicates whether all events should be recorded in the scenario database.
--- 	`saveDailyExposures` : Indicates whether all exposures should be recorded in the scenario database.
--- 	`useCustomOutputs` : Indicates whether custom outputs should be generated.  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -164,8 +113,6 @@ alter table `inGeneral`
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Add foreign key constraints to table `inCustomOutputDefinitions`.
 alter table `inCustomOutputDefinitions`
 	add constraint `readOutputTypeCodes_inCustomOutputDefinitions_FK1` foreign key (
 		`outputTypeCode`)
@@ -173,17 +120,9 @@ alter table `inCustomOutputDefinitions`
 		`outputTypeCode`); 
 
 
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.
-
-
--- Populate the new table 'readOutputTypeCodes'
-
 	insert into `readOutputTypeCodes` ( `outputTypeCode`, `outputType` ) values ( "S", "String" );
 	insert into `readOutputTypeCodes` ( `outputTypeCode`, `outputType` ) values ( "I", "Integer" );	
 	insert into `readOutputTypeCodes` ( `outputTypeCode`, `outputType` ) values ( "D", "Double" );
 	
-	
--- update inGeneral
-
 	update `inGeneral` set `useCustomOutputs` = false;
 

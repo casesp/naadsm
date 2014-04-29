@@ -4,13 +4,13 @@ unit FrameHerdListEditor;
 FrameHerdListEditor.pas/dfm
 ---------------------------
 Begin: 2005/02/03
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version number: $Revision: 1.35 $
+Last revision: $Date: 2011-07-11 14:51:38 $ $Author: rhupalo $
+Version number: $Revision: 1.43.4.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -219,7 +219,7 @@ interface
       // Initialization: called only once per form instance
       //---------------------------------------------------
       { Regular expressions used to validate data entry }
-      function createRegExpListDaysLeftInState(): TRegExpList;
+      function createRegExpListStatusDays(): TRegExpList;
 
       { Sets up the production type combo box }
       procedure setProdTypeList( val: TProductionTypeList );
@@ -330,17 +330,17 @@ implementation
 
     ControlUtils,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     BasicGIS,
     I88n,
 
-    StatusEnums
+    StatusEnums,
+    NAADSMLibraryTypes
   ;
 
   const
-    DBFRAMEHERDLISTEDITOR: boolean = false; // Set to true to display debugging messages for this unit
+    DBSHOWMSG: boolean = false; // Set to true to display debugging messages for this unit
 
   const
     COL_IDX = 0;
@@ -350,7 +350,8 @@ implementation
     COL_LAT = 4;
     COL_LON = 5;
     COL_STATUS = 6;
-    COL_DAYS_LEFT = 7;
+    COL_DAYS_IN_STATE = 7;
+    COL_DAYS_LEFT = 8;
 
     FILTER_NONE = 0;
     FILTER_PT = 1;
@@ -359,14 +360,15 @@ implementation
     FILTER_LAT = 4;
     FILTER_LON = 5;
     FILTER_STATUS = 6;
-    FILTER_DAYS_LEFT = 7;
+    FILTER_DAYS_IN_STATE = 7;
+    FILTER_DAYS_LEFT = 8;
 
 //-----------------------------------------------------------------------------
 // Construction/destruction
 //-----------------------------------------------------------------------------
   constructor TFrameHerdListEditor.create( AOwner: TComponent );
   var
-    factor, diff: integer;
+    factor (*, diff *): integer;
     begin
       inherited create( AOwner );
       translateUI();
@@ -375,9 +377,9 @@ implementation
 
       _llForm := TFormLatLonRange.create( self );
 
-      btnTest.Visible := {$IFDEF TEST_FEATURE} true {$ELSE} false {$ENDIF};
+      btnTest.Visible := {$IFDEF DEBUG} true {$ELSE} false {$ENDIF};
 
-      pnlFilterControls.Height := 36;
+      pnlFilterControls.Height := 33;
 
       _fnUpdateDisplay := nil;
 
@@ -457,10 +459,12 @@ implementation
       cboProdType.Visible := False;
       
       //Code to fix TStringGrid last column scrolling bug. DO NOT REMOVE!
+      // AR 6/23/11: Which bug does this comment refer to?
 
       factor := stgHerds.Height div (stgHerds.DefaultRowHeight + stgHerds.GridLineWidth);
-      diff := stgHerds.Height - factor*(stgHerds.DefaultRowHeight + stgHerds.GridLineWidth);
-      pnlFilterControls.Height := pnlFilterControls.Height + diff;
+      //diff := stgHerds.Height - factor*(stgHerds.DefaultRowHeight + stgHerds.GridLineWidth);
+      //pnlFilterControls.Height := pnlFilterControls.Height + diff; // AR 6/23/11: Commented this out.
+      // It may now be obsolete, and it's not very attractive. If this problem (whatever it is) still exists, we need a better solution.
       stgHerds.Height := factor*(stgHerds.DefaultRowHeight + stgHerds.GridLineWidth);
       pnlFilterControls.Align := alTop;
       stgHerds.Align := alClient;
@@ -485,7 +489,8 @@ implementation
       _regExpSuperList.append( RegExpDefs.createRegExpListFloat() ); // Lat
       _regExpSuperList.append( RegExpDefs.createRegExpListFloat() ); // Lon
       _regExpSuperList.append( TRegExpList.create() ); // Herd states (uses combo box)
-      _regExpSuperList.append( self.createRegExpListDaysLeftInState() ); // Days left in status
+      _regExpSuperList.append( self.createRegExpListStatusDays() ); // Days in state
+      _regExpSuperList.append( self.createRegExpListStatusDays() ); // Days left in state
     end
   ;
 
@@ -517,7 +522,7 @@ implementation
           lblProdTypeFilter.Caption := tr( 'Production type:' );
           lblLat.Caption := tr( 'Latitude:' );
           lblLon.Caption := tr( 'Longitude:' );
-          lblDaysLeft.Caption := tr( 'Days left in status:' );
+          lblDaysLeft.Caption := tr( 'Days left in state:' );
           lblStatus.Caption := tr( 'Status:' );
           cboMainFilter.Text := tr( '(No filter)' );
           lblGeoRange.Caption := tr( 'Please specify a geographic range.' );
@@ -537,7 +542,8 @@ implementation
           cboMainSort.Items[4] := tr( 'Latitude' );
           cboMainSort.Items[5] := tr( 'Longitude' );
           cboMainSort.Items[6] := tr( 'Status' );
-          cboMainSort.Items[7] := tr( 'Days left in staus' );
+          cboMainSort.Items[7] := tr( 'Days in state' );
+          cboMainSort.Items[8] := tr( 'Days left in state' );
 
           cboMainFilter.Items[0] := tr( '(No filter)' );
           cboMainFilter.Items[1] := tr( 'Production type' );
@@ -546,7 +552,8 @@ implementation
           cboMainFilter.Items[4] := tr( 'Specific latitude' );
           cboMainFilter.Items[5] := tr( 'Specific longitude' );
           cboMainFilter.Items[6] := tr( 'Status' );
-          cboMainFilter.Items[7] := tr( 'Days left in status' );
+          cboMainFilter.Items[7] := tr( 'Days in state' );
+          cboMainFilter.Items[8] := tr( 'Days left in state' );
         end
       ;
 
@@ -556,11 +563,11 @@ implementation
   
   destructor TFrameHerdListEditor.destroy();
     begin
-      dbcout( 'Destroying list form', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Destroying list form', DBSHOWMSG );
 
       _regExpSuperList.Free();
 
-      _llForm.Free();
+      _llForm.Release();
 
       if( nil <> _herdList ) then _herdList.Free();
 
@@ -577,7 +584,7 @@ implementation
 // Initialization functions
 //-----------------------------------------------------------------------------
   { Handles regular expressions for data entry }
-  function TFrameHerdListEditor.createRegExpListDaysLeftInState(): TRegExpList;
+  function TFrameHerdListEditor.createRegExpListStatusDays(): TRegExpList;
     var
       list: TRegExpList;
       tmp: string;
@@ -626,22 +633,22 @@ implementation
   procedure TFrameHerdListEditor.setupCboTransitionState();
     begin
       cboTransitionState.Clear();
-      cboTransitionState.Items.Add( transitionStateString( tsSusceptible ) );
-      cboTransitionState.Items.Add( transitionStateString( tsLatent ) );
-      cboTransitionState.Items.Add( transitionStateString( tsSubclinical ) );
-      cboTransitionState.Items.Add( transitionStateString( tsClinical ) );
-      cboTransitionState.Items.Add( transitionStateString( tsNaturalImmune ) );
-      cboTransitionState.Items.Add( transitionStateString( tsVaccineImmune ) );
-      cboTransitionState.Items.Add( transitionStateString( tsDestroyed ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateSusceptible ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateLatent ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateSubclinical ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateClinical ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateNaturallyImmune ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateVaccineImmune ) );
+      cboTransitionState.Items.Add( naadsmDiseaseStateStr( NAADSMStateDestroyed ) );
 
       cboStatus.Clear();
-      cboStatus.Items.Add( transitionStateString( tsSusceptible ) );
-      cboStatus.Items.Add( transitionStateString( tsLatent ) );
-      cboStatus.Items.Add( transitionStateString( tsSubclinical ) );
-      cboStatus.Items.Add( transitionStateString( tsClinical ) );
-      cboStatus.Items.Add( transitionStateString( tsNaturalImmune ) );
-      cboStatus.Items.Add( transitionStateString( tsVaccineImmune ) );
-      cboStatus.Items.Add( transitionStateString( tsDestroyed ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateSusceptible ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateLatent ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateSubclinical ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateClinical ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateNaturallyImmune ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateVaccineImmune ) );
+      cboStatus.Items.Add( naadsmDiseaseStateStr( NAADSMStateDestroyed ) );
     end
   ;
 
@@ -714,9 +721,12 @@ implementation
         ;
         COL_LAT:
           begin
-            if( myStrToFloat( stgHerds.cells[c,r] ) <>  _herdList.at(index).lat ) then
+            if( uiStrToFloat( stgHerds.cells[c,r] ) <>  _herdList.at(index).lat ) then
               begin
-                _herdList.at(index).lat := myStrToFloat( stgHerds.cells[c,r] );
+                _herdList.at(index).setLatLon(
+                  uiStrToFloat( stgHerds.cells[COL_LAT,r] ),
+                  uiStrToFloat( stgHerds.cells[COL_LON,r] )
+                );
                 _dataUpdated := true;
               end
             ;
@@ -724,9 +734,12 @@ implementation
         ;
         COL_LON:
           begin
-            if( myStrToFloat( stgHerds.cells[c,r] ) <> _herdList.at(index).lon ) then
+            if( uiStrToFloat( stgHerds.cells[c,r] ) <> _herdList.at(index).lon ) then
               begin
-                _herdList.at(index).lon := myStrToFloat( stgHerds.cells[c,r] );
+                _herdList.at(index).setLatLon(
+                  uiStrToFloat( stgHerds.cells[COL_LAT,r] ),
+                  uiStrToFloat( stgHerds.cells[COL_LON,r] )
+                );
                 _dataUpdated := true;
               end
             ;
@@ -735,14 +748,42 @@ implementation
         COL_STATUS:
           // Do nothing: status is taken care of when the combo box changes
         ;
-        COL_DAYS_LEFT:
+        COL_DAYS_IN_STATE:
           begin
+            dbcout( 'Processing COL_DAYS_IN_STATE with value of ' + stgHerds.cells[c,r], DBSHOWMSG );
+
             if
               ( 0 = length( trim( stgHerds.Cells[c,r] ) ) )
             or
               ( lower( tr( 'Unspecified' ) ) = lower( trim( stgHerds.cells[c,r] ) ) )
             or
-              ( tsSusceptible = _herdList.at(index).initialStatus )
+              ( NAADSMStateSusceptible = _herdList.at(index).initialStatus )
+            then
+              tempDaysInState := -1
+            else
+              tempDaysInState := strToInt( stgHerds.cells[c,r] )
+            ;
+
+            if( tempDaysInState <> _herdList.at(index).daysInInitialState ) then
+              begin
+                _herdList.at(index).daysInInitialState := tempDaysInState;
+                _dataUpdated := true;
+              end
+            ;
+          end
+        ;
+        COL_DAYS_LEFT:
+          begin
+            dbcout( 'Processing COL_DAYS_LEFT with value of ' + stgHerds.cells[c,r], DBSHOWMSG );
+
+            if
+              ( 0 = length( trim( stgHerds.Cells[c,r] ) ) )
+            or
+              ( lower( tr( 'Unspecified' ) ) = lower( trim( stgHerds.cells[c,r] ) ) )
+            or
+              ( NAADSMStateSusceptible = _herdList.at(index).initialStatus )
+            or
+              ( NAADSMStateDestroyed = _herdList.at(index).initialStatus )
             then
               tempDaysInState := -1
             else
@@ -769,13 +810,13 @@ implementation
       listPosition: integer;
     begin
       inherited;
-      dbcout( '--- TFrameHerdListEditor.cboProdTypeChange', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- TFrameHerdListEditor.cboProdTypeChange', DBSHOWMSG );
 
       if( not( zeroHerdsDisplayed ) ) then
         begin
           if( COL_PT <> stgHerds.Col ) then
             begin
-              dbcout( '$$$$$$$$$$$$$ FLAKINESS', DBFRAMEHERDLISTEDITOR );
+              dbcout( '$$$$$$$$$$$$$ FLAKINESS 1', DBSHOWMSG );
               exit;
             end
           ;
@@ -816,7 +857,7 @@ implementation
         begin
           if( COL_STATUS <> stgHerds.Col ) then
             begin
-              dbcout( '$$$$$$$$$$$$$ FLAKINESS', DBFRAMEHERDLISTEDITOR );
+              dbcout( '$$$$$$$$$$$$$ FLAKINESS 2', DBSHOWMSG );
               exit;
             end
           ;
@@ -837,24 +878,24 @@ implementation
 
               // Update the selected herd.
               case cboTransitionState.ItemIndex of
-                0: _herdList.at( listPosition ).initialStatus := tsSusceptible;
-                1: _herdList.at( listPosition ).initialStatus := tsLatent;
-                2: _herdList.at( listPosition ).initialStatus := tsSubclinical;
-                3: _herdList.at( listPosition ).initialStatus := tsClinical;
-                4: _herdList.at( listPosition ).initialStatus := tsNaturalImmune;
-                5: _herdList.at( listPosition ).initialStatus := tsVaccineImmune;
-                6: _herdList.at( listPosition ).initialStatus := tsDestroyed;
+                0: _herdList.at( listPosition ).initialStatus := NAADSMStateSusceptible;
+                1: _herdList.at( listPosition ).initialStatus := NAADSMStateLatent;
+                2: _herdList.at( listPosition ).initialStatus := NAADSMStateSubclinical;
+                3: _herdList.at( listPosition ).initialStatus := NAADSMStateClinical;
+                4: _herdList.at( listPosition ).initialStatus := NAADSMStateNaturallyImmune;
+                5: _herdList.at( listPosition ).initialStatus := NAADSMStateVaccineImmune;
+                6: _herdList.at( listPosition ).initialStatus := NAADSMStateDestroyed;
                 else
                   begin
                     raise exception.create( 'Unrecognized transition state in TFrameHerdListEditor.cboTransitionStateChange()' );
-                    _herdList.at( listPosition ).initialStatus := tsSusceptible;
+                    _herdList.at( listPosition ).initialStatus := NAADSMStateSusceptible;
                   end
                 ;
               end;
 
               // The block above is a safer way to accomplish what the line below used to do.
               // (Next time someone runs across this function, the line below can be deleted.)
-              //_herdList.at( listPosition ).initialStatus := transitionStateFromString( cboTransitionState.Items[cboTransitionState.ItemIndex] );
+              //_herdList.at( listPosition ).initialStatus := naadsmDiseaseStateFromString( cboTransitionState.Items[cboTransitionState.ItemIndex] );
               _dataUpdated := true;
             end
           ;
@@ -876,7 +917,7 @@ implementation
           exit;
         end
       ;
-      
+
       // Is a row selected?
       if( _rowsSelectedForDeletion ) then
         begin
@@ -913,7 +954,7 @@ implementation
           // Next, check that lats and lons are within valid limits
           if( COL_LAT = stgHerds.Col ) then
             begin
-              tmpDouble := myStrToFloat( stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] );
+              tmpDouble := uiStrToFloat( stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] );
               if( ( -90.0 > tmpDouble ) or ( 90.0 < tmpDouble ) ) then
                 begin
                   msgOK(
@@ -936,7 +977,7 @@ implementation
 
           if( COL_LON = stgHerds.Col ) then
             begin
-              tmpDouble := myStrToFloat( stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] );
+              tmpDouble := uiStrToFloat( stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] );
               if( ( -180.0 > tmpDouble ) or ( 180.0 < tmpDouble ) ) then
                 begin
                   msgOK(
@@ -1012,8 +1053,13 @@ implementation
   }
   procedure TFrameHerdListEditor.changeHerdList( hList: THerdList );
     begin
-      setHerdList( hList );
-      _dataUpdated := true;
+      try
+        Screen.Cursor := crHourGlass;
+        setHerdList( hList );
+        _dataUpdated := true;
+      finally
+        Screen.Cursor := crDefault;
+      end;
     end
   ;
 
@@ -1025,22 +1071,30 @@ implementation
     var
       h, newH: THerd;
     begin
+      try
+        Screen.Cursor := crHourGlass;
 
-      h := hList.first();
-      while( nil <> h ) do
-        begin
-          newH := THerd.create( h, _herdList );
+        h := hList.first();
+        while( nil <> h ) do
+          begin
+            newH := THerd.create( h, _herdList );
 
-          _herdList.append( newH );
-          h := hList.next();
-        end
-      ;
+            _herdList.append( newH );
+            h := hList.next();
+          end
+        ;
 
-      _dataUpdated := true;
+        _herdList.reproject();
 
-      setupLLForm();
+        _dataUpdated := true;
 
-      writeHerdsToGrid();
+        setupLLForm();
+
+        writeHerdsToGrid();
+
+      finally
+        Screen.Cursor := crDefault;
+      end;
     end
   ;
 
@@ -1050,7 +1104,7 @@ implementation
   }
   procedure TFrameHerdListEditor.setHerdList( hList: THerdList );
     begin
-      dbcout( '*********************TFrameHerdListEditor.setHerdList()', DBFRAMEHERDLISTEDITOR );
+      dbcout( '*********************TFrameHerdListEditor.setHerdList()', DBSHOWMSG );
       
       if( nil <> _herdList ) then
         _herdList.Free()
@@ -1088,7 +1142,7 @@ implementation
           showError( intToStr( _herdList.count ) + ' units in list.' );
 
           msgOK(
-            ansiReplaceStr( tr( 'There are too many units (zyx) to display practically in this program.' ), 'xyz', intToStr( _herdList.Count ) ) + ' '
+            ansiReplaceStr( tr( 'There are too many units (xyz) to display practically in this program.' ), 'xyz', intToStr( _herdList.Count ) ) + ' '
               + tr( 'You may use Microsoft Access or a similar application to edit units in your scenario database.' ),
             tr( 'Too many units' ),
             IMGInformation,
@@ -1124,7 +1178,8 @@ implementation
               Cells[ COL_LAT, 0 ] := tr( 'Latitude' );
               Cells[ COL_LON, 0 ] := tr( 'Longitude' );
               Cells[ COL_STATUS, 0 ] := tr( 'Status' ) + '           '; // Yes, these spaces are intentional.
-              Cells[ COL_DAYS_LEFT, 0 ] := tr( 'Days left in status' );
+              Cells[ COL_DAYS_IN_STATE, 0 ] := tr( 'Days in state' );
+              Cells[ COL_DAYS_LEFT, 0 ] := tr( 'Days left in state' );
             end
           ;
 
@@ -1161,11 +1216,17 @@ implementation
                   stgHerds.Cells[ COL_LON, i ] := uiFloatToStr( h.lon, LAT_LON_PRECISION );
 
                   try
-                    stgHerds.Cells[COL_STATUS, i ] := transitionStateString( h.initialStatus );
+                    stgHerds.Cells[COL_STATUS, i ] := naadsmDiseaseStateStr( h.initialStatus );
                   except
-                    stgHerds.Cells[COL_STATUS, i ] := transitionStateString( tsSusceptible );
-                    h.initialStatus := tsSusceptible;
+                    stgHerds.Cells[COL_STATUS, i ] := naadsmDiseaseStateStr( NAADSMStateSusceptible );
+                    h.initialStatus := NAADSMStateSusceptible;
                   end;
+
+                  if( -1 <> h.daysInInitialState ) then
+                    stgHerds.Cells[ COL_DAYS_IN_STATE, i ] := intToStr( h.daysInInitialState )
+                  else
+                    stgHerds.Cells[ COL_DAYS_IN_STATE, i ] := tr( 'Unspecified' )
+                  ;
 
                   if( -1 <> h.daysLeftInInitialState ) then
                     stgHerds.Cells[ COL_DAYS_LEFT, i ] := intToStr( h.daysLeftInInitialState )
@@ -1225,13 +1286,9 @@ implementation
     var
       clipboardContents: pchar;
     begin
-      dbcout( '--- TFrameHerdListEditor.stgHerdsKeyDown...', DBFRAMEHERDLISTEDITOR );
-
-      dbcout( key, DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Key down: ' + intToStr( key ) + ' ' + stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] , true );
 
       clipboardContents := '';
-
-      dbcout( 'Key down: ' + stgHerds.Cells[ stgHerds.Col, stgHerds.Row ] , DBFRAMEHERDLISTEDITOR );
 
       if( isReadOnly ) then exit;
 
@@ -1280,12 +1337,11 @@ implementation
     begin
       dbcout( 'Key up: ' + intToStr( key ), true );
 
-      // If the current cell is in Column COL_DAYS_LEFT
-      // and if the user is trying to enter "unspecified"
-      // then give him a hand.
-      //--------------------------------------------------
+      // If the current cell is in Column COL_DAYS_IN_STATE or COL_DAYS_LEFT
+      // and if the user is trying to enter "unspecified" then give him a hand.
+      //-----------------------------------------------------------------------
       if
-        ( COL_DAYS_LEFT = stgHerds.Col )
+        ( ( COL_DAYS_IN_STATE = stgHerds.Col ) or ( COL_DAYS_LEFT = stgHerds.Col ) )
       and
         ( 0 < stgHerds.Row )
       and
@@ -1294,8 +1350,6 @@ implementation
         ( lower( stgHerds.Cells[ stgHerds.Col, stgHerds.row] ) = lower( ansiLeftStr( tr( 'Unspecified' ), length( stgHerds.Cells[ stgHerds.Col, stgHerds.row] ) ) ) )
       then
         stgHerds.Cells[ stgHerds.Col, stgHerds.row] := tr( 'Unspecified' )
-      else
-        dbcout2( 'No hand' )
       ;
     end
   ;
@@ -1313,9 +1367,11 @@ implementation
       success: boolean;
       exprList: TRegExpList;
     begin
-      dbcout( '--- TFrameHerdListEditor.stgHerdsSetEditText: ' + value, DBFRAMEHERDLISTEDITOR );
+      dbcout( 'stgHerdsSetEditText: ' + value, true );
 
       if( isReadOnly ) then exit;
+
+      //stgHerds.lockCell();
 
       exprList := _regExpSuperList.at( ACol ) as TRegExpList;
 
@@ -1323,12 +1379,15 @@ implementation
 
       if( not( success ) ) then
         begin
-          dbcout( 'No match for "' + stgHerds.Cells[ ACol, ARow ] + '": reverting', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'No match for "' + stgHerds.Cells[ ACol, ARow ] + '": reverting', true );
           stgHerds.Cells[ ACol, ARow ] := _tmpText;
+          stgHerds.setCursorPosition( ACol, ARow, length( stgHerds.cells[ ACol, ARow ] ) );
         end
       else
-        dbcout( 'Match found', DBFRAMEHERDLISTEDITOR )
+        dbcout( 'Match found', DBSHOWMSG )
       ;
+
+      //stgHerds.unlockCell();
     end
   ;
 
@@ -1349,8 +1408,10 @@ implementation
       cursorPoint: TPoint;
 
       dummy: boolean;
+
+      si: SCROLLINFO;
     begin
-      dbcout( 'TFrameHerdListEditor.stgHerdsMouseDown', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'TFrameHerdListEditor.stgHerdsMouseDown', DBSHOWMSG );
 
       if( zeroHerdsDisplayed ) then
         exit
@@ -1358,9 +1419,14 @@ implementation
 
       _tmpText := stgHerds.Cells[ stgHerds.Col, stgHerds.row ];
 
-      stgHerds.MouseToCell( x, y, c, r );
+      getScrollInfo( stgHerds.Handle, SB_HORZ, si );
+      dbcout2( si.nTrackPos );
 
-      dbcout( 'Col: ' + intToStr( c ) + ', Row: ' + intToStr( r ), DBFRAMEHERDLISTEDITOR );
+      stgHerds.MouseToCell( x, y, c, r );
+      dbcout2( 'Mouse down in Col: ' + intToStr( c ) + ', Row: ' + intToStr( r ) + ', leftCol: ' + intToStr( stgHerds.LeftCol ), DBSHOWMSG );
+
+      // Default to single-cell selection
+      stgHerds.Options := stgHerds.Options - [ goRowSelect ] + [ goAlwaysShowEditor ];
 
       // If the click occurred out of bounds, then exit.
       if
@@ -1411,6 +1477,7 @@ implementation
       if( ( COL_IDX = c ) or ( COL_ID = c ) ) then
         begin
           // ROW SELECTION
+          stgHerds.Options := stgHerds.Options + [ goRowSelect, goAlwaysShowEditor ];
 
           if( cboProdType.Visible ) then
             begin
@@ -1478,7 +1545,7 @@ implementation
           end
           ;
         end
-      else if( COL_ID < c ) then
+      else
         begin
           // SINGLE CELL SELECTION
 
@@ -1488,24 +1555,14 @@ implementation
           myRect.Top := r;
           myRect.Right := c;
           myRect.Bottom := r;
-          stgHerds.selection := myRect;
-        end
-      else
-        begin
-          // PT COLUMN SELECTION
+
+          stgHerds.Options := stgHerds.Options - [ goRowSelect ] + [ goAlwaysShowEditor ];
           
-          if( stgHerds.FixedRows > r ) then r := stgHerds.FixedRows;
-
-          myRect.Left := COL_PT;
-          myRect.Top := r;
-          myRect.Right := COL_PT;
-          myRect.Bottom := r;
           stgHerds.selection := myRect;
 
-          stgHerdsSelectCell( self, COL_PT, r, dummy );
+          stgHerdsSelectCell( self, c, r, dummy );
         end
       ;
-
     end
   ;
 
@@ -1515,8 +1572,9 @@ implementation
   }
   procedure TFrameHerdListEditor.stgHerdsExit(Sender: TObject);
     begin
-      dbcout2( '********** TFrameHerdListEditor.stgHerdsExit' );
+      dbcout( '********** TFrameHerdListEditor.stgHerdsExit', DBSHOWMSG );
       currentCellOK();
+      dbcout( '********** Done TFrameHerdListEditor.stgHerdsExit', DBSHOWMSG );
     end
   ;
 
@@ -1530,9 +1588,12 @@ implementation
         var CanSelect: Boolean
       );
     var
-      R: TRect;
+      fixedColsWidth: integer;
+      leftColsWidth: integer;
+      rowHeight: integer;
+      i: integer;
     begin
-      dbcout( '--- TFrameHerdListEditor.stgHerdsSelectCell', true );
+      dbcout( '--- TFrameHerdListEditor.stgHerdsSelectCell', DBSHOWMSG );
 
       (*
       if( isReadOnly ) then
@@ -1545,69 +1606,81 @@ implementation
 
       if( _filterInProgress or _sortInProgress or zeroHerdsDisplayed() ) then
         begin
-          dbcout( '--- stgHerdsSelectCell will not occur!', DBFRAMEHERDLISTEDITOR );
+          dbcout( '--- stgHerdsSelectCell will not occur!', DBSHOWMSG );
           exit;
         end
       else
-        dbcout( '--- stgHerdsSelectCell should occur...', DBFRAMEHERDLISTEDITOR )
+        dbcout( '--- stgHerdsSelectCell should occur...', DBSHOWMSG )
       ;
 
-      dbcout( '--- stgHerdsSelectCell', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- stgHerdsSelectCell', DBSHOWMSG );
+
+      // Row height is constant across all rows.
+      rowHeight := stgHerds.RowHeights[0] + stgHerds.GridLineWidth;
+      // Width of fixed columns is also constant.
+      fixedColsWidth := stgHerds.ColWidths[0] + stgHerds.ColWidths[1] + ( 3 * stgHerds.GridLineWidth );
 
       // Set up combo box for production type, if needed
       //------------------------------------------------
       if( ( COL_PT = ACol ) and ( 0 <> ARow ) ) then
         begin
-          dbcout( 'Showing combo box', DBFRAMEHERDLISTEDITOR );
+          dbcout( endl + 'Showing PT combo box', DBSHOWMSG );
 
-          // Size and position the combo box to fit the cell
-          R := stgHerds.CellRect(ACol, ARow);
-          R.Left := R.Left + stgHerds.Left;
-          R.Right := R.Right + stgHerds.Left;
-          R.Top := R.Top + stgHerds.Top;
-          R.Bottom := R.Bottom + stgHerds.Top;
+          // Size and position the combo box to fit the cell, then show it.
+          // Left and top will change, depending on the scroll position
+          // of the string grid, and will need to be adjusted.
 
-          // Show the combobox
-          cboProdType.Left := R.Left + 1;
-          cboProdType.Top := R.Top + 1;
-          cboProdType.Width := (R.Right + 2) - R.Left;
-          cboProdType.Height := (R.Bottom + 5) - R.Top;
+          // As noted above, row height is constant across all rows, so the top is relatively straight-forward:
+          cboProdType.Top :=  stgHerds.Top + 1 + ( rowHeight * ( ARow - stgHerds.TopRow + stgHerds.FixedRows ) );
+
+          // The left position will depend on how many columns are visible to the left.
+          leftColsWidth := 0;
+          for i := stgHerds.LeftCol to ACol - 1 do
+            leftColsWidth := leftColsWidth + stgHerds.ColWidths[i] + 1
+          ;
+          cboProdType.Left := stgHerds.Left + 1 + leftColsWidth + fixedColsWidth;
+
+          // Height and width should be OK
+          cboProdType.Width := stgHerds.ColWidths[COL_PT];
+          cboProdType.Height := rowHeight + 8;
 
           cboProdType.ItemIndex := cboProdType.Items.IndexOf( stgHerds.Cells[ACol, ARow] );
           cboProdType.Visible := True;
           if( _myForm.Visible ) then cboProdType.SetFocus();
+
+          dbcout( 'Done showing PT combo box' + endl, DBSHOWMSG );
         end
       else
         cboProdType.Visible := false
       ;
 
-
       // Set up combo box for transition state, if needed
       //-------------------------------------------------
       if( ( COL_STATUS = ACol ) and ( 0 <> ARow ) ) then
         begin
-          dbcout( 'Showing combo box', DBFRAMEHERDLISTEDITOR );
+          dbcout( endl + 'Showing status combo box', DBSHOWMSG );
 
-          // Size and position the combo box to fit the cell
-          R := stgHerds.CellRect(ACol, ARow);
-          R.Left := R.Left + stgHerds.Left;
-          R.Right := R.Right + stgHerds.Left;
-          R.Top := R.Top + stgHerds.Top;
-          R.Bottom := R.Bottom + stgHerds.Top;
+          // Size and position the combo box to fit the cell, then show it.
+          // Left and top will change, depending on the scroll position
+          // of the string grid, and will need to be adjusted.
 
-          // Show the combobox
-          with cboTransitionState do
-            begin
-              Left := R.Left + 1;
-              Top := R.Top + 1;
-              Width := (R.Right + 2) - R.Left;
-              Height := (R.Bottom + 5) - R.Top;
+          // As noted above, row height is constant across all rows, so the top is relatively straight-forward:
+          cboTransitionState.Top :=  stgHerds.Top + 1 + ( rowHeight * ( ARow - stgHerds.TopRow + stgHerds.FixedRows ) );
 
-              ItemIndex := Items.IndexOf(stgHerds.Cells[ACol, ARow]);
-              Visible := True;
-              SetFocus;
-            end
+          // The left position will depend on how many columns are visible to the left.
+          leftColsWidth := 0;
+          for i := stgHerds.LeftCol to ACol - 1 do
+            leftColsWidth := leftColsWidth + stgHerds.ColWidths[i] + 1
           ;
+          cboTransitionState.Left := stgHerds.Left + 1 + leftColsWidth + fixedColsWidth;
+
+          // Height and width should be OK
+          cboTransitionState.Width := stgHerds.ColWidths[COL_STATUS];
+          cboTransitionState.Height := rowHeight + 8;
+
+          cboTransitionState.ItemIndex := cboTransitionState.Items.IndexOf(stgHerds.Cells[ACol, ARow]);
+          cboTransitionState.Visible := True;
+          cboTransitionState.SetFocus();
         end
       else
         cboTransitionState.Visible := false
@@ -1616,16 +1689,20 @@ implementation
       // Validate the current cell before
       // allowing the selection of a new cell
       //--------------------------------------
-      dbcout2( '********** TFrameHerdListEditor.stgHerdsSelectCell' );
       canSelect := currentCellOK();
+
+      stgHerds.selectCellContents();
+
+      dbcout( '--- Done TFrameHerdListEditor.stgHerdsSelectCell', DBSHOWMSG );
     end
   ;
 
 
   procedure TFrameHerdListEditor.stgHerdsScroll(Sender: TObject);
     begin
-      dbcout( 'Scrolling!', true );
-      disableEditing();
+      dbcout( 'Scrolling!', DBSHOWMSG );
+      //rbh Fix for issue 2356; Aaron was not certain that disable editing is needed here.
+      //disableEditing();
     end
   ;
 
@@ -1633,7 +1710,8 @@ implementation
   procedure TFrameHerdListEditor.stgHerdsMouseWheel(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
     begin
       dbcout( 'Mouse wheel!', true );
-      disableEditing();
+      //rbh Fix for issue 2356; Aaron was not certain that disable editing is needed here.
+      //disableEditing();
     end
   ;
 
@@ -1671,10 +1749,10 @@ implementation
     var
       myRect: TGridRect;
     begin
-      dbcout( '--- TFrameHerdListEditor.cboExit...', DBFRAMEHERDLISTEDITOR );
-      dbcout( '*** Exit received by combo box', DBFRAMEHERDLISTEDITOR );
-      dbcout( 'Col: ' + intToStr( stgHerds.Col ) + ' Row: ' + intToStr( stgHerds.Row ), DBFRAMEHERDLISTEDITOR );
-      dbcout( '_lastCboKey: ' + intToStr( _lastCboKey ), DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- TFrameHerdListEditor.cboExit...', DBSHOWMSG );
+      dbcout( '*** Exit received by combo box', DBSHOWMSG );
+      dbcout( 'Col: ' + intToStr( stgHerds.Col ) + ' Row: ' + intToStr( stgHerds.Row ), DBSHOWMSG );
+      dbcout( '_lastCboKey: ' + intToStr( _lastCboKey ), DBSHOWMSG );
 
       // This function just updates the display.  Data structures are taken
       // care of elsewhere (e.g. when the combo box changes).
@@ -1709,7 +1787,7 @@ implementation
   procedure TFrameHerdListEditor.pnlBeforeProdTypeEnter(Sender: TObject);
     begin
       // Tabbing backward out of cboProdType
-      dbcout( 'Tabbing backward out of cboProdType', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Tabbing backward out of cboProdType', DBSHOWMSG );
       if( 1 < stgHerds.Row ) then stgHerds.Row := stgHerds.Row - 1;
 
       if( _initialFocusOccurred ) then
@@ -1728,7 +1806,7 @@ implementation
   procedure TFrameHerdListEditor.pnlAfterProdTypeEnter(Sender: TObject);
     begin
       // Tabbing forward out of cboProdType
-      dbcout( 'Tabbing forward out of cboProdType', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Tabbing forward out of cboProdType', DBSHOWMSG );
       stgHerds.SetFocus();
     end
   ;
@@ -1737,7 +1815,7 @@ implementation
   procedure TFrameHerdListEditor.pnlBeforeDiseaseStateEnter(Sender: TObject);
     begin
       // Tabbing backward out of cboTransitionState
-      dbcout( 'Tabbing backward out of cboTransitionState', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Tabbing backward out of cboTransitionState', DBSHOWMSG );
       stgHerds.Col := COL_STATUS - 1;
       stgHerds.SetFocus();
     end
@@ -1747,7 +1825,7 @@ implementation
   procedure TFrameHerdListEditor.pnlAfterDiseaseStateEnter(Sender: TObject);
     begin
       // Tabbing forward out of cboTransitionState
-      dbcout( 'Tabbing forward out of cboTransitionState', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'Tabbing forward out of cboTransitionState', DBSHOWMSG );
       stgHerds.SetFocus();
     end
   ;
@@ -1757,7 +1835,7 @@ implementation
     var
       myRect: TGridRect;
     begin
-      dbcout( '--- TFrameHerdListEditor.stgHerdsEnter', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- TFrameHerdListEditor.stgHerdsEnter', DBSHOWMSG );
 
       _initialFocusOccurred := true;
 
@@ -1771,8 +1849,8 @@ implementation
         end
       else if( COL_STATUS = stgHerds.Col ) then
         begin
-          myRect.Left := COL_DAYS_LEFT;
-          myRect.Right := COL_DAYS_LEFT;
+          myRect.Left := COL_DAYS_IN_STATE;
+          myRect.Right := COL_DAYS_IN_STATE;
         end
       else
         begin
@@ -1782,6 +1860,8 @@ implementation
       ;
 
       stgHerds.Selection := myRect;
+
+      dbcout( '--- Done TFrameHerdListEditor.stgHerdsEnter', DBSHOWMSG );
     end
   ;
 
@@ -1816,7 +1896,7 @@ implementation
       listPosition: integer;
       lotsOfRows: boolean;
     begin
-      dbcout( 'TFrameHerdListEditor.removeSelectedHerds', DBFRAMEHERDLISTEDITOR );
+      dbcout( 'TFrameHerdListEditor.removeSelectedHerds', DBSHOWMSG );
 
       if( assigned( _fnUpdateDisplay ) ) then _fnUpdateDisplay( 0 );
 
@@ -1851,12 +1931,12 @@ implementation
         end
       ;
 
-      dbcout( lotsOfRows, DBFRAMEHERDLISTEDITOR );
+      dbcout( lotsOfRows, DBSHOWMSG );
 
 
       for i := stgHerds.Selection.Bottom downto stgHerds.Selection.Top do
         begin
-          dbcout( '*** Removing herd', DBFRAMEHERDLISTEDITOR );
+          dbcout( '*** Removing herd', DBSHOWMSG );
 
           listPosition := myStrToInt( stgHerds.Cells[ COL_IDX, i ] );
           dec( listPosition ); // The list is 0-indexed, but for the user's sake counting starts at 1;
@@ -1867,7 +1947,7 @@ implementation
 
       if( not( lotsOfRows ) ) then
         begin
-          dbcout( 'Not lots of rows...', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Not lots of rows...', DBSHOWMSG );
           stgHerds.DeleteRows( stgHerds.Selection.Top, stgHerds.Selection.Bottom );
 
           updateHerdCounter();
@@ -1886,7 +1966,7 @@ implementation
         end
       else
         begin
-          dbcout( 'Lots of rows!', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Lots of rows!', DBSHOWMSG );
           writeHerdsToGrid();
         end
       ;
@@ -1906,7 +1986,7 @@ implementation
 
   procedure TFrameHerdListEditor.disableEditing();
     begin
-      dbcout( '=== TFrameHerdListEditor.disableEditing', DBFRAMEHERDLISTEDITOR );
+      dbcout( '=== TFrameHerdListEditor.disableEditing', DBSHOWMSG );
 
       cboProdType.Visible := false;
       cboTransitionState.Visible := false;
@@ -1919,7 +1999,7 @@ implementation
 
   procedure TFrameHerdListEditor.enableEditing();
     begin
-      dbcout( '=== TFrameHerdListEditor.enableEditing', DBFRAMEHERDLISTEDITOR );
+      dbcout( '=== TFrameHerdListEditor.enableEditing', DBSHOWMSG );
 
       if( not( zeroHerdsDisplayed() ) ) then
         begin
@@ -1944,7 +2024,7 @@ implementation
     var
       mainSortDirection: TSortDirection;
     begin
-      dbcout( '+++ TFrameHerdListEditor.stgHerdsBeginSort...', DBFRAMEHERDLISTEDITOR );
+      dbcout( '+++ TFrameHerdListEditor.stgHerdsBeginSort...', DBSHOWMSG );
 
       if( 100 < _herdList.Count ) then setControlsEnabled( false );
 
@@ -1955,7 +2035,7 @@ implementation
           showWaitCursor();
           lockWindow();
 
-          dbcout( 'Beginning presort:', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Beginning presort:', DBSHOWMSG );
           _presorting := true;
 
           mainSortDirection := stgHerds.SortDirection;
@@ -1966,7 +2046,7 @@ implementation
             ( COL_IDX <> Col )
           then
             begin
-              dbcout( 'Presorting by herd index.', DBFRAMEHERDLISTEDITOR );
+              dbcout( 'Presorting by herd index.', DBSHOWMSG );
               stgHerds.SortByColumn( COL_IDX, _standardSortOptions );
             end
           ;
@@ -1975,24 +2055,24 @@ implementation
 
           _presorting := false;
 
-          dbcout( 'Done with preSort.', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Done with preSort.', DBSHOWMSG );
         end
       else
-        dbcout( '_presorting already in progress.', DBFRAMEHERDLISTEDITOR )
+        dbcout( '_presorting already in progress.', DBSHOWMSG )
       ;
 
-      dbcout( '--- Done TFrameHerdListEditor.stgHerdsBeginSort', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- Done TFrameHerdListEditor.stgHerdsBeginSort', DBSHOWMSG );
     end
   ;
 
 
   procedure TFrameHerdListEditor.stgHerdsEndSort(Sender: TObject; Col: Integer);
     begin
-      dbcout( '+++ TFrameHerdListEditor.stgHerdsEndSort...', DBFRAMEHERDLISTEDITOR );
+      dbcout( '+++ TFrameHerdListEditor.stgHerdsEndSort...', DBSHOWMSG );
 
       if( not _presorting ) then
         begin
-          dbcout( 'Not presorting: endSort will occur.', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Not presorting: endSort will occur.', DBSHOWMSG );
 
           cboMainSort.ItemIndex := col;
 
@@ -2011,10 +2091,10 @@ implementation
           unlockWindow();
         end
       else
-        dbcout( 'presort in progress.', DBFRAMEHERDLISTEDITOR )
+        dbcout( 'presort in progress.', DBSHOWMSG )
       ;
 
-      dbcout( '--- Done TFrameHerdListEditor.stgHerdsEndSort', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- Done TFrameHerdListEditor.stgHerdsEndSort', DBSHOWMSG );
     end
   ;
     
@@ -2152,7 +2232,7 @@ implementation
     var
       useLLRange: boolean;
     begin
-      dbcout( '--- TFrameHerdListEditor.cboMainFilterChange: ' + intToStr( cboMainFilter.ItemIndex ), DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- TFrameHerdListEditor.cboMainFilterChange: ' + intToStr( cboMainFilter.ItemIndex ), DBSHOWMSG );
 
       disableEditing();
 
@@ -2337,6 +2417,32 @@ implementation
             filter();
           end
         ;
+        FILTER_DAYS_IN_STATE:
+          begin
+            lblProdTypeFilter.Visible := false;
+            lblHerdSize.Visible := false;
+            lblLat.Visible := false;
+            lblLon.Visible := false;
+            lblStatus.Visible := false;
+            lblDaysLeft.Visible := true;
+            lblDaysLeft.Caption := tr( 'Days in state:' );
+
+            cboProdTypeFilter.Visible := false;
+            rleHerdSize.Visible := false;
+            rleLat.Visible := false;
+            rleLon.Visible := false;
+            cboStatus.Visible := false;
+            rleDaysLeft.Visible := true;
+
+            pnlGeoRange.Visible := false;
+
+            fraAcceptCancel.Visible := true;
+
+            _filtering := true;
+
+            rleDaysLeft.SetFocus();
+          end
+        ;
         FILTER_DAYS_LEFT:
           begin
             lblProdTypeFilter.Visible := false;
@@ -2345,6 +2451,7 @@ implementation
             lblLon.Visible := false;
             lblStatus.Visible := false;
             lblDaysLeft.Visible := true;
+            lblDaysLeft.Caption := tr( 'Days left in state:' );
 
             cboProdTypeFilter.Visible := false;
             rleHerdSize.Visible := false;
@@ -2364,7 +2471,7 @@ implementation
         ;
       end;
 
-      dbcout( '-- Done TFrameHerdListEditor.cboMainFilterChange().', DBFRAMEHERDLISTEDITOR );
+      dbcout( '-- Done TFrameHerdListEditor.cboMainFilterChange().', DBSHOWMSG );
     end
   ;
 
@@ -2432,14 +2539,14 @@ end;
         end
       else if( rleLat.Visible ) then
         begin
-          d := myStrToFloat( rleLat.Text, LAT_LON_UNDEFINED );
+          d := uiStrToFloat( rleLat.Text, LAT_LON_UNDEFINED );
 
           if( ( -90.0 > d ) or ( 90.0 < d ) ) then
             begin
               msgOK( 
                 tr( 'Latitude values must be between -90 and 90 degrees, inclusive.' ), 
-                tr( 'Parameter out of range' ), 
-                IMGWarning, 
+                tr( 'Parameter out of range' ),
+                IMGWarning,
                 _myForm 
               );
               rleLat.SetFocus();
@@ -2454,14 +2561,14 @@ end;
         end
       else if( rleLon.Visible ) then
         begin
-          d := myStrToFloat( rleLon.Text, LAT_LON_UNDEFINED );
+          d := uiStrToFloat( rleLon.Text, LAT_LON_UNDEFINED );
 
           if( ( -180.0 > d ) or ( 180.0 < d ) ) then
             begin
               msgOK( 
                 tr( 'Longitude values must be between -180 and 180 degrees, inclusive.' ), 
-                tr( 'Parameter out of range' ), 
-                IMGWarning, 
+                tr( 'Parameter out of range' ),
+                IMGWarning,
                 _myForm 
               );
               rleLon.SetFocus();
@@ -2504,6 +2611,15 @@ end;
       ;
 
       fraAcceptCancel.Visible := false;
+      rleHerdSize.Visible := false;
+      lblHerdSize.Visible := false;
+      rleLat.Visible := false;
+      lblLat.Visible := false;
+      rleLon.Visible := false;
+      lblLon.Visible := false;
+      rleDaysLeft.Visible := false;
+      lblDaysLeft.Visible := false;
+      cboMainFilter.ItemIndex := 0;
       stgHerds.SearchOptions.Filtered := false;
 
       updateHerdCounter();
@@ -2598,8 +2714,8 @@ end;
         end
       else if( COL_STATUS = stgHerds.Col ) then
         begin
-          myRect.Left := COL_DAYS_LEFT;
-          myRect.Right := COL_DAYS_LEFT;
+          myRect.Left := COL_DAYS_IN_STATE; // COL_DAYS_LEFT;
+          myRect.Right := COL_DAYS_IN_STATE; // COL_DAYS_LEFT;
         end
       else
         begin
@@ -2620,11 +2736,11 @@ end;
     var
       myRect: TGridRect;
     begin
-      dbcout( '--- TFrameHerdListEditor.filter()', DBFRAMEHERDLISTEDITOR );
+      dbcout( '--- TFrameHerdListEditor.filter()', DBSHOWMSG );
 
       try
         try
-          dbcout( '+++ Set _filterInProgress to true', DBFRAMEHERDLISTEDITOR );
+          dbcout( '+++ Set _filterInProgress to true', DBSHOWMSG );
           _filterInProgress := true;
 
           lockWindow();
@@ -2697,6 +2813,13 @@ end;
                 ;
               end
             ;
+            FILTER_DAYS_IN_STATE:
+              begin
+                stgHerds.SearchOptions.SearchCol := COL_DAYS_IN_STATE;
+                stgHerds.SearchOptions.SearchText := rleDaysLeft.Text;
+                stgHerds.SearchOptions.Filtered := _filtering;
+              end
+            ;
             FILTER_DAYS_LEFT:
               begin
                 stgHerds.SearchOptions.SearchCol := COL_DAYS_LEFT;
@@ -2722,8 +2845,8 @@ end;
             end
           else if( COL_STATUS = stgHerds.Col ) then
             begin
-              myRect.Left := COL_DAYS_LEFT;
-              myRect.Right := COL_DAYS_LEFT;
+              myRect.Left := COL_DAYS_IN_STATE; // COL_DAYS_LEFT;
+              myRect.Right := COL_DAYS_IN_STATE; // COL_DAYS_LEFT;
             end
           else
             begin
@@ -2736,14 +2859,14 @@ end;
           
         except
           // fail silently
-          dbcout( '+++ Exception occurred here in TFrameHerdListEditor.filter.', DBFRAMEHERDLISTEDITOR );
+          dbcout( '+++ Exception occurred here in TFrameHerdListEditor.filter.', DBSHOWMSG );
         end;
       finally
         _filterInProgress := false;
         unlockWindow();
       end;
 
-      dbcout( '-- Done TFrameHerdListEditor.filter()', DBFRAMEHERDLISTEDITOR );
+      dbcout( '-- Done TFrameHerdListEditor.filter()', DBSHOWMSG );
     end
   ;
 
@@ -2751,7 +2874,7 @@ end;
   procedure TFrameHerdListEditor.sortControlChange(Sender: TObject);
     begin
       dbclear();
-      dbcout( '+++ TFrameHerdListEditor.sortControlChange...', DBFRAMEHERDLISTEDITOR );
+      dbcout( '+++ TFrameHerdListEditor.sortControlChange...', DBSHOWMSG );
 
       if( not( _sortInProgress ) ) then
         begin
@@ -2760,20 +2883,20 @@ end;
           if( rdoAscending.Checked ) then
             begin
               stgHerds.SortDirection := sdAscending;
-              dbcout( 'Sort ascending...', DBFRAMEHERDLISTEDITOR );
+              dbcout( 'Sort ascending...', DBSHOWMSG );
             end
           else
             begin
               stgHerds.SortDirection := sdDescending;
-              dbcout( 'Sort descending...', DBFRAMEHERDLISTEDITOR );
+              dbcout( 'Sort descending...', DBSHOWMSG );
             end
           ;
 
-          dbcout( 'Sorting by column ' + intToStr( cboMainSort.ItemIndex ) + '...', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Sorting by column ' + intToStr( cboMainSort.ItemIndex ) + '...', DBSHOWMSG );
           stgHerds.sortByColumn( cboMainSort.ItemIndex );
-          dbcout( 'Done sorting.', DBFRAMEHERDLISTEDITOR );
+          dbcout( 'Done sorting.', DBSHOWMSG );
 
-          dbcout( '--- TFrameHerdListEditor.sortControlChange done.', DBFRAMEHERDLISTEDITOR );
+          dbcout( '--- TFrameHerdListEditor.sortControlChange done.', DBSHOWMSG );
         end
       ;
     end
@@ -2851,7 +2974,7 @@ end;
   procedure TFrameHerdListEditor.updateHerdCounter();
     var
       str: string;
-      str2: string;
+      //str2: string;
     begin
       if( 2 = stgHerds.RowCount ) then
         begin
@@ -2868,11 +2991,14 @@ end;
         str := intToStr( stgHerds.RowCount - 1 ) + ' ' + tr( 'units' )
       ;
 
+      (*
+      // FIX ME: What was this for??
       if( 1 = _herdList.count - _herdList.removedCount ) then
         str2 := tr( 'unit'  )
       else
         str2 := tr( 'units' )
       ;
+      *)
 
       if( stgHerds.SearchOptions.Filtered ) then
         begin
@@ -2888,9 +3014,9 @@ end;
   
   // This function deals with a little bug in TREEdit.
   procedure TFrameHerdListEditor.rleKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-    var
-      rle: TREEdit;
     begin
+      inherited;
+
       if( 13 = key ) then
         begin
           pnlFilterControls.SetFocus();
@@ -2900,11 +3026,6 @@ end;
         begin
           fraAcceptCancelbtnCancelClick( nil );
           pnlFilterControls.SetFocus();
-        end
-      else // This block deals with the TREEdit bug.
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
         end
       ;
     end
@@ -3004,7 +3125,7 @@ end;
               + rightStr( lblGeoRange.Caption, length( lblGeoRange.Caption ) - 1 )
           ;
 
-          //btnGeoRange.Left := lblGeoRange.Left + lblGeoRange.Width + 20;
+          btnGeoRange.Left := lblGeoRange.Left + lblGeoRange.Width + 20;
 
           result := true;
           _llFormShown := true;
@@ -3028,11 +3149,6 @@ end;
       ;
     end
   ;
-
-
-
-
-
 
 end.
 

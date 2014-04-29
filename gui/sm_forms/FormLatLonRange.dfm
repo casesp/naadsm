@@ -3,7 +3,7 @@ object FormLatLonRange: TFormLatLonRange
   Top = 206
   BorderIcons = []
   BorderStyle = bsDialog
-  Caption = 'Lat/Lon range selection'
+  Caption = 'Lat/lon range selection'
   ClientHeight = 316
   ClientWidth = 458
   Color = clBtnFace
@@ -317,7 +317,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 0
-      OnKeyDown = rleKeyDown
     end
     object rleLonNW: TREEdit
       Left = 256
@@ -332,7 +331,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 1
-      OnKeyDown = rleKeyDown
     end
     object rleLatSE: TREEdit
       Left = 112
@@ -347,7 +345,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 2
-      OnKeyDown = rleKeyDown
     end
     object rleLonSE: TREEdit
       Left = 256
@@ -362,7 +359,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 3
-      OnKeyDown = rleKeyDown
     end
   end
   object pnlHorizSpacer2: TPanel
@@ -453,7 +449,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 0
-      OnKeyDown = rleKeyDown
     end
     object rleLonCenter: TREEdit
       Left = 256
@@ -468,7 +463,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 1
-      OnKeyDown = rleKeyDown
     end
     object rleRadius: TREEdit
       Left = 112
@@ -483,7 +477,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 2
-      OnKeyDown = rleKeyDown
     end
   end
 end

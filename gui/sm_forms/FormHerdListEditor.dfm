@@ -1,13 +1,19 @@
 inherited FormHerdListEditor: TFormHerdListEditor
-  Left = 1065
-  Top = 66
+  Left = 61
   Caption = 'Scenario parameters: Set up starting units'
+  ClientWidth = 892
   PixelsPerInch = 96
   TextHeight = 13
+  inherited pnlBase: TPanel
+    Width = 892
+    inherited pnlWizardButtons: TPanel
+      Left = 494
+    end
+  end
   object pnlCaption: TPanel [1]
     Left = 0
     Top = 0
-    Width = 702
+    Width = 892
     Height = 41
     Align = alTop
     Caption = 'Set up starting units'
@@ -22,14 +28,14 @@ inherited FormHerdListEditor: TFormHerdListEditor
   object pnlControls: TPanel [2]
     Left = 0
     Top = 41
-    Width = 702
+    Width = 892
     Height = 41
     Align = alTop
     TabOrder = 2
     object pnlButtons: TPanel
       Left = 201
       Top = 1
-      Width = 500
+      Width = 690
       Height = 39
       Align = alClient
       TabOrder = 1
@@ -295,26 +301,26 @@ inherited FormHerdListEditor: TFormHerdListEditor
   inline fraHerdListEditor: TFrameHerdListEditor [3]
     Left = 0
     Top = 82
-    Width = 702
+    Width = 892
     Height = 436
     Align = alClient
     TabOrder = 3
     inherited stgHerds: TARSortGrid
-      Width = 702
+      Width = 892
       Height = 261
     end
     inherited pnlSortControls: TPanel
-      Width = 702
+      Width = 892
       inherited pnlSortControlsRight: TPanel
-        Width = 356
+        Width = 546
       end
     end
     inherited pnlFilterControls: TPanel
-      Width = 702
+      Width = 892
     end
     inherited pnlHerdCounter: TPanel
       Top = 411
-      Width = 702
+      Width = 892
     end
   end
   object ActionManager1: TActionManager

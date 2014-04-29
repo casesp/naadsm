@@ -4,13 +4,13 @@ unit FormIterationSummary;
 FormIterationSummary.pas/dfm
 ----------------------------
 Begin: 2005/07/06
-Last revision: $Date: 2008/10/21 18:51:49 $ $Author: areeves $
-Version: $Revision: 1.28 $
+Last revision: $Date: 2011-03-09 20:12:59 $ $Author: areeves $
+Version: $Revision: 1.31.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -80,8 +80,6 @@ interface
 
       tabCostOutputs: TTabSheet;
       fraCostIterationSummary: TFrameCostIterationSummary;
-      lblIteration: TLabel;
-      cboIteration: TComboBox;
       ScrollBox1: TScrollBox;
 
       procedure fraEpiIterationSummarycbxSurvClick(Sender: TObject);
@@ -97,7 +95,6 @@ interface
       procedure pgcOutputsChange(Sender: TObject);
 
       procedure FormResize(Sender: TObject);
-      procedure cboIterationChange(Sender: TObject);
 
       //procedure FormCanResize( Sender: TObject; var NewWidth, NewHeight: Integer; var Resize: Boolean);
 
@@ -115,6 +112,9 @@ interface
 
       { Updates the contents of the form when the selected production type changes }
       procedure productionTypeChanged(); override;
+
+      { Updates the contents of the form when the selected iteration changes }
+      procedure iterationChanged(); override;
 
       { Updates the contents of the form when the loaded database/simulation changes }
       procedure simChanged(); override;
@@ -139,7 +139,7 @@ interface
 
       { Handles chart updates while a simulation is in progress }
       procedure updateForDay( day: integer );
-      procedure updateSimComplete();
+      procedure updateSimComplete(); override;
       procedure resetIteration( iteration: Integer );
 		end
 	;
@@ -160,7 +160,6 @@ implementation
     // General purpose units
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     ControlUtils,
     I88n,
@@ -187,10 +186,9 @@ implementation
       _smdb := db;
       _selectedPT := nil;
 
-      lblIteration.Left := cboProdTypes.Left + cboProdTypes.Width + 7;
-      cboIteration.Left := lblIteration.Left + 56;
       cboIteration.Enabled := false;
-
+      placeIterationControls();
+      
       // Size the form
       //--------------
       _resizingForm := false;
@@ -208,7 +206,7 @@ implementation
 
       // Show the data and the active tab
       //----------------------------------
-      setupComboBox();
+      setupProdTypeComboBox();
 
       // FIX ME: check for completed output before displaying anything.
       // (FormMain should also do a check.  This is just a backup.)
@@ -242,9 +240,8 @@ implementation
       with self do
         begin
           Caption := tr( 'Summary of 1 iteration' );
-          lblIteration.Caption := tr( 'Iteration:' );
           tabEpiOutputs.Caption := tr( 'Epidemiology' );
-          fraEpiIterationSummary.cbxSurv.Caption := tr( 'Detection' );
+          fraEpiIterationSummary.cbxSurv.Caption := tr( 'Detection and Tracing' );
           tabCostOutputs.Caption := tr( 'Cost accounting' );
           fraCostIterationSummary.tabGraph.Caption := tr( 'Graphical view' );
           pnlCaption.Caption := tr( 'Iteration status: completed/aborted/running' );
@@ -335,6 +332,8 @@ implementation
       pgcOutputsChange( nil );
 
       setCaption();
+
+      res.Free();
     end
   ;
 
@@ -374,8 +373,8 @@ implementation
 
       if( tabEpiOutputs = pgcOutputs.ActivePage ) then
         begin
-      _chartDict[fraEpiIterationSummary.fraApparent.Name] := fraEpiIterationSummary.fraApparent;
-      _chartDict[fraEpiIterationSummary.fraInapparent.Name] := fraEpiIterationSummary.fraInapparent;
+          _chartDict[fraEpiIterationSummary.fraApparent.Name] := fraEpiIterationSummary.fraApparent;
+          _chartDict[fraEpiIterationSummary.fraInapparent.Name] := fraEpiIterationSummary.fraInapparent;
         end
       else if( tabCostOutputs = pgcOutputs.ActivePage ) then
         _chartDict['CostChart'] := fraCostIterationSummary.fraChart
@@ -423,11 +422,11 @@ implementation
 
         activePage := pgcOutputs.ActivePageIndex;
 
-        fraEpiIterationSummary.setProdType( _selectedPT );
+        fraEpiIterationSummary.setProdType( _selectedPT, frmMain.simIsRunning );
 
         if( _smSim.includeCostsGlobal ) then
           begin
-            fraCostIterationSummary.setProdType( _selectedPT );
+            fraCostIterationSummary.setProdType( _selectedPT, frmMain.simIsRunning );
             pgcOutputs.ActivePageIndex := activePage;
           end
         else
@@ -501,10 +500,8 @@ implementation
   ;
 
 
-  procedure TFormIterationSummary.cboIterationChange(Sender: TObject);
+  procedure TFormIterationSummary.iterationChanged();
     begin
-      inherited;
-
       if ( assigned( frmMain ) ) then
         frmMain.displayedIteration := StrToInt( cboIteration.Items[cboIteration.ItemIndex] )
       else

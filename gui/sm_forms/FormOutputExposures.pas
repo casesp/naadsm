@@ -4,13 +4,13 @@ unit FormOutputExposures;
 FormOutputExposures.pas/dfm
 ---------------------------
 Begin: 2005/02/01
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.23 $
+Last revision: $Date: 2011-07-21 21:35:14 $ $Author: rhupalo $
+Version: $Revision: 1.30.4.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -71,9 +71,8 @@ interface
 
   type TFormOutputExposures = class(TFormSMOutputBase)
       spacerPanel: TPanel;
-
-      lblStatus: TLabel;
-      cboStatus: TComboBox;
+      lblDiseaseState: TLabel;
+      cboDiseaseState: TComboBox;
       pnlSortControls: TPanel;
       lblMainSort: TLabel;
       lblSortOrder: TLabel;
@@ -87,23 +86,17 @@ interface
       pnlCaption: TPanel;
       pnlFilterControls: TPanel;
       lblMainFilter: TLabel;
-      lblDay: TLabel;
+      lblTextEntry: TLabel;
       lblExposureType: TLabel;
-      lblSourceHerdID: TLabel;
       cboMainFilter: TComboBox;
       cboExposureType: TComboBox;
-      rleDay: TREEdit;
+      rleTextEntry: TREEdit;
       fraAcceptCancel: TFrameAcceptCancel;
-      rleSourceHerdID: TREEdit;
       pnlEventCounter: TPanel;
       stgGrid: TARSortGrid;
-      lblRecipientHerdID: TLabel;
-      rleRecipientHerdID: TREEdit;
       pnlExposureSuccess: TPanel;
       rdoSuccess: TRadioButton;
       rdoUnsuccess: TRadioButton;
-      lblIteration: TLabel;
-      cboIteration: TComboBox;
 
       procedure cboRecipientProdTypesCloseUp(Sender: TObject);
       procedure stgGridEndSort(Sender: TObject; Col: Integer);
@@ -112,18 +105,15 @@ interface
       procedure stgGridGetCellFormat(Sender: TObject; Col, Row: Integer; State: TGridDrawState; var FormatOptions: TFormatOptions);
       procedure stgGridBeginSort( Sender: TObject; Col: LongInt; var SortOptions: TSortOptions );
       procedure cboMainFilterChange(Sender: TObject);
-      procedure rleSourceHerdIDEnter(Sender: TObject);
-      procedure rleRecipientHerdIDEnter(Sender: TObject);
-      procedure rleDayEnter(Sender: TObject);
+      procedure rleTextEntryEnter(Sender: TObject);
+      procedure rleTextEntryExit(Sender: TObject);
+      procedure rleTextEntryKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure cboExposuresChange(Sender: TObject);
       procedure fraAcceptCancelbtnAcceptClick(Sender: TObject);
       procedure fraAcceptCancelbtnCancelClick(Sender: TObject);
-      procedure rleExit(Sender: TObject);
-      procedure rleKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure rdoClick(Sender: TObject);
 
       procedure FormResize(Sender: TObject);
-      procedure cboIterationChange(Sender: TObject);
 
     protected
       _firstRow: boolean;
@@ -135,20 +125,18 @@ interface
 
       _recipientPT: TProductionType;
 
-      _sqlRes: TSqlResult;
       _ScrollBarVisibleCheck: boolean;
-      _displayedIteration: integer;
-      _inSimComplete: boolean;
-      
-      procedure translateUI();      
-      
+
+      procedure translateUI();
+      procedure translateUIManual();
+
       procedure resetGrid();
 
       procedure filter();
 
       procedure updateExposureCounter();
 
-	    procedure setupRecipientComboBox();
+	    procedure setupRecipientProdTypeComboBox();
 
       { Handles form updates from the database when a simulation is not running or when _selectedPT is changed }
       procedure setupFromDatabase();
@@ -156,6 +144,9 @@ interface
 
       { Updates the contents of the form when the selected production type changes }
       procedure productionTypeChanged(); override;
+
+      { Updates the contents of the form when the selected iteration changes }
+      procedure iterationChanged(); override;
 
       { Used to enable/disable controls on the form when needed }
       procedure setControlsEnabled( val: boolean ); override;
@@ -173,7 +164,7 @@ interface
 
       procedure resetIteration( const iteration: Integer );
 
-      procedure updateSimComplete();    
+      procedure updateSimComplete(); override;
 
       { Experimental feature: not currently used }
       //procedure appendExposure( exp: TSMExposure );
@@ -193,7 +184,6 @@ implementation
 
   uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     RegExpDefs,
     I88n,
@@ -201,6 +191,7 @@ implementation
     ControlUtils,
 
     StatusEnums,
+    NAADSMLibraryTypes,
     FormMain
   ;
 
@@ -208,16 +199,17 @@ implementation
   const
     COL_DAY: integer = 0;
     COL_EXPOSURE: integer = 1;
-    COL_SOURCE_HERDID: integer = 2;
-    COL_SOURCE_TYPE_DESCR: integer = 3;
-    COL_SOURCE_STATUS: integer = 4;
-    COL_SOURCE_ZONE: integer = 5;
-    COL_EXPOSURE_CODE: integer = 6;
-    COL_EXPOSURE_SUCCESS: integer = 7;
+    COL_EXPOSURE_CODE: integer = 2;
+    COL_SOURCE_HERDID: integer = 3;
+    COL_SOURCE_TYPE_DESCR: integer = 4;
+    COL_SOURCE_STATUS: integer = 5;
+    COL_SOURCE_ZONE: integer = 6;
+    COL_EXPOSURE_IS_ADEQUATE: integer = 7;
     COL_RECIPENT_HERDID: integer = 8;
     COL_RECIPIENT_TYPE_DESCR: integer = 9;
     COL_RECIPIENT_STATUS: integer = 10;
     COL_RECIPIENT_ZONE: integer = 11;
+    COL_INITIATED_DAY: integer = 12;
 
 //-----------------------------------------------------------------------------
 // Construction/initialization/destruction
@@ -228,8 +220,7 @@ implementation
 		begin
       inherited create( AOwner );
       translateUI();
-      
-      self._inSimComplete := false;
+
       _ScrollBarVisibleCheck := false;
       _creating := true;
 
@@ -237,46 +228,26 @@ implementation
       _filtering := false;
 
       _lastColumnSorted := 0;
-      cboIteration.Enabled := false;
-      _displayedIteration := frmMain.displayedIteration;
-
 
       // Set up widgets
       //---------------
-      lblExposureType.Top := lblDay.Top;
-      lblExposureType.Left := lblDay.Left;
+      lblExposureType.Top := lblTextEntry.Top;
+      lblExposureType.Left := lblTextEntry.Left;
 
-      lblSourceHerdID.Top := lblDay.Top;
-      lblSourceHerdID.Left := lblDay.Left;
+      lblDiseaseState.Top := lblTextEntry.Top;
+      lblDiseaseState.Left := lblTextEntry.Left;
 
-      lblRecipientHerdID.Top := lblDay.Top;
-      lblRecipientHerdID.Left := lblDay.Left;
+      cboExposureType.Top := rleTextEntry.Top;
+      cboExposureType.Left := rleTextEntry.Left;
 
-      lblStatus.Top := lblDay.Top;
-      lblStatus.Left := lblDay.Left;
+      pnlExposureSuccess.Top := lblTextEntry.Top - 4;
+      pnlExposureSuccess.Left := lblTextEntry.Left;
 
-      cboExposureType.Top := rleDay.Top;
-      cboExposureType.Left := rleDay.Left;
-
-      rleSourceHerdID.Top := rleDay.Top;
-      rleSourceHerdID.Left := rleDay.left;
-
-      rleRecipientHerdID.Top := rleDay.Top;
-      rleRecipientHerdID.Left := rleDay.left;
-
-      pnlExposureSuccess.Top := rleDay.Top;
-      pnlExposureSuccess.Left := lblDay.Left;
-
-      cboStatus.Top := rleDay.Top;
-      cboStatus.Left := rleDay.Left;
-
-      rleDay.InputExpression := RE_SIGNED_INTEGER_INPUT;
-      rleSourceHerdID.InputExpression := RE_INTEGER_INPUT;
-      rleRecipientHerdID.InputExpression := RE_INTEGER_INPUT;
+      cboDiseaseState.Top := rleTextEntry.Top;
+      cboDiseaseState.Left := rleTextEntry.Left;
 
       pnlEventCounter.Caption := '';
       pnlCaption.Caption := '';
-
 
       setChartControlsEnabled( false );
 
@@ -284,7 +255,6 @@ implementation
       //--------------------
       _smSim := sim;
       _smdb := db;
-      _sqlRes := TSqlResult.create( db as TSqlDatabase );
 
       _selectedPT := nil;
       _recipientPT := nil;
@@ -305,12 +275,13 @@ implementation
 
       // Set up the grid and show the data
       //-----------------------------------
-      setupComboBox();
-      setupRecipientComboBox();
-
-      setCaption();
+      setupIterationComboBox();
+      setupProdTypeComboBox();
+      setupRecipientProdTypeComboBox();
 
       productionTypeChanged();
+
+      cboMainFilter.ItemIndex := 0;
 
       _creating := false;
 		end
@@ -319,31 +290,23 @@ implementation
 
   procedure TFormOutputExposures.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:54 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FormOutputExposures.dfm
-      // File date: Wed May 30 11:08:12 2007
-
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          Caption := tr( 'Exposures for 1 iteration' );
-          lblSourcePT.Caption := tr( 'Source production type:' );
-          lblRecipientPT.Caption := tr( 'Recipient production type:' );
+          Caption := tr( 'Exposures and traces for 1 iteration' );
+          lblSourcePT.Caption := tr( 'S/O type:' );
+          lblRecipientPT.Caption := tr( 'R/I type:' );
           pnlCaption.Caption := tr( 'Iteration status: completed/aborted/running' );
           lblMainFilter.Caption := tr( 'Filter by:' );
-          lblDay.Caption := tr( 'Day:' );
-          lblExposureType.Caption := tr( 'Exposure type:' );
-          lblSourceHerdID.Caption := tr( 'Source unit ID:' );
-          lblRecipientHerdID.Caption := tr( 'Recipient unit ID:' );
-          lblStatus.Caption := tr( 'Status:' );
+          lblTextEntry.Caption := tr( 'Day:' );
+          lblExposureType.Caption := tr( 'Event type:' );
+          lblDiseaseState.Caption := tr( 'Disease state:' );
           cboMainFilter.Text := tr( '(No filter)' );
-          rdoSuccess.Caption := tr( 'Successful exposures' );
-          rdoUnsuccess.Caption := tr( 'Unsuccessful exposures' );
+          rdoSuccess.Caption := tr( 'Adequate/successful' );
+          rdoUnsuccess.Caption := tr( 'Inadequate/unsuccessful' );
           pnlEventCounter.Caption := tr( 'pnlEventCounter' );
           lblMainSort.Caption := tr( 'Sort by:' );
           lblSortOrder.Caption := tr( 'Sort order:' );
-          lblIteration.Caption := tr( 'Iteration:' );
           cboMainSort.Text := tr( 'Day' );
           rdoAscending.Caption := tr( 'Ascending' );
           rdoDescending.Caption := tr( 'Descending' );
@@ -355,45 +318,61 @@ implementation
         begin
           cboMainFilter.Items[0] := tr( '(No filter)' );
           cboMainFilter.Items[1] := tr( 'Day' );
-          cboMainFilter.Items[2] := tr( 'Source unit ID' );
-          cboMainFilter.Items[3] := tr( 'Source unit status' );
-          cboMainFilter.Items[4] := tr( 'Exposure type' );
-          cboMainFilter.Items[5] := tr( 'Exposure success' );
-          cboMainFilter.Items[6] := tr( 'Recipient unit ID' );
-          cboMainFilter.Items[7] := tr( 'Recipient unit status' );
+          cboMainFilter.Items[2] := tr( 'Event type' );
+          cboMainFilter.Items[3] := tr( 'S/O unit ID' );
+          cboMainFilter.Items[4] := tr( 'S/O status' );
+          cboMainFilter.Items[5] := tr( 'S/O zone' );
+          cboMainFilter.Items[6] := tr( 'Is adequate/successful' );
+          cboMainFilter.Items[7] := tr( 'R/I unit ID' );
+          cboMainFilter.Items[8] := tr( 'R/I status' );
+          cboMainFilter.Items[9] := tr( 'R/I zone' );
+          cboMainFilter.Items[10] := tr( 'Day of initiation' );
 
-          cboExposureType.Items[0] := tr( 'Direct contacts' );
-          cboExposureType.Items[1] := tr( 'Indirect contacts' );
-          cboExposureType.Items[2] := tr( 'Airborne spread' );
+          cboExposureType.Items[0] := tr( 'Direct contact' );
+          cboExposureType.Items[1] := tr( 'Indirect contact' );
+          cboExposureType.Items[2] := tr( 'Airborne exposure' );
+          cboExposureType.Items[3] := tr( 'Trace forward, direct' );
+          cboExposureType.Items[4] := tr( 'Trace forward, indirect' );
+          cboExposureType.Items[5] := tr( 'Trace back, direct' );
+          cboExposureType.Items[6] := tr( 'Trace back, indirect' );
 
-          cboStatus.Items[0] := tr( 'Susceptible' );
-          cboStatus.Items[1] := tr( 'Latent' );
-          cboStatus.Items[2] := tr( 'Subclinical' );
-          cboStatus.Items[3] := tr( 'Clinical' );
-          cboStatus.Items[4] := tr( 'Naturally immune' );
-          cboStatus.Items[5] := tr( 'Vaccine immune' );
-          cboStatus.Items[6] := tr( 'Destroyed' );
+          //cboDiseaseState is taken care of in the manual translation function below.
 
           cboMainSort.Items[0] := tr( 'Day' );
-          cboMainSort.Items[1] := tr( 'Exp. on day' );
-          cboMainSort.Items[2] := tr( 'Source unit ID' );
-          cboMainSort.Items[3] := tr( 'Source type' );
-          cboMainSort.Items[4] := tr( 'Source status' );
-          cboMainSort.Items[5] := tr( 'Exp. type' );
-          cboMainSort.Items[6] := tr( 'Exp. success' );
-          cboMainSort.Items[7] := tr( 'Recipient unit ID' );
-          cboMainSort.Items[8] := tr( 'Recipient type' );
-          cboMainSort.Items[9] := tr( 'Recipient status' );
+          cboMainSort.Items[1] := tr( 'Event on day' );
+          cboMainSort.Items[3] := tr( 'Event type' );
+          cboMainSort.Items[4] := tr( 'S/O unit ID' );
+          cboMainSort.Items[5] := tr( 'S/O type' );
+          cboMainSort.Items[6] := tr( 'S/O status' );
+          cboMainSort.Items[7] := tr( 'S/O zone' );
+          cboMainSort.Items[7] := tr( 'Is adequate/successful' );
+          cboMainSort.Items[8] := tr( 'R/I unit ID' );
+          cboMainSort.Items[9] := tr( 'R/I type' );
+          cboMainSort.Items[10] := tr( 'R/I status' );
+          cboMainSort.Items[11] := tr( 'R/I zone' );
+          cboMainSort.Items[12] := tr( 'Day of initiation' );
         end
       ;
 
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFormOutputExposures.translateUIManual();
+    var
+      j: TNAADSMDiseaseState;
+    begin
+      cboDiseaseState.Items.Clear();
+      for j := naadsmFirstDiseaseState() to naadsmLastDiseaseState() do
+        cboDiseaseState.Items.Append( naadsmDiseaseStateStr( j ) )
+      ;
     end
   ;
 
 
 	destructor TFormOutputExposures.destroy();
 		begin
-      _sqlRes.Free();
       inherited destroy();
 		end
 	;
@@ -411,7 +390,7 @@ implementation
   ;
 
 
-	procedure TFormOutputExposures.setupRecipientComboBox();
+	procedure TFormOutputExposures.setupRecipientProdTypeComboBox();
   	var
     	it: TProductionTypeListIterator;
   	begin
@@ -451,56 +430,23 @@ implementation
     updates.
   }
   procedure TFormOutputExposures.setupFromDatabase();
-    var
-      row: TSqlRow;
-      q: string;
     begin
       resetGrid();
-      cboIteration.Items.Clear();
 
       stgGrid.SearchOptions.Filtered := false;
 
-      if ( ( not frmMain.simIsRunning ) or (_inSimComplete) ) then
-        begin
-      q := 'SELECT DISTINCT (iteration) FROM outDailyEvents order by iteration desc;';
-      _sqlRes.runQuery( q );
-      row := _sqlRes.fetchArrayFirst();
-
-      if ( row <> nil ) then
-        begin
-          cboIteration.Enabled := true;
-          while ( row <> nil ) do
-            begin
-              cboIteration.Items.Add(row.field('iteration'));
-              row := _sqlRes.fetchArrayNext();
-            end;
-
-          cboIteration.ItemIndex := 0;
-
-          if ( -1 = _displayedIteration ) then
-            _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex])
-          else
-            begin
-              if ( cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) ) >= 0 ) then
-                begin
-                  cboIteration.ItemIndex := cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) );
-                end
-              else
-                begin
-                  _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex]);
-//                  frmMain.displayedIteration := _displayedIteration; // FIX ME: Why is this commented out?
-                end;
-            end;
-          fillOutForm();
-          updateExposureCounter();
-        end
+      // If a simulation is running, then disable the iteration combo box.
+      // Otherwise, populate it from the database.
+      if( frmMain.simIsRunning ) then
+        disableIterationComboBox()
       else
         begin
-          cboIteration.Enabled := false;
-          updateExposureCounter();
-          exit;
-        end;
-        end;
+          setupIterationComboBox();
+          fillOutForm();
+        end
+      ;
+
+      updateExposureCounter();
     end
   ;
 
@@ -509,13 +455,11 @@ implementation
     begin
       _recipientPT := nil;
       
-      setupRecipientComboBox();
-      
-      freeAndNil( _sqlRes );
-      
-      _sqlRes := TSqlResult.create( _smdb as TSqlDatabase );
-      setupFromDatabase();
-      setCaption();
+      setupIterationComboBox();
+      setupProdTypeComboBox();
+      setupRecipientProdTypeComboBox();
+
+      productionTypeChanged();
     end
   ;
 
@@ -548,20 +492,21 @@ implementation
       _firstRow := true;
 
       stgGrid.RowCount := 2;
-      stgGrid.ColCount := 12;
+      stgGrid.ColCount := 13;
 
       stgGrid.Cells[ COL_DAY, 0 ] := tr( 'Day' );
-      stgGrid.Cells[ COL_EXPOSURE, 0 ] := tr( 'Exp. on day' );
-      stgGrid.Cells[ COL_SOURCE_HERDID, 0 ] := tr( 'Source unit ID' );
-      stgGrid.Cells[ COL_SOURCE_TYPE_DESCR, 0 ] := tr( 'Source type' );
-      stgGrid.Cells[ COL_SOURCE_STATUS, 0 ] := tr( 'Source status' );
-      stgGrid.Cells[ COL_SOURCE_ZONE, 0 ] := tr( 'Source zone' );
-      stgGrid.Cells[ COL_EXPOSURE_CODE, 0 ] := tr( 'Exp. type' );
-      stgGrid.Cells[ COL_EXPOSURE_SUCCESS, 0 ] := tr( 'Exp. success' );
-      stgGrid.Cells[ COL_RECIPENT_HERDID, 0 ] := tr( 'Recipient unit ID' );
-      stgGrid.Cells[ COL_RECIPIENT_TYPE_DESCR, 0 ] := tr( 'Recipient type' );
-      stgGrid.Cells[ COL_RECIPIENT_STATUS, 0 ] := tr( 'Receipient status' );
-      stgGrid.Cells[ COL_RECIPIENT_ZONE, 0 ] := tr( 'Receipient zone' );
+      stgGrid.Cells[ COL_EXPOSURE, 0 ] := tr( 'Event on day' );
+      stgGrid.Cells[ COL_SOURCE_HERDID, 0 ] := tr( 'S/O unit ID' );
+      stgGrid.Cells[ COL_SOURCE_TYPE_DESCR, 0 ] := tr( 'S/O type' );
+      stgGrid.Cells[ COL_SOURCE_STATUS, 0 ] := tr( 'S/O status' );
+      stgGrid.Cells[ COL_SOURCE_ZONE, 0 ] := tr( 'S/O zone' );
+      stgGrid.Cells[ COL_EXPOSURE_CODE, 0 ] := tr( 'Event type' );
+      stgGrid.Cells[ COL_EXPOSURE_IS_ADEQUATE, 0 ] := tr( 'Is adequate/successful' );
+      stgGrid.Cells[ COL_RECIPENT_HERDID, 0 ] := tr( 'R/I unit ID' );
+      stgGrid.Cells[ COL_RECIPIENT_TYPE_DESCR, 0 ] := tr( 'R/I type' );
+      stgGrid.Cells[ COL_RECIPIENT_STATUS, 0 ] := tr( 'R/I status' );
+      stgGrid.Cells[ COL_RECIPIENT_ZONE, 0 ] := tr( 'R/I zone' );
+      stgGrid.cells[ COL_INITIATED_DAY, 0 ] := tr( 'Day of initiation' );
 
       stgGrid.AutoSizeColumns();
 
@@ -594,13 +539,13 @@ implementation
       if( 2 = stgGrid.RowCount ) then
         begin
           if( 0 = length( trim( stgGrid.Cells[ 0, 1 ] ) ) ) then
-            str := '0 ' + tr( 'exposures' )
+            str := '0 ' + tr( 'events' )
           else
-            str := '1 ' + tr( 'exposure' )
+            str := '1 ' + tr( 'events' )
           ;
         end
       else
-        str := intToStr( stgGrid.RowCount - 1 ) + ' ' + tr( 'exposures' )
+        str := intToStr( stgGrid.RowCount - 1 ) + ' ' + tr( 'events' )
       ;
 
       if( stgGrid.SearchOptions.Filtered ) then
@@ -729,121 +674,166 @@ implementation
 // Filtering functions
 //-----------------------------------------------------------------------------
   procedure TFormOutputExposures.filter();
+    var
+      s: string;
     begin
       dbcout( '--- TFormOutputExposures.filter...', DBFORMOUTPUTEXPOSURES );
 
       //lockWindowUpdate( self.Handle );
       self.Perform( WM_SETREDRAW, 0, 0 );
 
+      s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
+
       try
         stgGrid.SearchOptions.Filtered := false;
 
-        case cboMainFilter.ItemIndex of
-          0: // No filter
-            begin
-              _filtering := false;
-              stgGrid.SearchOptions.Filtered := false;
-            end
-          ;
-          1: // Day
-            begin
-             stgGrid.SearchOptions.SearchCol := COL_DAY;
-             stgGrid.SearchOptions.SearchText := rleDay.Text;
-             stgGrid.SearchOptions.Filtered := _filtering;
-            end
-          ;
-          2: // Source ID
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_SOURCE_HERDID;
-              stgGrid.SearchOptions.SearchText := rleSourceHerdID.Text;
-              stgGrid.SearchOptions.Filtered := _filtering;
-            end
-          ;
-          3: // Source status
-            begin
-              if( -1 = cboStatus.ItemIndex ) then
-                stgGrid.SearchOptions.Filtered := false
-              else
+        // Using strings here makes life easier when options are added or changed.
+        if( tr( '(No filter)' ) = s ) then
+          begin
+            _filtering := false;
+            stgGrid.SearchOptions.Filtered := false;
+          end
+        else if( tr( 'Day' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_DAY;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else if( tr( 'S/O unit ID' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_SOURCE_HERDID;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+
+        // Filtering by source type is taken care of by a different mechanism
+
+        else if( tr( 'S/O status' ) = s ) then
+          begin
+            if( -1 = cboDiseaseState.ItemIndex ) then
+              stgGrid.SearchOptions.Filtered := false
+            else
+              begin
+                dbcout( 'Filtering S/O status by ' + cboDiseaseState.Items.Strings[cboDiseaseState.ItemIndex], DBFORMOUTPUTEXPOSURES );
+                stgGrid.SearchOptions.SearchCol := COL_SOURCE_STATUS;
+                stgGrid.SearchOptions.SearchText := cboDiseaseState.Items.Strings[cboDiseaseState.ItemIndex];
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            ;
+          end
+        else if( tr( 'S/O zone' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_SOURCE_ZONE;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else if( tr( 'Event type' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_EXPOSURE_CODE;
+
+            case cboExposureType.ItemIndex of
+              0: // Direct contact
                 begin
-                  dbcout( 'Filtering source status by ' + cboStatus.Items.Strings[cboStatus.ItemIndex], DBFORMOUTPUTEXPOSURES );
-                  stgGrid.SearchOptions.SearchCol := COL_SOURCE_STATUS;
-                  stgGrid.SearchOptions.SearchText := cboStatus.Items.Strings[cboStatus.ItemIndex];
+                  stgGrid.SearchOptions.SearchText := tr( 'Direct contact' );
                   stgGrid.SearchOptions.Filtered := _filtering;
                 end
               ;
-            end
-          ;
-          4: // Exposure type
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_EXPOSURE_CODE;
-
-              case cboExposureType.ItemIndex of
-                0: // Direct contact
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Direct contact' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                1: // Indirect contact
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Indirect contact' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                2: // Airborne spread
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Airborne' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                else // cancel the filtering
-                  stgGrid.SearchOptions.Filtered := false
-                ;
-              end;
-
-            end
-          ;
-          5: // Exposure success
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_EXPOSURE_SUCCESS;
-
-              if( rdoSuccess.checked ) then
+              1: // Indirect contact
                 begin
-                  stgGrid.SearchOptions.SearchText := tr( 'true' );
+                  stgGrid.SearchOptions.SearchText := tr( 'Indirect contact' );
                   stgGrid.SearchOptions.Filtered := _filtering;
                 end
-              else if( rdoUnsuccess.checked ) then
+              ;
+              2: // Airborne spread
                 begin
-                  stgGrid.SearchOptions.SearchText := tr( 'false' );
+                  stgGrid.SearchOptions.SearchText := tr( 'Airborne exposure' );
                   stgGrid.SearchOptions.Filtered := _filtering;
                 end
+              ;
+              3: // Trace forward, direct
+                begin
+                  stgGrid.SearchOptions.SearchText := tr( 'Trace forward, direct' );
+                  stgGrid.SearchOptions.Filtered := _filtering;
+                end
+              ;
+              4: // Trace forward, indirect
+                begin
+                  stgGrid.SearchOptions.SearchText := tr( 'Trace forward, indirect' );
+                  stgGrid.SearchOptions.Filtered := _filtering;
+                end
+              ;
+              5: // Trace back, direct
+                begin
+                  stgGrid.SearchOptions.SearchText := tr( 'Trace back, direct' );
+                  stgGrid.SearchOptions.Filtered := _filtering;
+                end
+              ;
+              6: // Trace back, indirect
+                begin
+                  stgGrid.SearchOptions.SearchText := tr( 'Trace back, indirect' );
+                  stgGrid.SearchOptions.Filtered := _filtering;
+                end
+              ;
               else // cancel the filtering
                 stgGrid.SearchOptions.Filtered := false
               ;
-            end
-          ;
-          6: // Recipient ID
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_RECIPENT_HERDID;
-              stgGrid.SearchOptions.SearchText := rleRecipientHerdID.Text;
-              stgGrid.SearchOptions.Filtered := _filtering;
-            end
-          ;
-          7: // Recipient status
-            begin
-              if( -1 = cboStatus.ItemIndex ) then
-                stgGrid.SearchOptions.Filtered := false
-              else
-                begin
-                  dbcout( 'Filtering Recipient status by ' + cboStatus.Items.Strings[cboStatus.ItemIndex], DBFORMOUTPUTEXPOSURES );
-                  stgGrid.SearchOptions.SearchCol := COL_RECIPIENT_STATUS;
-                  stgGrid.SearchOptions.SearchText := cboStatus.Items.Strings[cboStatus.ItemIndex];
-                  stgGrid.SearchOptions.Filtered := _filtering;
-                end
-              ;
-            end
-          ;
-        end;
+            end;
+          end
+        else if( tr( 'Is adequate/successful' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_EXPOSURE_IS_ADEQUATE;
+
+            if( rdoSuccess.checked ) then
+              begin
+                stgGrid.SearchOptions.SearchText := tr( 'true' );
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            else if( rdoUnsuccess.checked ) then
+              begin
+                stgGrid.SearchOptions.SearchText := tr( 'false' );
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            else // cancel the filtering
+              stgGrid.SearchOptions.Filtered := false
+            ;
+          end
+        else if( tr( 'R/I unit ID' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_RECIPENT_HERDID;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+
+        // Filtering by recipient type is taken care of by a different mechanism
+
+        else if( tr( 'R/I status' ) = s ) then
+          begin
+            if( -1 = cboDiseaseState.ItemIndex ) then
+              stgGrid.SearchOptions.Filtered := false
+            else
+              begin
+                dbcout( 'Filtering R/I status by ' + cboDiseaseState.Items.Strings[cboDiseaseState.ItemIndex], DBFORMOUTPUTEXPOSURES );
+                stgGrid.SearchOptions.SearchCol := COL_RECIPIENT_STATUS;
+                stgGrid.SearchOptions.SearchText := cboDiseaseState.Items.Strings[cboDiseaseState.ItemIndex];
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            ;
+          end
+        else if( tr( 'R/I zone' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_RECIPIENT_ZONE;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else if( tr( 'Day of initiation' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_INITIATED_DAY;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else
+          raise exception.create( 'Unhandled string (' + s + ') in TFormOutputExposures.filter()' )
+        ;
 
         //lockWindowUpdate( 0 );
         self.Perform( WM_SETREDRAW, 1, 0 );
@@ -866,211 +856,221 @@ implementation
 // GUI event handlers
 //-----------------------------------------------------------------------------
   procedure TFormOutputExposures.cboMainFilterChange(Sender: TObject);
+    var
+      s: string;
     begin
-      case cboMainFilter.ItemIndex of
-        0: // No filter
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := false;
+      s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := false;
+      // Using strings here makes life easier when options are added or changed.
+      if( tr( '(No filter)' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := false;
 
-            fraAcceptCancel.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := false;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            _filtering := false;
+          fraAcceptCancel.Visible := false;
 
-            filter();
-          end
-        ;
-        1: // Day
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := true;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := false;
+          _filtering := false;
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := true;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := false;
+          filter();
+        end
+      else if( tr( 'Day' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Day:' );
+          lblDiseaseState.Visible := false;
 
-            //fraAcceptCancel.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_SIGNED_INTEGER_INPUT;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            _filtering := true;
+          _filtering := true;
 
-            rleDay.SetFocus();
-          end
-        ;
-        2: // Source unit ID
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := true;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := false;
+          rleTextEntry.SetFocus();
+        end
+      else if( tr( 'S/O unit ID' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Source unit ID:' );
+          lblDiseaseState.Visible := false;
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := true;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_INTEGER_INPUT;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            //fraAcceptCancel.Visible := false;
+          _filtering := true;
 
-            _filtering := true;
+          rleTextEntry.SetFocus();
+        end
 
-            rleSourceHerdID.SetFocus();
-          end
-        ;
-        3: // Source status
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := true;
+      // Filtering by source type is taken care of by a different mechanism
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := true;
+      else if( tr( 'S/O status' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := true;
 
-            fraAcceptCancel.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := false;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := true;
 
-            _filtering := true;
+          fraAcceptCancel.Visible := false;
 
-            filter();
-          end
-        ;
-        4: // Exposure type
-          begin
-            lblExposureType.Visible := true;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := false;
+          _filtering := true;
 
-            cboExposureType.Visible := true;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := false;
+          filter();
+        end
+      else if( tr( 'S/O zone' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'S/O zone:' );
+          lblDiseaseState.Visible := false;
 
-            fraAcceptCancel.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := '';
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            _filtering := true;
+          _filtering := true;
 
-            filter();
+          rleTextEntry.SetFocus();
+        end
+      else if( tr( 'Event type' ) = s ) then
+        begin
+          lblExposureType.Visible := true;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := false;
 
-            //cboEvents.SetFocus();
-          end
-        ;
-        5: // Exposure success
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := false;
+          cboExposureType.Visible := true;
+          rleTextEntry.Visible := false;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := true;
-            cboStatus.Visible := false;
+          fraAcceptCancel.Visible := false;
 
-            fraAcceptCancel.Visible := false;
+          _filtering := true;
 
-            _filtering := true;
+          filter();
+        end
+      else if( tr( 'Is adequate/successful' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := false;
 
-            filter();
-          end
-        ;
-        6: // Recipient unit ID
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := true;
-            lblStatus.Visible := false;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := false;
+          pnlExposureSuccess.Visible := true;
+          cboDiseaseState.Visible := false;
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := true;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := false;
+          fraAcceptCancel.Visible := false;
 
-            //fraAcceptCancel.Visible := false;
+          _filtering := true;
 
-            _filtering := true;
+          filter();
+        end
+      else if( tr( 'R/I unit ID' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'R/I unit ID:' );
+          lblDiseaseState.Visible := false;
 
-            rleRecipientHerdID.SetFocus();
-          end
-        ;
-        7: // Recipient status
-          begin
-            lblExposureType.Visible := false;
-            lblDay.Visible := false;
-            lblSourceHerdID.Visible := false;
-            lblRecipientHerdID.Visible := false;
-            lblStatus.Visible := true;
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_INTEGER_INPUT;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
 
-            cboExposureType.Visible := false;
-            rleDay.Visible := false;
-            rleSourceHerdID.visible := false;
-            rleRecipientHerdID.Visible := false;
-            pnlExposureSuccess.Visible := false;
-            cboStatus.Visible := true;
+          _filtering := true;
 
-            fraAcceptCancel.Visible := false;
+          rleTextEntry.SetFocus();
+        end
 
-            _filtering := true;
+      // Filtering by recipient type is taken care of by a different mechanism
 
-            filter();
-          end
-        ;
-      end;
+      else if( tr( 'R/I status' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := true;
+
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := false;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := true;
+
+          fraAcceptCancel.Visible := false;
+
+          _filtering := true;
+
+          filter();
+        end
+      else if( tr( 'R/I zone' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'R/I zone:' );
+          lblDiseaseState.Visible := false;
+
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := '';
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
+
+          _filtering := true;
+
+          rleTextEntry.SetFocus();
+        end
+      else if( tr( 'Day of initiation' ) = s ) then
+        begin
+          lblExposureType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Day of initiation:' );
+          lblDiseaseState.Visible := false;
+
+          cboExposureType.Visible := false;
+          rleTextEntry.Visible := true;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_SIGNED_INTEGER_INPUT;
+          pnlExposureSuccess.Visible := false;
+          cboDiseaseState.Visible := false;
+
+          _filtering := true;
+
+          rleTextEntry.SetFocus();
+        end
+      else
+        raise exception.Create( 'Unrecognized string (' + s + ') in TFormOutputExposures.cboMainFilterChange()' )
+      ;
     end
   ;
 
 
-  procedure TFormOutputExposures.rleSourceHerdIDEnter(Sender: TObject);
+  procedure TFormOutputExposures.rleTextEntryEnter(Sender: TObject);
     begin
       fraAcceptCancel.Visible := true;
-      //fraAcceptCancel.Enabled := true;
-    end
-  ;
-
-
-  procedure TFormOutputExposures.rleRecipientHerdIDEnter(Sender: TObject);
-    begin
-      fraAcceptCancel.Visible := true;
-      //fraAcceptCancel.Enabled := true;
-    end
-  ;
-
-
-  procedure TFormOutputExposures.rleDayEnter(Sender: TObject);
-    begin
-      fraAcceptCancel.Visible := true;
-      //fraAcceptCancel.Enabled := true;
     end
   ;
 
@@ -1090,21 +1090,30 @@ implementation
 
 
   procedure TFormOutputExposures.fraAcceptCancelbtnAcceptClick(Sender: TObject);
+    var
+      s: string;
     begin
-      if( rleDay.Visible ) then
-        begin
-          if( -2 <> myStrToInt( rleDay.Text, -2 ) ) then filter();
-        end
-      else if( rleSourceHerdID.Visible ) then
-        begin
-          if( -2 <> myStrToInt( rleSourceHerdID.Text, -2 ) ) then filter();
-        end
-      else if( rleRecipientHerdID.Visible ) then
-        begin
-          if( -2 <> myStrToInt( rleRecipientHerdID.Text, -2 ) ) then filter();
-        end
-      else
+      s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
+
+      if( not( rleTextEntry.Visible ) ) then
         updateExposureCounter()
+      else
+        begin
+          // Deal with days
+          //---------------
+          if( ( tr( 'Day' ) = s ) or ( tr( 'Day of initiation' ) = s ) ) then
+            begin
+              if( -2 <> myStrToInt( rleTextEntry.Text, -2 ) ) then
+                filter()
+              ;
+            end
+
+          // Deal with other stuff
+          //----------------------
+          else if( 0 < length( trim( rleTextEntry.text ) ) ) then
+            filter()
+          ;
+        end
       ;
 
       fraAcceptCancel.Visible := false;
@@ -1114,12 +1123,8 @@ implementation
 
   procedure TFormOutputExposures.fraAcceptCancelbtnCancelClick(Sender: TObject);
     begin
-      if( rleDay.Visible ) then
-        rleDay.Text := ''
-      else if( rleSourceHerdID.Visible ) then
-        rleSourceHerdID.Text := ''
-      else if( rleRecipientHerdID.Visible ) then
-        rleRecipientHerdID.Text := ''
+      if( rleTextEntry.Visible ) then
+        rleTextEntry.Text := ''
       ;
 
       fraAcceptCancel.Visible := false;
@@ -1131,7 +1136,7 @@ implementation
 
 
 
-  procedure TFormOutputExposures.rleExit(Sender: TObject);
+  procedure TFormOutputExposures.rleTextEntryExit(Sender: TObject);
     begin
       if
         ( fraAcceptCancel.btnAccept = self.ActiveControl )
@@ -1149,7 +1154,7 @@ implementation
   ;
 
 
-  procedure TFormOutputExposures.rleKeyUp( Sender: TObject; var Key: Word; Shift: TShiftState );
+  procedure TFormOutputExposures.rleTextEntryKeyUp( Sender: TObject; var Key: Word; Shift: TShiftState );
     begin
       if( 13 = key ) then
         begin
@@ -1219,39 +1224,31 @@ implementation
 
   procedure TFormOutputExposures.updateSimComplete();
     begin
-      _inSimComplete := true;
-      self.simChanged();
-      if ( -1 <> frmMain.displayedIteration ) then
-        self.resetIteration( frmMain.displayedIteration )
-      ;
-      _inSimComplete := false;
-
-      setCaption();
+      raise exception.Create( 'updateSimComplete is not yet supported in TFormOutputExposures' );
     end
   ;
 
 
   procedure TFormOutputExposures.resetIteration( const iteration: Integer );
     begin
-      if ( cboIteration.Items.IndexOf( IntToStr( iteration ) ) >= 0 ) then
+      if( 0 <= cboIteration.Items.IndexOf( IntToStr( iteration ) ) ) then
         begin
           cboIteration.ItemIndex := cboIteration.Items.IndexOf( IntToStr( iteration ) );
           _displayedIteration := iteration;
           fillOutForm();
           updateExposureCounter();
         end
+      else
+        raise exception.Create( 'Bad iteration (' + intToStr( iteration ) + ' in TFormOutputExposures.resetIteration()' )
       ;
     end
   ;
 
 
-  procedure TFormOutputExposures.cboIterationChange(Sender: TObject);
+  procedure TFormOutputExposures.iterationChanged();
     begin
-      inherited;
       if ( assigned( frmMain ) ) then
-        begin
-          frmMain.displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex]);
-        end
+        frmMain.displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex])
       else
         begin
           _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex]);
@@ -1265,6 +1262,7 @@ implementation
 
   procedure TFormOutputExposures.fillOutForm();
     var
+      res: TSqlResult;
       row: TSqlRow;
       q: string;
       selectedPTIDClause: string;
@@ -1282,8 +1280,8 @@ implementation
       // Was the last/current iteration completed?
       //-------------------------------------------
       q := 'SELECT completedIterations FROM outGeneral';
-      _sqlRes.runQuery( q );
-      row := _sqlRes.fetchArrayFirst();
+      res := TSqlResult.create( q, ( _smdb as TSqlDatabase ) );
+      row := res.fetchArrayFirst();
 
       if( null = row.field('completedIterations') ) then
         pnlCaption.Caption := tr( 'Iteration status: aborted' )
@@ -1295,12 +1293,17 @@ implementation
 
       // Determine the last day of the last/current iteration
       //------------------------------------------------------
-      q := 'SELECT MAX(day) AS maxDay FROM outDailyEvents WHERE iteration = ' + intToStr( _displayedIteration );
-      _sqlRes.runQuery( q );
-      row := _sqlRes.fetchArrayFirst();
+      if( 0 >= _displayedIteration ) then
+        raise exception.create( 'Bad iteration (' + intToStr( _displayedIteration ) + ' in TFormOutputExposures.fillOutForm()' )
+      ;
+
+      q := 'SELECT MAX(day) AS maxDay FROM outDailyExposures WHERE iteration = ' + intToStr( _displayedIteration );
+      res.runQuery( q );
+      row := res.fetchArrayFirst();
 
       if( null = row.field('maxDay') ) then // There is no data in the database.
         begin
+          res.Free();
           updateExposureCounter();
           exit;
         end
@@ -1328,6 +1331,7 @@ implementation
       SELECT TOP 10
         outDailyExposures.iteration,
         outDailyExposures.day,
+        outDailyExposures.initiatedDay,
         outDailyExposures.exposure,
         outDailyExposures.exposingHerdID,
         ##dynHerd.herdID AS exposingHerdID2,
@@ -1338,7 +1342,7 @@ implementation
         ##outDailyExposures.exposingZoneID,
         exposingZone.descr AS exposingZoneDescr,
         outDailyExposures.spreadMethodCode,
-        outDailyExposures.success,
+        outDailyExposures.isAdequate,
         outDailyExposures.exposedHerdID,
         ##exposedHerd.herdID AS exposedHerdID2,
         ##exposedHerd.productionTypeID AS exposedTypeID,
@@ -1362,13 +1366,14 @@ implementation
       q := 'SELECT'
         //+ ' TOP 10' // Useful for debugging
         + ' outDailyExposures.day,'
+        + ' outDailyExposures.initiatedDay,'
         + ' outDailyExposures.exposure,'
         + ' outDailyExposures.exposingHerdID,'
         + ' exposingType.descr AS exposingTypeDescr,'
         + ' outDailyExposures.exposingHerdStatusCode,'
         + ' exposingZone.descr AS exposingZoneDescr,'
         + ' outDailyExposures.spreadMethodCode,'
-        + ' outDailyExposures.success,'
+        + ' outDailyExposures.isAdequate,'
         + ' outDailyExposures.exposedHerdID,'
         + ' exposedType.descr AS exposedTypeDescr,'
         + ' outDailyExposures.exposedHerdStatusCode,'
@@ -1388,17 +1393,17 @@ implementation
         + '    outDailyExposures.day, outDailyExposures.exposure'
       ;
 
-      _sqlRes.runQuery( q );
+      res.runQuery( q );
 
       // Fill the grid
       //--------------
-      if( 1 < _sqlRes.numRows ) then
-        stgGrid.RowCount := _sqlres.numRows + 1
+      if( 1 < res.numRows ) then
+        stgGrid.RowCount := res.numRows + 1
       else
         stgGrid.RowCount := 2
       ;
 
-      row := _sqlRes.fetchArrayFirst();
+      row := res.fetchArrayFirst();
       i := 1;
       while( nil <> row ) do
         begin
@@ -1407,7 +1412,7 @@ implementation
 
           stgGrid.Cells[ COL_SOURCE_HERDID, i ] := intToStr( row.field('exposingHerdID') );
           stgGrid.Cells[ COL_SOURCE_TYPE_DESCR, i ] := row.field('exposingTypeDescr');
-          stgGrid.Cells[ COL_SOURCE_STATUS, i ] := transitionStateString( transitionStateFromCode( row.field('exposingHerdStatusCode') ) );
+          stgGrid.Cells[ COL_SOURCE_STATUS, i ] := naadsmDiseaseStateStr( naadsmDiseaseStateFromCode( charAt( string( row.field('exposingHerdStatusCode') ), 0 ) ) );
 
           if( null <> row.field('exposingZoneDescr') ) then
             stgGrid.Cells[ COL_SOURCE_ZONE, i ] := row.field('exposingZoneDescr')
@@ -1415,12 +1420,12 @@ implementation
             stgGrid.Cells[ COL_SOURCE_ZONE, i ] := ''
           ;
 
-          stgGrid.Cells[ COL_EXPOSURE_CODE, i ] := TSMExposure.getExposureCodeString( row.field('spreadMethodCode') );
-          stgGrid.Cells[ COL_EXPOSURE_SUCCESS, i ] := uiBoolToText( row.field('success') );
+          stgGrid.Cells[ COL_EXPOSURE_CODE, i ] := TSMExposureOrTrace.getExposureCodeString( row.field('spreadMethodCode') );
+          stgGrid.Cells[ COL_EXPOSURE_IS_ADEQUATE, i ] := uiBoolToText( row.field('isAdequate') );
 
           stgGrid.Cells[ COL_RECIPENT_HERDID, i ] := intToStr( row.field('exposedHerdID') );
           stgGrid.Cells[ COL_RECIPIENT_TYPE_DESCR, i ] := row.field('exposedTypeDescr');
-          stgGrid.Cells[ COL_RECIPIENT_STATUS, i ] := transitionStateString( transitionStateFromCode( row.field('exposedHerdStatusCode') ) );;
+          stgGrid.Cells[ COL_RECIPIENT_STATUS, i ] := naadsmDiseaseStateStr( naadsmDiseaseStateFromCode( charAt( string( row.field('exposedHerdStatusCode') ), 0 ) ) );
 
           if( null <> row.field('exposedZoneDescr') ) then
             stgGrid.Cells[ COL_RECIPIENT_ZONE, i ] := row.field('exposedZoneDescr')
@@ -1428,8 +1433,14 @@ implementation
             stgGrid.Cells[ COL_RECIPIENT_ZONE, i ] := ''
           ;
 
+          if( null <> row.field('initiatedDay') ) then
+            stgGrid.Cells[ COL_INITIATED_DAY, i ] := intToStr( row.field('initiatedDay') )
+          else
+            stgGrid.Cells[ COL_INITIATED_DAY, i ] := tr( 'N/A' )
+          ;
+
           inc( i );
-          row := _sqlRes.fetchArrayNext();
+          row := res.fetchArrayNext();
         end
       ;
 
@@ -1447,6 +1458,8 @@ implementation
           ;
         end
       ;
+
+      res.free();
     end
   ;
 

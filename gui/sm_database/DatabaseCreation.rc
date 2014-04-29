@@ -41,3 +41,16 @@ DBSchema3_1_13           TEXT    DBSchema3_1_13_GOLD.DDL
 DBSchema3_1_17_part1     TEXT    DBSchema3_1_17_part1_GOLD.DDL
 DBSchema3_1_17_part2     TEXT    DBSchema3_1_17_part2_GOLD.DDL
 DBSchema3_1_18           TEXT    DBSchema3_1_18_GOLD.DDL
+DBSchema3_1_20           TEXT    DBSchema3_1_20_GOLD.DDL
+DBSchema3_1_22           TEXT    DBSchema3_1_22_GOLD.DDL
+DBSchema3_2_0_NewInputs            TEXT    DBSchema3_2_0_NewInputs.DDL
+DBSchema3_2_0_RenamedOutputs  TEXT    DBSchema3_2_0_RenamedOutputs.DDL
+DBSchema3_2_0_NewOutputs  TEXT    DBSchema3_2_0_NewOutputs.DDL
+DBSchema3_2_0_AlteredHerdTable	TEXT	DBSchema3_2_0_AlteredHerdTable.DDL
+DBSchema3_2_1           TEXT    DBSchema3_2_1_GOLD.DDL
+DBSchema3_2_2           TEXT    DBSchema3_2_2_GOLD.DDL
+DBSchema3_2_5           TEXT    DBSchema3_2_5_GOLD.DDL
+DBSchema3_2_11          TEXT    DBSchema3_2_11_GOLD.DDL
+DBSchema3_2_13          TEXT    DBSchema3_2_13_GOLD.DDL
+DBSchema3_2_18          TEXT    DBSchema3_2_18_GOLD.DDL
+

@@ -97,7 +97,6 @@ object FrameAirborneSpread: TFrameAirborneSpread
       EditAlign = eaLeft
       TabOrder = 0
       OnExit = processText
-      OnKeyDown = rleKeyDown
     end
     object rleMaxSpread: TREEdit
       Left = 336
@@ -107,7 +106,6 @@ object FrameAirborneSpread: TFrameAirborneSpread
       EditAlign = eaLeft
       TabOrder = 1
       OnExit = processText
-      OnKeyDown = rleKeyDown
     end
     inline fraWindDir: TFrameWindDirection
       Left = 48

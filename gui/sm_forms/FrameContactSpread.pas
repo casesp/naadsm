@@ -4,13 +4,13 @@ unit FrameContactSpread;
 FrameContactSpread.pas/dfm
 ---------------------------
 Begin: 2005/05/03
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.33 $
+Last revision: $Date: 2011-03-31 04:25:03 $ $Author: areeves $
+Version: $Revision: 1.39.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,29 +19,29 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-		Windows, 
-		Messages, 
-		SysUtils, 
-		Variants, 
-		Classes, 
-		Graphics, 
-		Controls, 
-		Forms, 
-		Dialogs,
-		StdCtrls, 
+  uses
+    Windows, 
+    Messages, 
+    SysUtils, 
+    Variants, 
+    Classes, 
+    Graphics, 
+    Controls, 
+    Forms, 
+    Dialogs,
+    StdCtrls, 
     ExtCtrls,
 
-		REEdit,
+    REEdit,
 
-		ContactModel,
-		ProductionTypePair,
+    ContactSpreadParams,
+    ProductionTypePair,
 
-		FrameFunctionEditor,
-		FrameSMFunctionEditor
-	;
+    FrameFunctionEditor,
+    FrameSMFunctionEditor
+  ;
 
-	type TFrameContactSpread = class( TFrame )
+  type TFrameContactSpread = class( TFrame )
       pnlSimpleParams: TPanel;
       pnlSimpleParamsTop: TPanel;
       lblFixedContactRate: TLabel;
@@ -66,34 +66,33 @@ interface
       smrMovementControl: TFrameSMFunctionEditor;
     lblLatentUnits: TLabel;
 
-			procedure cbxLatentCanInfectClick(Sender: TObject);
-			procedure cbxSubclinicalCanInfectClick(Sender: TObject);
-			procedure processText( sender: TObject );
-			procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-			procedure cbxFixedContactRateClick(Sender: TObject);
+      procedure cbxLatentCanInfectClick(Sender: TObject);
+      procedure cbxSubclinicalCanInfectClick(Sender: TObject);
+      procedure processText( sender: TObject );
+      procedure cbxFixedContactRateClick(Sender: TObject);
 
-		protected
-			_cm: TContactModel;
-			_ptp: TProductionTypePair;
+    protected
+      _cm: TContactSpreadParams;
+      _ptp: TProductionTypePair;
 
-			_myForm: TForm;
+      _myForm: TForm;
 
-			procedure updateDisplay();
+      procedure updateDisplay();
 
       procedure translateUI();
 
-		public
-			constructor create( AOwner: TComponent ); override;
-			destructor destroy(); override;
+    public
+      constructor create( AOwner: TComponent ); override;
+      destructor destroy(); override;
 
-			function isValid(): boolean;
+      function isValid(): boolean;
 
       procedure setForm( val: TForm );
 
-			procedure setContactModel( cm: TContactModel; ptp: TProductionTypePair );
-			procedure setContactType( ct: TContactType );
-		end
-	;
+      procedure setContactSpreadParams( cm: TContactSpreadParams; ptp: TProductionTypePair );
+      procedure setContactType( ct: TContactType );
+    end
+  ;
 
   const
     DBFRAMECONTACTSPREAD: boolean = false; // Set to true to enable debugging messages for this unit
@@ -104,7 +103,6 @@ implementation
 
   uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n,
@@ -124,12 +122,12 @@ implementation
 
 
 constructor TFrameContactSpread.create( AOwner: TComponent );
-	begin
+  begin
     inherited create( AOwner );
     translateUI();
       
     _myForm := nil;
- 		_cm := nil;
+    _cm := nil;
     _ptp := nil;
 
     pnlSimpleParams.BevelOuter := bvNone;
@@ -158,16 +156,16 @@ constructor TFrameContactSpread.create( AOwner: TComponent );
     ;
 
     smcDistanceDistr.chartType := CTPdf;
-    smcDistanceDistr.xUnits := UnitsKilometers;
+    smcDistanceDistr.xUnits := UKilometers;
 
     smcTransportDelay.chartType := CTPdf;
-    smcTransportDelay.xUnits := UnitsDays;
+    smcTransportDelay.xUnits := UDays;
 
     smrMovementControl.chartType := CTRel;
     smrMovementControl.minY := 0.0;
     smrMovementControl.maxY := 0.0; // there is no maximum
-    smrMovementControl.xUnits := UnitsDays;
-    smrMovementControl.yUnits := UnitsPercent;
+    smrMovementControl.xUnits := UDays;
+    smrMovementControl.yUnits := UPercent;
   end
 ;
 
@@ -203,17 +201,17 @@ procedure TFrameContactSpread.translateUI();
 
 
 destructor TFrameContactSpread.destroy();
-	begin
- 		// This class only holds references, it doesn't own any objects.
+  begin
+    // This class only holds references, it doesn't own any objects.
     // Nothing should be freed.
     inherited destroy();
   end
 ;
 
 
-procedure TFrameContactSpread.setContactModel( cm: TContactModel; ptp: TProductionTypePair );
-	begin
-   	_cm := cm;
+procedure TFrameContactSpread.setContactSpreadParams( cm: TContactSpreadParams; ptp: TProductionTypePair );
+  begin
+    _cm := cm;
     _ptp := ptp;
 
     updateDisplay();
@@ -244,9 +242,9 @@ procedure TFrameContactSpread.updateDisplay();
     ;
 
     if( 0.0 <= _cm.meanContactRate ) then
-    	rleMeanContactRate.text := uiFloatToStr( _cm.meanContactRate )
+      rleMeanContactRate.text := uiFloatToStr( _cm.meanContactRate )
     else
-    	rleMeanContactRate.text := ''
+      rleMeanContactRate.text := ''
     ;
 
     if( 0 <= _cm.fixedContactRate ) then
@@ -256,9 +254,9 @@ procedure TFrameContactSpread.updateDisplay();
     ;
 
     if( 0.0 <= _cm.probInfect ) then
-    	rleInfectionProbability.text := uiFloatToStr( _cm.probInfect )
+      rleInfectionProbability.text := uiFloatToStr( _cm.probInfect )
     else
-    	rleInfectionProbability.text := ''
+      rleInfectionProbability.text := ''
     ;
 
     cbxLatentCanInfect.Checked := _cm.latentCanInfect;
@@ -267,7 +265,7 @@ procedure TFrameContactSpread.updateDisplay();
     setContactType( _cm.contactType );
 
     if( CMDirect = _cm.contactType ) then
-    	begin
+      begin
         smcDistanceDistr.showChart( _ptp, _cm.pdfDistance, CMDistanceDirect );
         smcTransportDelay.showChart( _ptp, _cm.pdfDelay, CMDelayDirect );
         smrMovementControl.showChart( _ptp, _cm.relMovementControl, CMMovementControlDirect );
@@ -283,7 +281,7 @@ procedure TFrameContactSpread.updateDisplay();
         ;
       end
     else if( CMIndirect = _cm.ContactType ) then
-    	begin
+      begin
         smcDistanceDistr.showChart( _ptp, _cm.pdfDistance, CMDistanceIndirect );
         smcTransportDelay.showChart( _ptp, _cm.pdfDelay, CMDelayIndirect );
         smrMovementControl.showChart( _ptp, _cm.relMovementControl, CMMovementControlIndirect );
@@ -303,14 +301,18 @@ procedure TFrameContactSpread.setContactType( ct: TContactType );
           lblLatentUnits.Visible := true;
           lblLatentUnits.Top := cbxLatentCanInfect.Top;
           lblLatentUnits.Left := cbxLatentCanInfect.left;
-          //cbxSubclinicalCanInfect.Left := cbxLatentCanInfect.Left;
+          smcDistanceDistr.setChartField( CMDistanceDirect );
+          smcTransportDelay.setChartField( CMDelayDirect );
+          smrMovementControl.setChartField( CMMovementControlDirect );
         end
       ;
       cmDirect:
         begin
           cbxLatentCanInfect.Enabled := true;
           cbxLatentCanInfect.Visible := true;
-          //cbxSubclinicalCanInfect.Left := cbxLatentCanInfect.Left + cbxLatentCanInfect.width + 15;
+          smcDistanceDistr.setChartField( CMDistanceIndirect );
+          smcTransportDelay.setChartField( CMDelayIndirect );
+          smrMovementControl.setChartField( CMMovementControlIndirect );
         end
       ;
     end;
@@ -320,7 +322,7 @@ procedure TFrameContactSpread.setContactType( ct: TContactType );
 
 procedure TFrameContactSpread.cbxLatentCanInfectClick(Sender: TObject);
   begin
-		if( nil <> _cm ) then _cm.latentCanInfect := cbxLatentCanInfect.Checked;
+    if( nil <> _cm ) then _cm.latentCanInfect := cbxLatentCanInfect.Checked;
     if ( not (_myForm as TFormContactSpread).LoadingForm  ) then
     (_myForm as TFormSMWizardBase).showStar();
   end
@@ -329,7 +331,7 @@ procedure TFrameContactSpread.cbxLatentCanInfectClick(Sender: TObject);
 
 procedure TFrameContactSpread.cbxSubclinicalCanInfectClick(Sender: TObject);
   begin
-		if( nil <> _cm ) then _cm.subclinicalCanInfect := cbxSubclinicalCanInfect.Checked;
+    if( nil <> _cm ) then _cm.subclinicalCanInfect := cbxSubclinicalCanInfect.Checked;
     if ( not (_myForm as TFormContactSpread).LoadingForm  ) then
       (_myForm as TFormSMWizardBase).showStar();
   end
@@ -353,11 +355,11 @@ procedure TFrameContactSpread.processText( sender: TObject );
   begin
     dbcout( 'Processing text in FrameContactSpread', DBSHOWMSG );
 
-		if( nil <> _cm ) then
+    if( nil <> _cm ) then
       begin
-    	  _cm.meanContactRate := myStrToFloat( rleMeanContactRate.Text, -1.0 );
-        _cm.fixedContactRate := MyStrToFloat( rleFixedContactRate.Text, -1.0 );
-        _cm.probInfect := MyStrToFloat( rleInfectionProbability.Text, -1.0 );
+        _cm.meanContactRate := uiStrToFloat( rleMeanContactRate.Text, -1.0 );
+        _cm.fixedContactRate := uiStrToFloat( rleFixedContactRate.Text, -1.0 );
+        _cm.probInfect := uiStrToFloat( rleInfectionProbability.Text, -1.0 );
       end
     ;
   end
@@ -366,19 +368,23 @@ procedure TFrameContactSpread.processText( sender: TObject );
 
 
 function TFrameContactSpread.isValid(): boolean;
-	begin
+  begin
     result := true;
 
     if( nil = _cm ) then
       exit
     ;
 
+    if( 0 = length( fixup( rleInfectionProbability.text ) ) ) then
+      exit
+    ;
+
     if( not ( _cm.usePrevalence ) ) then
       begin
         if
-          ( 0.0 > myStrToFloat( rleInfectionProbability.text, -1.0 ) )
+          ( 0.0 > uiStrToFloat( rleInfectionProbability.text, -1.0 ) )
         or
-          ( 1.0 < myStrToFloat( rleInfectionProbability.text, -1.0 ) )
+          ( 1.0 < uiStrToFloat( rleInfectionProbability.text, -1.0 ) )
         then
           begin
             msgOK(
@@ -390,7 +396,6 @@ function TFrameContactSpread.isValid(): boolean;
 
             rleInfectionProbability.SetFocus();
             result := false;
-            exit;
           end
         ;
       end
@@ -398,22 +403,6 @@ function TFrameContactSpread.isValid(): boolean;
   end
 ;
 
-
-// This function deals with a little bug in TREEdit.
-procedure TFrameContactSpread.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-  var
-    rle: TREEdit;
-  begin
-    if( sender is TREEdit ) then
-      begin
-        rle := sender as TREEdit;
-        if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-
-        (_myForm as TFormSMWizardBase).showStar();
-      end
-    ;
-  end
-;
 
 procedure TFrameContactSpread.setForm( val: TForm );
   begin

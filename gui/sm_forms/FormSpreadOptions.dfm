@@ -41,8 +41,8 @@ inherited FormSpreadOptions: TFormSpreadOptions
       Width = 417
       Height = 121
       Caption = 
-        'What type of SPREAD would you like to model during simulation ru' +
-        'ns? '
+        'Which type(s) of SPREAD would you like to model during simulatio' +
+        'n runs? '
       TabOrder = 0
       object rdoAirborne: TRadioButton
         Left = 16

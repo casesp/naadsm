@@ -12,7 +12,7 @@ object FrameCostIterationSummary: TFrameCostIterationSummary
     Top = 0
     Width = 602
     Height = 558
-    ActivePage = tabGraph
+    ActivePage = tabTable
     Align = alClient
     TabOrder = 0
     object tabGraph: TTabSheet

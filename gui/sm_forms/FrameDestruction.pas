@@ -4,13 +4,13 @@ unit FrameDestruction;
 FrameDestruction.pas
 ---------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version number: $Revision: 1.19 $
+Last revision: $Date: 2011-05-31 19:44:04 $ $Author: areeves $
+Version number: $Revision: 1.24.4.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -37,9 +37,8 @@ interface
 
   type TFrameDestruction = class( TFrame )
       cbxDestrBasic: TCheckBox;
-      cbxDestrPreempt: TCheckBox;
-      cbxDestrDirect: TCheckBox;
-      cbxDestrIndirect: TCheckBox;
+      cbxDestrDirectForward: TCheckBox;
+      cbxDestrIndirectForward: TCheckBox;
       cbxDestrRingTarget: TCheckBox;
       rleDestrRingRadius: TREEdit;
       lblDestrRingRadius: TLabel;
@@ -48,12 +47,13 @@ interface
       lblBasicDestrNote: TLabel;
       lblTriggerNote: TLabel;
       lblTracingNote: TLabel;
+      cbxDestrDirectBack: TCheckBox;
+      cbxDestrIndirectBack: TCheckBox;
+    lblPreempt: TLabel;
 
       procedure processClick( Sender: TObject );
       procedure processTextEntry( Sender: TObject );
-
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-
+      
   	protected
     	// properties
     	_prodType: TProductionType;
@@ -65,6 +65,7 @@ interface
       _tracingEnabled: boolean;
 
       procedure translateUI();
+      procedure translateUIManual();
 
       // Display
       procedure updateDisplay();
@@ -95,7 +96,6 @@ implementation
 	uses
   	RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n
@@ -126,10 +126,10 @@ implementation
 
   procedure TFrameDestruction.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:53 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FrameDestruction.dfm
-      // File date: Wed Oct 25 14:50:18 2006
+      // This function was generated automatically by Caption Collector 0.6.2.
+      // Generation date: Mon Apr 28 16:42:33 2008
+      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Gilpin/sm_forms/FrameDestruction.dfm
+      // File date: Thu Apr 24 09:10:22 2008
 
       // Set Caption, Hint, Text, and Filter properties
       with self do
@@ -139,17 +139,28 @@ implementation
           lblTriggerNote.Caption := tr( '(Units of this and/or other types may be pre-emptively destroyed if they are within the specified ring) ' );
           lblTracingNote.Caption := tr( '* Tracing must be conducted for this type, or this option will be unavailable' );
           cbxDestrBasic.Caption := tr( 'Destroy detected diseased units of this production type' );
-          cbxDestrPreempt.Caption := tr( 'Pre-emptively destroy units of this production type' );
-          cbxDestrDirect.Caption := tr( 'Destroy units of this production type that have had DIRECT contact with a detected unit as identified by tracing*' );
-          cbxDestrIndirect.Caption := tr( 'Destroy units of this production type that have had INDIRECT contact with a detected unit as identified by tracing*' );
+          lblPreempt.Caption := tr( 'Pre-emptive destuction of units of this production type' );
+          cbxDestrDirectForward.Caption := tr( 'Destroy units of this production type that have had DIRECT contact with a detected unit as identified by TRACE FORWARD*' );
+          cbxDestrIndirectForward.Caption := tr( 'Destroy units of this production type that have had INDIRECT contact with a detected unit as identified by TRACE FORWARD*' );
           cbxDestrRingTarget.Caption := tr( 'Destroy units of this type when they are within a destruction ring around any unit that is a ring trigger' );
           cbxDestrRingTrigger.Caption := tr( 'Trigger ring destruction around detected units of this production type' );
+          cbxDestrDirectBack.Caption := tr( 'Destroy units of this production type that have had DIRECT contact with a detected unit as identified by TRACE BACK*' );
+          cbxDestrIndirectBack.Caption := tr( 'Destroy units of this production type that have had INDIRECT contact with a detected unit as identified by TRACE BACK*' );
         end
       ;
 
+      // If any phrases are found that could not be automatically extracted by
+      // Caption Collector, modify the following function to take care of them.
+      translateUIManual();
     end
   ;
 
+
+  procedure TFrameDestruction.translateUIManual();
+    begin
+
+    end
+  ;
 
   destructor TFrameDestruction.destroy();
   	begin
@@ -173,18 +184,16 @@ implementation
 
           _prodType.destructionParams.isRingTrigger := cbxDestrRingTrigger.Checked;
 
-          if( cbxDestrPreempt.Checked ) then
-            begin
-              _prodType.destructionParams.isRingTarget := cbxDestrRingTarget.Checked;
-              _prodType.destructionParams.destroyDirectTraces := cbxDestrDirect.Checked;
-              _prodType.destructionParams.destroyIndirectTraces := cbxDestrIndirect.Checked;
-            end
-          else
-            begin
-              _prodType.destructionParams.isRingTarget := false;
-              _prodType.destructionParams.destroyDirectTraces := false;
-              _prodType.destructionParams.destroyIndirectTraces := false;
-            end
+          // Preemptive destruction
+          //-----------------------
+          _prodType.destructionParams.isRingTarget := cbxDestrRingTarget.Checked;
+          _prodType.destructionParams.destroyDirectForwardTraces := cbxDestrDirectForward.Checked;
+          _prodType.destructionParams.destroyIndirectForwardTraces := cbxDestrIndirectForward.Checked;
+          _prodType.destructionParams.destroyDirectBackTraces := cbxDestrDirectBack.Checked;
+          _prodType.destructionParams.destroyIndirectBackTraces := cbxDestrIndirectBack.Checked;
+
+          if( not _prodType.isDestrTarget ) then
+            _prodType.destructionParams.destrPriority := -1
           ;
 
           updateDisplay();
@@ -196,24 +205,9 @@ implementation
 
   procedure TFrameDestruction.processTextEntry( Sender: TObject );
   	begin
-    	_prodType.destructionParams.ringRadius := myStrToFloat( rleDestrRingRadius.Text, -1.0 );
+    	_prodType.destructionParams.ringRadius := uiStrToFloat( rleDestrRingRadius.Text, -1.0 );
 
    		_prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameDestruction.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -231,45 +225,32 @@ implementation
 
       if( _tracingEnabled ) then
         begin
-          if( cbxDestrPreempt.Checked ) then
-            begin
-              cbxDestrDirect.Enabled := _prodType.destructionParams.traceDirectContact;
-
-              if( cbxDestrDirect.Enabled ) then
-                cbxDestrDirect.Checked := _prodType.destructionParams.destroyDirectTraces
-              else
-                cbxDestrDirect.Checked := false
-              ;
-
-              cbxDestrIndirect.Enabled := _prodType.destructionParams.traceIndirectContact;
-
-              if( cbxDestrIndirect.Enabled ) then
-                cbxDestrIndirect.Checked := _prodType.destructionParams.destroyIndirectTraces
-              else
-                cbxDestrIndirect.Checked := false
-              ;
-            end
-          else
-            begin
-              cbxDestrDirect.Checked := false;
-              cbxDestrDirect.Enabled := false;
-              cbxDestrIndirect.Checked := false;
-              cbxDestrIndirect.Enabled := false;
-            end
+          cbxDestrDirectForward.Enabled := true;
+          cbxDestrDirectForward.Checked := _prodType.destructionParams.destroyDirectForwardTraces;
+          cbxDestrIndirectForward.Enabled := true;
+          cbxDestrIndirectForward.Checked := _prodType.destructionParams.destroyIndirectForwardTraces;
+          cbxDestrDirectBack.Enabled := true;
+          cbxDestrDirectBack.Checked := _prodType.destructionParams.destroyDirectBackTraces;
+          cbxDestrIndirectBack.Enabled := true;
+          cbxDestrIndirectBack.Checked := _prodType.destructionParams.destroyIndirectBackTraces;
         end
       else
         begin
-          cbxDestrDirect.Checked := false;
-          cbxDestrDirect.Enabled := false;
-          cbxDestrIndirect.Checked := false;
-          cbxDestrIndirect.Enabled := false;
+          cbxDestrDirectForward.Checked := false;
+          cbxDestrDirectForward.Enabled := false;
+          cbxDestrIndirectForward.Checked := false;
+          cbxDestrIndirectForward.Enabled := false;
+          cbxDestrDirectBack.Checked := false;
+          cbxDestrDirectBack.Enabled := false;
+          cbxDestrIndirectBack.Checked := false;
+          cbxDestrIndirectBack.Enabled := false;
         end
       ;
 
       cbxDestrRingTrigger.Checked := _prodType.destructionParams.isRingTrigger;
 
       cbxDestrRingTarget.Checked := _prodType.destructionParams.isRingTarget;
-      cbxDestrRingTarget.Enabled := cbxDestrPreempt.Checked;
+      cbxDestrRingTarget.Enabled := true;
 
       if( 0 <= _prodType.destructionParams.ringRadius ) then
         rleDestrRingRadius.Text := uiFloatToStr( _prodType.destructionParams.ringRadius )
@@ -296,6 +277,7 @@ implementation
     end
   ;
 
+
   function TFrameDestruction.getProdType(): TProductionType;
   	begin
     	result := _prodType;
@@ -308,7 +290,6 @@ implementation
       _loading := true;
 
     	_prodType := val;
-      cbxDestrPreempt.checked := _prodType.destructionParams.isRingTarget or _prodType.destructionParams.destroyDirectTraces or _prodType.destructionParams.destroyIndirectTraces;
 
       _loading := false;
       
@@ -323,7 +304,7 @@ implementation
 
       if( cbxDestrRingTrigger.Checked ) then
         begin
-          if( 0 >= myStrToFloat( rleDestrRingRadius.Text ) ) then
+          if( 0 >= uiStrToFloat( rleDestrRingRadius.Text ) ) then
             begin
               msgOK(
                 tr( 'Destruction ring radius must be greater than 0.' ),

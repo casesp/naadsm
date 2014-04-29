@@ -4,13 +4,13 @@ unit FormGeneralParams;
 FormGeneralParams.pas/dfm
 -------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/04/18 20:35:16 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2011-09-30 17:15:57 $ $Author: areeves $
+Version: $Revision: 1.28.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -64,13 +64,6 @@ interface
     	lblIterationNumber: TLabel;
       lblRepNo: TLabel;
 
-      lblInstructions1: TLabel;
-      lblInstructions2: TLabel;
-      lblInstructions3: TLabel;
-      lblInstructions4: TLabel;
-      lblInstructions5: TLabel;
-      lblInstructions6: TLabel;
-
       lblTimeToRun: TLabel;
       lblTimeToRun2: TLabel;
 
@@ -79,8 +72,6 @@ interface
       rdoSpecifySeed: TRadioButton;
       lblSeedValue: TLabel;
       rleSeedValue: TREEdit;
-
-      pnlSeparator: TPanel;
 
       procedure dataChanged( sender: TObject );
       procedure radioClick(Sender: TObject);
@@ -115,7 +106,6 @@ implementation
     SqlClasses,
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n,
@@ -159,15 +149,9 @@ implementation
           pnlHeader.Caption := tr( 'Start setup' );
           lblDescr.Caption := tr( 'Scenario description:' );
           lblTimeToRun.Caption := tr( '(Time to run)' );
-          lblInstructions1.Caption := tr( 'A simulation runs until:' );
           lblIterations.Caption := tr( 'Number of iterations' );
-          lblInstructions2.Caption := tr( '1) there are no more incubating or contagious units in the replicate' );
-          lblInstructions3.Caption := tr( 'AND all vacination and/or destruction activities have been completed' );
-          lblInstructions5.Caption := tr( 'OR' );
-          lblInstructions4.Caption := tr( 'AND the stipulated number of iterations are completed' );
           lblIterationNumber.Caption := tr( 'Currently on iteration number' );
           lblTimeToRun2.Caption := tr( 'Time to run this set of iterations:' );
-          lblInstructions6.Caption := tr( '2) the stop button is pressed (the current simluation day will still be completed)' );
           gbxRandomSeed.Caption := tr( 'Random number generator seed' ) + ' ';
           lblSeedValue.Caption := tr( 'Seed value (integer):' );
           rdoAutoSeed.Caption := tr( 'Generate seed automatically' );

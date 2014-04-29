@@ -1,6 +1,6 @@
 object FormSMWizardBase: TFormSMWizardBase
-  Left = 842
-  Top = 449
+  Left = 843
+  Top = 437
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FormSMWizardBase'

@@ -4,13 +4,13 @@ unit FormDestruction;
 FormDestruction.pas/dfm
 ------------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2011-05-24 15:55:26 $ $Author: rhupalo $
+Version: $Revision: 1.28.6.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,7 +76,6 @@ implementation
   uses
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     ChartFunction,
     ControlUtils,
     FunctionEnums,
@@ -130,7 +129,8 @@ implementation
 //-----------------------------------------------------------------------------
 	function TFormDestruction.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.includeDestructionGlobal ) then
+      // need detection of disease in order to conduct destruction campaign
+    	if (( _smScenarioCopy.simInput.includeDestructionGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin
@@ -200,8 +200,10 @@ implementation
       dest.destructionParams.isRingTrigger := src.destructionParams.isRingTrigger;
       dest.destructionParams.ringRadius := src.destructionParams.ringRadius;
       dest.destructionParams.destroyDetectedUnits := src.destructionParams.destroyDetectedUnits;
-      dest.destructionParams.destroyDirectTraces := src.destructionParams.destroyDirectTraces;
-      dest.destructionParams.destroyIndirectTraces := src.destructionParams.destroyIndirectTraces;
+      dest.destructionParams.destroyDirectForwardTraces := src.destructionParams.destroyDirectForwardTraces;
+      dest.destructionParams.destroyIndirectForwardTraces := src.destructionParams.destroyIndirectForwardTraces;
+      dest.destructionParams.destroyDirectBackTraces := src.destructionParams.destroyDirectBackTraces;
+      dest.destructionParams.destroyIndirectBackTraces := src.destructionParams.destroyIndirectBackTraces;
 
       dest.updated := true;
     end

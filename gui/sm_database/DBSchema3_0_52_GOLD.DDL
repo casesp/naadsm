@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Update existing table `outDailyByProductionType`.
 create table `outDailyByProductionType_IM0` ( 
 	`outDailyByPTID` COUNTER,
 	`iteration` INTEGER,
@@ -87,56 +84,11 @@ insert into `outDailyByProductionType_IM0` ( `iteration`, `day`, `productionType
            `outDailyByProductionType`.`duAClin`  
     from `outDailyByProductionType`;
 
-
 alter table `outDailyByProductionType`
 	drop constraint `inProductionType_outDailyByProductionType_FK1`;
 
-
 drop table `outDailyByProductionType`; 
 
-
--- `outDailyByProductionType` : Table of outDailyByProductionType
--- 	`tsUSusc` : Current number of units with transition state = susceptible
--- 	Current number of units with transition state = susceptible
--- 	Current number of units with transition state = susceptible
--- 	Current number of units with transition state = susceptible
--- 	`tsASusc` : Current number of animals with units having transition state = susceptible
--- 	`tsULat` : Current number of units with transition state = latent
--- 	`tsALat` : Current number of animals with units having transition state = latent
--- 	`tsUSCInf` : Current number of units with transition state = subclinical infectious
--- 	`tsASCInf` : Current number of animals with units having transition state = subclinical infectious
--- 	`tsUInf` : Current number of units with transition state = infectious
--- 	`tsAInf` : Current number of animals with units having transition state = infectious
--- 	`tsUNImm` : Current number of units with transition state = natural immune
--- 	`tsANImm` : Current number of animals with units having transition state = natural immune
--- 	`tsUVImm` : Current number of units with transition state = vaccine immune
--- 	`tsAVImm` : Current number of animals with units having transition state = vaccine immune
--- 	`tsUDest` : Current number of units with transition state = destroyed
--- 	`tsADest` : Current number of animals with units having transition state = destroyed
--- 	`tsUNoAn` : Current number of units with transition state = no animals
--- 	`tcUSusc` : Cumulative number of units with transition state = susceptible
--- 	`tcASusc` : Cumulative number of animals with units having transition state = susceptible
--- 	`tcULat` : Cumulative number of units with transition state = latent
--- 	`tcALat` : Cumulative number of animals with units having transition state = latent
--- 	`tcUSCInf` : Cumulative number of units with transition state = subclinical infectious
--- 	`tcASCInf` : Cumulative number of animals with units having transition state = subclinical infectious
--- 	`tcUInf` : Cumulative number of units with transition state = infectious
--- 	`tcAInf` : Cumulative number of animals with units having transition state = infectious
--- 	`tcUNImm` : Cumulative number of units with transition state = natural immune
--- 	`tcANImm` : Cumulative number of animals with units having transition state = natural immune
--- 	`tcUVImm` : Cumulative number of units with transition state = vaccine immune
--- 	`tcAVImm` : Cumulative number of animals with units having transition state = vaccine immune
--- 	`tcUDest` : Cumulative number of units with transition state = destroyed
--- 	`tcADest` : Cumulative number of animals with units having transition state = destroyed
--- 	`tcUNoAn` : Cumulative number of units with transition state = no animals
--- 	`infUIni` : Cumulative number of units having infection reason = initially infected
--- 	`infAIni` : Cumulative number of animals with units having infection reason = initially infected
--- 	`infUAir` : Cumulative number of units having infection reason = airborne
--- 	`infAAir` : Cumulative number of animals with units having infection reason = airborne
--- 	`infUDir` : Cumulative number of units having infection reason = Direct contact
--- 	`infADir` : Cumulative number of animals with units having infection reason = Direct contact
--- 	`infUInd` : Cumulative number of units having infection reason = Indirect contact
--- 	`infAInd` : Cumulative number of animals with units having infection reason = indirect contact  
 create table `outDailyByProductionType` ( 
 	`outDailyByPTID` COUNTER,
 	`iteration` INTEGER,
@@ -181,14 +133,6 @@ create table `outDailyByProductionType` (
 	`infUInd` INTEGER,
 	`infAInd` INTEGER); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyByProductionType' :
--- 	`outDailyByPTID`
--- 	`productionTypeID`
-
-
 insert into `outDailyByProductionType` (`iteration`, `day`, `productionTypeID`, `tsUSusc`, `tsASusc`, `tsULat`, `tsALat`, `tsUSCInf`, `tsASCInf`, `tsUInf`, `tsAInf`, `tsUNImm`, `tsANImm`, `tsUVImm`, `tsAVImm`, `tsUDest`, `tsADest`, `tsUNoAn`, `tcUSusc`, `tcASusc`, `tcULat`, `tcALat`, `tcUSCInf`, `tcASCInf`, `tcUInf`, `tcAInf`, `tcUNImm`, `tcANImm`, `tcUVImm`, `tcAVImm`, `tcUDest`, `tcADest`, `tcUNoAn`) 
     select `outDailyByProductionType_IM0`.`iteration`, 
            `outDailyByProductionType_IM0`.`day`, 
@@ -225,15 +169,11 @@ insert into `outDailyByProductionType` (`iteration`, `day`, `productionTypeID`, 
            `outDailyByProductionType_IM0`.`tcUNoAn`  
     from `outDailyByProductionType_IM0`;
 
-
 drop table `outDailyByProductionType_IM0`; 
-
 
 alter table `outDailyByProductionType`
 	add constraint `outDailyEpiByProductionType_PK` primary key (`outDailyByPTID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `outDailyByProductionType`
 	add constraint `inProductionType_outDailyByProductionType_FK1` foreign key (
 		`productionTypeID`)
@@ -241,4 +181,3 @@ alter table `outDailyByProductionType`
 		`productionTypeID`); 
 
 
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

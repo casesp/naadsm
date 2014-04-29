@@ -1,6 +1,6 @@
 inherited FormPriorityBase: TFormPriorityBase
-  Left = -793
-  Top = 505
+  Left = 470
+  Top = 273
   Caption = 'Scenario parameters'
   ClientHeight = 536
   ClientWidth = 688
@@ -161,6 +161,22 @@ inherited FormPriorityBase: TFormPriorityBase
       Height = 13
       Caption = 'The more days holding, the higher the priority'
     end
+    object lblNoProdTypes: TLabel
+      Left = 112
+      Top = 160
+      Width = 218
+      Height = 13
+      Caption = '(No production types use this control measure)'
+      Visible = False
+    end
+    object lblNoReasons: TLabel
+      Left = 104
+      Top = 184
+      Width = 128
+      Height = 13
+      Caption = '(This activity is never used)'
+      Visible = False
+    end
     object lbxPrimary: TListBox
       Left = 104
       Top = 32
@@ -182,7 +198,7 @@ inherited FormPriorityBase: TFormPriorityBase
     object lbxProdType: TListBox
       Left = 304
       Top = 32
-      Width = 120
+      Width = 153
       Height = 150
       DragMode = dmAutomatic
       ItemHeight = 13
@@ -199,15 +215,17 @@ inherited FormPriorityBase: TFormPriorityBase
     object lbxReason: TListBox
       Left = 448
       Top = 21
-      Width = 120
+      Width = 193
       Height = 150
       DragMode = dmAutomatic
       ItemHeight = 13
       Items.Strings = (
         'Detected'
-        'Direct contact'
-        'Indirect contact'
-        'Circle')
+        'Trace forward of direct contact'
+        'Trace forward of indirect contact'
+        'Ring'
+        'Trace back of direct contact'
+        'Trace back of indirect contact')
       TabOrder = 2
       OnDragDrop = lbxPrimaryDragDrop
       OnDragOver = lbxPrimaryDragOver

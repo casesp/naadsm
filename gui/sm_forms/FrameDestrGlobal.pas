@@ -4,13 +4,13 @@ unit FrameDestrGlobal;
 FrameDestrGlobal.pas/dfm
 ------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.17 $
+Last revision: $Date: 2011-03-31 04:25:03 $ $Author: areeves $
+Version: $Revision: 1.20.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -87,7 +87,6 @@ implementation
 	uses
   	RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     I88n,
     
     FormSMWizardBase,
@@ -108,8 +107,9 @@ implementation
       smrDestrCapacity.chartType := CTRel;
       smrDestrCapacity.minY := 0.0;
       smrDestrCapacity.maxY := 0.0; // No maximum for this chart.
-      smrDestrCapacity.xUnits := UnitsDays;
-      smrDestrCapacity.yUnits := UnitsHerdsPerDay;
+      smrDestrCapacity.xUnits := UDays;
+      smrDestrCapacity.yUnits := UHerdsPerDay;
+      smrDestrCapacity.setChartField( DestrCapacityGlobal );
 
       rleDestrProgramDelay.InputExpression := RE_INTEGER_INPUT;
     end
@@ -181,7 +181,7 @@ implementation
       // Do this regardless of whether destruction will occur.
       // The chart editor can handle nil charts, but it needs the
       // reference to the model entity _ctrlParams.
-      smrDestrCapacity.showChart( _ctrlParams, _ctrlParams.destrCapacity, DestrCapacityGlobal );
+      smrDestrCapacity.showChart( _ctrlParams, _ctrlParams.relDestrCapacity, DestrCapacityGlobal );
 
       // This may or may not be visible, but the text should be set regardless.
       rleDestrProgramDelay.Text := intToStr( ctrlParams.destrProgramDelay );

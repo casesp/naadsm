@@ -4,13 +4,13 @@ unit FrameSingleCostCurve;
 FrameSingleCostCurve.pas/dfm
 ----------------------------
 Begin: 2006/01/19
-Last revision: $Date: 2008/03/12 22:10:51 $ $Author: areeves $
-Version: $Revision: 1.8 $
+Last revision: $Date: 2009-06-05 19:52:36 $ $Author: areeves $
+Version: $Revision: 1.9 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -99,6 +99,8 @@ interface
       serDisposal: TLineSeries;
       serVaccSetup: TLineSeries;
       serVacc: TLineSeries;
+    lblInvisible: TLabel;
+    Label1: TLabel;
 
       procedure cbx3DClick(Sender: TObject);
       procedure cbxCumulCostsClick(Sender: TObject);
@@ -131,6 +133,8 @@ interface
 
       procedure translateUI();
       procedure translateUIManual();
+
+      procedure setupCheckBoxes();
 
       procedure redrawSeries( series: TLineSeries; arr: TQDoubleVector; arrCumul: TQDoubleVector );
 
@@ -191,7 +195,6 @@ implementation
   uses
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -203,6 +206,8 @@ implementation
     begin
       inherited create( AOwner );
       translateUI();
+
+      setupCheckBoxes();
 
       _chartFixNeeded := true;
     end
@@ -221,8 +226,10 @@ implementation
         begin
           cbxCumulCosts.Caption := tr( 'Show cumulative costs' );
           cbx3D.Caption := tr( '3-D View' );
+
           lblDestrCosts.Caption := tr( 'Itemized destruction costs' );
           lblVaccCosts.Caption := tr( 'Itemized vaccination costs' );
+
           cbxAppraisal.Caption := tr( 'Appraisal' );
           cbxCAndD.Caption := tr( 'Cleaning and disinfection' );
           cbxEuthanasia.Caption := tr( 'Euthanasia' );
@@ -254,6 +261,88 @@ implementation
 
   procedure TFrameSingleCostCurve.translateUIManual();
     begin
+    end
+  ;
+
+
+  procedure TFrameSingleCostCurve.setupCheckBoxes();
+    var
+      startLeft, newLeft: integer;
+      textWidth: integer;
+      canvas: TCanvas;
+      lineOffset, space: integer;
+    begin
+      canvas := lblInvisible.Canvas;
+
+      startLeft := 16;
+      lineOffset := 16;
+      space := 40;
+
+      // Top row: Destruction
+      //---------------------
+      newLeft := startLeft;
+      textWidth := canvas.TextWidth( tr( 'Appraisal' ) );
+      cbxAppraisal.Left := newLeft;
+      lineAppraisal.Left := newLeft + lineOffset;
+      lineAppraisal.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Cleaning and disinfection' ) );
+      cbxCAndD.Left := newLeft;
+      lineCAndD.Left := newLeft + lineOffset;
+      lineCAndD.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Euthanasia' ) );
+      cbxEuthanasia.Left := newLeft;
+      lineEuthanasia.Left := newLeft + lineOffset;
+      lineEuthanasia.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Indemnification' ) );
+      cbxIndemnification.Left := newLeft;
+      lineIndemnification.Left := newLeft + lineOffset;
+      lineIndemnification.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Disposal' ) );
+      cbxDisposal.Left := newLeft;
+      lineDisposal.Left := newLeft + lineOffset;
+      lineDisposal.Width := textWidth + 6;
+
+      // Second row: Vaccination
+      //------------------------
+      newLeft := startLeft;
+      textWidth := canvas.TextWidth( tr( 'Site setup' ) );
+      cbxVaccSetup.Left := newLeft;
+      lineVaccSetup.Left := newLeft + lineOffset;
+      lineVaccSetup.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Vaccination' ) );
+      cbxVacc.Left := newLeft;
+      lineVacc.Left := newLeft + lineOffset;
+      lineVacc.Width := textWidth + 6;
+
+      // Third row: Totals
+      //------------------
+      newLeft := startLeft;
+      textWidth := canvas.TextWidth( tr( 'Destruction subtotal' ) );
+      cbxDestrSubtotal.Left := newLeft;
+      lineDestrSubtotal.Left := newLeft + lineOffset;
+      lineDestrSubtotal.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Vaccination subtotal' ) );
+      cbxVaccSubtotal.Left := newLeft;
+      lineVaccSubtotal.Left := newLeft + lineOffset;
+      lineVaccSubtotal.Width := textWidth + 6;
+
+      newLeft := newLeft + textWidth + space;
+      textWidth := canvas.TextWidth( tr( 'Total costs' ) );
+      cbxTotal.Left := newLeft;
+      lineTotal.Left := newLeft + lineOffset;
+      lineTotal.Width := textWidth + 6;
     end
   ;
 

@@ -4,13 +4,13 @@ unit FormAirborneSpread;
 FormAirborneSpread.pas/dfm
 --------------------------
 Begin: 2005/05/03
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2009-07-12 23:48:57 $ $Author: areeves $
+Version: $Revision: 1.29 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -47,7 +47,7 @@ interface
 
       // These functions need to be reimplemented for any PT pair parameter that involves
       // a PDF or relational function with a function editor.
-  		procedure prepFunctionDicts(); override;
+      procedure prepFunctionDicts(); override;
       procedure giveListsToEditors(); override;
 
       function dataIsValid(): boolean; override;
@@ -55,12 +55,12 @@ interface
       procedure copyParameters( const src: TProductionTypePair; dest: TProductionTypePair ); override;
 
     public
-			constructor create( AOwner: TComponent ); override;
+      constructor create( AOwner: TComponent ); override;
       destructor destroy(); override;
 
       procedure setParams( smScenario: TSMScenario ); override;
 
-			function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
     end
   ;
 
@@ -69,16 +69,15 @@ implementation
 
 {$R *.dfm}
 
-	uses
+  uses
     SysUtils,
 
     DebugWindow,
     MyStrUtils,
-    GuiStrUtils,
     I88n,
     QStringMaps,
     
-    AirborneSpreadModel,
+    AirborneSpreadParams,
     FunctionDictionary,
     ChartFunction,
     FunctionEnums
@@ -87,12 +86,12 @@ implementation
 //-----------------------------------------------------------------------------
 // Construction/initialization/destruction
 //-----------------------------------------------------------------------------
-	constructor TFormAirborneSpread.create( AOwner: TComponent );
-  	begin
+  constructor TFormAirborneSpread.create( AOwner: TComponent );
+    begin
       inherited create( AOwner );
       translateUI();
       
-    	_fnList := nil;
+      _fnList := nil;
     end
   ;
 
@@ -116,8 +115,8 @@ implementation
   ;
 
 
-	destructor TFormAirborneSpread.destroy();
-  	begin
+  destructor TFormAirborneSpread.destroy();
+    begin
       inherited destroy();
     end
   ;
@@ -129,11 +128,9 @@ implementation
 // Function-handling functions reimplemented from TFormProdTypePairBase
 //-----------------------------------------------------------------------------
   procedure TFormAirborneSpread.prepFunctionDicts();
-  	var
-    	i: integer;
-      ptp: TProductionTypePair;
+    var
       it: TFunctionDictionaryIterator;
-  	begin
+    begin
       fraParams.smcTransportDelay.cboChartList.clear();
 
       it := TFunctionDictionaryIterator.create( _fnList );
@@ -143,15 +140,11 @@ implementation
           begin
             if ( not it.value().removed ) then
               begin
-                if ( it.value().fn.dbField = word(TSMChart( AIRDelay ) ) ) then
-                  begin
-                    if ( nil <> it.value().fn ) then
-                      begin
-                        fraParams.smcTransportDelay.appendFunction( it.value().fn );
-                        it.value().RefCounter := 0;
-                      end;
-                  end;
-              end;
+                case( it.value().fn.dbField ) of
+                  integer( AIRDelay ): fraParams.smcTransportDelay.appendFunction( it.value().fn );
+                end;
+              end
+            ;
           end
         ;
 
@@ -159,23 +152,13 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-      for i := 0 to _ptpList.Count-1 do
-      	begin
-        	ptp := _ptpList.at(i);
-
-          if( nil <> ptp.airborne ) then
-          	if( nil <> ptp.airborne.pdfDelay ) then _fnList.value( ptp.airborne.delayName ).incrRefCounter()
-          ;
-        end
-      ;
     end
   ;
 
 
   procedure TFormAirborneSpread.giveListsToEditors();
-  	begin
-    	fraParams.smcTransportDelay.setFunctionDict( _fnList );
+    begin
+      fraParams.smcTransportDelay.setFunctionDict( _fnList );
       fraParams.smcTransportDelay.setModelList( _ptpList );
     end
   ;
@@ -200,14 +183,14 @@ implementation
 //-----------------------------------------------------------------------------
 // Display functions reimplemented from TFormProdTypePairBase
 //-----------------------------------------------------------------------------
-	function TFormAirborneSpread.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
-  	begin
-    	if( _smScenarioCopy.simInput.includeAirborneSpreadGlobal ) then
-    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+  function TFormAirborneSpread.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+    begin
+      if( _smScenarioCopy.simInput.includeAirborneSpreadGlobal ) then
+        result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
-      	begin
+        begin
           formDisplayed := false;
-      		nextForm := nextFormToShow;
+          nextForm := nextFormToShow;
           result := 0;
         end
       ;
@@ -215,24 +198,24 @@ implementation
   ;
 
 
-	procedure TFormAirborneSpread.updateDisplay();
-  	begin
-    	if( nil <> _selectedPTP ) then
-      	begin
+  procedure TFormAirborneSpread.updateDisplay();
+    begin
+      if( nil <> _selectedPTP ) then
+        begin
           if( nil = _selectedPTP.airborne ) then
-            _selectedPTP.airborne := TAirborneSpreadModel.create( _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
+            _selectedPTP.airborne := TAirborneSpreadParams.create( _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
           ;
 
-        	fraParams.Visible := true;
+          fraParams.Visible := true;
           fraParams.smcTransportDelay.showChart( _selectedPTP, _selectedPTP.airborne.pdfDelay, AIRDelay );
 
-          fraParams.airborneSpreadModel := _selectedPTP.airborne;
-    			// Setting the property above will automatically update the parameter display
+          fraParams.airborneSpreadParams := _selectedPTP.airborne;
+          // Setting the property above will automatically update the parameter display
         end
       else
-      	begin
-      		fraParams.Visible := false;
-          fraParams.airborneSpreadModel := nil;
+        begin
+          fraParams.Visible := false;
+          fraParams.airborneSpreadParams := nil;
         end
       ;
     end
@@ -244,9 +227,9 @@ implementation
 //-----------------------------------------------------------------------------
 // Data validation
 //-----------------------------------------------------------------------------
-	function TFormAirborneSpread.dataIsValid(): boolean;
-  	begin
-    	result := fraParams.isValid();
+  function TFormAirborneSpread.dataIsValid(): boolean;
+    begin
+      result := fraParams.isValid();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -275,7 +258,7 @@ implementation
 
 
 initialization
-	registerClass( TFormAirborneSpread );
+  registerClass( TFormAirborneSpread );
 
 end.
 

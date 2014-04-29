@@ -4,13 +4,13 @@ unit FrameSingleCostTable;
 FrameSingleCostTable.pas/dfm
 ----------------------------
 Begin: 2006/01/20
-Last revision: $Date: 2008/03/12 22:10:51 $ $Author: areeves $
-Version: $Revision: 1.9 $
+Last revision: $Date: 2009-08-17 18:58:29 $ $Author: areeves $
+Version: $Revision: 1.11 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -45,7 +45,8 @@ interface
       pnlShowCumul: TPanel;
       cbxShowCumul: TCheckBox;
       fraGrid: TFrameStringGridBase;
-    procedure cbxShowCumulClick(Sender: TObject);
+
+      procedure cbxShowCumulClick(Sender: TObject);
 
     protected
       _arrTotal: TQDoubleVector;
@@ -120,7 +121,6 @@ implementation
   uses
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -152,17 +152,17 @@ implementation
       fraGrid.rowCount := 2;
       fraGrid.colCount := 11;
 
-      fraGrid.Cells[COL_DAY, HEADER_ROW] := 'Day';
-      fraGrid.Cells[COL_APPRAISAL, HEADER_ROW] := 'Appraisal';
-      fraGrid.Cells[COL_CANDD, HEADER_ROW] := 'CleaningAndDisposal';
-      fraGrid.Cells[COL_EUTHANASIA, HEADER_ROW] := 'Euthanasia';
-      fraGrid.Cells[COL_INDEMNIFICATION, HEADER_ROW] := 'Indemnification';
-      fraGrid.Cells[COL_DISPOSAL, HEADER_ROW] := 'Disposal';
-      fraGrid.Cells[COL_DESTRSUBTOTAL, HEADER_ROW] := 'DestrSubtotal';
-      fraGrid.Cells[COL_VACCSETUP, HEADER_ROW] := 'VaccSetup';
-      fraGrid.Cells[COL_VACCINATION, HEADER_ROW] := 'Vaccination';
-      fraGrid.Cells[COL_VACCSUBTOTAL, HEADER_ROW] := 'VaccSubtotal';
-      fraGrid.Cells[COL_TOTAL, HEADER_ROW] := 'TotalCosts';
+      fraGrid.Cells[COL_DAY, HEADER_ROW] := tr( 'Day' );
+      fraGrid.Cells[COL_APPRAISAL, HEADER_ROW] := tr( 'Appraisal' );
+      fraGrid.Cells[COL_CANDD, HEADER_ROW] := tr( 'CleaningAndDisposal' );
+      fraGrid.Cells[COL_EUTHANASIA, HEADER_ROW] := tr( 'Euthanasia' );
+      fraGrid.Cells[COL_INDEMNIFICATION, HEADER_ROW] := tr( 'Indemnification' );
+      fraGrid.Cells[COL_DISPOSAL, HEADER_ROW] := tr( 'Disposal' );
+      fraGrid.Cells[COL_DESTRSUBTOTAL, HEADER_ROW] := tr( 'DestrSubtotal' );
+      fraGrid.Cells[COL_VACCSETUP, HEADER_ROW] := tr( 'VaccSetup' );
+      fraGrid.Cells[COL_VACCINATION, HEADER_ROW] := tr( 'Vaccination' );
+      fraGrid.Cells[COL_VACCSUBTOTAL, HEADER_ROW] := tr( 'VaccSubtotal' );
+      fraGrid.Cells[COL_TOTAL, HEADER_ROW] := tr( 'TotalCosts' );
     end
   ;
 
@@ -274,30 +274,30 @@ implementation
           if( cbxShowCumul.Checked ) then
             begin
               fraGrid.Cells[COL_DAY, i + 1] := intToStr( i + 1 );
-              fraGrid.Cells[COL_APPRAISAL, i + 1] := uiFloatToStr( _arrAppraisalCumul[i], 2, true );
-              fraGrid.Cells[COL_CANDD, i + 1] := uiFloatToStr( _arrCAndDCumul[i], 2, true );
-              fraGrid.Cells[COL_EUTHANASIA, i + 1] := uiFloatToStr( _arrEuthanasiaCumul[i], 2, true );
-              fraGrid.Cells[COL_INDEMNIFICATION, i + 1] := uiFloatToStr( _arrIndemnificationCumul[i], 2, true );
-              fraGrid.Cells[COL_DISPOSAL, i + 1] := uiFloatToStr( _arrDisposalCumul[i], 2, true );
-              fraGrid.Cells[COL_DESTRSUBTOTAL, i + 1] := uiFloatToStr( _arrDestrSubtotalCumul[i], 2, true );
-              fraGrid.Cells[COL_VACCSETUP, i + 1] := uiFloatToStr( _arrVaccSetupCumul[i], 2, true );
-              fraGrid.Cells[COL_VACCINATION, i + 1] := uiFloatToStr( _arrVaccCumul[i], 2, true );
-              fraGrid.Cells[COL_VACCSUBTOTAL, i + 1] := uiFloatToStr( _arrVaccSubtotalCumul[i], 2, true );
-              fraGrid.Cells[COL_TOTAL, i + 1] := uiFloatToStr( _arrTotalCumul[i], 2, true );
+              fraGrid.Cells[COL_APPRAISAL, i + 1] := uiFloatToStrZeroPadded( _arrAppraisalCumul[i], 2, true );
+              fraGrid.Cells[COL_CANDD, i + 1] := uiFloatToStrZeroPadded( _arrCAndDCumul[i], 2, true );
+              fraGrid.Cells[COL_EUTHANASIA, i + 1] := uiFloatToStrZeroPadded( _arrEuthanasiaCumul[i], 2, true );
+              fraGrid.Cells[COL_INDEMNIFICATION, i + 1] := uiFloatToStrZeroPadded( _arrIndemnificationCumul[i], 2, true );
+              fraGrid.Cells[COL_DISPOSAL, i + 1] := uiFloatToStrZeroPadded( _arrDisposalCumul[i], 2, true );
+              fraGrid.Cells[COL_DESTRSUBTOTAL, i + 1] := uiFloatToStrZeroPadded( _arrDestrSubtotalCumul[i], 2, true );
+              fraGrid.Cells[COL_VACCSETUP, i + 1] := uiFloatToStrZeroPadded( _arrVaccSetupCumul[i], 2, true );
+              fraGrid.Cells[COL_VACCINATION, i + 1] := uiFloatToStrZeroPadded( _arrVaccCumul[i], 2, true );
+              fraGrid.Cells[COL_VACCSUBTOTAL, i + 1] := uiFloatToStrZeroPadded( _arrVaccSubtotalCumul[i], 2, true );
+              fraGrid.Cells[COL_TOTAL, i + 1] := uiFloatToStrZeroPadded( _arrTotalCumul[i], 2, true );
             end
           else
             begin
               fraGrid.Cells[COL_DAY, i + 1] := intToStr( i + 1 );
-              fraGrid.Cells[COL_APPRAISAL, i + 1] := uiFloatToStr( _arrAppraisal[i], 2, true );
-              fraGrid.Cells[COL_CANDD, i + 1] := uiFloatToStr( _arrCAndD[i], 2, true );
-              fraGrid.Cells[COL_EUTHANASIA, i + 1] := uiFloatToStr( _arrEuthanasia[i], 2, true );
-              fraGrid.Cells[COL_INDEMNIFICATION, i + 1] := uiFloatToStr( _arrIndemnification[i], 2, true );
-              fraGrid.Cells[COL_DISPOSAL, i + 1] := uiFloatToStr( _arrDisposal[i], 2, true );
-              fraGrid.Cells[COL_DESTRSUBTOTAL, i + 1] := uiFloatToStr( _arrDestrSubtotal[i], 2, true );
-              fraGrid.Cells[COL_VACCSETUP, i + 1] := uiFloatToStr( _arrVaccSetup[i], 2, true );
-              fraGrid.Cells[COL_VACCINATION, i + 1] := uiFloatToStr( _arrVacc[i], 2, true );
-              fraGrid.Cells[COL_VACCSUBTOTAL, i + 1] := uiFloatToStr( _arrVaccSubtotal[i], 2, true );
-              fraGrid.Cells[COL_TOTAL, i + 1] := uiFloatToStr( _arrTotal[i], 2, true );
+              fraGrid.Cells[COL_APPRAISAL, i + 1] := uiFloatToStrZeroPadded( _arrAppraisal[i], 2, true );
+              fraGrid.Cells[COL_CANDD, i + 1] := uiFloatToStrZeroPadded( _arrCAndD[i], 2, true );
+              fraGrid.Cells[COL_EUTHANASIA, i + 1] := uiFloatToStrZeroPadded( _arrEuthanasia[i], 2, true );
+              fraGrid.Cells[COL_INDEMNIFICATION, i + 1] := uiFloatToStrZeroPadded( _arrIndemnification[i], 2, true );
+              fraGrid.Cells[COL_DISPOSAL, i + 1] := uiFloatToStrZeroPadded( _arrDisposal[i], 2, true );
+              fraGrid.Cells[COL_DESTRSUBTOTAL, i + 1] := uiFloatToStrZeroPadded( _arrDestrSubtotal[i], 2, true );
+              fraGrid.Cells[COL_VACCSETUP, i + 1] := uiFloatToStrZeroPadded( _arrVaccSetup[i], 2, true );
+              fraGrid.Cells[COL_VACCINATION, i + 1] := uiFloatToStrZeroPadded( _arrVacc[i], 2, true );
+              fraGrid.Cells[COL_VACCSUBTOTAL, i + 1] := uiFloatToStrZeroPadded( _arrVaccSubtotal[i], 2, true );
+              fraGrid.Cells[COL_TOTAL, i + 1] := uiFloatToStrZeroPadded( _arrTotal[i], 2, true );
             end
           ;
         end
@@ -319,30 +319,30 @@ implementation
       if( cbxShowCumul.Checked ) then
         begin
           fraGrid.Cells[COL_DAY, day] := intToStr( day );
-          fraGrid.Cells[COL_APPRAISAL, day] := uiFloatToStr( _arrAppraisalCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_CANDD, day] := uiFloatToStr( _arrCAndDCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_EUTHANASIA, day] := uiFloatToStr( _arrEuthanasiaCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_INDEMNIFICATION, day] := uiFloatToStr( _arrIndemnificationCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_DISPOSAL, day] := uiFloatToStr( _arrDisposalCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_DESTRSUBTOTAL, day] := uiFloatToStr( _arrDestrSubtotalCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCSETUP, day] := uiFloatToStr( _arrVaccSetupCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCINATION, day] := uiFloatToStr( _arrVaccCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCSUBTOTAL, day] := uiFloatToStr( _arrVaccSubtotalCumul[arrPos], 2, true );
-          fraGrid.Cells[COL_TOTAL, day] := uiFloatToStr( _arrTotalCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_APPRAISAL, day] := uiFloatToStrZeroPadded( _arrAppraisalCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_CANDD, day] := uiFloatToStrZeroPadded( _arrCAndDCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_EUTHANASIA, day] := uiFloatToStrZeroPadded( _arrEuthanasiaCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_INDEMNIFICATION, day] := uiFloatToStrZeroPadded( _arrIndemnificationCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_DISPOSAL, day] := uiFloatToStrZeroPadded( _arrDisposalCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_DESTRSUBTOTAL, day] := uiFloatToStrZeroPadded( _arrDestrSubtotalCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCSETUP, day] := uiFloatToStrZeroPadded( _arrVaccSetupCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCINATION, day] := uiFloatToStrZeroPadded( _arrVaccCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCSUBTOTAL, day] := uiFloatToStrZeroPadded( _arrVaccSubtotalCumul[arrPos], 2, true );
+          fraGrid.Cells[COL_TOTAL, day] := uiFloatToStrZeroPadded( _arrTotalCumul[arrPos], 2, true );
         end
       else
         begin
           fraGrid.Cells[COL_DAY, day] := intToStr( day );
-          fraGrid.Cells[COL_APPRAISAL, day] := uiFloatToStr( _arrAppraisal[arrPos], 2, true );
-          fraGrid.Cells[COL_CANDD, day] := uiFloatToStr( _arrCAndD[arrPos], 2, true );
-          fraGrid.Cells[COL_EUTHANASIA, day] := uiFloatToStr( _arrEuthanasia[arrPos], 2, true );
-          fraGrid.Cells[COL_INDEMNIFICATION, day] := uiFloatToStr( _arrIndemnification[arrPos], 2, true );
-          fraGrid.Cells[COL_DISPOSAL, day] := uiFloatToStr( _arrDisposal[arrPos], 2, true );
-          fraGrid.Cells[COL_DESTRSUBTOTAL, day] := uiFloatToStr( _arrDestrSubtotal[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCSETUP, day] := uiFloatToStr( _arrVaccSetup[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCINATION, day] := uiFloatToStr( _arrVacc[arrPos], 2, true );
-          fraGrid.Cells[COL_VACCSUBTOTAL, day] := uiFloatToStr( _arrVaccSubtotal[arrPos], 2, true );
-          fraGrid.Cells[COL_TOTAL, day] := uiFloatToStr( _arrTotal[arrPos], 2, true );
+          fraGrid.Cells[COL_APPRAISAL, day] := uiFloatToStrZeroPadded( _arrAppraisal[arrPos], 2, true );
+          fraGrid.Cells[COL_CANDD, day] := uiFloatToStrZeroPadded( _arrCAndD[arrPos], 2, true );
+          fraGrid.Cells[COL_EUTHANASIA, day] := uiFloatToStrZeroPadded( _arrEuthanasia[arrPos], 2, true );
+          fraGrid.Cells[COL_INDEMNIFICATION, day] := uiFloatToStrZeroPadded( _arrIndemnification[arrPos], 2, true );
+          fraGrid.Cells[COL_DISPOSAL, day] := uiFloatToStrZeroPadded( _arrDisposal[arrPos], 2, true );
+          fraGrid.Cells[COL_DESTRSUBTOTAL, day] := uiFloatToStrZeroPadded( _arrDestrSubtotal[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCSETUP, day] := uiFloatToStrZeroPadded( _arrVaccSetup[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCINATION, day] := uiFloatToStrZeroPadded( _arrVacc[arrPos], 2, true );
+          fraGrid.Cells[COL_VACCSUBTOTAL, day] := uiFloatToStrZeroPadded( _arrVaccSubtotal[arrPos], 2, true );
+          fraGrid.Cells[COL_TOTAL, day] := uiFloatToStrZeroPadded( _arrTotal[arrPos], 2, true );
         end
       ;
     end

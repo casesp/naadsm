@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Update existing table `outDailyExposures`.
 create table `outDailyExposures_IM0` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -30,21 +27,14 @@ insert into `outDailyExposures_IM0` (`iteration`, `day`, `exposure`, `exposedHer
            `outDailyExposures`.`success`  
     from `outDailyExposures`;
 
-
 alter table `outDailyExposures`
 	drop constraint `dynHerd_outDailyExposures_FK1`;
-
 
 alter table `outDailyExposures`
 	drop constraint `dynHerd_outDailyExposures_FK2`;
 
-
 drop table `outDailyExposures`; 
-
-
--- `outDailyExposures` : Table of outDailyExposures
--- 	`exposingHerdStatusCode` : exposingHerdStatusCode partly identifies outDailyExposures
--- 	`exposedHerdStatusCode` : exposedHerdStatusCode partly identifies outDailyExposures  
+ 
 create table `outDailyExposures` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -56,23 +46,8 @@ create table `outDailyExposures` (
 	`exposingHerdStatusCode` CHAR(1),
 	`exposedHerdStatusCode` CHAR(1)); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyExposures`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyExposures' :
--- 	`iteration`
--- 	`day`
--- 	`exposure`
--- 	`exposedHerdID`
--- 	`exposingHerdID`
--- 	`spreadMethodCode`
--- 	`exposingHerdStatusCode`
--- 	`exposedHerdStatusCode`
-
-
 update `outDailyExposures_IM0` set `spreadMethodCode` = '1' where `spreadMethodCode` is null;
 
--- insert into `outDailyExposures` (`iteration`, `day`, `exposure`, `exposedHerdID`, `exposingHerdID`, `spreadMethodCode`, `success`, `exposingHerdStatusCode`, `exposedHerdStatusCode`) 
 insert into `outDailyExposures` (`iteration`, `day`, `exposure`, `exposedHerdID`, `exposingHerdID`, `spreadMethodCode`, `success`) 
     select `outDailyExposures_IM0`.`iteration`, 
            `outDailyExposures_IM0`.`day`, 
@@ -81,19 +56,13 @@ insert into `outDailyExposures` (`iteration`, `day`, `exposure`, `exposedHerdID`
            `outDailyExposures_IM0`.`exposingHerdID`, 
            `outDailyExposures_IM0`.`spreadMethodCode`, 
            `outDailyExposures_IM0`.`success` 
- --					,
- --          '1',
- --          '1' 
     from `outDailyExposures_IM0`;
 
-
 drop table `outDailyExposures_IM0`; 
-
 
 alter table `outDailyExposures`
 	add constraint `outDailyExposures_PK` primary key (`day`, `exposure`, `iteration`) ; 
 
--- Restore foreign key constraints for existing tables
 alter table `outDailyExposures`
 	add constraint `dynHerd_outDailyExposures_FK1` foreign key (
 		`exposedHerdID`)
@@ -105,22 +74,10 @@ alter table `outDailyExposures`
 		`exposingHerdID`)
 	 references `dynHerd` (
 		`herdID`); 
-
-
-
--- Create new table `readEventCodes`.
--- `readEventCodes` : Table of readEventCodes
--- 	`eventCode` : eventCode identifies readEventCodes
--- 	`definition` : definition is of readEventCodes  
+ 
 create table `readEventCodes` ( 
 	`eventCode` CHAR(1),
 	`definition` VARCHAR(255), constraint `readEventCodes_PK` primary key (`eventCode`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readEventCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readEventCodes' :
--- 	`eventCode`
 
 insert into `readEventCodes` (`eventCode`, `definition` ) VALUES ('D', 'Destruction');
 insert into `readEventCodes` (`eventCode`, `definition` ) VALUES ('V', 'Vaccination');
@@ -130,20 +87,9 @@ insert into `readEventCodes` (`eventCode`, `definition` ) VALUES ('E', 'Detectio
 insert into `readEventCodes` (`eventCode`, `definition` ) VALUES ('T', 'Traced - direct contact');
 insert into `readEventCodes` (`eventCode`, `definition` ) VALUES ('I', 'Traced - indirect contact');
 
-
--- Create new table `readStatusCodes`.
--- `readStatusCodes` : Table of readStatusCodes
--- 	`statusCode` : statusCode identifies readStatusCodes
--- 	`definition` : definition is of readStatusCodes  
 create table `readStatusCodes` ( 
 	`statusCode` CHAR(1),
 	`definition` VARCHAR(255), constraint `readStatusCodes_PK` primary key (`statusCode`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readStatusCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readStatusCodes' :
--- 	`statusCode`
 
 insert into `readStatusCodes` (`statusCode`, `definition` ) VALUES ('S', 'Susceptible');
 insert into `readStatusCodes` (`statusCode`, `definition` ) VALUES ('L', 'Latent');
@@ -153,22 +99,9 @@ insert into `readStatusCodes` (`statusCode`, `definition` ) VALUES ('N', 'Natura
 insert into `readStatusCodes` (`statusCode`, `definition` ) VALUES ('V', 'Vaccine immune');
 insert into `readStatusCodes` (`statusCode`, `definition` ) VALUES ('D', 'Destroyed');
 
-
-
--- Create new table `readApparentStateCodes`.
--- `readApparentStateCodes` : Table of readApparentStateCodes
--- 	`apparentStateCode` : apparentStateCode identifies readApparentStateCodes
--- 	`definition` : definition is of readApparentStateCodes  
 create table `readApparentStateCodes` ( 
 	`apparentStateCode` CHAR(1),
 	`definition` VARCHAR(255), constraint `readApparentStateCodes_PK` primary key (`apparentStateCode`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readApparentStateCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readApparentStateCodes' :
--- 	`apparentStateCode`
-
 
 insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES ('U', 'Unknown');
 insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES ('E', 'Detected by clinical signs');
@@ -176,30 +109,15 @@ insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES
 insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES ('I', 'Detected by trace - indirect');
 insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES ('V', 'Vaccinated');
 insert into `readApparentStateCodes` (`apparentStateCode`, `definition` ) VALUES ('D', 'Destroyed');
-
-
-
--- Create new table `readSpreadMethodCodes`.
--- `readSpreadMethodCodes` : Table of readSpreadMethodCodes
--- 	`spreadMethodCode` : spreadMethodCode identifies readSpreadMethodCodes
--- 	`definition` : definition is of readSpreadMethodCodes  
+ 
 create table `readSpreadMethodCodes` ( 
 	`spreadMethodCode` CHAR(1),
 	`definition` VARCHAR(255), constraint `readSpreadMethodCodes_PK` primary key (`spreadMethodCode`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readSpreadMethodCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readSpreadMethodCodes' :
--- 	`spreadMethodCode`
 
 insert into `readSpreadMethodCodes` (`spreadMethodCode`, `definition` ) VALUES ('D', 'Direct contact');
 insert into `readSpreadMethodCodes` (`spreadMethodCode`, `definition` ) VALUES ('I', 'Indirect contact');
 insert into `readSpreadMethodCodes` (`spreadMethodCode`, `definition` ) VALUES ('A', 'Airborne spread');
 
-
-
--- Add foreign key constraints to table `dynHerd`.
 alter table `dynHerd`
 	add constraint `readStatusCodes_dynHerd_FK1` foreign key (
 		`initialStateCode`)
@@ -218,7 +136,6 @@ alter table `dynHerd`
 	 references `readApparentStateCodes` (
 		`apparentStateCode`); 
 
--- Add foreign key constraints to table `outDailyEvents`.
 alter table `outDailyEvents`
 	add constraint `readEventCodes_outDailyEvents_FK1` foreign key (
 		`eventCode`)
@@ -231,14 +148,12 @@ alter table `outDailyEvents`
 	 references `readStatusCodes` (
 		`statusCode`); 
 
--- Add foreign key constraints to table `inDiseaseSpread`.
 alter table `inDiseaseSpread`
 	add constraint `readSpreadMethodCodes_inDiseaseSpread_FK1` foreign key (
 		`spreadMethodCode`)
 	 references `readSpreadMethodCodes` (
 		`spreadMethodCode`); 
 
--- Add foreign key constraints to table `outDailyExposures`.
 alter table `outDailyExposures`
 	add constraint `readStatusCodes_outDailyExposures_FK1` foreign key (
 		`exposingHerdStatusCode`)
@@ -257,5 +172,3 @@ alter table `outDailyExposures`
 	 references `readSpreadMethodCodes` (
 		`spreadMethodCode`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

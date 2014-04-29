@@ -4,13 +4,13 @@ unit FormProdType;
 FormProdType.pas/dfm
 ---------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2011-09-30 19:43:34 $ $Author: areeves $
+Version: $Revision: 1.28.6.4 $
 Project: NAADSM
 Website:
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -97,6 +97,7 @@ interface
       { Data entry validation }
       function dataIsValid(): boolean; override;
       procedure updateScenarioData(); override;
+      procedure updateGlobalControlSettings();
       function getDataUpdated(): boolean; override;
 
       // GUI display updates
@@ -128,7 +129,6 @@ implementation
     SqlClasses,
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -247,13 +247,15 @@ implementation
       //     In this case, like PTPs, the copy of simInput can be used: when it is copied back to the "original",
       //     everything will be fine.
       // - The removed production type itself will be removed from memory during the database update process.
+      // - Update the global control options so the user does have to do it manually in the cases where
+      //     the production type(s) removed results in global control options on but not used by remaining production types.
       //
       // Creating or modifying production types is pretty simple by comparison, and is all taken care of
       //   during the database update process.
 
       it := TProductionTypeListIterator.create( _smScenarioCopy.simInput.ptList );
-      it.toFirst();
 
+      it.toFirst();
       while( nil <> it.current() ) do
         begin
           if( ( it.current().removed ) and ( 0 < it.current().productionTypeID ) ) then
@@ -269,7 +271,89 @@ implementation
 
       it.free();
 
+      // rbh20110928 Now update the global control options for cases where a global control
+      // is specified, but now no longer used by any production type, Issue 2308.
+      updateGlobalControlSettings();
+
       inherited updateScenarioData();
+    end
+  ;
+
+
+  // Helper method to updateScenarioData() to address issue 2308
+  procedure TFormProdType.updateGlobalControlSettings();
+    var
+      it: TProductionTypeListIterator;
+      dm: TProductionType;
+      
+      detectionIsUsed: boolean;
+      tracingIsUsed: boolean;
+      tracingExamIsUsed: boolean;
+      testingIsUsed: boolean;
+      zoneIsTriggered: boolean;
+      destrIsUsed: boolean;
+      vaccIsUsed: boolean;
+
+    begin
+      detectionIsUsed := false;
+      tracingIsUsed := false;
+      tracingExamIsUsed := false;
+      testingIsUsed := false;
+      zoneIsTriggered := false;
+      destrIsUsed := false;
+      vaccIsUsed := false;
+
+      it := TProductionTypeListIterator.create( _smScenarioCopy.simInput.ptList );
+      it.toFirst();
+      while( nil <> it.current() ) do
+        begin
+          dm := it.current();
+          if( (not dm.removed ) and ( 0 < dm.productionTypeID ) ) then
+            begin
+              if( dm.useDetection ) then detectionIsUsed := true;
+              if( dm.useTracing ) then tracingIsUsed := true;
+              if( dm.useTracingExam ) then tracingExamIsUsed := true;
+              if( dm.useTesting ) then testingIsUsed := true;
+              if( dm.isZoneTrigger ) then zoneIsTriggered := true;
+              if( dm.isDestrTarget ) then destrIsUsed := true;  // Destruction for any reason
+              if( dm.isVaccTarget ) then vaccIsUsed := true;
+            end
+          ;
+          it.incr();
+        end
+      ;
+      it.free();
+
+      if( not detectionIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useDetectionGlobal := false
+      ;
+
+      if( not tracingExamIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useTracingHerdExamGlobal := false
+      ;
+
+      if( not testingIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useTracingTestingGlobal := false
+      ;
+
+      if( not tracingIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useTracingGlobal := false
+      ;
+
+       if( not zoneIsTriggered ) then
+          _smScenarioCopy.simInput.controlParams.useZonesGlobal := false
+      ;
+
+      // User may still get validity comments if removing a production type causes the
+      // destruction priorities or ring destruction targets-triggers to be wonky.
+      if( not destrIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useDestructionGlobal := false
+      ;
+
+      if( not vaccIsUsed ) then
+          _smScenarioCopy.simInput.controlParams.useVaccGlobal := false
+      ;
+
     end
   ;
 //-----------------------------------------------------------------------------
@@ -288,10 +372,12 @@ implementation
     begin
       ptList := _smScenarioCopy.simInput.ptList;
 
-      newProdTypeDesc := inputBox(
-        '',
+      newProdTypeDesc := msgInput(
         tr( 'Please enter a name for the new production type.  NOTE: Do not enter an ID number.  It will be handled automatically.' ),
-        ''
+        '', // regexp
+        '', // caption
+        IMGQuestion,
+        self
       );
       newProdTypeDesc := trim( newProdTypeDesc );
 
@@ -335,10 +421,16 @@ implementation
           _warningShown := true;
           
           pt := TProductionType.create( _nextAddID, newProdTypeDesc, false, ptList.sim );
-          pt.destructionParams.destrPriority := ptList.maxDestrPriority + 1;
-          pt.ringVaccParams.vaccPriority := ptList.maxVaccPriority + 1;
+
+          // Newly created production types should not have destruction and vaccination priorities set.
+          // Make the user set them!
+          pt.destructionParams.destrPriority := -1;
+          pt.ringVaccParams.vaccPriority := -1;
+          //pt.destructionParams.destrPriority := ptList.maxDestrPriority + 1;
+          //pt.ringVaccParams.vaccPriority := ptList.maxVaccPriority + 1;
+
           ptList.append( pt );
-          
+
           _smScenarioCopy.simInput.controlParams.recalculatePriorities();
           dec( _nextAddID );
           updateListBox();
@@ -358,10 +450,13 @@ implementation
 
       oldPTName := extractRealName( lstProdTypes.Items.Strings[lstProdTypes.ItemIndex] );
 
-			newPTName := InputBox(
-        '',
-        'Modify production type description for ' + oldPTName + '.' + endl
-          + 'NOTE: Do not enter an ID number.  It will be handled automatically.',
+      newPTName := msgInput(
+        ansiReplaceStr( tr( 'Modify production type description for xyz.' ), 'xyz', oldPTName )
+          + tr( 'NOTE: Do not enter an ID number.  It will be handled automatically.' ),
+        '', // regexp
+        '', // caption
+        IMGQuestion,
+        self,
         oldPTName
       );
 
@@ -548,6 +643,7 @@ implementation
     end
   ;
 //-----------------------------------------------------------------------------
+
 
 
 initialization

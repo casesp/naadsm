@@ -4,13 +4,13 @@ unit OldDatabaseFns;
 OldDatabaseFns.pas
 ------------------------------
 Begin: 2007/02/08
-Last revision: $Date: 2008/10/23 17:58:29 $ $Author: areeves $
-Version number: $Revision: 1.13 $
+Last revision: $Date: 2011-05-17 22:27:47 $ $Author: areeves $
+Version number: $Revision: 1.27.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -25,6 +25,7 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 	
 	uses
+    ModelDatabase,
 		SMDatabase
 	;
 
@@ -37,12 +38,22 @@ interface
   procedure makeVeryOldTables( db: TSMDatabase );
 
   { Return true on success, false on failure }
-  function updateInGeneralFor3_1_0( db: TSMDatabase ): boolean;
-  function adjustZoneParametersFor3_1_1( db: TSMDatabase ): boolean;
-  function updateInGeneralFor3_1_9( db: TSMDatabase ): boolean;
-  function adjustCustomOutputDefinitionsFor3_1_17( db: TSMDatabase ): boolean;
-  function populateSelectDailyOutputsFor3_1_17( db: TSMDatabase ): boolean;
+  function populateSelectDailyOutputsFor3_2_0( db: TSMDatabase ): boolean;
+  function populateDefaultInputsFor3_2_0( db: TSMDatabase ): boolean;
+  function updateEventAndControlStateCodesFor3_2_0( db: TSMDatabase ): boolean;
+  function projectZoneCoordinatesFor3_2_0( db: TSMDatabase ): boolean;
+  function populateSelectDailyOutputsFor3_2_11( db: TSMDatabase ): boolean;
+
   function populateSelectDailyOutputsFor3_1_18( db: TSMDatabase ): boolean;
+
+  function populateSelectDailyOutputsFor3_1_17( db: TSMDatabase ): boolean;
+  function adjustCustomOutputDefinitionsFor3_1_17( db: TSMDatabase ): boolean;
+
+  function updateInGeneralFor3_1_9( db: TSMDatabase ): boolean;
+
+  function adjustZoneParametersFor3_1_1( db: TSMDatabase ): boolean;
+
+  function updateInGeneralFor3_1_0( db: TSMDatabase ): boolean;
 
 implementation
 
@@ -52,16 +63,25 @@ implementation
     SysUtils,
     TypInfo,
     StrUtils,
+    Classes,
 
     Resources,
-
     SqlClasses,
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
+    Points,
     FunctionPointers,
+    BasicGIS,
 
-    OutputDescriptions
+    Proj4,
+
+    ChartFunction,
+    ProbDensityFunctions,
+
+    FunctionEnums,
+    OutputDescriptions,
+    ZonePerimeter,
+    Herd
   ;
 
 
@@ -214,7 +234,7 @@ implementation
       row := sqlResult.fetchArrayFirst();
       while( nil <> row ) do
         begin
-          row.debug();
+          //row.debug();
 
           q2 := 'UPDATE `inProductionType` SET'
             + ' `destrDirectTraces` = ' + usBoolToText( row.field( 'survDirect' ) ) + ','
@@ -243,14 +263,6 @@ implementation
       dbcout( 'Done with adjustTracingParameters', DBSMDATABASE );
     end
   ;
-
-
-
-
-
-
-
-
 
 
   function handleVeryOldDatabaseSchemas( db: TSMDatabase; var vNumber: string; var updateSuccess: boolean ): boolean;
@@ -1253,30 +1265,95 @@ implementation
   function populateSelectDailyOutputsFor3_1_17( db: TSMDatabase ): boolean;
     var
       dict: TQueryDictionary;
-      i: TDailyOutputVariable;
-      s: string;
       q: string;
     begin
       dict := TQueryDictionary.create();
       dict['inSelectDailyOutputID'] := db.sqlQuote( DB_SCHEMA_APPLICATION );
 
-      for i := DEunitDaysInZone to DEtrcAIndp do
-        begin
-          s := GetEnumName( TypeInfo( TDailyOutputVariable ), ord(i) );
-          s := 's' + rightStr( s, length( s ) - 2 );
-          dict[ s ] := 'false';
-        end
-      ;
-
-      // Skip a few in the middle that were introduced in 3.1.18...
-
-      for i := DEdetnUClin to DEappUInfectious do
-        begin
-          s := GetEnumName( TypeInfo( TDailyOutputVariable ), ord(i) );
-          s := 's' + rightStr( s, length( s ) - 2 );
-          dict[ s ] := 'false';
-        end
-      ;
+      // This is tedious, but it's the only safe way to guard against future changes.
+      dict.insert( 'sunitDaysInZone', 'false' );
+      dict.insert( 'sanimalDaysInZone', 'false' );
+      dict.insert( 'sunitsInZone', 'false' );
+      dict.insert( 'sanimalsInZone', 'false' );
+      dict.insert( 'stsdUSusc', 'false' );
+      dict.insert( 'stsdASusc', 'false' );
+      dict.insert( 'stsdULat', 'false' );
+      dict.insert( 'stsdALat', 'false' );
+      dict.insert( 'stsdUSubc', 'false' );
+      dict.insert( 'stsdASubc', 'false' );
+      dict.insert( 'stsdUClin', 'false' );
+      dict.insert( 'stsdAClin', 'false' );
+      dict.insert( 'stsdUNImm', 'false' );
+      dict.insert( 'stsdANImm', 'false' );
+      dict.insert( 'stsdUVImm', 'false' );
+      dict.insert( 'stsdAVImm', 'false' );
+      dict.insert( 'stsdUDest', 'false' );
+      dict.insert( 'stsdADest', 'false' );
+      dict.insert( 'stscUSusc', 'false' );
+      dict.insert( 'stscASusc', 'false' );
+      dict.insert( 'stscULat', 'false' );
+      dict.insert( 'stscALat', 'false' );
+      dict.insert( 'stscUSubc', 'false' );
+      dict.insert( 'stscASubc', 'false' );
+      dict.insert( 'stscUClin', 'false' );
+      dict.insert( 'stscAClin', 'false' );
+      dict.insert( 'stscUNImm', 'false' );
+      dict.insert( 'stscANImm', 'false' );
+      dict.insert( 'stscUVImm', 'false' );
+      dict.insert( 'stscAVImm', 'false' );
+      dict.insert( 'stscUDest', 'false' );
+      dict.insert( 'stscADest', 'false' );
+      dict.insert( 'sinfnUAir', 'false' );
+      dict.insert( 'sinfnAAir', 'false' );
+      dict.insert( 'sinfnUDir', 'false' );
+      dict.insert( 'sinfnADir', 'false' );
+      dict.insert( 'sinfnUInd', 'false' );
+      dict.insert( 'sinfnAInd', 'false' );
+      dict.insert( 'sinfcUIni', 'false' );
+      dict.insert( 'sinfcAIni', 'false' );
+      dict.insert( 'sinfcUAir', 'false' );
+      dict.insert( 'sinfcAAir', 'false' );
+      dict.insert( 'sinfcUDir', 'false' );
+      dict.insert( 'sinfcADir', 'false' );
+      dict.insert( 'sinfcUInd', 'false' );
+      dict.insert( 'sinfcAInd', 'false' );
+      dict.insert( 'sexpcUDir', 'false' );
+      dict.insert( 'sexpcADir', 'false' );
+      dict.insert( 'sexpcUInd', 'false' );
+      dict.insert( 'sexpcAInd', 'false' );
+      dict.insert( 'strcUDir', 'false' );
+      dict.insert( 'strcADir', 'false' );
+      dict.insert( 'strcUInd', 'false' );
+      dict.insert( 'strcAInd', 'false' );
+      dict.insert( 'strcUDirp', 'false' );
+      dict.insert( 'strcADirp', 'false' );
+      dict.insert( 'strcUIndp', 'false' );
+      dict.insert( 'strcAIndp', 'false' );
+      dict.insert( 'sdetnUClin', 'false' );
+      dict.insert( 'sdetnAClin', 'false' );
+      dict.insert( 'sdetcUClin', 'false' );
+      dict.insert( 'sdetcAClin', 'false' );
+      dict.insert( 'sdesnUAll', 'false' );
+      dict.insert( 'sdesnAAll', 'false' );
+      dict.insert( 'sdescUIni', 'false' );
+      dict.insert( 'sdescAIni', 'false' );
+      dict.insert( 'sdescUDet', 'false' );
+      dict.insert( 'sdescADet', 'false' );
+      dict.insert( 'sdescUDir', 'false' );
+      dict.insert( 'sdescADir', 'false' );
+      dict.insert( 'sdescUInd', 'false' );
+      dict.insert( 'sdescAInd', 'false' );
+      dict.insert( 'sdescURing', 'false' );
+      dict.insert( 'sdescARing', 'false' );
+      dict.insert( 'svaccnUAll', 'false' );
+      dict.insert( 'svaccnAAll', 'false' );
+      dict.insert( 'svaccUIni', 'false' );
+      dict.insert( 'svaccAIni', 'false' );
+      dict.insert( 'svaccURing', 'false' );
+      dict.insert( 'svaccARing', 'false' );
+      dict.insert( 'szonnFoci', 'false' );
+      dict.insert( 'szoncFoci', 'false' );
+      dict.insert( 'sappUInfectious', 'false' );
 
       q := writeQuery( 'inSelectDailyOutputs', QInsert, dict );
       dict.free();
@@ -1289,20 +1366,15 @@ implementation
   function populateSelectDailyOutputsFor3_1_18( db: TSMDatabase ): boolean;
     var
       dict: TQueryDictionary;
-      i: TDailyOutputVariable;
-      s: string;
       q: string;
     begin
       dict := TQueryDictionary.create();
       dict['inSelectDailyOutputID'] := db.sqlQuote( DB_SCHEMA_APPLICATION );
 
-      for i := DEtrnUDir to DEtrnAInd do
-        begin
-          s := GetEnumName( TypeInfo( TDailyOutputVariable ), ord(i) );
-          s := 's' + rightStr( s, length( s ) - 2 );
-          dict[ s ] := 'false';
-        end
-      ;
+      dict.insert( 'strnUDir', 'false' );
+      dict.insert( 'strnADir', 'false' );
+      dict.insert( 'strnUInd', 'false' );
+      dict.insert( 'strnAInd', 'false' );
 
       q := writeQuery( 'inSelectDailyOutputs', QUpdate, dict );
       dict.free();
@@ -1311,5 +1383,361 @@ implementation
     end
   ;
 
+
+  function populateSelectDailyOutputsFor3_2_0( db: TSMDatabase ): boolean;
+    var
+      dict: TQueryDictionary;
+      q: string;
+    begin
+      dict := TQueryDictionary.create();
+      dict['inSelectDailyOutputID'] := db.sqlQuote( DB_SCHEMA_APPLICATION );
+
+      dict.insert( 'strcUDirBack', 'false' );
+      dict.insert( 'strcADirBack', 'false' );
+      dict.insert( 'strcUIndBack', 'false' );
+      dict.insert( 'strcAIndBack', 'false' );
+      dict.insert( 'strcUDirpBack', 'false' );
+      dict.insert( 'strcADirpBack', 'false' );
+      dict.insert( 'strcUIndpBack', 'false' );
+      dict.insert( 'strcAIndpBack', 'false' );
+      
+      dict.insert( 'strnUDirBack', 'false' );
+      dict.insert( 'strnADirBack', 'false' );
+      dict.insert( 'strnUIndBack', 'false' );
+      dict.insert( 'strnAIndBack', 'false' );
+
+      dict.insert( 'sexmcUDirFwd', 'false' );
+      dict.insert( 'sexmcADirFwd', 'false' );
+      dict.insert( 'sexmcUIndFwd', 'false' );
+      dict.insert( 'sexmcAIndFwd', 'false' );
+      dict.insert( 'sexmcUDirBack', 'false' );
+      dict.insert( 'sexmcADirBack', 'false' );
+      dict.insert( 'sexmcUIndBack', 'false' );
+      dict.insert( 'sexmcAIndBack', 'false' );
+
+      dict.insert( 'ststcUDirFwd', 'false' );
+      dict.insert( 'ststcADirFwd', 'false' );
+      dict.insert( 'ststcUIndFwd', 'false' );
+      dict.insert( 'ststcAIndFwd', 'false' );
+      dict.insert( 'ststcUDirBack', 'false' );
+      dict.insert( 'ststcADirBack', 'false' );
+      dict.insert( 'ststcUIndBack', 'false' );
+      dict.insert( 'ststcAIndBack', 'false' );
+
+      dict.Insert( 'sexmnUAll', 'false' );
+      dict.Insert( 'sexmnAAll', 'false' );
+
+      dict.insert( 'ststcUTruePos', 'false' );
+      dict.insert( 'ststcATruePos', 'false' );
+      dict.insert( 'ststcUTrueNeg', 'false' );
+      dict.insert( 'ststcATrueNeg', 'false' );
+      dict.insert( 'ststcUFalsePos', 'false' );
+      dict.insert( 'ststcAFalsePos', 'false' );
+      dict.insert( 'ststcUFalseNeg', 'false' );
+      dict.insert( 'ststcAFalseNeg', 'false' );
+
+      dict.insert( 'ststnUTruePos', 'false' );
+      dict.insert( 'ststnATruePos', 'false' );
+      dict.insert( 'ststnUTrueNeg', 'false' );
+      dict.insert( 'ststnATrueNeg', 'false' );
+      dict.insert( 'ststnUFalsePos', 'false' );
+      dict.insert( 'ststnAFalsePos', 'false' );
+      dict.insert( 'ststnUFalseNeg', 'false' );
+      dict.insert( 'ststnAFalseNeg', 'false' );
+
+      dict.insert( 'sdetnUTest', 'false' );
+      dict.insert( 'sdetnATest', 'false' );
+      dict.insert( 'sdetcUTest', 'false' );
+      dict.insert( 'sdetcATest', 'false' );
+
+      dict.insert( 'sdescUDirBack', 'false' );
+      dict.insert( 'sdescADirBack', 'false' );
+      dict.insert( 'sdescUIndBack', 'false' );
+      dict.insert( 'sdescAIndBack', 'false' );
+
+      dict.insert( 'sdeswUAll', 'false' );
+      dict.insert( 'sdeswAAll', 'false' );
+
+      dict.insert( 'svacwUAll', 'false' );
+      dict.insert( 'svacwAAll', 'false' );
+
+      q := writeQuery( 'inSelectDailyOutputs', QUpdate, dict );
+      dict.free();
+
+      result := db.execute( q );
+    end
+  ;
+
+
+  function populateSelectDailyOutputsFor3_2_11( db: TSMDatabase ): boolean;
+    var
+      dict: TQueryDictionary;
+      q: string;
+    begin
+      dict := TQueryDictionary.create();
+      dict['inSelectDailyOutputID'] := db.sqlQuote( DB_SCHEMA_APPLICATION );
+
+      dict.insert( 'stonUDirFwd', 'false' );
+      dict.insert( 'stonUIndFwd', 'false' );
+      dict.insert( 'stonUDirBack', 'false' );
+      dict.insert( 'stonUIndBack', 'false' );
+
+      dict.insert( 'stocUDirFwd', 'false' );
+      dict.insert( 'stocUIndFwd', 'false' );
+      dict.insert( 'stocUDirBack', 'false' );
+      dict.insert( 'stocUIndBack', 'false' );
+
+      // This is tedious, but it's the only safe way to guard against future changes.
+      q := writeQuery( 'inSelectDailyOutputs', QUpdate, dict );
+      dict.free();
+
+      result := db.execute( q );
+    end
+  ;
+
+
+  function updateEventAndControlStateCodesFor3_2_0( db: TSMDatabase ): boolean;
+    var
+      list: TStringList;
+      i: integer;
+    begin
+      list := TStringList.create();
+
+      list.append( 'update `readEventCodes` set `definition` = "Traced forward - direct contact" where `eventCode` = "T"' );
+      list.append( 'update `readEventCodes` set `definition` = "Traced forward - indirect contact" where `eventCode` = "I"' );
+      list.append( 'insert into `readEventCodes` ( `eventCode`, `definition` ) values ( "K", "Traced back - direct contact" )' );
+      list.append( 'insert into `readEventCodes` ( `eventCode`, `definition` ) values ( "J", "Traced back - indirect contact" )' );
+      list.append( 'insert into `readEventCodes` ( `eventCode`, `definition` ) values ( "X", "Herd examination" )' );
+      list.append( 'insert into `readEventCodes` ( `eventCode`, `definition` ) values ( "S", "Diagnostic test" )' );
+
+      list.append( 'update `readControlStateCodes` set `definition` = "No control" where `controlStateCode` = "U"' );
+      list.append( 'update `readControlStateCodes` set `definition` = "Traced forward - direct contact" where `controlStateCode` = "T"' );
+      list.append( 'update `readControlStateCodes` set `definition` = "Traced forward - indirect contact" where `controlStateCode` = "I"' );
+      list.append( 'update `readControlStateCodes` set `definition` = "Detected" where `controlStateCode` = "E"' );
+      list.append( 'insert into `readControlStateCodes` ( `controlStateCode`, `definition` ) values ( "K", "Traced back - direct contact" )' );
+      list.append( 'insert into `readControlStateCodes` ( `controlStateCode`, `definition` ) values ( "J", "Traced back - indirect contact" )' );
+      list.Append( 'insert into `readControlStateCodes` ( `controlStateCode`, `definition` ) values ( "Q", "Quarantined only" )' );
+
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "U", "Uninfected, no disease control activity" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "I", "Infected but undetected" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "X", "Examined" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "N", "Test true negative" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "O", "Test false negative" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "Q", "Test false positive" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "P", "Test true positive" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "E", "Detected by clinical signs" )' );
+      list.append( 'insert into `readDetectionStateCodes` ( `detectionStateCode`, `definition` ) values ( "D", "Destroyed" )' );
+
+      list.append( 'update `dynHerd` set `finalDetectionStateCode` = "U"' );
+
+      result := true;
+      for i := 0 to list.count - 1 do
+        result := result and db.execute( list[i] )
+      ;
+
+      list.free();
+    end
+  ;
+
+
+  function populateDefaultInputsFor3_2_0( db: TSMDatabase ): boolean;
+    var
+      dict: TQueryDictionary;
+      q: string;
+
+      success: boolean;
+      pdf: TPdfPoint;
+      pdfID: integer;
+
+      res: TSqlResult;
+      row: TSqlRow;
+    begin
+      success := true;
+      dict := TQueryDictionary.create();
+
+      // Update inControlsGlobal
+      //------------------------
+      dict['includeTracingHerdExam'] := 'false';
+      dict['includeTracingTesting'] := 'false';
+
+      q := writeQuery( 'inControlsGlobal', QUpdate, dict );
+      success := success and db.execute( q );
+
+      // Create default chart for tracing delay
+      //---------------------------------------
+      pdf := TPdfPoint.create( 0, UDays );
+      pdf.name := 'No tracing delay [NAADSM update default]';
+      pdf.dbField := word( TrDelay );
+      pdfID := pdf.populateDatabase( ( db as TSqlDatabase ) );
+      success := success and ( -1 <> pdfID );
+      pdf.Free();
+
+      // Update inProductionType
+      //------------------------
+      if( success ) then
+        begin
+          dict.clear();
+
+          dict['traceDelayPdfID'] := intToStr( pdfID );
+
+          // Tracing for forward traces is already specified
+          dict['traceDirectBack'] := 'false';
+          dict['traceIndirectBack'] := 'false';
+
+          // Destruction of forward-traced units is already specified
+          dict['destrDirectBackTraces'] := 'false';
+          dict['destrIndirectBackTraces'] := 'false';
+
+          dict['examDirectForward'] := 'false';
+          dict['examIndirectForward'] := 'false';
+          dict['examDirectBack'] := 'false';
+          dict['examIndirectBack'] := 'false';
+
+          dict['testDirectForward'] := 'false';
+          dict['testIndirectForward'] := 'false';
+          dict['testDirectBack'] := 'false';
+          dict['testIndirectBack'] := 'false';
+
+          q := writeQuery( 'inProductionType', QUpdate, dict );
+          success := success and db.execute( q );
+        end
+      ;
+
+      // Update destruction priority order
+      //----------------------------------
+      if( success ) then
+        begin
+          res := TSqlResult.create( 'SELECT `destrReasonOrder` FROM `inControlsGlobal`', db );
+          row := res.fetchArrayFirst();
+          if ( row.field( 'destrReasonOrder' ) <> null ) then
+            begin
+              q := row.field( 'destrReasonOrder' );
+              res.Free();
+
+              q := ansiReplaceStr( q, 'indirect', 'TMP'  );
+              q := ansiReplaceStr( q, 'direct', 'direct-forward' );
+              q := ansiReplaceStr( q, 'TMP', 'indirect-forward' );
+              q := q + 'direct-back,indirect-back';
+
+              dict.clear();
+              dict['destrReasonOrder'] := db.sqlQuote( q );
+              q := writeQuery( 'inControlsGlobal', QUpdate, dict );
+              success := success and db.execute( q );
+            end
+          ;
+        end
+      ;
+      dict.Free();
+
+      result := success;
+    end
+  ;
+
+
+  function projectZoneCoordinatesFor3_2_0( db: TSMDatabase ): boolean;
+    var
+      perimeterList: TZonePerimeterList;
+      mStream: TMemoryStream;
+      i, j: integer;
+      perim: TZonePerimeter;
+      proj: TProj4;
+      xyr: RPoint;
+      gpcxy: gpc_vertex;
+      minLat, minLon, maxLat, maxLon: double;
+      res: TSqlResult;
+      row: TSqlRow;
+      q: string;
+    begin
+      result := true;
+
+      if( db.containsZonePerimeters ) then
+        begin
+          // Load the perimeter list from the database
+          //------------------------------------------
+          perimeterList := TZonePerimeterList.create();
+          mStream := db.createStreamFromBlob( 'dynBlob', 'zonePerimeters' );
+          perimeterList.loadFromStream( mStream );
+          mStream.Free();
+
+          // Determine the extreme lats and lons
+          //------------------------------------
+          maxLat := LAT_LON_UNDEFINED;
+          minLat := LAT_LON_UNDEFINED;
+          maxLon := LAT_LON_UNDEFINED;
+          minLon := LAT_LON_UNDEFINED;
+
+          res := TSqlResult.create( db as TSqlDatabase );
+
+          q := 'SELECT'
+            + '   MAX( latitude ) AS maxLat,'
+            + '   MIN( latitude ) AS minLat,'
+            + '   MAX( longitude ) AS maxLon,'
+            + '   MIN( longitude ) AS minLon'
+            + ' FROM dynHerd'
+          ;
+
+          res.runQuery( q );
+          row := res.fetchArrayFirst();
+
+          if( null <> row.field('maxLat') ) then maxLat := row.field('maxLat');
+          if( null <> row.field('minLat') ) then minLat := row.field('minLat');
+          if( null <> row.field('maxLon') ) then maxLon := row.field('maxLon');
+          if( null <> row.field('minLon') ) then minLon := row.field('minLon');
+
+          // FIX ME: Some error checking of lats and lons might be in order.
+
+          res.Free();
+
+          // Set up the projection system
+          //-----------------------------
+          proj := TProj4.create( THerdList.defaultProjection( minLat, minLon, maxLat, maxLon ) );
+
+          // Project all of the zone vertices
+          //---------------------------------
+          for j := 0 to perimeterList.count - 1 do
+            begin
+              perim := perimeterList[j] as TZonePerimeter;
+
+              if ( 0 < perim.count ) then
+                begin
+                  for i := 0 to perim.count - 1 do
+                    begin
+                      try
+                        xyr := proj.pjFwd( perim[i].x, perim[i].y, true );
+                        gpcxy.x := xyr.x;
+                        gpcxy.y := xyr.y;
+                        perim[i] := gpcxy;
+                      except
+                        result := false;
+                        freeAndNil( perimeterList );
+                        freeAndNil( proj );
+                        exit;
+                      end;
+                    end
+                  ;
+                end
+              ;
+            end
+          ;
+
+          proj.free();
+
+          //perimeterList.debug();
+
+          // Save the projected perimeter list back to the database
+          //-------------------------------------------------------
+          mStream := TMemoryStream.Create();
+          mStream.Position := 0;
+          perimeterList.saveToStream( mStream );
+          db.writeBlobFromStream( mStream, 'dynBlob', 'zonePerimeters' );
+          mStream.free();
+
+          // Clean up
+          //---------
+          freeAndNil( perimeterList );
+        end
+      ;
+    end
+  ;
 
 end.

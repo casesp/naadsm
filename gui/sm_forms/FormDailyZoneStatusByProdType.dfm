@@ -1,7 +1,6 @@
 inherited FormDailyZoneStatusByProdType: TFormDailyZoneStatusByProdType
-  Left = 803
-  Top = 209
-  Width = 755
+  Left = 634
+  Top = 189
   Height = 480
   Caption = 'Daily zone status for 1 iteration'
   Constraints.MinWidth = 755
@@ -9,16 +8,7 @@ inherited FormDailyZoneStatusByProdType: TFormDailyZoneStatusByProdType
   PixelsPerInch = 96
   TextHeight = 13
   inherited pnlControls: TPanel
-    Width = 747
     inherited pnlProdTypes: TPanel
-      Width = 445
-      object lblIteration: TLabel [0]
-        Left = 328
-        Top = 8
-        Width = 41
-        Height = 13
-        Caption = 'Iteration:'
-      end
       inherited cboProdTypes: TComboBox
         Width = 169
         OnChange = cboProdTypesChange
@@ -26,17 +16,6 @@ inherited FormDailyZoneStatusByProdType: TFormDailyZoneStatusByProdType
       inherited cboZones: TComboBox
         Left = 192
         Width = 129
-        TabOrder = 4
-      end
-      object cboIteration: TComboBox
-        Left = 384
-        Top = 4
-        Width = 49
-        Height = 21
-        Style = csDropDownList
-        ItemHeight = 13
-        TabOrder = 3
-        OnChange = cboIterationChange
       end
     end
   end
@@ -65,13 +44,14 @@ inherited FormDailyZoneStatusByProdType: TFormDailyZoneStatusByProdType
   object Y_AxisSource: TRadioGroup [2]
     Left = 136
     Top = 64
-    Width = 465
+    Width = 521
     Height = 33
     Caption = 'Y-Axis'
-    Columns = 5
+    Columns = 6
     ItemIndex = 0
     Items.Strings = (
       'Area'
+      'Perimeter'
       '# of units'
       '# of animals'
       'Unit days'

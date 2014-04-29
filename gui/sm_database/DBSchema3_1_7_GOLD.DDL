@@ -8,74 +8,36 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Drop foreign key constraints from table `outIterationByZone`.
 alter table `outIterationByZone`
 	drop constraint `inSurveillanceZone_outIterationByZone_FK1`;
 
-
--- Drop foreign key constraints from table `outDailyByZone`.
 alter table `outDailyByZone`
 	drop constraint `inSurveillanceZone_outDailyByZone_FK1`;
 
-
--- Drop foreign key constraints from table `outIterationByZoneAndProductionType`.
 alter table `outIterationByZoneAndProductionType`
 	drop constraint `inSurveillanceZone_outIterationByZoneAndProductionType_FK1`;
 
-
--- Drop foreign key constraints from table `outDailyByZoneAndProductionType`.
 alter table `outDailyByZoneAndProductionType`
 	drop constraint `inSurveillanceZone_outDailyByZoneAndProductionType_FK1`;
 
-
--- Drop foreign key constraints from table `inZoneProductionTypePair`.
 alter table `inZoneProductionTypePair`
 	drop constraint `inSurveillanceZone_inZoneProductionTypePair_FK1`;
 
-
--- Drop foreign key constraints from table `outDailyEvents`.
 alter table `outDailyEvents`
 	drop constraint `inSurveillanceZone_outDailyEvents_FK1`;
 
-
--- Drop foreign key constraints from table `outDailyExposures`.
 alter table `outDailyExposures`
 	drop constraint `inSurveillanceZone_outDailyExposures_FK1`;
-
 
 alter table `outDailyExposures`
 	drop constraint `inSurveillanceZone_outDailyExposures_FK2`;
 
-
--- Drop primary key, unique and non-unique index constraints from table `inSurveillanceZone`.
 alter table `inSurveillanceZone` drop constraint `inSurveillanceZone_PK`; 
-
-
--- Rename table from inSurveillanceZone to inZone.
--- `inZone` : Table of inZone
--- 	`zoneID` : zoneID identifies inZone
--- 	`descr` : descr is of inZone
--- 	`radius` : radius is of inZone  
+ 
 create table `inZone` ( 
 	`zoneID` COUNTER,
 	`descr` VARCHAR(255),
 	`radius` DOUBLE); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inZone`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inZone' :
--- 	`zoneID`
-
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inZone`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inZone' :
--- 	`zoneID`
-
 
 insert into `inZone` (`zoneID`, `descr`, `radius`) 
     select `inSurveillanceZone`.`zoneID`, 
@@ -83,11 +45,8 @@ insert into `inZone` (`zoneID`, `descr`, `radius`)
            `inSurveillanceZone`.`radius`  
     from `inSurveillanceZone`;
 
-
 drop table `inSurveillanceZone`; 
 
-
--- Update existing table `inControlsGlobal`.
 create table `inControlsGlobal_IM0` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -129,22 +88,7 @@ alter table `inControlsGlobal`
 
 
 drop table `inControlsGlobal`; 
-
-
--- `inControlsGlobal` : Table of inControlsGlobal
--- 	`controlsGlobalID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`includeDetection` : Indicates whether detection of disease in any production type will be modeled.
--- 	`includeTracing` : Indicates whether surveillance of any production type will be modeled.
--- 	`includeDestruction` : Indicates whether destruction will be used in any production type.
--- 	`destrProgramDelay` : The number of days that must pass after the first detection before a destruction program can begin.
--- 	`destrCapacityRelID` : ID number of the relational function used to define the daily destruction capacity.  This field references inChart.chartID.
--- 	`destrPriorityOrder` : A string that identifies the primary priority order for destruction: see Section 8.9.2.1.
--- 	`destrReasonOrder` : A string that identifies the secondary priority order for destruction: see Section 8.9.2.1.
--- 	`includeVaccination` : Indicates whether vaccination will be used in any production type.
--- 	`vaccDetectedUnitsBeforeStart` : The number of clinical units which must be detected before the initiation of a vaccination program.
--- 	`vaccCapacityRelID` : ID number of the relational function used to define the daily vaccination capacity.  This field references inChart.chartID.
--- 	`vaccPriorityOrder` : A string that identifies the priority order for vaccination: see Section 8.10.2.1.
--- 	`includeZones` : includeZones is of inControlsGlobal  
+ 
 create table `inControlsGlobal` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -183,8 +127,6 @@ drop table `inControlsGlobal_IM0`;
 alter table `inControlsGlobal`
 	add constraint `inControlsGlobal_PK` primary key (`controlsGlobalID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inControlsGlobal`
 	add constraint `inChart_inControlsGlobal_FK1` foreign key (
 		`destrCapacityRelID`)
@@ -197,54 +139,45 @@ alter table `inControlsGlobal`
 	 references `inChart` (
 		`chartID`); 
 
--- Add the remaining keys, constraints and indexes for the table `inZone`.
 alter table `inZone`
 	add constraint `inZone_PK` primary key (`zoneID`) ; 
 
-
--- Add foreign key constraints to table `outDailyByZoneAndProductionType`.
 alter table `outDailyByZoneAndProductionType`
 	add constraint `inZone_outDailyByZoneAndProductionType_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `outDailyByZone`.
 alter table `outDailyByZone`
 	add constraint `inZone_outDailyByZone_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `outIterationByZone`.
 alter table `outIterationByZone`
 	add constraint `inZone_outIterationByZone_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `outDailyEvents`.
 alter table `outDailyEvents`
 	add constraint `inZone_outDailyEvents_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `outIterationByZoneAndProductionType`.
 alter table `outIterationByZoneAndProductionType`
 	add constraint `inZone_outIterationByZoneAndProductionType_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `inZoneProductionTypePair`.
 alter table `inZoneProductionTypePair`
 	add constraint `inZone_inZoneProductionTypePair_FK1` foreign key (
 		`zoneID`)
 	 references `inZone` (
 		`zoneID`); 
 
--- Add foreign key constraints to table `outDailyExposures`.
 alter table `outDailyExposures`
 	add constraint `inZone_outDailyExposures_FK1` foreign key (
 		`exposedZoneID`)
@@ -256,6 +189,3 @@ alter table `outDailyExposures`
 		`exposingZoneID`)
 	 references `inZone` (
 		`zoneID`); 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

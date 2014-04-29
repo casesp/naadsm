@@ -4,14 +4,14 @@ unit FormDailyZoneStatusByProdType;
 FormDailyZoneStatusByProdType.pas/dfm
 -------------------------------------
 Begin: 2005/06/28
-Last revision: $Date: 2008/10/21 19:20:23 $ $Author: areeves $
-Version: $Revision: 1.17 $
+Last revision: $Date: 2010-11-09 19:12:59 $ $Author: areeves $
+Version: $Revision: 1.23.4.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -67,6 +67,7 @@ interface
     Day: Integer;
     ZoneLevel: Integer;
     Area: double;
+    Perimeter: double;
     UnitCount: array of Integer;
     AnimalCount: array of Integer;
     UnitDays: array of Integer;
@@ -77,23 +78,21 @@ interface
   end;
 
 
-    
+
+  (*
+    TODO 2: Add zone perimeter to this form.
+  *)
   {*
     This form displays a graph showing the status of zones
     on each day of a single iteration.
   }
   type  TFormDailyZoneStatusByProdType = class( TFormSMOutputBase )
       fraBody: TFrameDailyZoneStatusByProdType;
-      cboIteration: TComboBox;
-      lblIteration: TLabel;
       Y_AxisSource: TRadioGroup;
       pnlCaption: TPanel;
 
       // Toggles chart display between 2D and 3D }
       procedure cbxThreeDClick(Sender: TObject);
-
-      // Called on Iteration spinner changed
-      procedure cboIterationChange(Sender: TObject);
 
       // Called when Y-Axis source is changed
       procedure Y_AxisSourceClick(Sender: TObject);
@@ -106,7 +105,6 @@ interface
 
       _chartFixNeeded: boolean; // Used with the TChart bug work around.  See chart drawing functions.
 
-      _displayedIteration: Integer;
       _currentDay: Integer;
 
       procedure translateUI();
@@ -117,6 +115,9 @@ interface
 
       { Updates the contents of the form when the selected production type changes }
       procedure productionTypeChanged(); override;
+
+      { Updates the contents of the form when the selected iteration changes }
+      procedure iterationChanged(); override;
 
       { Updates the contents of the form when the loaded database/simulation changes }
       procedure simChanged(); override;
@@ -141,7 +142,7 @@ interface
 
       { Handles chart updates while a simulation is in progress }
       procedure updateForDay( day: integer );
-      procedure updateSimComplete();
+      procedure updateSimComplete(); override;
       procedure iterationComplete();
 
       procedure outbreakEnd( day: integer );
@@ -165,23 +166,23 @@ implementation
   uses
     // General-purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     SqlClasses,
     I88n,
 
     // application-specific classes
-    FormMain
+    FormMain,
+    StatusEnums
   ;
 
   const
     AREA        = 0;
-    NUM_UNITS   = 1;
-    NUM_ANIMALS = 2;
-    UNIT_DAYS   = 3;
-    ANIMAL_DAYS = 4;
-
+    PERIMETER   = 1;
+    NUM_UNITS   = 2;
+    NUM_ANIMALS = 3;
+    UNIT_DAYS   = 4;
+    ANIMAL_DAYS = 5;
 
 
   constructor DailyZoneData.create();
@@ -201,6 +202,7 @@ implementation
       inherited destroy();
 
       Area := 0.0;
+      Perimeter := 0.0;
       ZoneLevel := 0;
       Day := -1;
       setLength( UnitCount, 0 );
@@ -218,13 +220,11 @@ implementation
       res: TSqlResult;
       row: TSqlRow;
       q: string;
-      zoneColors: TColorArray;
       zList: TZoneList;
     begin
       noInterrupt := true;
       fraBody.chtOutputs.RemoveAllSeries();
 
-      zoneColors := frmMain.ZoneColors();
       zList := _smSim.zoneList;
 
       _numZones := zList.Count;
@@ -251,12 +251,8 @@ implementation
                 Application.ProcessMessages;
                 TNewLine.Title := row.field( 'descr' );
 
-                if ( nil <> zoneColors ) and (  1 <= length( zoneColors ) ) then
-                  begin
-                    if ( zList.find( TNewLine.Title ) <> nil ) then
-                      TNewLine.SeriesColor := zoneColors[ zList.find( TNewLine.Title ).level - 1 mod length( zoneColors ) ]
-                    ;
-                  end
+                if ( zList.find( TNewLine.Title ) <> nil ) then
+                  TNewLine.SeriesColor := zoneColor( zList.find( TNewLine.Title ).level )
                 ;
 
                 row:= res.fetchArrayNext();
@@ -288,8 +284,9 @@ implementation
       translateUI();
 
       pnlCaption.Caption := '';
-      
+      placeIterationControls();
       setDataControlsEnabled( false );
+      
       _days := TQIntegerIntegerMap.create();
 
       // Initialize pointers
@@ -303,40 +300,36 @@ implementation
       // Size the form
       //--------------
       ClientWidth := 556 + lblIteration.Width + cboIteration.Width;
-      cboIteration.Items.Clear();
-      cboIteration.enabled := false;
       fraBody.chtOutputs.View3D := False;
       fraBody.chtOutputs.RemoveAllSeries();
 
-      setupComboBox();
+      setupIterationComboBox();
+      setupProdTypeComboBox();
 
       addZones();
 
       setLength( _daysData, _numZones );
 
       for i := 0 to _numZones - 1 do
-        begin
-          _daysData[i] := TQObjectList.create();
-        end;
+        _daysData[i] := TQObjectList.create()
+      ;
 
       _chartFixNeeded := true;
 
       // Show the data
       //--------------
-      if ( Y_AxisSource.ItemIndex = AREA ) then
+      if (( AREA = Y_AxisSource.ItemIndex ) OR ( Perimeter = Y_AxisSource.ItemIndex )) then
         cboProdTypes.Enabled := false
       else
-        cboProdTypes.Enabled := true;
+        cboProdTypes.Enabled := true
+      ;
 
       setUpFromDatabase();
 
       setCaption();
 
       if ( frmMain.simIsRunning ) then
-        begin
-          cboIteration.enabled := false;
-          cboIteration.clear();
-        end
+        disableIterationComboBox()
       ;
     end
   ;
@@ -353,20 +346,20 @@ implementation
       with self do
         begin
           Caption := tr( 'Daily zone status for 1 iteration' );
-          lblIteration.Caption := tr( 'Iteration:' );
           Y_AxisSource.Caption := tr( 'Y axis' );
           pnlCaption.Caption := tr( 'Iteration status: completed/aborted/running' );
         end
       ;
 
-      // Set TStrings properties
+      // Set TStrings properties  (index value must match the values of the named constants)
       with self do
         begin
            Y_AxisSource.Items[0] := tr( 'Area' );
-           Y_AxisSource.Items[1] := tr( '# of units' );
-           Y_AxisSource.Items[2] := tr( '# of animals' );
-           Y_AxisSource.Items[3] := tr( 'Unit days' );
-           Y_AxisSource.Items[4] := tr( 'Animal days' );
+           Y_AxisSource.Items[1] := tr( 'Perimeter' );
+           Y_AxisSource.Items[2] := tr( '# of units' );
+           Y_AxisSource.Items[3] := tr( '# of animals' );
+           Y_AxisSource.Items[4] := tr( 'Unit days' );
+           Y_AxisSource.Items[5] := tr( 'Animal days' );
         end
       ;
 
@@ -392,28 +385,27 @@ implementation
 
 	destructor TFormDailyZoneStatusByProdType.destroy();
     var
-    i, j, k:integer;
+    i: integer;
+    list: TQObjectList;
   	begin
-      inherited destroy();
-
       if ( assigned( _days ) ) then
         begin
           _days.clear();
-          _days.destroy();
-        end;
+          _days.free();
+        end
+      ;
 
-      k := length( _daysData ) - 1;
-
-      for i := 0 to k do
+      for i := 0 to length( _daysData ) - 1 do
         begin
-          for j := 0 to  (_daysData[i] as TQObjectList).count - 1 do
-            begin
-              ((_daysData[i] as TQObjectList).at(j) as DailyZoneData).destroy();
-            end;
-          _daysData[i].clear();
-        end;
+          list := _daysData[i];
+          list.freeAllValues();
+          list.Free();
+        end
+      ;
 
       setLength( _daysData, 0 );
+
+      inherited destroy();
     end
   ;
 
@@ -449,8 +441,7 @@ implementation
   
 	procedure TFormDailyZoneStatusByProdType.simChanged();
   	begin
-      cboIteration.Items.Clear();
-      cboIteration.enabled := false;
+      disableIterationComboBox();
       fraBody.chtOutputs.RemoveAllSeries();
       addZones();
       
@@ -458,9 +449,9 @@ implementation
 
       // Show the data
       //--------------
-      setupComboBox();
+      setupProdTypeComboBox();
 
-      if ( Y_AxisSource.ItemIndex = AREA ) then
+      if (( Y_AxisSource.ItemIndex = AREA ) OR ( Y_AxisSource.ItemIndex = PERIMETER ))then
         cboProdTypes.Enabled := false
       else
         cboProdTypes.Enabled := true
@@ -469,10 +460,7 @@ implementation
       setUpFromDatabase();
 
       if ( frmMain.simIsRunning ) then
-        begin
-          cboIteration.enabled := false;
-          cboIteration.clear();
-        end
+        disableIterationCOmboBox()
       ;
 
       setCaption();
@@ -484,7 +472,9 @@ implementation
     var
       i:integer;
     begin
-      if ( noInterrupt ) then exit;
+      if ( noInterrupt ) then
+        exit
+      ;
 
       noInterrupt := true;
       for i := 0 to (fraBody.chtOutputs.SeriesCount() - 1) do
@@ -503,6 +493,7 @@ implementation
         begin
           case Y_AxisSource.ItemIndex of
             AREA: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Zone Area in Square Kilometers' );
+            PERIMETER: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Zone Perimeter in Kilometers' );
             UNIT_DAYS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Unit Days' );
             ANIMAL_DAYS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Animals Days' );
             NUM_UNITS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Number of Units' );
@@ -527,10 +518,6 @@ implementation
     updates.
   }
   procedure TFormDailyZoneStatusByProdType.setupFromDatabase();
-    var
-      res: TSqlResult;
-      row: TSqlRow;
-      q: string;
     begin
       if( not( _smSim.includeZonesGlobal ) ) then
         exit
@@ -546,58 +533,7 @@ implementation
 
         // Fill iteration ComboBox
         //------------------------
-        cboIteration.Items.Clear();
-
-        q := 'SELECT distinct(iteration) from outDailyByProductionType order by iteration desc';
-
-        res := TSqlResult.create( q, ( _smdb as TSqlDatabase ) );
-
-        if( 0 < res.numRows ) then
-          begin
-            cboIteration.Enabled := true;
-
-            row := res.fetchArrayFirst();
-
-            while ( row <> nil ) do
-              begin
-                 cboIteration.Items.Add(row.field('iteration'));
-                 row := res.fetchArrayNext();
-              end
-            ;
-
-            cboIteration.ItemIndex := 0;
-          end
-        ;
-        res.Free();
-
-        // Determine the iteration to display
-        //-----------------------------------
-        dbcout2( _displayedIteration );
-
-        if( -1 <> frmMain.displayedIteration ) then
-          begin
-            // Determine the iteration to display from the main form, and select the appropriate item in the combo box.
-            _displayedIteration := frmMain.displayedIteration;
-            cboIteration.ItemIndex := cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) );
-            if( 0 > cboIteration.ItemIndex ) then
-              raise exception.create( 'Iteration not found (' + intToStr( _displayedIteration ) + ') in TFormDailyZoneStatusByProductionType' )
-            ;
-          end
-        else // Select the last item from the newly created list of iterations
-          begin
-            if( 0 < cboIteration.Items.Count ) then
-              begin
-                _displayedIteration := strToInt( cboIteration.Items[0] );
-                cboIteration.ItemIndex := 0;
-              end
-            else
-              _displayedIteration := -1
-            ;
-            frmMain.displayedIteration := _displayedIteration;
-          end
-        ;
-
-        dbcout2( _displayedIteration );
+        setupIterationComboBox();
 
         // Display the data for the appropriate iteration
         //-----------------------------------------------
@@ -715,8 +651,10 @@ implementation
 
           // Set cummulative chart data structures
           //--------------------------------------
+          
           DailyData := DailyZoneData.create();
           DailyData.Area := tempZone.area;
+          DailyData.Perimeter := tempZone.perimeter;
           DailyData.ZoneLevel := tempZone.level;
           DailyData.Day := _currentDay;
           setLength( DailyData.UnitCount, cboProdTypes.Items.Count - 1 );
@@ -741,6 +679,14 @@ implementation
               begin
                 if ( tempZone.level <= fraBody.chtOutputs.SeriesCount() ) then
                   fraBody.chtOutputs.Series[tempZone.level - 1].AddXY( day, tempZone.area )
+                ;
+              end
+            ;
+
+            PERIMETER:
+              begin
+                if ( tempZone.level <= fraBody.chtOutputs.SeriesCount() ) then
+                  fraBody.chtOutputs.Series[tempZone.level - 1].AddXY( day, tempZone.perimeter )
                 ;
               end
             ;
@@ -935,16 +881,21 @@ implementation
 
       needFix := true;
       row := res.fetchArrayFirst();
-      if ( nil <> row ) then
+
+      if( nil <> row ) then
         begin
-          maxDay := row.field( 'outbreakEndDay' );
-          for i := 0 to fraBody.chtOutputs.SeriesCount - 1 do
+          if( not( varIsNull( row.field( 'outbreakEndDay' ) ) ) ) then
             begin
-              fraBody.chtOutputs.Series[i].GetHorizAxis.SetMinMax( 1, maxDay );
-              fraBody.chtOutputs.Series[i].Repaint();
+              maxDay := row.field( 'outbreakEndDay' );
+              for i := 0 to fraBody.chtOutputs.SeriesCount - 1 do
+                begin
+                  fraBody.chtOutputs.Series[i].GetHorizAxis.SetMinMax( 1, maxDay );
+                  fraBody.chtOutputs.Series[i].Repaint();
+                end
+              ;
+              needFix := false;
             end
           ;
-          needFix := false;
         end
       ;
 
@@ -958,9 +909,9 @@ implementation
 
       // select indicated pts, all days, for last complete iteration, sorted by day
       //----------------------------------------------------------------------------
-      if ( AREA = Y_AxisSource.ItemIndex ) then
+      if (( AREA = Y_AxisSource.ItemIndex ) OR ( PERIMETER = Y_AxisSource.ItemIndex )) then
         begin
-          q := 'SELECT iteration, day, zoneID, area FROM outDailyByZone'
+          q := 'SELECT iteration, day, zoneID, zoneArea, zonePerimeter FROM outDailyByZone'
             + ' WHERE iteration = ' + intToStr( _displayedIteration )
             + ' ORDER BY day, zoneID'
           ;
@@ -992,9 +943,9 @@ implementation
           needFix := true;
 
           // If "All production types" is selected, then generate a sum for the requested output.
-          // (Note that there is no sum for zone area, so zone area can be treated below.)
+          // (Note that there is no sum for zone area or perimeter, so these can be treated below.)
           //-------------------------------------------------------------------------------------
-          if ( ( nil = _selectedPT ) and ( AREA <> Y_AxisSource.ItemIndex ) )then
+          if ( ( nil = _selectedPT ) and (( AREA <> Y_AxisSource.ItemIndex ) AND ( PERIMETER <> Y_AxisSource.ItemIndex )) )then
             begin
               while( nil <> row ) do
                 begin
@@ -1043,7 +994,7 @@ implementation
             end
 
           // If this statement is reached, then either an output for an
-          // individual production type was requested, or area was requested.
+          // individual production type was requested, or area or perimeter was requested.
           //-----------------------------------------------------------------
           else
             begin
@@ -1066,6 +1017,7 @@ implementation
                                     begin
                                       case Y_AxisSource.ItemIndex of
                                         AREA:  fraBody.chtOutputs.Series[i].AddXY( currentDay - 1, 0 );
+                                        PERIMETER:  fraBody.chtOutputs.Series[i].AddXY( currentDay - 1, 0 );
                                         NUM_UNITS: fraBody.chtOutputs.Series[i].AddXY( currentDay - 1, 0 );
                                         NUM_ANIMALS: fraBody.chtOutputs.Series[i].AddXY( currentDay - 1, 0 );
                                         UNIT_DAYS: fraBody.chtOutputs.Series[i].AddXY( currentDay - 1, 0 );
@@ -1079,7 +1031,8 @@ implementation
                           ;
 
                           case Y_AxisSource.ItemIndex of
-                            AREA:  fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'area' ));
+                            AREA:  fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'zoneArea' ));
+                            PERIMETER:  fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'zonePerimeter' ));
                             NUM_UNITS: fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'unitsInZone' ));
                             NUM_ANIMALS: fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'animalsInZone' ));
                             UNIT_DAYS: fraBody.chtOutputs.Series[currentZone].AddXY( currentDay, row.field( 'unitDaysInZone' ));
@@ -1102,7 +1055,7 @@ implementation
               ; // END while( nil <> row )
 
             end
-          ; // END indiv production type or area output
+          ; // END indiv production type or area or perimeter output
         end
       ; // END if( nil <> row )
 
@@ -1148,10 +1101,8 @@ implementation
   ;
 
   
-  procedure TFormDailyZoneStatusByProdType.cboIterationChange(Sender: TObject);
+  procedure TFormDailyZoneStatusByProdType.iterationChanged();
     begin
-      inherited;
-
       if ( assigned( frmMain ) ) then
         begin
           frmMain.displayedIteration := myStrToInt( cboIteration.Items[cboIteration.ItemIndex], -1 );
@@ -1187,6 +1138,7 @@ implementation
         begin
           case Y_AxisSource.ItemIndex of
             AREA: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Zone Area in Square Kilometers' );
+            PERIMETER: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Zone Perimeter in Kilometers' );
             UNIT_DAYS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Unit Days' );
             ANIMAL_DAYS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Animals Days' );
             NUM_UNITS: fraBody.chtOutputs.LeftAxis.Title.Caption := tr( 'Number of Units' );
@@ -1200,7 +1152,7 @@ implementation
       ;
 
 
-      if ( Y_AxisSource.ItemIndex = AREA ) then
+      if (( Y_AxisSource.ItemIndex = AREA ) OR ( Y_AxisSource.ItemIndex = PERIMETER )) then
         cboProdTypes.Enabled := false
       else
         cboProdTypes.Enabled := true
@@ -1235,6 +1187,13 @@ implementation
                       AREA:
                         begin
                           fraBody.chtOutputs.Series[Daily.ZoneLevel -1].AddXY( Daily.Day, Daily.Area );
+                          fraBody.chtOutputs.repaint();
+                        end
+                      ;
+
+                      PERIMETER:
+                        begin
+                          fraBody.chtOutputs.Series[Daily.ZoneLevel -1].AddXY( Daily.Day, Daily.Perimeter );
                           fraBody.chtOutputs.repaint();
                         end
                       ;
@@ -1301,6 +1260,7 @@ implementation
                           ;
                         end
                       ;
+
                     end;  // End case
 
                   end

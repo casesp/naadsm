@@ -4,13 +4,13 @@ unit FormDestrGlobal;
 FormDestrGlobal.pas/dfm
 -----------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2010-09-09 14:29:36 $ $Author: rhupalo $
+Version: $Revision: 1.29.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -71,6 +71,7 @@ interface
       destructor destroy(); override;
 
       procedure updateMasterDisplay(); override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
 			property ctrlParams: TGlobalControlParams read getCtrlParams write setCtrlParams;
     end
@@ -87,7 +88,6 @@ implementation
 	uses
   	ControlUtils,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     QStringMaps,
     I88n,
@@ -107,8 +107,8 @@ implementation
       
     	//centerInside( fraParams, self ); // FIX ME: this function sucks.  Figure it out!
 
-      fraParams.smrDestrCapacity.xUnits := UnitsDays;
-      fraParams.smrDestrCapacity.yUnits := UnitsHerdsPerDay;
+      fraParams.smrDestrCapacity.xUnits := UDays;
+      fraParams.smrDestrCapacity.yUnits := UHerdsPerDay;
     end
   ;
 
@@ -137,8 +137,10 @@ implementation
       // DON'T do this here: since _ctrlParams is a list element, it will be destroyed below.
     	//_ctrlParams.Free();
 
-      _ctrlList.Extract( _ctrlParams );
-      freeAndNil( _ctrlList );
+      // These two private members are nil when the user navigates through the
+      // input parameter form wizard and global detection is turned off (the else block of showModal function)
+      if assigned( _ctrlParams ) then _ctrlList.Extract( _ctrlParams );
+      if assigned(_ctrlList) then freeAndNil( _ctrlList );
 
     	inherited destroy();
     end
@@ -291,14 +293,13 @@ implementation
       repeat
         if( nil <> it.value() ) then
           begin
-            if ( not it.value().removed ) then
+            if( not it.value().removed ) then
               begin
-                if ( it.value().fn.dbField = word(TSMChart(DestrCapacityGlobal)) ) then
-                  begin
-                    fraParams.smrDestrCapacity.appendFunction( it.value().fn );
-                    it.value().RefCounter:= 0;
-                  end;
-              end;
+                if( integer( DestrCapacityGlobal ) = it.value().fn.dbField ) then
+                  fraParams.smrDestrCapacity.appendFunction( it.value().fn )
+                ;
+              end
+            ;
           end
         ;
 
@@ -306,10 +307,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-      if( _relList.contains( ctrlParams.destrCapacityName ) ) then
-        _relList.value( ctrlParams.destrCapacityName ).incrRefCounter()
-      ;
 
       giveListsToEditors();
 
@@ -321,6 +318,22 @@ implementation
   procedure TFormDestrGlobal.giveListsToEditors();
   	begin
     	fraParams.smrDestrCapacity.setFunctionDict( _relList );
+    end
+  ;
+
+
+  function TFormDestrGlobal.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+  	begin
+      // need detection of disease in order to conduct destruction campaign
+    	if( _smScenarioCopy.simInput.includeDetectionGlobal ) then
+    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+      else
+      	begin
+          formDisplayed := false;
+      		nextForm := nextFormToShow;
+          result := 0;
+        end
+      ;
     end
   ;
 //-----------------------------------------------------------------------------

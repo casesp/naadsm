@@ -1,14 +1,14 @@
 object FormMain: TFormMain
-  Left = 272
-  Top = 167
+  Left = 822
+  Top = 240
   Width = 617
   Height = 479
   Hint = 'Open a file to start a new session'
-  Caption = 'NAADSM 3.1'
+  Caption = 'NAADSM 3.2'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -12
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   FormStyle = fsMDIForm
@@ -19,7 +19,7 @@ object FormMain: TFormMain
   OnClose = FormClose
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 16
+  TextHeight = 13
   object ActionMainMenuBar1: TActionMainMenuBar
     Left = 0
     Top = 0
@@ -351,6 +351,12 @@ object FormMain: TFormMain
                   end
                   item
                     Action = ActionTracing
+                  end
+                  item
+                    Action = ActionTracingHerdExam
+                  end
+                  item
+                    Action = ActionTracingTesting
                   end>
                 Action = ActionTracingMenu
                 ImageIndex = 67
@@ -379,10 +385,10 @@ object FormMain: TFormMain
                     Action = ActionDestrGlobal
                   end
                   item
-                    Action = ActionDestrPriority
+                    Action = ActionDestruction
                   end
                   item
-                    Action = ActionDestruction
+                    Action = ActionDestrPriority
                   end>
                 Action = ActionDestructionMenu
                 ImageIndex = 9
@@ -393,10 +399,10 @@ object FormMain: TFormMain
                     Action = ActionVaccGlobal
                   end
                   item
-                    Action = ActionVaccPriority
+                    Action = ActionVaccination
                   end
                   item
-                    Action = ActionVaccination
+                    Action = ActionVaccPriority
                   end>
                 Action = ActionVaccinationMenu
                 ImageIndex = 7
@@ -544,7 +550,7 @@ object FormMain: TFormMain
                 Items.HideUnused = False
                 Items = <>
                 Action = ActionExposures
-                Caption = 'C&ontact-exposure events by day'
+                Caption = 'E&xposures and traces by day'
                 ImageIndex = 52
               end
               item
@@ -605,6 +611,9 @@ object FormMain: TFormMain
               item
                 Action = acnLanguageSettings
                 ImageIndex = 11
+              end
+              item
+                Action = acnRegionalSettings
               end>
             Caption = '&Tools'
             ImageIndex = 64
@@ -613,14 +622,21 @@ object FormMain: TFormMain
             Items.HideUnused = False
             Items = <
               item
-                Items.HideUnused = False
-                Items = <>
-                Action = ActionAbout
-                ImageIndex = 1
+                Action = ActionForums
+                ImageIndex = 0
               end
               item
                 Action = ActionWebsite
                 ImageIndex = 11
+              end
+              item
+                Caption = '-'
+              end
+              item
+                Items.HideUnused = False
+                Items = <>
+                Action = ActionAbout
+                ImageIndex = 1
               end>
             Caption = '&Help'
             ImageIndex = 0
@@ -692,7 +708,7 @@ object FormMain: TFormMain
     end
     object ActionSpreadMenu: TAction
       Category = 'Parameters'
-      Caption = 'Disease Sp&read'
+      Caption = 'Disease sp&read'
       ImageIndex = 57
       OnExecute = ActionScenarioParamExecute
     end
@@ -714,7 +730,7 @@ object FormMain: TFormMain
     end
     object ActionAirborneSpread: TAction
       Category = 'Parameters'
-      Caption = '&Airborne Spread'
+      Caption = '&Airborne spread'
       OnExecute = ActionScenarioParamExecute
     end
     object ActionDetectionMenu: TAction
@@ -748,6 +764,16 @@ object FormMain: TFormMain
     object ActionTracing: TAction
       Category = 'Parameters'
       Caption = '&Production type settings for tracing'
+      OnExecute = ActionScenarioParamExecute
+    end
+    object ActionTracingHerdExam: TAction
+      Category = 'Parameters'
+      Caption = '&Examination of traced units'
+      OnExecute = ActionScenarioParamExecute
+    end
+    object ActionTracingTesting: TAction
+      Category = 'Parameters'
+      Caption = '&Diagnostic testing of traced units'
       OnExecute = ActionScenarioParamExecute
     end
     object ActionDestructionMenu: TAction
@@ -821,11 +847,6 @@ object FormMain: TFormMain
       Caption = 'Production type settings for &zone surveillance costs'
       OnExecute = ActionScenarioParamExecute
     end
-    object ActionInteractive: TAction
-      Tag = 13
-      Category = 'Parameters'
-      Caption = '&Interactive/advanced'
-    end
     object ActionMap: TAction
       Category = 'Windows'
       Caption = '&Map of units for 1 iteration'
@@ -850,13 +871,6 @@ object FormMain: TFormMain
       Caption = '&Summary of 1 iteration'
       ImageIndex = 27
       OnExecute = ActionOutputFormExecute
-    end
-    object ActionHelp: TAction
-      Category = 'Help'
-      Caption = 'Help'
-      Hint = 'Opens the help file'
-      ImageIndex = 0
-      ShortCut = 112
     end
     object ActionOutputStats: TAction
       Tag = 1
@@ -901,7 +915,7 @@ object FormMain: TFormMain
     end
     object ActionExposures: TAction
       Category = 'Windows'
-      Caption = 'Contact-exposure events by day'
+      Caption = 'Exposures and traces by day'
       ImageIndex = 52
       OnExecute = ActionOutputFormExecute
     end
@@ -918,11 +932,6 @@ object FormMain: TFormMain
       ImageIndex = 31
       ShortCut = 120
       OnExecute = ActionArrangeExecute
-    end
-    object ActionVUnits: TAction
-      Category = 'Parameters'
-      Caption = 'View current units'
-      ImageIndex = 41
     end
     object ActionStop: TAction
       Category = 'Run'
@@ -955,11 +964,6 @@ object FormMain: TFormMain
       Caption = 'Sa&ve As...'
       ImageIndex = 63
       OnExecute = ActionSaveAsExecute
-    end
-    object ActionAppendOutput: TAction
-      Category = 'File actions'
-      Caption = 'Append output'
-      ImageIndex = 2
     end
     object ActionImport: TAction
       Category = 'File actions'
@@ -1013,7 +1017,7 @@ object FormMain: TFormMain
     end
     object ActionWebsite: TAction
       Category = 'Help'
-      Caption = 'Go to the NAADSM &website'
+      Caption = 'Go to NAADSM &website'
       Hint = 'Opens the NAADSM website in your default browser'
       ImageIndex = 11
       OnExecute = ActionWebsiteExecute
@@ -1072,6 +1076,17 @@ object FormMain: TFormMain
       Caption = '&Language settings...'
       ImageIndex = 11
       OnExecute = ActionLanguageSettingsExecute
+    end
+    object acnRegionalSettings: TAction
+      Category = 'Tools'
+      Caption = '&Regional settings...'
+      OnExecute = acnRegionalSettingsExecute
+    end
+    object ActionForums: TAction
+      Category = 'Help'
+      Caption = 'Go to NAADSM online support &forums'
+      ImageIndex = 0
+      OnExecute = ActionSupportForumsExecute
     end
   end
   object ImageList1: TImageList
@@ -3608,8 +3623,8 @@ object FormMain: TFormMain
     Left = 48
     Top = 40
   end
-  object Timer1: TTimer
-    OnTimer = Timer1Timer
+  object DatabaseActivityTimer: TTimer
+    OnTimer = DatabaseActivityTimerTimer
     Left = 152
     Top = 152
   end

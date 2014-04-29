@@ -4,13 +4,13 @@ unit EventsAndExposures;
 EventsAndExposures.pas
 ----------------------
 Begin: 2005/09/01
-Last revision: $Date: 2008/04/18 20:35:18 $ $Author: areeves $
-Version number: $Revision: 1.18 $
+Last revision: $Date: 2011-05-17 22:27:49 $ $Author: areeves $
+Version number: $Revision: 1.24.4.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2007 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -23,48 +23,42 @@ interface
     Contnrs,
 
     StatusEnums,
-    SMDatabase
+    NAADSMLibraryTypes,
+    SMDatabase,
+
+    Herd
   ;
 
+  type TEventCode = (
+    EVTUnspecified,
+    EVTTransistionStateChange,
+    EVTTraceForwardDirect,
+    EVTTraceForwardIndirect,
+    EVTTraceBackDirect,
+    EVTTraceBackIndirect,
+    EVTDestroyed,
+    EVTVaccinated,
+    EVTInfected,
+    EVTDetected,
+    EVTZoneFocus,
+    EVTZoneChanged,
+    EVTHerdExam,
+    EVTDiagnosticTest
+  );
 
-  // FIX ME: Why are these types defined here?
-  
-  {*
-  	Record type used with DLL, whenever something happens to a herd.
-  }
-  type THRDUpdate = record
-      index: integer;
-      status: integer;
-      success: integer;
-      msg: pchar;
-    end
-  ;
+  // Helper functions for event codes
+  //---------------------------------
+  function firstEventCode(): TEventCode;
+  function lastEventCode(): TEventCode;
+  function eventCodeChar( const code: TEventCode ): char;
+  function eventCodeString( const code: TEventCode ): string;
+  function eventFromCode( const c: char ): TEventCode;
+
+  function eventIsTrace( const code: TEventCode ): boolean;
+  function eventIsTest( const code: TEventCode ): boolean;
+  function eventIsStateChange( const code: TEventCode ): boolean;
 
 
-  {*
-    Record type used with DLL, when a herd is exposed to infection
-  }
-  type THRDExpose = record
-      srcIndex: integer;
-      srcStatus: integer;
-      destIndex: integer;
-      destStatus: integer;
-      success: integer;
-      exposureMethod: pchar;
-    end
-  ;
-
-  
-  {*
-    Record type used with DLL, when a herd's zone assignment changes
-  }
-  type THRDZone = record
-      herdIndex: integer;
-      zoneLevel: integer;
-    end
-  ;
-
-  
   type TSMEvent = class
     protected
       _eventID: integer;
@@ -72,123 +66,101 @@ interface
       _day: integer;
       _herdID: integer;
       _zoneID: integer;
-      _eventCode: string;
-      _newStatus: TTransitionState;
-      _traceSuccess: boolean;
+      _eventCode: TEventCode;
+      _newStatus: TNAADSMDiseaseState;
+      _traceSuccess: TNAADSMSuccess;
+      _testResult: TNAADSMTestResult;
 
-      procedure setEvent( val: integer );
-      procedure setIteration( val: integer );
-      procedure setDay( val: integer );
-      procedure setHerdID( val: integer );
-      procedure setZoneID( val: integer );
-      procedure setEventCode( val: string );
-      procedure setNewStatus( val: TTransitionState );
-      procedure setTraceSuccess( val: boolean );
-
-      function getEvent(): integer;
-      function getIteration(): integer;
-      function getDay(): integer;
-      function getHerdID(): integer;
-      function getZoneID(): integer;
-      function getEventCode(): string;
-      function getNewStatus(): TTransitionState;
-      function getTraceSuccess(): boolean;
-      function getEventCodeString2(): string;
+      function getEventCodeString(): string;
 
     public
       constructor create(
-        xEvent: integer;
-        xIteration, xDay: integer;
-        xHerdID: integer;
-        xZOneID: integer;
-        xEventCode: string;
-        xNewStatus: TTransitionState = tsUnspecified;
-        xTraceSuccess: boolean = false
+        event: integer;
+        iteration: integer;
+        day: integer;
+        herdID: integer;
+        zOneID: integer;
+        eventCode: TEventCode;
+        newStatus: TNAADSMDiseaseState = NAADSMStateUnspecified;
+        traceSuccess: TNAADSMSuccess = NAADSMSuccessUnspecified;
+        testResult: TNAADSMTestResult = NAADSMTestUnspecified
       );
 
-      class function getEventCodeString( const code: string ): string;
-
-      property event: integer read getEvent write setEvent;
-      property iteration: integer read getIteration write setIteration;
-      property day: integer read getDay write setDay;
-      property herdID: integer read getHerdID write setHerdID;
-      property zoneID: integer read getZoneID write setZoneID;
-      property eventCode: string read getEventCode write setEventCode;
-      property eventCodeString: string read getEventCodeString2;
-      property newStatus: TTransitionState read getNewStatus write setNewStatus;
-      property traceSuccess: boolean read getTraceSuccess write setTraceSuccess;
+      property eventID: integer read _eventID;
+      property iteration: integer read _iteration;
+      property day: integer read _day;
+      property herdID: integer read _herdID;
+      property zoneID: integer read _zoneID;
+      property eventCode: TEventCode read _eventCode;
+      property eventCodeString: string read getEventCodeString;
+      property newStatus: TNAADSMDiseaseState read _newStatus;
+      property traceSuccess: TNAADSMSuccess read _traceSuccess;
+      property testResult: TNAADSMTestResult read _testResult;
     end
   ;
 
 
-  type TSMExposure = class
+  type TSMExposureOrTrace = class
     protected
+      _isExposure: boolean;
       _exposureID: integer;
       _iteration: integer;
       _day: integer;
+      _initiatedDay: integer;
       _exposingHerdID: integer;
-      _exposingHerdStatus: TTransitionState;
+      _exposingHerdStatus: TNAADSMDiseaseState;
       _exposedHerdID: integer;
-      _exposedHerdStatus: TTransitionState;
+      _exposedHerdStatus: TNAADSMDiseaseState;
       _exposingZoneID: integer;
       _exposedZoneID: integer;
       _method: string;
-      _success: boolean;
+      _isAdequate: boolean;
 
-      procedure setExposureID( val: integer );
-      procedure setIteration( val: integer );
-      procedure setDay( val: integer );
-      procedure setExposingHerdID( val: integer );
-      procedure setExposingHerdStatus( val: TTransitionState );
-      procedure setExposingZoneID( val: integer );
-      procedure setExposedHerdID( val: integer );
-      procedure setExposedHerdStatus( val: TTransitionState );
-      procedure setExposedZoneID( val: integer );
-      procedure setMethod( val: string );
-      procedure setSuccess( val: boolean );
-
-      function getExposureID(): integer;
-      function getIteration(): integer;
-      function getDay(): integer;
-      function getExposingHerdID(): integer;
-      function getExposingHerdStatus(): TTransitionState;
-      function getExposingZoneID(): integer;
-      function getExposedHerdID(): integer;
-      function getExposedHerdStatus(): TTransitionState;
-      function getExposedZoneID(): integer;
-      function getMethod(): string;
-      function getSuccess(): boolean;
+      function getIsTrace(): boolean;
+      procedure setIsTrace( val: boolean );
 
     public
       constructor create(
-        xExposureID: integer;
-        xIteration: integer;
-        xDay: integer;
-        xExposingHerdID: integer;
-        xExposingHerdStatus: TTransitionState;
-        xExposingZoneID: integer;
-        xExposedHerdID: integer;
-        xExposedHerdStatus: TTransitionState;
-        xExposedZoneID: integer;
-        xMethod: string;
-        xSuccess: boolean
-      );
+        const exposureID: integer;
+        const iteration: integer;
+        const e: THRDExpose;
+        const exposingHerdID: integer;
+        const exposedHerdID: integer;
+        const exposingZoneID: integer;
+        const exposedZoneID: integer
+      ); overload;
+
+      constructor create(
+        const exposureID: integer;
+        const iteration: integer;
+        const t: THRDTrace;
+        const hList: THerdList;
+        const originZoneID: integer;
+        const identifiedZoneID: integer
+      ); overload;
+
+      procedure debug();
 
       class function getExposureCodeString( const code: string ): string;
 
-      property exposureID: integer read getExposureID write setExposureID;
-      property iteration: integer read getIteration write setIteration;
-      property day: integer read getDay write setDay;
-      property exposingHerdID: integer read getExposingHerdID write setExposingHerdID;
-      property exposingHerdStatus: TTransitionState read getExposingHerdStatus write setExposingHerdStatus;
-      property exposedZoneID: integer read getExposedZoneID write setExposedZoneID;
-      property exposedHerdID: integer read getExposedHerdID write setExposedHerdID;
-      property exposedHerdStatus: TTransitionState read getExposedHerdStatus write setExposedHerdStatus;
-      property exposingZoneID: integer read getExposingZoneID write setExposingZoneID;
-      property method: string read getMethod write setMethod;
-      property success: boolean read getSuccess write setSuccess;
+      property isExposure: boolean read _isExposure write _isExposure;
+      property isTrace: boolean read getIsTrace write setIsTrace;
+
+      property exposureID: integer read _exposureID;
+      property iteration: integer read _iteration;
+      property day: integer read _day;
+      property initiatedDay: integer read _initiatedDay;
+      property exposingHerdID: integer read _exposingHerdID;
+      property exposingHerdStatus: TNAADSMDiseaseState read _exposingHerdStatus;
+      property exposedZoneID: integer read _exposedZoneID;
+      property exposedHerdID: integer read _exposedHerdID;
+      property exposedHerdStatus: TNAADSMDiseaseState read _exposedHerdStatus;
+      property exposingZoneID: integer read _exposingZoneID;
+      property method: string read _method;
+      property isAdequate: boolean read _isAdequate;
     end
   ;
+
 
 
   type TSMEventList = class( TObjectList )
@@ -221,12 +193,12 @@ interface
   ;
 
 
-  type TSMExposureList = class( TObjectList )
+  type TSMExposureOrTraceList = class( TObjectList )
     protected
       _currentIndex: integer;
 
-      procedure setObject( index: integer; item: TSMExposure );
-      function getObject( index: integer ): TSMExposure;
+      procedure setObject( index: integer; item: TSMExposureOrTrace );
+      function getObject( index: integer ): TSMExposureOrTrace;
 
       function getCurrentIndex(): integer;
 
@@ -237,15 +209,15 @@ interface
 
       procedure populateDatabase( db: TSMDatabase );
 
-      function first(): TSMExposure;
-      function last(): TSMExposure;
-      function next(): TSMExposure;
-      function current(): TSMExposure;
-      function at( val: integer ): TSMExposure;
+      function first(): TSMExposureOrTrace;
+      function last(): TSMExposureOrTrace;
+      function next(): TSMExposureOrTrace;
+      function current(): TSMExposureOrTrace;
+      function at( val: integer ): TSMExposureOrTrace;
 
-      function append( dm: TSMExposure ): integer;
-      procedure insert( index: integer; dm: TSMExposure );
-      property objects[ index: integer]: TSMExposure read getObject write setObject; default;
+      function append( dm: TSMExposureOrTrace ): integer;
+      procedure insert( index: integer; dm: TSMExposureOrTrace );
+      property objects[ index: integer]: TSMExposureOrTrace read getObject write setObject; default;
       property currentPosition: integer read getCurrentIndex;
     end
   ;
@@ -257,31 +229,178 @@ implementation
     Forms, // for Application object
     Variants,
 
+    DebugWindow,
     QStringMaps,
     I88n
   ;
+
+
+//-----------------------------------------------------------------------------
+// Helper functions for event codes
+//-----------------------------------------------------------------------------
+  function firstEventCode(): TEventCode;
+    begin
+      result := EVTTransistionStateChange;
+    end
+  ;
+
+
+  function lastEventCode(): TEventCode;
+    begin
+      result := EVTDiagnosticTest;
+    end
+  ;
+
+
+  function eventIsTrace( const code: TEventCode ): boolean;
+    begin
+      result := ( code in [ EVTTraceForwardDirect, EVTTraceForwardIndirect, EVTTraceBackDirect, EVTTraceBackIndirect ] );
+    end
+  ;
+
+
+  function eventIsTest( const code: TEventCode ): boolean;
+    begin
+      result := ( code = EVTDiagnosticTest );
+    end
+  ;
+
+  function eventIsStateChange( const code: TEventCode ): boolean;
+    begin
+      result := ( code = EVTTransistionStateChange );
+    end
+  ;
+
+  function eventCodeChar( const code: TEventCode ): char;
+    begin
+      case code of
+        EVTUnspecified: result := char( 0 );
+        EVTTransistionStateChange: result := 'R';
+        EVTTraceForwardDirect: result := 'T';
+        EVTTraceForwardIndirect: result := 'I';
+        EVTTraceBackDirect: result := 'K';
+        EVTTraceBackIndirect: result := 'J';
+        EVTDestroyed: result := 'D';
+        EVTVaccinated: result := 'V';
+        EVTInfected: result := 'F';
+        EVTDetected: result := 'E';
+        EVTZoneFocus: result := 'Z';
+        EVTZoneChanged: result := 'C';
+        EVTHerdExam: result := 'M';
+        EVTDiagnosticTest: result := 'S';
+        else
+          begin
+            raise exception.Create( 'Unrecognized code in eventCodeChar' );
+            result := char( 0 );
+          end
+        ;
+      end;
+    end
+  ;
+
+  function eventFromCode( const c: char ): TEventCode;
+    begin
+      if( 'R' = c ) then result := EVTTransistionStateChange
+      else if( 'T' = c ) then result := EVTTraceForwardDirect
+      else if( 'I' = c ) then result := EVTTraceForwardIndirect
+      else if( 'K' = c ) then result := EVTTraceBackDirect
+      else if( 'J' = c ) then result := EVTTraceBackIndirect
+      else if( 'D' = c ) then result := EVTDestroyed
+      else if( 'V' = c ) then result := EVTVaccinated
+      else if( 'F' = c ) then result := EVTInfected
+      else if( 'E' = c ) then result := EVTDetected
+      else if( 'Z' = c ) then result := EVTZoneFocus
+      else if( 'C' = c ) then result := EVTZoneChanged
+      else if( 'M' = c ) then result := EVTHerdExam
+      else if( 'S' = c ) then result := EVTDiagnosticTest
+      else
+        begin
+          raise exception.Create( 'Unrecognized code (' + c + ') in eventFromCode' );
+          result := EVTUnspecified;
+        end
+      ;
+    end
+  ;
+
+  function eventCodeString( const code: TEventCode ): string;
+    begin
+      case code of
+        EVTTransistionStateChange: result := tr( 'State change' );
+        EVTTraceForwardDirect: result := tr( 'Trace forward of direct contact' );
+        EVTTraceForwardIndirect: result := tr( 'Trace forward of indirect contact' );
+        EVTTraceBackDirect: result := tr( 'Trace back of direct contact' );
+        EVTTraceBackIndirect: result := tr( 'Trace back of indirect contact' );
+        EVTDestroyed: result := tr( 'Destruction' );
+        EVTVaccinated: result :=  tr( 'Vaccination' );
+        EVTInfected: result := tr( 'Infection' );
+        EVTDetected: result := tr( 'Detection' );
+        EVTZoneFocus: result := tr( 'Creation of zone focus' );
+        EVTZoneChanged: result := tr( 'Zone change' );
+        EVTHerdExam: result := tr( 'Herd exam' );
+        EVTDiagnosticTest: result := tr( 'Diagnostic test' );
+        else
+          begin
+            raise exception.create( 'Unrecognized event code (' + intToStr( integer( code ) ) + ') in TSMEvent.getEventCodeString()' );
+            result := '';
+          end
+        ;
+      end;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
 
 //-----------------------------------------------------------------------------
 // TSMEvent: construction
 //-----------------------------------------------------------------------------
   constructor TSMEvent.create(
-        xEvent: integer;
-        xIteration, xDay: integer;
-        xHerdID: integer;
-        xZoneID: integer;
-        xEventCode: string;
-        xNewStatus: TTransitionState = tsUnspecified;
-        xTraceSuccess: boolean = false
+        event: integer;
+        iteration: integer;
+        day: integer;
+        herdID: integer;
+        zoneID: integer;
+        eventCode: TEventCode;
+        newStatus: TNAADSMDiseaseState = NAADSMStateUnspecified;
+        traceSuccess: TNAADSMSuccess = NAADSMSuccessUnspecified;
+        testResult: TNAADSMTestResult = NAADSMTestUnspecified
       );
     begin
-      setEvent( xEvent );
-      setIteration( xIteration );
-      setDay( xDay );
-      setHerdID( xHerdID );
-      setZoneID( xZoneID );
-      setEventCode( xEventCode );
-      setNewStatus( xNewStatus );
-      setTraceSuccess( xTraceSuccess );
+      inherited create();
+
+      _eventID := event;
+      _iteration := iteration;
+      _day := day;
+      _herdID := herdID;
+      _zoneID := zoneID;
+      _eventCode := eventCode;
+
+      if( eventIsStateChange( eventCode ) ) then
+        begin
+          if( NAADSMStateUnspecified = newStatus ) then
+            raise exception.create( 'Unspecified disease state in TSMEvent.create()' )
+          ;
+          _newStatus := newStatus;
+        end
+      ;
+
+      if( eventIsTrace( eventCode ) ) then
+        begin
+          if( NAADSMSuccessUnspecified = traceSuccess ) then
+            raise exception.Create( 'Unspecified trace success in TSMEvent.create()' )
+          ;
+          _traceSuccess := traceSuccess;
+        end
+      ;
+
+      if( eventIsTest( eventCode ) ) then
+        begin
+          if( NAADSMTestUnspecified = testResult ) then
+            raise exception.Create( 'Unspecified test result in TSMEvent.create()' )
+          ;
+          _testResult := testResult;
+        end
+      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -291,56 +410,11 @@ implementation
 //-----------------------------------------------------------------------------
 // TSMEvent: conversions
 //-----------------------------------------------------------------------------
-  function TSMEvent.getEventCodeString2(): string;
+  function TSMEvent.getEventCodeString(): string;
     begin
-      result := getEventCodeString( eventCode );
+      result := EventsAndExposures.eventCodeString( _eventCode );
     end
   ;
-
-
-  class function TSMEvent.getEventCodeString( const code: string ): string;
-    begin
-      if( code = EVT_TRANSITION_STATE_CHANGE ) then result := tr( 'State change' )
-      else if( code = EVT_TRACED_DIRECT ) then result := tr( 'Trace-direct' )
-      else if( code = EVT_TRACED_INDIRECT ) then result := tr( 'Trace-indirect' )
-      else if( code = EVT_DESTROYED ) then result := tr( 'Destruction' )
-      else if( code = EVT_VACCINATED ) then result :=  tr( 'Vaccination' )
-      else if( code = EVT_INFECTED ) then result := tr( 'Infection' )
-      else if( code = EVT_DETECTED ) then result := tr( 'Detection' )
-      else if( code = EVT_ZONE_FOCUS ) then result := tr( 'Zone focus created' )
-      else if( code = EVT_ZONE_CHANGED ) then result := tr( 'Zone change' )
-      else
-        begin
-          raise exception.create( 'Unrecognized event code (' + code + ') in TSMEvent.getEventCodeString' );
-          result := '';
-        end
-      ;
-    end
-  ;
-//-----------------------------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------
-// TSMEvent: properties
-//-----------------------------------------------------------------------------
-  procedure TSMEvent.setEvent( val: integer ); begin _eventID := val; end;
-  procedure TSMEvent.setIteration( val: integer ); begin _iteration := val; end;
-  procedure TSMEvent.setDay( val: integer ); begin _day := val; end;
-  procedure TSMEvent.setHerdID( val: integer ); begin _herdID := val; end;
-  procedure TSMEvent.setZoneID( val: integer ); begin _zoneID := val; end;
-  procedure TSMEvent.setEventCode( val: string ); begin _eventCode := val; end;
-  procedure TSMEvent.setNewStatus( val: TTransitionState ); begin _newStatus := val; end;
-  procedure TSMEvent.setTraceSuccess( val: boolean ); begin _traceSuccess := val; end;
-
-  function TSMEvent.getEvent(): integer; begin result := _eventID; end;
-  function TSMEvent.getIteration(): integer; begin result := _iteration; end;
-  function TSMEvent.getDay(): integer; begin result := _day; end;
-  function TSMEvent.getHerdID(): integer; begin result := _herdID; end;
-  function TSMEvent.getZoneID(): integer; begin result := _zoneID; end;
-  function TSMEvent.getEventCode(): string; begin result := _eventCode; end;
-  function TSMEvent.getNewStatus(): TTransitionState; begin result := _newStatus; end;
-  function TSMEvent.getTraceSuccess(): boolean; begin result := _traceSuccess; end;
 //-----------------------------------------------------------------------------
 
 
@@ -348,31 +422,90 @@ implementation
 //-----------------------------------------------------------------------------
 // TSMExposure: construction
 //-----------------------------------------------------------------------------
-  constructor TSMExposure.create(
-        xExposureID: integer;
-        xIteration: integer;
-        xDay: integer;
-        xExposingHerdID: integer;
-        xExposingHerdStatus: TTransitionState;
-        xExposingZoneID: integer;
-        xExposedHerdID: integer;
-        xExposedHerdStatus: TTransitionState;
-        xExposedZoneID: integer;
-        xMethod: string;
-        xSuccess: boolean
+  constructor TSMExposureOrTrace.create(
+        const exposureID: integer;
+        const iteration: integer;
+        const e: THRDExpose;
+        const exposingHerdID: integer;
+        const exposedHerdID: integer;
+        const exposingZoneID: integer;
+        const exposedZoneID: integer
       );
     begin
-      _exposureID := xExposureID;
-      _iteration := xIteration;
-      _day := xDay;
-      _exposingHerdID := xExposingHerdID;
-      _exposedHerdID := xExposedHerdID;
-      _exposingHerdStatus := xExposingHerdStatus;
-      _exposedHerdStatus := xExposedHerdStatus;
-      _exposingZoneID := xExposingZoneID;
-      _exposedZoneID := xExposedZoneID;
-      _method := xMethod;
-      _success := xSuccess;
+      isExposure := true;
+      _exposureID := exposureID;
+      _iteration := iteration;
+      _day := e.finalizedDay;
+      _initiatedDay := e.initiatedDay;
+      _exposingHerdStatus := e.srcStatus;
+      _exposedHerdStatus := e.destStatus;
+      _exposingHerdID := exposingHerdID;
+      _exposedHerdID := exposedHerdID;
+      _exposingZoneID := exposingZoneID;
+      _exposedZoneID := exposedZoneID;
+
+      case e.exposureMethod of
+        NAADSMDirectContact: _method := 'D';
+        NAADSMIndirectContact: _method := 'I';
+        NAADSMAirborneSpread: _method := 'A';
+        NAADSMInitiallyInfected: _method := 'N';
+        else raise exception.Create( 'Unrecognized exposure method in TSMExposure.create()' );
+      end;
+
+      _isAdequate := naadsmSuccessIsTrue( e.isAdequate );
+    end
+  ;
+
+
+  constructor TSMExposureOrTrace.create(
+        const exposureID: integer;
+        const iteration: integer;
+        const t: THRDTrace;
+        const hList: THerdList;
+        const originZoneID: integer;
+        const identifiedZoneID: integer
+      );
+    begin
+      isTrace := true;
+      _exposureID := exposureID;
+      _iteration := iteration;
+      _day := t.day;
+      _initiatedDay := t.day;
+
+      _exposingHerdID := hList.at( t.originIndex ).id;
+      _exposingHerdStatus := hList.at( t.originIndex ).diseaseStatus;
+
+      _exposedHerdID := hList.at( t.identifiedIndex ).id;
+      _exposedHerdStatus := hList.at( t.identifiedIndex ).diseaseStatus;
+
+      _exposingZoneID := originZoneID;
+      _exposedZoneID := identifiedZoneID;
+
+      case t.contactType of
+        NAADSMDirectContact:
+          begin
+            case t.traceType of
+              NAADSMTraceForwardOrOut: _method := 'TFD';
+              NAADSMTraceBackOrIn: _method := 'TBD';
+              else raise exception( 'Unsupported trace type (' + intToStr( ord( t.contactType ) ) + ') in TSMExposureOrTrace.create()' );
+            end;
+          end
+        ;
+        NAADSMIndirectContact:
+          begin
+            case t.traceType of
+              NAADSMTraceForwardOrOut: _method := 'TFI';
+              NAADSMTraceBackOrIn: _method := 'TBI';
+              else raise exception( 'Unsupported trace type (' + intToStr( ord( t.contactType ) ) + ') in TSMExposureOrTrace.create()' );
+            end;
+          end
+        ;
+        else
+          raise exception( 'Unsupported contact type (' + intToStr( ord( t.contactType ) ) + ') in TSMExposureOrTrace.create()' )
+        ;
+      end;
+
+      _isAdequate := naadsmSuccessIsTrue( t.success );
     end
   ;
 //-----------------------------------------------------------------------------
@@ -380,46 +513,77 @@ implementation
 
 
 //-----------------------------------------------------------------------------
-// TSMExposure: properties
+// TSMExposureOrTrace: debugging
 //-----------------------------------------------------------------------------
-  class function TSMExposure.getExposureCodeString( const code: string ): string;
+  procedure TSMExposureOrTrace.debug();
+    var
+      s: string;
     begin
-      if( 'D' = code ) then result := tr( 'Direct contact' )
-      else if( 'A' = code ) then result := tr( 'Airborne' )
-      else if( 'I' = code ) then result := tr( 'Indirect contact' )
+      s := 'TSMExposureOrTrace #' + intToStr( _exposureID ) + ' on day ' + intToStr( _day ) + ' of iteration ' + intToStr( _iteration ) + ':';
+      if( _isExposure ) then
+        begin
+          s := s + ' (exposure) ' + _method;
+
+          if( 0 = day ) then
+            s := s + ' source ' + intToStr( _exposingHerdID ) + ' (no dz state) zone ' + intToStr( _exposingZoneID )
+          else
+            s := s + ' source ' + intToStr( _exposingHerdID ) + ' (' + naadsmDiseaseStateCode( _exposingHerdStatus ) + ') zone ' + intToStr( _exposingZoneID )
+          ;
+          s := s + ' dest ' + intToStr( _exposedHerdID ) + ' (' + naadsmDiseaseStateCode( _exposedHerdStatus ) + ') zone ' + intToStr( _exposedZoneID );
+        end
       else
         begin
-          raise exception.create( 'Unrecognized exposure code (' + code + ') in TSMExposure.getExposureCodeString' );
+          if( _isAdequate ) then
+            s := s + ' (successful trace) ' + _method
+          else
+            s := s + ' (unsuccessful trace) ' + _method
+          ;
+          s := s + ' origin ' + intToStr( _exposingHerdID ) + ' (' + naadsmDiseaseStateCode( _exposingHerdStatus ) + ') zone ' + intToStr( _exposingZoneID );
+          s := s + ' identified ' + intToStr( _exposedHerdID ) + ' (' + naadsmDiseaseStateCode( _exposedHerdStatus ) + ') zone ' + intToStr( _exposedZoneID );
+        end
+      ;
+
+      dbcout( s, true );
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// TSMExposureOrTrace: properties
+//-----------------------------------------------------------------------------
+  function TSMExposureOrTrace.getIsTrace(): boolean;
+    begin
+      result := not( _isExposure );
+    end
+  ;
+
+
+  procedure TSMExposureOrTrace.setIsTrace( val: boolean );
+    begin
+      _isExposure := not( val );
+    end
+  ;
+
+
+  class function TSMExposureOrTrace.getExposureCodeString( const code: string ): string;
+    begin
+      if( 'D' = code ) then result := tr( 'Direct contact' )
+      else if( 'A' = code ) then result := tr( 'Airborne exposure' )
+      else if( 'I' = code ) then result := tr( 'Indirect contact' )
+      else if( 'TFD' = code ) then result := tr( 'Trace forward, direct' )
+      else if( 'TFI' = code ) then result := tr( 'Trace forward, indirect' )
+      else if( 'TBD' = code ) then result := tr( 'Trace back, direct' )
+      else if( 'TBI' = code ) then result := tr( 'Trace back, indirect' )
+      else
+        begin
+          raise exception.create( 'Unrecognized exposure code (' + code + ') in TSMExposureOrTrace.getExposureCodeString' );
           result := tr( 'Unknown' );
         end
       ;
     end
   ;
-
-
-  procedure TSMExposure.setExposureID( val: integer ); begin _exposureID := val; end;
-  procedure TSMExposure.setIteration( val: integer ); begin _iteration := val; end;
-  procedure TSMExposure.setDay( val: integer ); begin _day := val; end;
-  procedure TSMExposure.setExposingHerdID( val: integer ); begin _exposingHerdID := val; end;
-  procedure TSMExposure.setExposingHerdStatus( val: TTransitionState ); begin _exposingHerdStatus := val; end;
-  procedure TSMExposure.setExposingZoneID( val: integer ); begin _exposingZoneID := val; end;
-  procedure TSMExposure.setExposedHerdID( val: integer ); begin _exposedHerdID := val; end;
-  procedure TSMExposure.setExposedHerdStatus( val: TTransitionState ); begin _exposedHerdStatus := val; end;
-  procedure TSMExposure.setExposedZoneID( val: integer ); begin _exposedZoneID := val; end;
-  procedure TSMExposure.setMethod( val: string ); begin _method := val; end;
-  procedure TSMExposure.setSuccess( val: boolean ); begin _success := val; end;
-
-  function TSMExposure.getExposureID(): integer; begin result := _exposureID; end;
-  function TSMExposure.getIteration(): integer; begin result := _iteration; end;
-  function TSMExposure.getDay(): integer; begin result := _day; end;
-  function TSMExposure.getExposingHerdID(): integer; begin result := _exposingHerdID; end;
-  function TSMExposure.getExposingHerdStatus: TTransitionState; begin result := _exposingHerdStatus; end;
-  function TSMExposure.getExposingZoneID(): integer; begin result := _exposingZoneID; end;
-  function TSMExposure.getExposedHerdID(): integer; begin result := _exposedHerdID; end;
-  function TSMExposure.getExposedHerdStatus: TTransitionState; begin result := _exposedHerdStatus; end;
-  function TSMExposure.getExposedZoneID(): integer; begin result := _exposedZoneID; end;
-  function TSMExposure.getMethod(): string; begin result := _method; end;
-  function TSMExposure.getSuccess(): boolean; begin result := _success; end;
 //-----------------------------------------------------------------------------
 
 
@@ -464,7 +628,7 @@ implementation
           vDict.clear();
           vDict['iteration'] := e.iteration;
           vDict['day'] := e.day;
-          vDict['event'] := e.event;
+          vDict['event'] := e.eventID;
           vDict['herdID'] := e.herdID;
 
           if( 0 < e.zoneID ) then
@@ -473,14 +637,18 @@ implementation
             vDict['zoneID'] := null
           ;
 
-          vDict['eventCode'] := e.eventCode;
+          vDict['eventCode'] := eventCodeChar( e.eventCode );
 
-          if( 'R' = e.eventCode ) then
-            vDict['newStateCode'] := transitionStateCode( e.newStatus )
+          if( eventIsStateChange( e.eventCode ) ) then
+            vDict['newStateCode'] := naadsmDiseaseStateCode( e.newStatus )
           ;
 
-          if( ( 'T' = e.eventCode ) or ( 'I' = e.eventCode ) ) then
-            vDict['traceSuccess'] := e.traceSuccess
+          if( eventIsTrace( e.eventCode ) ) then
+            vDict['traceSuccess'] := naadsmSuccessIsTrue( e.traceSuccess )
+          ;
+
+          if( eventIsTest( e.eventCode ) ) then
+            vDict['testResultCode'] := naadsmTestResultCode( e.testResult )
           ;
 
           db.quickInsert( vDict );
@@ -594,9 +762,9 @@ implementation
 
 
 //-----------------------------------------------------------------------------
-// TSMExposureList: construction/destruction
+// TSMExposureOrTraceList: construction/destruction
 //-----------------------------------------------------------------------------
-	constructor TSMExposureList.create();
+	constructor TSMExposureOrTraceList.create();
 		begin
       // This list owns its objects, and will automatically delete them.
    		inherited create( true );
@@ -604,7 +772,7 @@ implementation
   ;
 
 
-  destructor TSMExposureList.destroy();
+  destructor TSMExposureOrTraceList.destroy();
     begin
       inherited destroy();
     end
@@ -614,13 +782,13 @@ implementation
 
 
 //-----------------------------------------------------------------------------
-// TSMEventList: database population
+// TSMExposureOrTraceList: database population
 //-----------------------------------------------------------------------------
-  procedure TSMExposureList.populateDatabase( db: TSMDatabase );
+  procedure TSMExposureOrTraceList.populateDatabase( db: TSMDatabase );
     var
       vDict: TQStringVariantMap;
       i: integer;
-      e: TSMExposure;
+      e: TSMExposureOrTrace;
   	begin
       vDict := TQStringVariantMap.Create();
 
@@ -631,11 +799,19 @@ implementation
           e := self.at( i );
 
           vDict.clear();
+
           vDict['iteration'] := e.iteration;
           vDict['day'] := e.day;
+
+          if( -1 <> e.initiatedDay ) then
+            vDict['initiatedDay'] := e.initiatedDay
+          else
+            vDict['initiatedDay'] := null
+          ;
+
           vDict['exposure'] := e.exposureID;
           vDict['exposingHerdID'] := e.exposingHerdID;
-          vDict['exposingHerdStatusCode'] := transitionStateCode( e.exposingHerdStatus );
+          vDict['exposingHerdStatusCode'] := naadsmDiseaseStateCode( e.exposingHerdStatus );
 
           if( 0 < e.exposingZoneID ) then
             vDict['exposingZoneID'] := e.exposingZoneID
@@ -644,7 +820,7 @@ implementation
           ;
 
           vDict['exposedHerdID'] := e.exposedHerdID;
-          vDict['exposedHerdStatusCode'] := transitionStateCode( e.exposedHerdStatus );
+          vDict['exposedHerdStatusCode'] := naadsmDiseaseStateCode( e.exposedHerdStatus );
 
           if( 0 < e.exposedZoneID ) then
             vDict['exposedZoneID'] := e.exposedZoneID
@@ -653,7 +829,7 @@ implementation
           ;
 
           vDict['spreadMethodCode'] := e.method;
-          vDict['success'] := e.success;
+          vDict['isAdequate'] := e.isAdequate;
 
           db.quickInsert( vDict );
 
@@ -671,50 +847,50 @@ implementation
 
 
 //-----------------------------------------------------------------------------
-// TSMEventList: typical list functions
+// TSMExposureOrTraceList: typical list functions
 //-----------------------------------------------------------------------------
-  function TSMExposureList.getCurrentIndex(): integer;
+  function TSMExposureOrTraceList.getCurrentIndex(): integer;
   	begin
    		result := _currentIndex;
     end
   ;
 
 
-  function TSMExposureList.append( dm: TSMExposure ): integer;
+  function TSMExposureOrTraceList.append( dm: TSMExposureOrTrace ): integer;
     begin
       result := inherited Add( dm );
     end
   ;
 
 
-  procedure TSMExposureList.setObject( index: integer; item: TSMExposure );
+  procedure TSMExposureOrTraceList.setObject( index: integer; item: TSMExposureOrTrace );
     begin
       inherited SetItem( index, item );
     end
   ;
 
 
-  function TSMExposureList.getObject( index: integer ): TSMExposure;
+  function TSMExposureOrTraceList.getObject( index: integer ): TSMExposureOrTrace;
     begin
-      result := inherited GetItem( index ) as TSMExposure;
+      result := inherited GetItem( index ) as TSMExposureOrTrace;
     end
   ;
 
 
-  function TSMExposureList.at( val: integer ): TSMExposure;
+  function TSMExposureOrTraceList.at( val: integer ): TSMExposureOrTrace;
     begin
-      result := inherited getItem( val ) as TSMExposure;
+      result := inherited getItem( val ) as TSMExposureOrTrace;
     end
   ;
 
-  procedure TSMExposureList.insert(index: integer; dm: TSMExposure);
+  procedure TSMExposureOrTraceList.insert(index: integer; dm: TSMExposureOrTrace);
     begin
       inherited Insert(index, dm);
     end
   ;
 
 
-  function TSMExposureList.first() : TSMExposure;
+  function TSMExposureOrTraceList.first() : TSMExposureOrTrace;
     begin
       _currentIndex := 0;
       if( self.Count = 0 ) then
@@ -726,7 +902,7 @@ implementation
   ;
 
 
-  function TSMExposureList.last() : TSMExposure;
+  function TSMExposureOrTraceList.last() : TSMExposureOrTrace;
     begin
       if( self.Count = 0 ) then result := nil
       else
@@ -739,7 +915,7 @@ implementation
   ;
 
 
-  function TSMExposureList.next() : TSMExposure;
+  function TSMExposureOrTraceList.next() : TSMExposureOrTrace;
     begin
       _currentIndex := _currentIndex + 1;
       if( _currentIndex > (self.Count - 1) ) then
@@ -751,7 +927,7 @@ implementation
   ;
 
 
-  function TSMExposureList.current() : TSMExposure;
+  function TSMExposureOrTraceList.current() : TSMExposureOrTrace;
     begin
       if( _currentIndex > (self.Count - 1) ) then
       	result := nil
@@ -761,10 +937,6 @@ implementation
     end
   ;
 //-----------------------------------------------------------------------------
-
-
-
-
 
 
 end.

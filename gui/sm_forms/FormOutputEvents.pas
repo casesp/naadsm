@@ -4,13 +4,13 @@ unit FormOutputEvents;
 FormOutputEvents.pas/dfm
 -------------------------
 Begin: 2005/02/01
-Last revision: $Date: 2008/10/21 18:51:49 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2011-10-04 16:55:32 $ $Author: rhupalo $
+Version: $Revision: 1.34.4.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -75,13 +75,12 @@ interface
       pnlFilterControls: TPanel;
       cboMainFilter: TComboBox;
       lblMainFilter: TLabel;
-      lblDay: TLabel;
+      lblTextEntry: TLabel;
       lblEventType: TLabel;
       lblHerdID: TLabel;
       cboEvents: TComboBox;
-      rleDay: TREEdit;
+      rleTextEntry: TREEdit;
       fraAcceptCancel: TFrameAcceptCancel;
-      rleHerdID: TREEdit;
       pnlEventCounter: TPanel;
 
       pnlSortControls: TPanel;
@@ -90,15 +89,15 @@ interface
       lblSortOrder: TLabel;
       rdoAscending: TRadioButton;
       rdoDescending: TRadioButton;
-    lblIteration: TLabel;
-    cboIteration: TComboBox;
+      cboDiseaseState: TComboBox;
+      lblDiseaseState: TLabel;
+      cboTestResult: TComboBox;
 
       procedure stgGridGetCellFormat(Sender: TObject; Col, Row: Integer; State: TGridDrawState; var FormatOptions: TFormatOptions);
       procedure stgGridBeginSort( Sender: TObject; Col: LongInt; var SortOptions: TSortOptions );
       procedure cboMainFilterChange(Sender: TObject);
       procedure sortControlChange(Sender: TObject);
-      procedure rleHerdIDEnter(Sender: TObject);
-      procedure rleDayEnter(Sender: TObject);
+      procedure rleTextEntryEnter(Sender: TObject);
       procedure cboEventsChange(Sender: TObject);
       procedure fraAcceptCancelbtnAcceptClick(Sender: TObject);
       procedure fraAcceptCancelbtnCancelClick(Sender: TObject);
@@ -106,7 +105,8 @@ interface
       procedure rleKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
       procedure stgGridEndSort(Sender: TObject; Col: Integer);
       procedure FormResize(Sender: TObject);
-      procedure cboIterationChange(Sender: TObject);
+      procedure cboDiseaseStateChange(Sender: TObject);
+      procedure cboTestResultChange(Sender: TObject);
 
     protected
       _firstRow: boolean;
@@ -116,12 +116,11 @@ interface
       _sortInProgress: boolean;
       _lastColumnSorted: integer;
 
-      _sqlRes: TSqlResult;
       _ScrollBarVisibleCheck: boolean;
-      _displayedIteration: Integer;
-      _inSimComplete: boolean;
+//      _inSimComplete: boolean;  // AR 9/18/09: This is currently unnecessary, and complicates things...
 
       procedure translateUI();
+      procedure translateUIManual();
 
       procedure resetGrid();
 
@@ -135,6 +134,9 @@ interface
 
       { Updates the contents of the form when the selected production type changes }
       procedure productionTypeChanged(); override;
+
+      { Updates the contents of the form when the selected iteration changes }
+      procedure iterationChanged(); override;
 
       { Used to enable/disable controls on the form when needed }
       procedure setControlsEnabled( val: boolean ); override;
@@ -154,7 +156,7 @@ interface
       procedure appendEvent( evt: TSMEvent );
 
       procedure resetIteration( iteration: Integer );
-      procedure updateSimComplete();     
+      procedure updateSimComplete(); override;     
     end
   ;
 
@@ -167,28 +169,30 @@ implementation
   {$R *.dfm}
 
   uses
+    StrUtils,
+    
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     RegExpDefs,
     I88n,
     ControlUtils,
 
     StatusEnums,
+    NAADSMLibraryTypes,
     FormMain
   ;
 
   const
-    DBFORMOUTPUTEVENTS: boolean = false; // set to true to enable debugging messages for this unit.
+    DBSHOWMSG: boolean = false; // set to true to enable debugging messages for this unit.
 
     COL_DAY: integer = 0;
     COL_EVENT: integer = 1;
     COL_HERDID: integer = 2;
     COL_HERD_TYPE: integer = 3;
-    COL_ZONEID: integer = 4;
+    COL_ZONE: integer = 4;
     COL_EVENTCODE: integer = 5;
     COL_NEWSTATE: integer = 6;
-    COL_TRACESUCCESS: integer = 7;
+    COL_TEST_RESULT: integer = 7;
 
 //-----------------------------------------------------------------------------
 // Construction/initialization/destruction
@@ -197,19 +201,15 @@ implementation
     var
       frm: TForm;
 		begin
-      dbcout( '+++ TFormOutputEvents.create', DBFORMOUTPUTEVENTS );
+      dbcout( '+++ TFormOutputEvents.create', DBSHOWMSG );
       _ScrollBarVisibleCheck := false;
       _creating := true;
 
       _lastColumnSorted := 0;
       _displayedIteration := frmMain.displayedIteration;
 
-      dbcout( 'Calling inherited creator...', DBFORMOUTPUTEVENTS );
       inherited create( AOwner );
       translateUI();
-      
-      _inSimComplete := false;
-      dbcout( 'Done with inherited creator.', DBFORMOUTPUTEVENTS );
 
       _presorting := false;
       _sortInProgress := false;
@@ -218,32 +218,32 @@ implementation
 
       // Set up widgets
       //---------------
-      lblEventType.Top := lblDay.Top;
-      lblEventType.Left := lblDay.Left;
+      placeIterationControls();
 
-      lblHerdID.Top := lblDay.Top;
-      lblHerdID.Left := lblDay.Left;
+      lblEventType.Top := lblTextEntry.Top;
+      lblEventType.Left := lblTextEntry.Left;
 
-      cboEvents.Top := rleDay.Top;
-      cboEvents.Left := rleDay.Left;
+      lblDiseaseState.Top := lblTextEntry.Top;
+      lblDiseaseState.Left := lblTextEntry.Left;
 
-      rleHerdID.Top := rleDay.Top;
-      rleHerdID.Left := rleDay.left;
+      cboEvents.Top := rleTextEntry.Top;
+      cboEvents.Left := rleTextEntry.Left;
 
-      rleDay.InputExpression := RE_SIGNED_INTEGER_INPUT;
-      rleHerdID.InputExpression := RE_INTEGER_INPUT;
+      cboTestResult.Top := rleTextEntry.Top;
+      cboTestResult.Left := rleTextEntry.Left;
+
+      cboDiseaseState.Top := rleTextEntry.Top;
+      cboDiseaseState.Left := rleTextEntry.Left;
 
       pnlEventCounter.Caption := '';
       pnlCaption.Caption := '';
-      
+
       setChartControlsEnabled( false );
 
       // Initialize pointers
       //--------------------
       _smSim := sim;
       _smdb := db;
-      _sqlRes := TSqlResult.create( _smdb as TSqlDatabase );
-
       _selectedPT := nil;
 
 
@@ -262,40 +262,42 @@ implementation
 
       // Set up the grid and show the data
       //-----------------------------------
-      setupComboBox();
+      resetGrid();
+      stgGrid.AutoSizeColumns();
+
+      cboMainFilter.ItemIndex := 0;
+
+      setupIterationComboBox();
+      setupProdTypeComboBox();
 
       productionTypeChanged();
+
+      stgGrid.SortByColumn( COL_DAY );
 
       setCaption();
 
       _creating := false;
 
-      dbcout( '--- TFormOutputEvents.create done.', DBFORMOUTPUTEVENTS );
+      dbcout( '--- TFormOutputEvents.create done.', DBSHOWMSG );
 		end
 	;
 
 
   procedure TFormOutputEvents.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:54 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FormOutputEvents.dfm
-      // File date: Wed May 2 09:53:35 2007
-
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
           Caption := tr( 'Events for 1 iteration' );
           pnlCaption.Caption := tr( 'Iteration status: completed/aborted/running' );
           lblMainFilter.Caption := tr( 'Filter by:' );
-          lblDay.Caption := tr( 'Day:' );
+          lblTextEntry.Caption := tr( 'Day:' );
+          lblDiseaseState.Caption := tr( 'Disease state:' );
           lblEventType.Caption := tr( 'Event type:' );
-          lblHerdID.Caption := tr( 'Unit ID:' );
           cboMainFilter.Text := tr( '(No filter)' );
           pnlEventCounter.Caption := tr( 'pnlEventCounter' );
           lblMainSort.Caption := tr( 'Sort by:' );
           lblSortOrder.Caption := tr( 'Sort order:' );
-          lblIteration.Caption := tr( 'Iteration:' );
           cboMainSort.Text := tr( 'Day' );
           rdoAscending.Caption := tr( 'Ascending' );
           rdoDescending.Caption := tr( 'Descending' );
@@ -308,35 +310,59 @@ implementation
           cboMainFilter.Items[0] := tr( '(No filter)' );
           cboMainFilter.Items[1] := tr( 'Day' );
           cboMainFilter.Items[2] := tr( 'Unit ID' );
-          cboMainFilter.Items[3] := tr( 'Event type' );
+          cboMainFilter.Items[3] := tr( 'Zone' );
+          cboMainFilter.Items[4] := tr( 'Event type' );
+          cboMainFilter.Items[5] := tr( 'New state' );
+          cboMainFilter.Items[6] := tr( 'Test result' );
 
-          cboEvents.Items[0] := tr( 'Infections' );
-          cboEvents.Items[1] := tr( 'State changes' );
-          cboEvents.Items[2] := tr( 'Detections' );
-          cboEvents.Items[3] := tr( 'Destructions' );
-          cboEvents.Items[4] := tr( 'Vaccinations' );
-          cboEvents.Items[5] := tr( 'Traces of direct contact' );
-          cboEvents.Items[6] := tr( 'Traces of indirect contact' );
-          cboEvents.Items[7] := tr( 'Zone changes' );
-          cboEvents.Items[8] := tr( 'Creation of zone foci' );
+          // cboEvents is handled in the manual translation function below
+
+          // cboDiseaseState is handled in the manual translation function below
+
+          // cboTestResult is handled in the manual translation function below
 
           cboMainSort.Items[0] := tr( 'Day' );
           cboMainSort.Items[1] := tr( 'Event order on day' );
           cboMainSort.Items[2] := tr( 'Unit ID' );
           cboMainSort.Items[3] := tr( 'Unit type' );
-          cboMainSort.Items[4] := tr( 'Event type' );
-          cboMainSort.Items[5] := tr( 'New state' );
-          cboMainSort.Items[6] := tr( 'Successful trace' );
+          cboMainSort.Items[4] := tr( 'Zone' );
+          cboMainSort.Items[5] := tr( 'Event type' );
+          cboMainSort.Items[6] := tr( 'New state' );
+          cboMainSort.Items[7] := tr( 'Test result' );
         end
       ;
 
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFormOutputEvents.translateUIManual();
+    var
+      i: TEventCode;
+      j: TNAADSMDiseaseState;
+      k: TNAADSMTestResult;
+    begin
+      cboEvents.Items.Clear();
+      for i := firstEventCode() to lastEventCode() do
+        cboEvents.Items.Append( eventCodeString( i ) )
+      ;
+
+      cboDiseaseState.Items.Clear();
+      for j := naadsmFirstDiseaseState() to naadsmLastDiseaseState() do
+        cboDiseaseState.Items.Append( naadsmDiseaseStateStr( j ) )
+      ;
+
+      cboTestResult.Items.Clear();
+      for k := NAADSMTestTruePositive to NAADSMTestFalseNegative do
+        cboTestResult.Items.Append( naadsmTestResultStr( k ) )
+      ;
     end
   ;
 
 
 	destructor TFormOutputEvents.destroy();
 		begin
-      _sqlRes.Free();
       inherited destroy();
 		end
 	;
@@ -360,204 +386,188 @@ implementation
 // Form updating functions
 //-----------------------------------------------------------------------------
   procedure TFormOutputEvents.fillOutForm();
-      var
-        row: TSqlRow;
-        q: string;
-        selectedPTIDClause: string;
-        i: integer;
-        filterUsed: boolean;
+    var
+      res: TSqlResult;
+      row: TSqlRow;
+      q: string;
+      selectedPTIDClause: string;
+      i: integer;
+      filterUsed: boolean;
+      eventCode: TEventCode;
+      lastCol: integer;
     begin
-        resetGrid();
+      resetGrid();
 
-        // Remember the previous filter/sort options
-        //------------------------------------------
-        filterUsed := stgGrid.SearchOptions.Filtered;
+      lastCol := _lastColumnSorted;
 
-        stgGrid.SearchOptions.Filtered := false;
+      // Remember the previous filter/sort options
+      //------------------------------------------
+      filterUsed := stgGrid.SearchOptions.Filtered;
 
-        // Was the last/current iteration completed?
-        //-------------------------------------------
-        q := 'SELECT completedIterations FROM outGeneral';
-        _sqlRes.runQuery( q );
-        row := _sqlRes.fetchArrayFirst();
+      stgGrid.SearchOptions.Filtered := false;
 
-        if( null = row.field('completedIterations') ) then
-          pnlCaption.Caption := tr( 'Iteration status: aborted' )
-        else if( _displayedIteration > row.field('completedIterations') ) then
-          pnlCaption.Caption := tr( 'Iteration status: aborted' )
-        else
-          pnlCaption.Caption := tr( 'Iteration status: complete' )
-        ;
+      // Was the last/current iteration completed?
+      //-------------------------------------------
+      q := 'SELECT completedIterations FROM outGeneral';
+      res := TSqlResult.create( q, (_smdb as TSqlDatabase) );
+      row := res.fetchArrayFirst();
 
-        // Determine the last day of the last/current iteration
-        //------------------------------------------------------
-        q := 'SELECT MAX(day) AS maxDay FROM outDailyEvents WHERE iteration = ' + intToStr( _displayedIteration );
-        _sqlRes.runQuery( q );
-        row := _sqlRes.fetchArrayFirst();
+      if( null = row.field('completedIterations') ) then
+        pnlCaption.Caption := tr( 'Iteration status: aborted' )
+      else if( _displayedIteration > row.field('completedIterations') ) then
+        pnlCaption.Caption := tr( 'Iteration status: aborted' )
+      else
+        pnlCaption.Caption := tr( 'Iteration status: complete' )
+      ;
 
-        if( null = row.field('maxDay') ) then // There is no data in the database.
-          begin
-            updateEventCounter();
-            exit;
-          end
-        ;
+      // Determine the last day of the last/current iteration
+      //------------------------------------------------------
+      q := 'SELECT MAX(day) AS maxDay FROM outDailyEvents WHERE iteration = ' + intToStr( _displayedIteration );
+      res.runQuery( q );
+      row := res.fetchArrayFirst();
 
-        // Determine the ID of the currently selected production type
-        //-----------------------------------------------------------
-        if( nil = _selectedPT ) then
-          selectedPTIDClause := ''
-        else
-          selectedPTIDClause := ' AND inProductionType.productionTypeID = ' + intToStr( _selectedPT.productionTypeID )
-        ;
+      if( null = row.field('maxDay') ) then // There is no data in the database.
+        begin
+          res.free();
+          updateEventCounter();
+          exit;
+        end
+      ;
 
-        // The original query
-        //-------------------
-        (*
-        SELECT
-        outDailyEvents.herdID,
-        inProductionType.descr AS typeDescr,
-        outDailyEvents.zoneID,
-        inZone.descr AS zoneDescr,
-        outDailyEvents.iteration,
-        outDailyEvents.day,
-        outDailyEvents.event,
-        outDailyEvents.eventCode,
-        outDailyEvents.newStateCode,
-        outDailyEvents.traceSuccess
-        FROM (
-        inProductionType
-        INNER JOIN ( dynHerd INNER JOIN outDailyEvents ON dynHerd.herdID = outDailyEvents.herdID  )
-        ON inProductionType.productionTypeID = dynHerd.productionTypeID )
-        LEFT OUTER JOIN inZone ON inZone.zoneID = outDailyEvents.zoneID
-        WHERE outDailyEvents.iteration = 2
-        ORDER BY outDailyEvents.day, outDailyEvents.event
-        *)
+      // Determine the ID of the currently selected production type
+      //-----------------------------------------------------------
+      if( nil = _selectedPT ) then
+        selectedPTIDClause := ''
+      else
+        selectedPTIDClause := ' AND inProductionType.productionTypeID = ' + intToStr( _selectedPT.productionTypeID )
+      ;
 
-        // select events for indicated pts, last/current iteration
-        //---------------------------------------------------------
-        q := ' SELECT'
-          + '    outDailyEvents.herdID,'
-          //+ '    dynHerd.productionTypeID AS typeID,'
-          //+ '    inProductionType.productionTypeID AS typeID2,'
-          + '    inProductionType.descr AS typeDescr,'
-          //+ '    outDailyEvents.zoneID,'
-          + '    inZone.descr AS zoneDescr,'
-          + '    outDailyEvents.iteration,'
-          + '    outDailyEvents.day,'
-          + '    outDailyEvents.event,'
-          + '    outDailyEvents.eventCode,'
-          + '    outDailyEvents.newStateCode,'
-          + '    outDailyEvents.traceSuccess'
-          + '  FROM ('
-          + '    inProductionType' 
-          + '  INNER JOIN ('
-          + '    dynHerd'
-          + '      INNER JOIN'
-          + '        outDailyEvents'
-          + '      ON'
-          + '    dynHerd.herdID = outDailyEvents.herdID'
-          + '  )'
-          + '  ON'
-          + '    inProductionType.productionTypeID = dynHerd.productionTypeID )'
-          + '  LEFT OUTER JOIN inZone ON inZone.zoneID = outDailyEvents.zoneID'
-          + '  WHERE'
-          + '    outDailyEvents.iteration = ' + intToStr( _displayedIteration )
-          +     selectedPTIDClause
-          + '  ORDER BY'
-          + '    outDailyEvents.day, outDailyEvents.event'
-        ;
+      // The original query
+      //-------------------
+      (*
+      SELECT
+      outDailyEvents.herdID,
+      inProductionType.descr AS typeDescr,
+      outDailyEvents.zoneID,
+      inZone.descr AS zoneDescr,
+      outDailyEvents.iteration,
+      outDailyEvents.day,
+      outDailyEvents.event,
+      outDailyEvents.eventCode,
+      outDailyEvents.newStateCode,
+      outDailyEvents.testResultCode
+      FROM (
+      inProductionType
+      INNER JOIN ( dynHerd INNER JOIN outDailyEvents ON dynHerd.herdID = outDailyEvents.herdID  )
+      ON inProductionType.productionTypeID = dynHerd.productionTypeID )
+      LEFT OUTER JOIN inZone ON inZone.zoneID = outDailyEvents.zoneID
+      WHERE outDailyEvents.iteration = 2
+      ORDER BY outDailyEvents.day, outDailyEvents.event
+      *)
 
-        _sqlRes.runQuery( q );
+      // select events for indicated pts, last/current iteration
+      //---------------------------------------------------------
+      q := ' SELECT'
+        + '    outDailyEvents.herdID,'
+        //+ '    dynHerd.productionTypeID AS typeID,'
+        //+ '    inProductionType.productionTypeID AS typeID2,'
+        + '    inProductionType.descr AS typeDescr,'
+        //+ '    outDailyEvents.zoneID,'
+        + '    inZone.descr AS zoneDescr,'
+        + '    outDailyEvents.iteration,'
+        + '    outDailyEvents.day,'
+        + '    outDailyEvents.event,'
+        + '    outDailyEvents.eventCode,'
+        + '    outDailyEvents.newStateCode,'
+        + '    outDailyEvents.testResultCode'
+        + '  FROM ('
+        + '    inProductionType' 
+        + '  INNER JOIN ('
+        + '    dynHerd'
+        + '      INNER JOIN'
+        + '        outDailyEvents'
+        + '      ON'
+        + '    dynHerd.herdID = outDailyEvents.herdID'
+        + '  )'
+        + '  ON'
+        + '    inProductionType.productionTypeID = dynHerd.productionTypeID )'
+        + '  LEFT OUTER JOIN inZone ON inZone.zoneID = outDailyEvents.zoneID'
+        + '  WHERE'
+        + '    outDailyEvents.iteration = ' + intToStr( _displayedIteration )
+        +     selectedPTIDClause
+        + '  ORDER BY'
+        + '    outDailyEvents.day, outDailyEvents.event'
+      ;
 
-        // Fill the grid
-        //--------------
-        if( 1 < _sqlRes.numRows ) then
-          stgGrid.RowCount := _sqlres.numRows + 1
-        else
-          stgGrid.RowCount := 2
-        ;
+      res.runQuery( q );
 
-        row := _sqlRes.fetchArrayFirst();
-        i := 1;
-        while( nil <> row ) do
-          begin
-            stgGrid.Cells[ COL_DAY, i ] := intToStr( row.field('day') );
-            stgGrid.Cells[ COL_EVENT, i ] := intToStr( row.field('event') );
+      // Fill the grid
+      //--------------
+      if( 1 < res.numRows ) then
+        stgGrid.RowCount := res.numRows + 1
+      else
+        stgGrid.RowCount := 2
+      ;
 
-            stgGrid.Cells[ COL_HERDID, i ] := intToStr( row.field('herdID') );
-            stgGrid.Cells[ COL_HERD_TYPE, i ] := row.field('typeDescr');
+      row := res.fetchArrayFirst();
+      i := 1;
+      while( nil <> row ) do
+        begin
+          // An alternative (although probably considerably slower) would be
+          // to create an instance of TSMEvent from the database fields, and then
+          // call the function appendEvent().
 
-            if( null <> row.field('zoneDescr') ) then
-              stgGrid.Cells[ COL_ZONEID, i ] := row.field('zoneDescr')
-            else
-              stgGrid.Cells[ COL_ZONEID, i ] := ''
-            ;
+          eventCode := eventFromCode( charAt( row.field('eventCode'), 0 ) );
 
-            stgGrid.Cells[ COL_EVENTCODE, i ] := TSMEvent.getEventCodeString( row.field('eventCode') );
+          stgGrid.Cells[ COL_DAY, i ] := intToStr( row.field('day') );
+          stgGrid.Cells[ COL_EVENT, i ] := intToStr( row.field('event') );
 
-            if( EVT_TRANSITION_STATE_CHANGE = row.field('eventCode') ) then
-              stgGrid.Cells[ COL_NEWSTATE, i ] := transitionStateString( transitionStateFromCode( row.field('newStateCode') ) )
-            else
-              stgGrid.Cells[ COL_NEWSTATE, i ] := ''
-            ;
+          stgGrid.Cells[ COL_HERDID, i ] := intToStr( row.field('herdID') );
+          stgGrid.Cells[ COL_HERD_TYPE, i ] := row.field('typeDescr');
 
-            if
-              ( EVT_TRACED_DIRECT = row.field('eventCode') )
-            or
-              ( EVT_TRACED_INDIRECT = row.field('eventCode') )
-            then
-              stgGrid.Cells[ COL_TRACESUCCESS, i ] := uiBoolToText( row.field('traceSuccess') )
-            else
-              stgGrid.Cells[ COL_TRACESUCCESS, i ] := ''
-            ;
+          if( null <> row.field('zoneDescr') ) then
+            stgGrid.Cells[ COL_ZONE, i ] := row.field('zoneDescr')
+          else
+            stgGrid.Cells[ COL_ZONE, i ] := ''
+          ;
 
-            //---------------------------------------------------------------------
-            // I'm not positive, but I think the method shown below is
-            // considerably slower than writing directly to the table directly.
-            //---------------------------------------------------------------------
-            (*
-            evt := TSMEvent.create(
-              row.field('event'),
-              row.field('iteration'),
-              row.field('day'),
-              row.field('herdID'),
-              row.field('eventCode')
-            );
+          stgGrid.Cells[ COL_EVENTCODE, i ] := eventCodeString( eventCode );
 
-            if( null <> row.field('newStateCode') ) then evt.newStatus := transitionStateFromCode( row.field('newStateCode') );
-            if( null <> row.field('traceSuccess') ) then evt.traceSuccess := row.field('traceSuccess');
+          if( eventIsStateChange( eventCode ) ) then
+            stgGrid.Cells[ COL_NEWSTATE, i ] := naadsmDiseaseStateStr( naadsmDiseaseStateFromCode( charAt( string( row.field('newStateCode') ), 0 ) ) )
+          else
+            stgGrid.Cells[ COL_NEWSTATE, i ] := ''
+          ;
 
-            appendEvent( evt, false );
+          if( eventIsTest( eventCode ) ) then
+            stgGrid.Cells[ COL_TEST_RESULT, i ] := naadsmTestResultStr( naadsmTestResultFromCode( charAt( string( row.field('testResultCode') ), 0 ) ) )
+          else
+            stgGrid.Cells[ COL_TEST_RESULT, i ] := ''
+          ;
 
-            evt.Free();
-            *)
-            //---------------------------------------------------------------------
+          inc( i );
+          row := res.fetchArrayNext();
+        end
+      ;
 
-            inc( i );
-            row := _sqlRes.fetchArrayNext();
-          end
-        ;
+      if( not( _creating ) ) then
+        begin
+          // Reapply the previous filter/sort options
+          //------------------------------------------
+          stgGrid.SortByColumn( lastCol );
+          _lastColumnSorted := lastCol;
 
-        if( not( _creating ) ) then
-          begin
-            // Reapply the previous filter/sort options
-            //------------------------------------------
-            if( 0 <> _lastColumnSorted ) then
-              begin
-                dbcout( 'Reapplying sort by column ' + intToStr( _lastColumnSorted ), DBFORMOUTPUTEVENTS );
-                stgGrid.SortByColumn( _lastColumnSorted );
-              end
-            ;
+          if( filterUsed ) then
+            begin
+              dbcout( 'Reapplying filter', DBSHOWMSG );
+              //stgGrid.SearchOptions.Filtered := true;
+              filter();
+            end
+          ;
+        end
+      ;
 
-            if( filterUsed ) then
-              begin
-                dbcout( 'Reapplying filter', DBFORMOUTPUTEVENTS );
-                //stgGrid.SearchOptions.Filtered := true;
-                filter();
-              end
-            ;
-          end
-        ;
+      res.free();
     end
   ;
 
@@ -569,74 +579,34 @@ implementation
     updates.
   }
   procedure TFormOutputEvents.setupFromDatabase();
-    var
-      row: TSqlRow;
-      q: string;
     begin
-      dbcout( '+++ TFormOutputEvents.setupFromDatabase...', DBFORMOUTPUTEVENTS );
+      dbcout( '+++ TFormOutputEvents.setupFromDatabase...', DBSHOWMSG );
 
       resetGrid();
-      cboIteration.Items.Clear();
 
-      stgGrid.SearchOptions.Filtered := false;
+      // Remmed out as a followup to resolved issue 2500, filtering was still lost when production type changes.
+      //stgGrid.SearchOptions.Filtered := false;
 
-      if ( ( not frmMain.simIsRunning ) or (_inSimComplete) ) then
+      if ( frmMain.simIsRunning ) then
+        disableIterationComboBox()
+      else
         begin
-          q := 'SELECT DISTINCT (iteration) FROM outDailyEvents order by iteration desc';
-          _sqlRes.runQuery( q );
-          row := _sqlRes.fetchArrayFirst();
-
-          if ( row <> nil ) then
-            begin
-              cboIteration.Enabled := true;
-              while ( row <> nil ) do
-                begin
-                  cboIteration.Items.Add(row.field('iteration'));
-                  row := _sqlRes.fetchArrayNext();
-                end
-              ;
-
-              cboIteration.ItemIndex := 0;
-              if ( -1 = _displayedIteration ) then
-                _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex])
-              else
-                begin
-                  if ( cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) ) >= 0 ) then
-                    begin
-                      cboIteration.ItemIndex := cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) );
-                    end
-                  else
-                    begin
-                      _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex]);
-                    end
-                  ;
-                end
-              ;
-              fillOutForm();
-              updateEventCounter();
-            end
-          else
-            begin
-              cboIteration.Enabled := false;
-              updateEventCounter();
-              exit;
-            end
-          ;
+          setupIterationComboBox();
+          fillOutForm(); // needs to know the filter state.
         end
       ;
+      
+      updateEventCounter();
 
-      dbcout( '--- TFormOutputEvents.setupFromDatabase done', DBFORMOUTPUTEVENTS );
+      dbcout( '--- TFormOutputEvents.setupFromDatabase done', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormOutputEvents.simChanged();
     begin
-      freeAndNil( _sqlRes );
-      _sqlRes := TSqlResult.create( _smdb as TSqlDatabase );
-
-      setupFromDatabase();
-      setCaption();
+      setupIterationComboBox();
+      productionTypeChanged();
     end
   ;
 
@@ -657,25 +627,21 @@ implementation
       ;
 
       stgGrid.Cells[ COL_DAY, row ] := intToStr( evt.day );
-      stgGrid.Cells[ COL_EVENT, row ] := intToStr( evt.event );
+      stgGrid.Cells[ COL_EVENT, row ] := intToStr( evt.eventID );
 
       stgGrid.Cells[ COL_HERDID, row ] := intToStr( evt.herdID );
       stgGrid.Cells[ COL_EVENTCODE, row ] := evt.eventCodeString;
 
-      if( EVT_TRANSITION_STATE_CHANGE = evt.eventCode ) then
-        stgGrid.Cells[ COL_NEWSTATE, row ] := transitionStateString( evt.newStatus )
+      if( eventIsStateChange( evt.eventCode ) ) then
+        stgGrid.Cells[ COL_NEWSTATE, row ] := naadsmDiseaseStateStr( evt.newStatus )
       else
         stgGrid.Cells[ COL_NEWSTATE, row ] := ''
       ;
 
-      if
-        ( EVT_TRACED_DIRECT = evt.eventCode )
-      or
-        ( EVT_TRACED_INDIRECT = evt.eventCode )
-      then
-        stgGrid.Cells[ COL_TRACESUCCESS, row ] := uiBoolToText( evt.traceSuccess )
+      if( eventIsTest( evt.eventCode ) ) then
+        stgGrid.Cells[ COL_TEST_RESULT, row ] := naadsmTestResultStr( evt.testResult )
       else
-        stgGrid.Cells[ COL_NEWSTATE, row ] := ''
+        stgGrid.Cells[ COL_TEST_RESULT, row ] := ''
       ;
 
       if( 0 <> _lastColumnSorted ) then
@@ -689,7 +655,7 @@ implementation
 
   procedure TFormOutputEvents.productionTypeChanged();
     begin
-      dbcout( 'Production type changed!', DBFORMOUTPUTEVENTS );
+      dbcout( 'Production type changed!', DBSHOWMSG );
 
       try
         screen.Cursor := crHourGlass;
@@ -714,8 +680,6 @@ implementation
     begin
       stgGrid.Clear();
 
-      cboMainFilter.ItemIndex := 0;
-
       _firstRow := true;
 
       stgGrid.RowCount := 2;
@@ -725,14 +689,10 @@ implementation
       stgGrid.Cells[ COL_EVENT, 0 ] := tr( 'Event order on day' );
       stgGrid.Cells[ COL_HERDID, 0 ] := tr( 'Unit ID' );
       stgGrid.Cells[ COL_HERD_TYPE, 0 ] := tr( 'Unit type' );
-      stgGrid.Cells[ COL_ZONEID, 0 ] := tr( 'Unit zone' );
+      stgGrid.Cells[ COL_ZONE, 0 ] := tr( 'Zone' );
       stgGrid.Cells[ COL_EVENTCODE, 0 ] := tr( 'Event type' );
       stgGrid.Cells[ COL_NEWSTATE, 0 ] := tr( 'New state' );
-      stgGrid.Cells[ COL_TRACESUCCESS, 0 ] := tr( 'Successful trace' );
-
-      stgGrid.AutoSizeColumns();
-
-      stgGrid.SortByColumn( COL_DAY );
+      stgGrid.Cells[ COL_TEST_RESULT, 0 ] := tr( 'Test result' );
 
       repaint();
     end
@@ -795,7 +755,7 @@ implementation
     var
       mainSortDirection: TSortDirection;
     begin
-      dbcout( '+++ TFormOutputEvents.stgGridBeginSort', DBFORMOUTPUTEVENTS );
+      dbcout( '+++ TFormOutputEvents.stgGridBeginSort', DBSHOWMSG );
 
       screen.cursor := crHourglass;
 
@@ -808,7 +768,7 @@ implementation
 
       if( not( _presorting ) ) then
         begin
-          dbcout( '_presorting was false', DBFORMOUTPUTEVENTS );
+          dbcout( '_presorting was false', DBSHOWMSG );
 
           _presorting := true;
 
@@ -816,7 +776,7 @@ implementation
 
           stgGrid.SortDirection := sdAscending;
 
-          dbcout( COL_EVENT, DBFORMOUTPUTEVENTS );
+          dbcout( COL_EVENT, DBSHOWMSG );
 
           if
             ( COL_EVENT <> Col )
@@ -824,18 +784,18 @@ implementation
             ( COL_DAY <> col )
           then
             begin
-              dbcout( 'Presorting by event then day.', DBFORMOUTPUTEVENTS );
+              dbcout( 'Presorting by event then day.', DBSHOWMSG );
               stgGrid.SortByColumn( COL_EVENT );
               stgGrid.SortByColumn( COL_DAY );
             end
           else if( COL_DAY = col ) then
             begin
-              dbcout( 'Presorting by event only.', DBFORMOUTPUTEVENTS );
+              dbcout( 'Presorting by event only.', DBSHOWMSG );
               stgGrid.SortByColumn( COL_EVENT );
             end
           else if( COL_EVENT = col ) then
             begin
-              dbcout( 'Presorting by day only.', DBFORMOUTPUTEVENTS );
+              dbcout( 'Presorting by day only.', DBSHOWMSG );
               stgGrid.SortByColumn( COL_DAY );
             end
           ;
@@ -845,22 +805,23 @@ implementation
           _presorting := false;
         end
       else
-        dbcout( '_presorting was true: nothing should change.', DBFORMOUTPUTEVENTS );
+        dbcout( '_presorting was true: nothing should change.', DBSHOWMSG );
       ;
 
-      dbcout( '--- TFormOutputEvents.stgGridBeginSort done.', DBFORMOUTPUTEVENTS );
+      dbcout( '--- TFormOutputEvents.stgGridBeginSort done.', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormOutputEvents.stgGridEndSort(Sender: TObject; Col: Integer);
     begin
-      dbcout( '+++ TFormOutputEvents.stgGridEndSort', DBFORMOUTPUTEVENTS );
+      dbcout( '+++ TFormOutputEvents.stgGridEndSort', DBSHOWMSG );
 
       if( not _presorting ) then
         begin
-          dbcout( '_presorting is false.', DBFORMOUTPUTEVENTS );
+          dbcout( '_presorting is false.', DBSHOWMSG );
           cboMainSort.ItemIndex := col;
+          _lastColumnSorted := col;
 
           if( sdAscending = stgGrid.SortDirection ) then
             rdoAscending.Checked := true
@@ -879,37 +840,64 @@ implementation
           RedrawWindow( self.Handle, nil, 0, RDW_ERASE or RDW_FRAME or RDW_INVALIDATE or RDW_ALLCHILDREN );
         end
       else
-        dbcout( '_presorting is false: nothing should happen.', DBFORMOUTPUTEVENTS )
+        dbcout( '_presorting is false: nothing should happen.', DBSHOWMSG )
       ;
 
-      dbcout( '--- TFormOutputEvents.stgGridEndSort done.', DBFORMOUTPUTEVENTS );
+      dbcout( '--- TFormOutputEvents.stgGridEndSort done.', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormOutputEvents.sortControlChange(Sender: TObject);
+    var
+      colToSort: integer;
+      s: string;
     begin
-      dbcout( '+++ TFormOutputEvents.sortControlChange', DBFORMOUTPUTEVENTS );
+      dbcout( '+++ TFormOutputEvents.sortControlChange', DBSHOWMSG );
 
       if( not( _sortInProgress ) ) then
         begin
-          dbcout( 'Sort should occur...', DBFORMOUTPUTEVENTS );
+          dbcout( 'Sort should occur...', DBSHOWMSG );
           if( rdoAscending.Checked ) then
             stgGrid.SortDirection := sdAscending
           else
             stgGrid.SortDirection := sdDescending
           ;
 
-          dbcout( 'Sorting by column...', DBFORMOUTPUTEVENTS );
-          stgGrid.sortByColumn( cboMainSort.ItemIndex );
-          _lastColumnSorted := cboMainSort.ItemIndex;
-          dbcout( 'Done sorting by column.', DBFORMOUTPUTEVENTS );
+          dbcout( 'Sorting by column...', DBSHOWMSG );
+
+          // Using strings will make life easier if these options are ever changed
+          s := cboMainSort.Items[ cboMainSort.ItemIndex ];
+
+          if( tr( 'Day' ) = s ) then
+            colToSort := COL_DAY
+          else if( tr( 'Event order on day' ) = s ) then
+            colToSort := COL_EVENT
+          else if( tr( 'Unit ID' ) = s ) then
+            colToSort := COL_HERDID
+          else if( tr( 'Unit type') = s ) then
+            colToSort := COL_HERD_TYPE
+          else if( tr( 'Zone' ) = s ) then
+            colToSort := COL_ZONE
+          else if( tr( 'Event type' ) = s ) then
+            colToSort := COL_EVENTCODE
+          else if( tr( 'New state' ) = s ) then
+            colToSort := COL_NEWSTATE
+          else if( tr( 'Test result' ) = s ) then
+            colToSort := COL_TEST_RESULT
+          else
+            raise exception.create( 'Unrecognized sort index (' + intToStr( cboMainSort.ItemIndex ) + ') in TFormOutputEvents.sortControlChange' );
+          ;
+
+          stgGrid.sortByColumn( colToSort );
+          _lastColumnSorted := colToSort;
+          dbcout( 'Done sorting by column.', DBSHOWMSG );
         end
       else
-        dbcout( '_sortInProgress is false: sort won''t occur.', DBFORMOUTPUTEVENTS )
+        dbcout( '_sortInProgress is false: sort won''t occur.', DBSHOWMSG )
       ;
 
-      dbcout( '--- TFormOutputEvents.sortControlChange done.', DBFORMOUTPUTEVENTS );
+      dbcout( '--- TFormOutputEvents.sortControlChange done.', DBSHOWMSG );
     end
   ;
 //-----------------------------------------------------------------------------
@@ -920,6 +908,8 @@ implementation
 // Filtering functions
 //-----------------------------------------------------------------------------
   procedure TFormOutputEvents.filter();
+    var
+      s: string;
     begin
       try
         //lockWindowUpdate( self.Handle );
@@ -930,103 +920,82 @@ implementation
           stgGrid.SearchOptions.Filtered := false
         ;
 
-        case cboMainFilter.ItemIndex of
-          0: // No filter
-            begin
-              _filtering := false;
-              stgGrid.SearchOptions.Filtered := false;
-            end
-          ;
-          1: // Day
-            begin
-             stgGrid.SearchOptions.SearchCol := COL_DAY;
-             stgGrid.SearchOptions.SearchText := rleDay.Text;
-             stgGrid.SearchOptions.Filtered := _filtering;
-            end
-          ;
-          2: // Unit ID
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_HERDID;
-              stgGrid.SearchOptions.SearchText := rleHerdID.Text;
-              stgGrid.SearchOptions.Filtered := _filtering;
-            end
-          ;
-          3: // Event type
-            begin
-              stgGrid.SearchOptions.SearchCol := COL_EVENTCODE;
+        s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
 
-              case cboEvents.ItemIndex of
-                0: // Infections
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Infection' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                1: // State changes
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'State change' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                2: // Detections
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Detection' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                3: // Destructions
-                  begin
-                  stgGrid.SearchOptions.SearchText := tr( 'Destruction' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                4: // Vaccinations
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Vaccination' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                5: // Dir trace
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Trace-direct' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                6: // Ind trace
-                  begin
-                    stgGrid.SearchOptions.SearchText := 'Trace-indirect';
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                7: // Zone change
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Zone change' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                8: // Zone focus creation
-                  begin
-                    stgGrid.SearchOptions.SearchText := tr( 'Zone focus created' );
-                    stgGrid.SearchOptions.Filtered := _filtering;
-                  end
-                ;
-                else // cancel the filtering
-                  stgGrid.SearchOptions.Filtered := false
-                ;
-              end;
+        if( tr( '(No filter)' ) = s ) then
+          begin
+            _filtering := false;
+            stgGrid.SearchOptions.Filtered := false;
+          end
+        else if( tr( 'Day' ) = s ) then
+          begin
+           stgGrid.SearchOptions.SearchCol := COL_DAY;
+           stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+           stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else if( tr( 'Unit ID' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_HERDID;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
 
-            end
-          ;
-        end;
+        // Filtering by unit type is taken care of by a different mechanism
+
+        else if( tr( 'Zone' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_ZONE;
+            stgGrid.SearchOptions.SearchText := trim( rleTextEntry.Text );
+            stgGrid.SearchOptions.Filtered := _filtering;
+          end
+        else if( tr( 'Event type' ) = s ) then
+          begin
+            stgGrid.SearchOptions.SearchCol := COL_EVENTCODE;
+
+            if( 0 <= cboEvents.ItemIndex ) then
+              begin
+                stgGrid.SearchOptions.SearchText := trim( cboEvents.Items[ cboEvents.ItemIndex ] );
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            else // cancel the filtering
+              stgGrid.SearchOptions.Filtered := false
+            ;
+          end
+        else if( tr( 'New state' ) = s ) then
+          begin
+            if( -1 = cboDiseaseState.ItemIndex ) then
+              stgGrid.SearchOptions.Filtered := false
+            else
+              begin
+                stgGrid.SearchOptions.SearchCol := COL_NEWSTATE;
+                stgGrid.SearchOptions.SearchText := cboDiseaseState.Items.Strings[cboDiseaseState.ItemIndex];
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            ;
+          end
+        else if( tr( 'Test result' ) = s ) then
+          begin
+            if( -1 = cboTestResult.ItemIndex ) then
+              stgGrid.SearchOptions.Filtered := false
+            else
+              begin
+                stgGrid.SearchOptions.SearchCol := COL_TEST_RESULT;
+                stgGrid.SearchOptions.SearchText := cboTestResult.Items.Strings[cboTestResult.ItemIndex];
+                stgGrid.SearchOptions.Filtered := _filtering;
+              end
+            ;
+          end
+        ;
 
         updateEventCounter();
-
+        stgGrid.SortByColumn( _lastColumnSorted );
+        
         //lockWindowUpdate( 0 );
         self.Perform( WM_SETREDRAW, 1, 0 );
         RedrawWindow( self.Handle, nil, 0, RDW_ERASE or RDW_FRAME or RDW_INVALIDATE or RDW_ALLCHILDREN );
       except
         // fail silently
-        dbcout( '+++ Exception occurred here.', DBFORMOUTPUTEVENTS );
+        dbcout( '+++ Exception occurred here.', DBSHOWMSG );
       end;
     end
   ;
@@ -1038,89 +1007,146 @@ implementation
 // GUI event handlers
 //-----------------------------------------------------------------------------
   procedure TFormOutputEvents.cboMainFilterChange(Sender: TObject);
+    var
+      s: string;
     begin
-      case cboMainFilter.ItemIndex of
-        0: // No filter
-          begin
-            lblEventType.Visible := false;
-            lblDay.Visible := false;
-            lblHerdID.Visible := false;
+      // Using strings will make life easier when new options are added.
+      s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
 
-            cboEvents.Visible := false;
-            rleDay.Visible := false;
-            rleHerdID.visible := false;
+      if( tr( '(No filter)' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := false;
 
-            fraAcceptCancel.Visible := false;
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := false;
+          rleTextEntry.Visible := false;
+          fraAcceptCancel.Visible := false;
 
-            _filtering := false;
+          _filtering := false;
 
-            filter();
-          end
-        ;
-        1: // Day
-          begin
-            lblEventType.Visible := false;
-            lblDay.Visible := true;
-            lblHerdID.Visible := false;
+          filter();
+        end
+      else if( tr( 'Day' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Day:' );
+          lblDiseaseState.Visible := false;
 
-            cboEvents.Visible := false;
-            rleDay.Visible := true;
-            rleHerdID.visible := false;
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := false;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_SIGNED_INTEGER_INPUT;
+          rleTextEntry.Visible := true;
 
-            _filtering := true;
+          _filtering := true;
 
-            rleDay.SetFocus();
-          end
-        ;
-        2: // Unit ID
-          begin
-            lblEventType.Visible := false;
-            lblDay.Visible := false;
-            lblHerdID.Visible := true;
+          rleTextEntry.SetFocus();
+        end
+      else if( tr( 'Unit ID' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Unit ID:' );
+          lblDiseaseState.Visible := false;
 
-            cboEvents.Visible := false;
-            rleDay.Visible := false;
-            rleHerdID.visible := true;
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := false;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := RE_INTEGER_INPUT;
+          rleTextEntry.visible := true;
+          
+          _filtering := true;
 
-            _filtering := true;
+          rleTextEntry.SetFocus();
+        end
 
-            rleHerdID.SetFocus();
-          end
-        ;
-        3: // Event type
-          begin
-            lblEventType.Visible := true;
-            lblDay.Visible := false;
-            lblHerdID.Visible := false;
+      // Filtering by unit type is taken care of by a different mechanism
 
-            cboEvents.Visible := true;
-            rleDay.Visible := false;
-            rleHerdID.visible := false;
+      else if( tr( 'Zone' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := true;
+          lblTextEntry.Caption := tr( 'Zone:' );
+          lblDiseaseState.Visible := false;
 
-            fraAcceptCancel.Visible := false;
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := false;
+          rleTextEntry.Text := '';
+          rleTextEntry.InputExpression := '';
+          rleTextEntry.visible := true;
 
-            _filtering := true;
+          _filtering := true;
 
-            filter();
-          end
-        ;
-      end;
+          rleTextEntry.SetFocus();
+        end
+      else if( tr( 'Event type' ) = s ) then
+        begin
+          lblEventType.Visible := true;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Visible := false;
+
+          cboEvents.Visible := true;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := false;
+          rleTextEntry.Visible := false;
+
+          fraAcceptCancel.Visible := false;
+
+          _filtering := true;
+
+          filter();
+        end
+      else if( tr( 'New state' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Caption := tr( 'Disease state:' );
+          lblDiseaseState.Visible := true;
+
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := true;
+          cboTestResult.Visible := false;
+          rleTextEntry.Visible := false;
+
+          fraAcceptCancel.Visible := false;
+
+          _filtering := true;
+
+          filter();
+        end
+      else if( tr( 'Test result' ) = s ) then
+        begin
+          lblEventType.Visible := false;
+          lblTextEntry.Visible := false;
+          lblDiseaseState.Caption := tr( 'Test result:' );
+          lblDiseaseState.Visible := true;
+
+          cboEvents.Visible := false;
+          cboDiseaseState.Visible := false;
+          cboTestResult.Visible := true;
+          rleTextEntry.Visible := false;
+
+          fraAcceptCancel.Visible := false;
+
+          _filtering := true;
+
+          filter();
+        end
+      ;
     end
   ;
 
 
-  procedure TFormOutputEvents.rleHerdIDEnter(Sender: TObject);
+  procedure TFormOutputEvents.rleTextEntryEnter(Sender: TObject);
     begin
       fraAcceptCancel.Visible := true;
-      //fraAcceptCancel.Enabled := true;
-    end
-  ;
-
-
-  procedure TFormOutputEvents.rleDayEnter(Sender: TObject);
-    begin
-      fraAcceptCancel.Visible := true;
-      //fraAcceptCancel.Enabled := true;
     end
   ;
 
@@ -1132,15 +1158,42 @@ implementation
   ;
 
 
-  procedure TFormOutputEvents.fraAcceptCancelbtnAcceptClick(Sender: TObject);
+  procedure TFormOutputEvents.cboDiseaseStateChange(Sender: TObject);
     begin
-      if( rleDay.Visible ) then
+      filter();
+    end
+  ;
+
+
+  procedure TFormOutputEvents.cboTestResultChange(Sender: TObject);
+    begin
+      filter();
+    end
+  ;
+
+
+  procedure TFormOutputEvents.fraAcceptCancelbtnAcceptClick(Sender: TObject);
+    var
+      s: string;
+    begin
+      s := cboMainFilter.Items[ cboMainFilter.ItemIndex ];
+      
+      if( rleTextEntry.Visible ) then
         begin
-          if( -2 <> myStrToInt( rleDay.Text, -2 ) ) then filter();
-        end
-      else if( rleHerdID.Visible ) then
-        begin
-          if( -2 <> myStrToInt( rleHerdID.Text, -2 ) ) then filter();
+          // Deal with days
+          //---------------
+          if( tr( 'Day' ) = s ) then
+            begin
+              if( -2 <> myStrToInt( rleTextEntry.Text, -2 ) ) then
+                filter()
+              ;
+            end
+
+          // Deal with other stuff
+          //----------------------
+          else if( 0 < length( trim( rleTextEntry.text ) ) ) then
+            filter()
+          ;
         end
       else
         updateEventCounter()
@@ -1153,14 +1206,8 @@ implementation
 
   procedure TFormOutputEvents.fraAcceptCancelbtnCancelClick(Sender: TObject);
     begin
-      if( rleDay.Visible ) then
-        begin
-          rleDay.Text := '';
-        end
-      else if( rleHerdID.Visible ) then
-        begin
-          rleHerdID.Text := '';
-        end
+      if( rleTextEntry.Visible ) then
+        rleTextEntry.Text := ''
       ;
 
       fraAcceptCancel.Visible := false;
@@ -1254,14 +1301,7 @@ implementation
 
   procedure TFormOutputEvents.updateSimComplete();
     begin
-      _inSimComplete := true;
-      self.simChanged();
-      if ( -1 <> frmMain.displayedIteration ) then
-        self.resetIteration( frmMain.displayedIteration )
-      ;
-      _inSimComplete := false;
-
-      setCaption();
+      raise exception.Create( 'updateSimComplete is not yet supported in TFormOutputEvents' );
     end
   ;
 
@@ -1280,9 +1320,8 @@ implementation
   ;
 
 
-  procedure TFormOutputEvents.cboIterationChange(Sender: TObject);
+  procedure TFormOutputEvents.iterationChanged();
     begin
-      inherited;
       if ( assigned( frmMain ) ) then
         frmMain.displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex])
       else
@@ -1311,5 +1350,9 @@ implementation
       ;
     end
   ;
+
+
+
+
 
 end.

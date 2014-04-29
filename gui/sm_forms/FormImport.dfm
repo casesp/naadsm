@@ -1,6 +1,6 @@
 object FormImport: TFormImport
-  Left = 642
-  Top = 55
+  Left = 701
+  Top = 720
   Width = 427
   Height = 339
   HorzScrollBar.Visible = False

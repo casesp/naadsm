@@ -4,13 +4,13 @@ unit ProductionType;
 ProductionType.pas
 -------------------
 Begin: 2005/01/06
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.86 $
+Last revision: $Date: 2011-09-30 17:19:27 $ $Author: areeves $
+Version number: $Revision: 1.108.4.17 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -25,24 +25,29 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
-  	Contnrs,
+    Contnrs,
     Sysutils,
 
     Dialogs,
 
+    Sdew,
+    
     MyStrUtils,
-    USStrUtils,
+    QLists,
     QStringMaps,
     SqlClasses,
     ChartFunction,
 
     FunctionDictionary,
     
-  	Models,
+    Models,
+    ModelDatabase,
     SMDatabase,
     DetectionParams,
-    ZoneParams,
+    ProdTypeZoneParams,
     DestructionParams,
+    TracingParams,
+    TestingParams,
     VaccinationParams,
     RingVaccParams,
     CostParams,
@@ -51,7 +56,9 @@ interface
     FunctionEnums,
     SMSimOutByProdType,
     StatusEnums,
-    GlobalControlParams
+    GlobalControlParams,
+    NAADSMLibraryTypes,
+    Zone
   ;
 
 
@@ -70,23 +77,26 @@ interface
 
   {type} TProductionType = class( TModelWithFunctions )
     protected
+      _myList: TObject {TProductionTypeList};
+
       _simulateTransition: boolean;
       _productionTypeID: integer;
       _productionTypeDescr: string;
-      _xmlProdTypeDescr: string;
 
-      _latentName: string;
-      _subclinicalName: string;
-      _clinicalName: string;
-      _immuneName: string;
-      _prevalenceName: string;
+      _pdfLatentName: string;
+      _pdfSubclinicalName: string;
+      _pdfClinicalName: string;
+      _pdfImmuneName: string;
+      _relPrevalenceName: string;
 
-      _useDetection: boolean;
       _detection: TDetectionParams;
 
       _destr: TDestructionParams;
 
-      _zoneParams: TZoneParams;
+      _trace: TTracingParams;
+      _testing: TTestingParams;
+
+      _zoneParams: TProdTypeZoneParams;
 
       _vacc: TVaccinationParams;
 
@@ -94,8 +104,8 @@ interface
 
       _costs: TCostParams;
 
-      _outputs: TSMSimOutByProdType;
-      _initialOutputs: TSMSimOutByProdType;
+      _outputs: TSMDailyOutput;
+      _initialOutputs: TSMDailyOutput;
 
       _animalCount: longint;
       _unitCount: longint;
@@ -106,7 +116,7 @@ interface
       //---------------------------
       procedure initialize();
       function validateDiseaseParams( err: PString = nil ): boolean;
-  		procedure updateDB( db: TSMDatabase );
+      procedure updateDB( db: TSMDatabase );
 
 
       // Property getters and setters
@@ -123,41 +133,54 @@ interface
       procedure setProdTypeID( val: integer );
 
       // Disease states
-      procedure setLatentName( val: string );
-      procedure setSubclinicalName( val: string );
-      procedure setClinicalName( val: string );
-      procedure setImmuneName( val: string );
-      procedure setPrevalenceName( val: string );
-      function getLatentName(): string;
-      function getSubclinicalName(): string;
-      function getClinicalName(): string;
-      function getImmuneName(): string;
-      function getPrevalenceName(): string;
+      procedure setPdfLatentName( val: string );
+      procedure setPdfSubclinicalName( val: string );
+      procedure setPdfClinicalName( val: string );
+      procedure setPdfImmuneName( val: string );
+      procedure setRelPrevalenceName( val: string );
+      function getPdfLatentName(): string;
+      function getPdfSubclinicalName(): string;
+      function getPdfClinicalName(): string;
+      function getPdfImmuneName(): string;
+      function getRelPrevalenceName(): string;
 
-      function getDiseaseLatent(): TPdf;
-      function getDiseaseSubclinical(): TPdf;
-      function getDiseaseClinical(): TPdf;
-      function getDiseaseImmune(): TPdf;
-      function getDiseasePrevalence(): TRelFunction;
+      function getPdfDiseaseLatent(): TPdf;
+      function getPdfDiseaseSubclinical(): TPdf;
+      function getPdfDiseaseClinical(): TPdf;
+      function getPdfDiseaseImmune(): TPdf;
+      function getRelDiseasePrevalence(): TRelFunction;
 
       // Detection
       function getUseDetection(): boolean;
-      procedure setUseDetection( val: boolean );
       function getDetectionParams(): TDetectionParams;
       procedure setDetectionParams( sv: TDetectionParams );
 
       // Zone parameters
-      function getZoneParams(): TZoneParams;
-      procedure setZoneParams( z: TZoneParams );
+      function getZoneParams(): TProdTypeZoneParams;
+      procedure setZoneParams( z: TProdTypeZoneParams );
       function getIsZoneTrigger(): boolean;
-      
+
       // Destruction
+      function getUseBasicDestruction(): boolean;
       function getIsRingDestrTrigger(): boolean;
       function getIsRingDestrTarget(): boolean;
       function getIsDestrTarget(): boolean;
+      function getUseTraceDestruction(): boolean;
+      function getUseDestruction(): boolean;
 
       function getDestructionParams(): TDestructionParams;
       procedure setDestructionParams( dem: TDestructionParams );
+
+      // Tracing
+      function getUseTracing(): boolean;
+      function getUseTracingExam(): boolean;
+      function getTracingParams(): TTracingParams;
+      procedure setTracingParams( dem: TTracingParams );
+
+      // Testing
+      function getUseTesting(): boolean;
+      function getTestingParams(): TTestingParams;
+      procedure setTestingParams( dem: TTestingParams );
 
       // Vaccination
       function getUseVaccination(): boolean;
@@ -174,8 +197,8 @@ interface
       procedure setCostParams( cp: TCostParams );
 
       // Outputs
-      function getCurrentOutputs(): TSMSimOutByProdType;
-      function getInitialOutputs(): TSMSimOutByProdType;
+      function getCurrentOutputs(): TSMDailyOutput;
+      function getInitialOutputs(): TSMDailyOutput;
 
       // Unit/animal counts
       function getUnitCount(): longint;
@@ -184,6 +207,10 @@ interface
       // Other
       procedure setRemoved( val: boolean );
       function getRemoved(): boolean;
+
+      // XML import
+      //-----------
+      procedure importDiseaseXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
 
     public
       // Construction/initialization/destruction
@@ -197,9 +224,21 @@ interface
       //---------------
       function ssDiseaseModelXml(): string;
       function ssDetectionXml(): string;
+      function ssContactRecorderXml( const maxPeriod: integer ): string;
+      function ssTracingXml(): string;
+      function ssExamXml(): string;
+      function ssTestXml(): string;
+      function ssBasicDestrXml(): string;
+      function ssTraceDestrXml(): string;
       function ssRingDestrXml(): string;
       function ssRingVaccXml(): string;
       function ssZoneXml(): string;
+      function ssEconXml( const includeZonesGlobal: boolean; zoneList: TZoneList ): string;
+
+      // XML import
+      //-----------
+      class function createXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
 
       // Functions for handling model outputs
       //-------------------------------------
@@ -210,22 +249,32 @@ interface
       procedure processIterationRecords( db: TSMDatabase; iteration: integer );
 
       procedure updateDailyRecordsProdType(
-        herdAnimalCount: integer;
-        oldState: TTransitionState;
-        newState: TTransitionState
+        const herdAnimalCount: integer;
+        const oldState: TNAADSMDiseaseState;
+        const newState: TNAADSMDiseaseState;
+        const day: integer
       );
 
-      procedure setInitialDailyRecords( const herdAnimalCount: integer; const herdDiseaseState: TTransitionState );
+      procedure setInitialDailyRecords( const herdAnimalCount: integer; const herdDiseaseState: TNAADSMDiseaseState );
 
-      procedure addInfectedByMechanism( const herdAnimalCount: integer; infMech: string; const day: integer );
-			procedure addExposedByMechanism( const herdAnimalCount: integer; mechanism: string );
-      function addDetection( const herdAnimalCount: integer; const day: integer ): boolean;
-      procedure addAttemptedTraceEvent( const herdAnimalCount: integer; mechanism: string );
-      procedure addTraceEvent( const herdAnimalCount: integer; mechanism: string );
-      function addDestructionEvent( const herdAnimalCount: integer; reason: string; const day: integer ): boolean;
-      function addVaccinationEvent( const herdAnimalCount: integer; reason: string; const day: integer ): boolean;
-      procedure addZoneFocus( const day: integer );
+      procedure addInfectionEvent( const herdAnimalCount: integer; const r: THRDInfect; const day: integer );
+      procedure addExposureEvent( const herdAnimalCount: integer; const e: THRDExpose );
+      function addDetectionEvent( const herdAnimalCount: integer; const d: THRDDetect; const day: integer ): boolean;
+      procedure addAttemptedTraceEvent( const herdAnimalCount: integer; const t: THRDTrace );
+      procedure addTraceEvent( const herdAnimalCount: integer; const t: THRDTrace );
+      procedure addTraceOrigin( const t: THRDTrace );
+      procedure addHerdExamEvent( const herdAnimalCount: integer; const e: THRDExam );
+      procedure addDiagnosticTestEvent( const herdAnimalCount: integer; const t: THRDTest );
+      function addDestructionEvent( herd: TObject {THerd}; const c: THRDControl; const day: integer ): boolean;
+      function addVaccinationEvent( herd: TObject {THerd}; const c: THRDControl; const day: integer ): boolean;
+      procedure addZoneFocusEvent( const day: integer );
+      procedure addDestructionQueueEvent( herd: TObject {THerd}; const day: integer );
+      procedure addVaccinationQueueEvent( herd: TObject {THerd}; const day: integer );
+      procedure subtractVaccinationQueueEvent( herd: TObject {THerd} );
+
       procedure decrementApparentInfectiousUnits();
+
+      procedure recordInfectedAtFirstDetection();
 
       // Unit/animal counts
       //-------------------
@@ -236,7 +285,7 @@ interface
       //-----------------------
       function validate( err: PString = nil ): boolean; override;
       procedure debug(); override;
-      function populateDatabase( db: TSMDatabase; const forceInsert: boolean = false ): integer; reintroduce;
+      function populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer; reintroduce;
       procedure setChart( const whichChart: TSMChart; fn: TChartFunction; addlInfo: integer = -1 ); override;
       function chart( const whichChart: TSMChart; addlInfo: integer = -1 ): TChartFunction; override;
       procedure removeChart( const chartName: string ); override;
@@ -251,7 +300,7 @@ interface
 
       // Other chart-related functions
       //------------------------------
-      function hasChartName( const chartName: string; const whichChart: TSMChart ): boolean;
+      function hasChartName( const chartName: string; const whichChart: TSMChart ): boolean; override;
 
       // Used by ProductionTypeList, when the list is built from a database
       //-------------------------------------------------------------------
@@ -260,33 +309,43 @@ interface
       // Properties
       //-----------
       property productionTypeDescr: string read getProdTypeDescr write setProdTypeDescr;
-      property xmlProdTypeDescr: string read _xmlProdTypeDescr;
       property productionTypeID: integer read getProdTypeID write setProdTypeID;
+      property ptList: TObject read _myList write _myList;
 
       property simulateTransition : boolean read getSimulateTransition write setSimulateTransition;
 
-      property latentName: string read getLatentName write setLatentName;
-      property subclinicalName: string read getSubclinicalName write setSubclinicalName;
-      property clinicalName: string read getClinicalName write setClinicalName;
-      property immuneName: string read getImmuneName write setImmuneName;
-      property prevalenceName: string read getPrevalenceName write setPrevalenceName;
+      property pdfLatentName: string read getPdfLatentName write setPdfLatentName;
+      property pdfSubclinicalName: string read getPdfSubclinicalName write setPdfSubclinicalName;
+      property pdfClinicalName: string read getPdfClinicalName write setPdfClinicalName;
+      property pdfImmuneName: string read getPdfImmuneName write setPdfImmuneName;
+      property relPrevalenceName: string read getRelPrevalenceName write setRelPrevalenceName;
 
-      property diseaseLatent: TPdf read getDiseaseLatent;
-      property diseaseSubclinical: TPdf read getDiseaseSubclinical;
-      property diseaseClinical: TPdf read getDiseaseClinical;
-      property diseaseImmune: TPdf read getDiseaseImmune;
-      property diseasePrevalence: TRelFunction read getDiseasePrevalence;
+      property pdfDiseaseLatent: TPdf read getPdfDiseaseLatent;
+      property pdfDiseaseSubclinical: TPdf read getPdfDiseaseSubclinical;
+      property pdfDiseaseClinical: TPdf read getPdfDiseaseClinical;
+      property pdfDiseaseImmune: TPdf read getPdfDiseaseImmune;
+      property relDiseasePrevalence: TRelFunction read getRelDiseasePrevalence;
 
-      property useDetection: boolean read getUseDetection write setUseDetection;
+      property useDetection: boolean read getUseDetection;
       property detectionParams: TDetectionParams read getDetectionParams write setDetectionParams;
 
+      property useBasicDestruction: boolean read getUseBasicDestruction;
       property isRingDestrTrigger: boolean read getIsRingDestrTrigger;
       property isDestrRingTarget: boolean read getIsRingDestrTarget;
       property destructionParams: TDestructionParams read getDestructionParams write setDestructionParams;
       property isDestrTarget: boolean read getIsDestrTarget;
       property isRingDestrTarget: boolean read getisRingDestrTarget;
+      property useTraceDestruction: boolean read getUseTraceDestruction;
+      property useDestruction: boolean read getUseDestruction;
 
-      property zoneParams: TZoneParams read getZoneParams write setZoneParams;
+      property useTracing: boolean read getUseTracing;
+      property useTracingExam: boolean read getUseTracingExam;
+      property tracingParams: TTracingParams read getTracingParams write setTracingParams;
+
+      property useTesting: boolean read getUseTesting;
+      property testingParams: TTestingParams read getTestingParams write setTestingParams;
+
+      property zoneParams: TProdTypeZoneParams read getZoneParams write setZoneParams;
 
       property useVaccination: boolean read getUseVaccination;
       property vaccinationParams: TVaccinationParams read getVaccinationParams write setVaccinationParams;
@@ -297,8 +356,8 @@ interface
 
       property costParams: TCostParams read getCostParams write setCostParams;
       
-      property currentOutputs: TSMSimOutByProdType read getCurrentOutputs;
-      property initialOutputs: TSmSimOutByProdType read getInitialOutputs;
+      property currentOutputs: TSMDailyOutput read getCurrentOutputs;
+      property initialOutputs: TSMDailyOutput read getInitialOutputs;
 
       property unitCount: longint read getUnitCount;
       property animalCount: longint read getAnimalCount;
@@ -312,7 +371,7 @@ interface
 
 implementation
 
-	uses
+  uses
     StrUtils,
     Math,
     TypInfo,
@@ -332,8 +391,7 @@ implementation
 
 
   const
-    DBPRODUCTIONTYPE: boolean = false; // set to true to enable debug messages for this unit.
-  	DBPRODUCTIONTYPELIST: boolean = false; // set to true to enable debugging messages for this unit
+    DBSHOWMSG: boolean = false; // set to true to enable debug messages for this unit.
 
 
 //-----------------------------------------------------------------------------
@@ -341,21 +399,23 @@ implementation
 //-----------------------------------------------------------------------------
   constructor TProductionType.Create( prodTypeID: integer; prodTypeDescr: string; simTrans: boolean; sim: TObject );
     begin
-    	inherited create();
+      inherited create();
       initialize();
 
       _sim := sim;
-
+      _myList := nil; // This will be changed when the pt is added to a list
+      
       _productionTypeID := prodTypeID;
       _productionTypeDescr := prodTypeDescr;
-      _xmlProdTypeDescr := encodeXml( prodTypeDescr );
       
       _simulateTransition := simTrans;
 
       _destr := TDestructionParams.create( _sim, self.productionTypeDescr );
+      _trace := TTracingParams.create( _sim, self.productionTypeDescr );
+      _testing := TTestingParams.create( _sim, self.productionTypeDescr );
       _detection := TDetectionParams.create( _sim, self.productionTypeDescr );
       _vacc := TVaccinationParams.create( _sim, self.productionTypeDescr );
-      _zoneParams := TZoneParams.create( _sim, self.productionTypeDescr );
+      _zoneParams := TProdTypeZoneParams.create( _sim, self.productionTypeDescr );
       _ringVacc := TRingVaccParams.create( _sim, self.productionTypeDescr );
       _costs := TCostParams.create( _sim, self.productionTypeDescr );
 
@@ -368,69 +428,73 @@ implementation
     begin
       inherited create( src );
       _sim := sim;
+      _myList := nil; // This will be changed when the pt is added to a list
 
       _productionTypeID := src._productionTypeID;
       _productionTypeDescr := src._productionTypeDescr;
-      _xmlProdTypeDescr := encodeXml( _productionTypeDescr );
-      
+
       _simulateTransition := src._simulateTransition;
 
-      // Don't use the "set" functions here.
-      // Otherwise, the function reference counters will get screwed up.
-      _latentName := src.latentName;
-      _subclinicalName := src.subclinicalName;
-      _clinicalName := src.clinicalName;
-      _immuneName := src.immuneName;
-      _prevalenceName := src.prevalenceName;
+      setPdfLatentName( src.pdfLatentName );
+      setPdfSubclinicalName( src.pdfSubclinicalName );
+      setPdfClinicalName( src.pdfClinicalName );
+      setPdfImmuneName( src.pdfImmuneName );
+      setRelPrevalenceName( src.relPrevalenceName );
 
-      _useDetection := src._useDetection;
-
-      if( nil <> src._detection ) then
+      if( nil = src._detection ) then
+        raise exception.Create( '_detection is nil in TProductionType.create()' )
+      else
         _detection := TDetectionParams.create( src._detection, _sim )
-      else
-        _detection := nil
       ;
 
-      //_useDestruction := src._useDestruction;
+      if( nil = src._trace ) then
+        raise exception.create( '_trace is nil in TProductionType.create()' )
+      else
+        _trace := TTracingParams.create( src._trace, _sim )
+      ;
 
-      if( nil <> src._destr ) then
+      if( nil = src._testing ) then
+        raise exception.create( '_testing is nil in TProductionType.create()' )
+      else
+        _testing := TTestingParams.create( src._testing, _sim )
+      ;
+      
+      if( nil = src._destr ) then
+        raise exception.Create( '_destr is nil in TProductionType.create()' )
+      else
         _destr := TDestructionParams.create( src._destr, _sim )
-      else
-        _destr := nil
       ;
 
-      if( nil <> src._vacc ) then
+      if( nil = src._vacc ) then
+        raise exception.Create( '_vacc is nil in TProductionType.create()' )
+      else
         _vacc := TVaccinationParams.create( src._vacc, _sim )
-      else
-        _vacc := nil
       ;
 
-      if( nil <> src._ringVacc ) then
+      if( nil = src._ringVacc ) then
+        raise exception.Create( '_ringVacc is nil in TProductionType.create()' )
+      else
         _ringVacc := TRingVaccParams.create( src._ringVacc, _sim )
-      else
-        _ringVacc := nil
       ;
 
-      if( nil <> src._zoneParams ) then
-        _zoneParams := TZoneParams.create( src._zoneParams, _sim )
+      if( nil = src._zoneParams ) then
+        raise exception.Create( '_zoneParams is nil in TProductionType.create()' )
       else
-        _zoneParams := nil
+        _zoneParams := TProdTypeZoneParams.create( src._zoneParams, _sim )
       ;
 
-      if( nil <> src._costs ) then
+      if( nil = src._costs ) then
+        raise exception.Create( '_costs is nil in TProductionType.create()' )
+      else
         _costs := TCostParams.create( src._costs, _sim )
-      else
-        _costs := nil
       ;
 
       _animalCount := src._animalCount;
       _unitCount := src._unitCount;
 
-      // It should never be necessary to copy outputs.
-      // Leave _outputs and _initialOutputs alone.
-      //    (But you still need to init them.....SPC:10/27/2006)
-      _outputs := TSMSimOutByProdType.create();
-      _initialOutputs := TSMSimOutByProdType.create();
+      // It should never be necessary to copy outputs, but the structures still need to be created.
+      _outputs := TSMDailyOutput.create();
+      _initialOutputs := TSMDailyOutput.create();
 
       _removed := src._removed;
       _updated := src._updated;
@@ -439,14 +503,16 @@ implementation
 
 
   procedure TProductionType.initialize();
-  	begin
-      setLatentName( '' );
-      setSubclinicalName( '' );
-      setClinicalName( '' );
-      setImmuneName( '' );
-      setPrevalenceName( '' );
+    begin
+      setPdfLatentName( '' );
+      setPdfSubclinicalName( '' );
+      setPdfClinicalName( '' );
+      setPdfImmuneName( '' );
+      setRelPrevalenceName( '' );
 
       _destr := nil;
+      _trace := nil;
+      _testing := nil;
       _detection := nil;
       _vacc := nil;
       _ringVacc := nil;
@@ -456,8 +522,8 @@ implementation
       _unitCount := -1;
       _animalCount := -1;
 
-      _outputs := TSMSimOutByProdType.create();
-      _initialOutputs := TSMSimOutByProdType.create();
+      _outputs := TSMDailyOutput.create();
+      _initialOutputs := TSMDailyOutput.create();
 
       _removed := false;
       _updated := false;
@@ -468,41 +534,18 @@ implementation
   destructor TProductionType.destroy();
     begin
       // The function dictionary is freed elsewhere.
-      // Disease periods are handled by the function dictionary:
+      // PDFs and RELs are handled by the function dictionary:
       // don't free them here, but do decrement their counters.
+      setPdfLatentName( '' );
+      setPdfSubclinicalName( '' );
+      setPdfClinicalName( '' );
+      setPdfImmuneName( '' );
+      setRelPrevalenceName( '' );
 
-      if( nil <> fnDictionary ) then
-        begin
-          //dbcout2( 'Decrementing latent' );
-          if( fnDictionary.contains( latentName ) ) then
-            fnDictionary.value( latentName ).decrRefCounter()
-          ;
-
-          //dbcout2( 'Decrementing subclin' );
-          if( fnDictionary.contains( subclinicalName ) ) then
-            fnDictionary.value( subclinicalName ).decrRefCounter()
-          ;
-
-          //dbcout2( 'Decrementing clinical' );
-          if( fnDictionary.contains( clinicalName ) ) then
-            fnDictionary.value( clinicalName ).decrRefCounter()
-          ;
-
-          //dbcout2( 'Decrementing immune' );
-          if( fnDictionary.contains( immuneName ) ) then
-            fnDictionary.value( immuneName ).decrRefCounter()
-          ;
-
-          //dbcout2( 'Decrementing prevalence' );
-          if( fnDictionary.contains( prevalenceName ) ) then
-            fnDictionary.value( prevalenceName ).decrRefCounter()
-          ;
-        end
-      ;
-
-      //dbcout2( 'Freeing other stuff...' );
       freeAndNil( _detection );
       freeAndNil( _destr );
+      freeAndNil( _trace );
+      freeAndNil( _testing );
       freeAndNil( _vacc );
       freeAndNil( _ringVacc );
       freeAndNil( _zoneParams );
@@ -528,14 +571,21 @@ implementation
       ;
 
       case whichChart of
-        DLatent: self.latentName := newName;
-        DImmune: self.immuneName := newName;
-        DSubclinical: self.subclinicalName := newName;
-        DClinical: self.clinicalName := newName;
-        DPrevalence: self.prevalenceName := newName;
+        DLatent: self.pdfLatentName := newName;
+        DImmune: self.pdfImmuneName := newName;
+        DSubclinical: self.pdfSubclinicalName := newName;
+        DClinical: self.pdfClinicalName := newName;
+        DPrevalence: self.relPrevalenceName := newName;
+
         DetProbReportVsFirstDetection: self.detectionParams.relReportVsFirstDetectionName := newName;
         DetProbObsVsTimeClinical: self.detectionParams.relObsVsTimeClinicalName := newName;
-        VacImmunePeriod: self.vaccinationParams.vaccImmunePdfName := newName;
+
+        TrDelay: self.tracingParams.pdfTraceDelayName := newName;
+
+        TeDelay: self.testingParams.pdfTestDelayName := newName;
+
+        VacImmunePeriod: self.vaccinationParams.pdfVaccImmuneName := newName;
+
         ZONMovementDirect: self.zoneParams.setChart( whichChart, fn, addlInfo );
         ZONMovementIndirect: self.zoneParams.setChart( whichChart, fn, addlInfo );
         else
@@ -564,17 +614,18 @@ implementation
       ;
 
       case whichChart of
-        DLatent: self.latentName := newName;
-        DImmune: self.immuneName := newName;
-        DSubclinical: self.subclinicalName := newName;
-        DClinical: self.clinicalName := newName;
-        DPrevalence: self.prevalenceName := newName;
-        DetProbReportVsFirstDetection: self.detectionParams.relReportVsFirstDetectionName := newName;
-        DetProbObsVsTimeClinical: self.detectionParams.relObsVsTimeClinicalName := newName;
-        VacImmunePeriod: self.vaccinationParams.vaccImmunePdfName := newName;
-        ZONMovementDirect: self.zoneParams.changeChart( whichChart, oldChartName, newChart );
-        ZONMovementIndirect: self.zoneParams.changeChart( whichChart, oldChartName, newChart );
+        DLatent: if( oldChartName = self.pdfLatentName ) then  self.pdfLatentName := newName;
+        DImmune: if( oldChartName = self.pdfImmuneName ) then self.pdfImmuneName := newName;
+        DSubclinical: if( oldChartName = self.pdfSubclinicalName ) then self.pdfSubclinicalName := newName;
+        DClinical: if( oldChartName = self.pdfClinicalName ) then self.pdfClinicalName := newName;
+        DPrevalence: if( oldChartName = self.relPrevalenceName ) then self.relPrevalenceName := newName;
       end;
+
+      detectionParams.changeChart( whichChart, oldChartName, newChart, addlInfo );
+      tracingParams.changeChart( whichChart, oldChartName, newChart, addlInfo );
+      testingParams.changeChart( whichChart, oldChartName, newChart, addlInfo );
+      vaccinationParams.changeChart( whichChart, oldChartName, newChart, addlInfo );
+      zoneParams.changeChart( whichChart, oldChartName, newChart, addlInfo );
 
       _updated := true;
     end
@@ -584,16 +635,23 @@ implementation
   function TProductionType.hasChartName( const chartName: string; const whichChart: TSMChart ): boolean;
     begin
       case whichChart of
-        DLatent: result := ( chartName = self.latentName );
-        DImmune: result := ( chartName = self.immuneName );
-        DSubclinical: result := ( chartName = self.subclinicalName );
-        DClinical: result := ( chartName = self.clinicalName );
-        DPrevalence: result := ( chartName = self.prevalenceName );
+        DLatent: result := ( chartName = self.pdfLatentName );
+        DImmune: result := ( chartName = self.pdfImmuneName );
+        DSubclinical: result := ( chartName = self.pdfSubclinicalName );
+        DClinical: result := ( chartName = self.pdfClinicalName );
+        DPrevalence: result := ( chartName = self.relPrevalenceName );
+
         DetProbReportVsFirstDetection: result := ( chartName = self.detectionParams.relReportVsFirstDetectionName );
         DetProbObsVsTimeClinical: result := ( chartName = self.detectionParams.relObsVsTimeClinicalName );
-        VacImmunePeriod: result := ( chartName = self.vaccinationParams.vaccImmunePdfName );
-        ZONMovementDirect: result := (self.zoneParams.hasChartName( chartName ) );
-        ZONMovementIndirect: result := (self.zoneParams.hasChartName( chartName ) );
+
+        TrDelay: result := ( chartName = self.tracingParams.pdfTraceDelayName );
+
+        TeDelay: result := ( chartName = self.testingParams.pdfTestDelayName );
+
+        VacImmunePeriod: result := ( chartName = self.vaccinationParams.pdfVaccImmuneName );
+
+        ZONMovementDirect: result := (self.zoneParams.hasChartName( chartName, whichChart ) );
+        ZONMovementIndirect: result := (self.zoneParams.hasChartName( chartName, whichChart ) );
         else
           begin
             raise exception.Create( 'Unrecognized whichChart in TProductionType.hasChartName' );
@@ -615,25 +673,36 @@ implementation
         begin
           case whichChart of
             DLatent:
-              if ( self.fnDictionary.contains( self.latentName ) ) then
-                ret_val := self.fnDictionary.value( self.latentName ).fn
+              if ( self.fnDictionary.contains( self.pdfLatentName ) ) then
+                ret_val := self.fnDictionary.value( self.pdfLatentName ).fn
               ;
             DImmune:
-              if ( self.fnDictionary.contains( self.immuneName ) ) then
-                ret_val := self.fnDictionary.value( self.immuneName ).fn
+              if ( self.fnDictionary.contains( self.pdfImmuneName ) ) then
+                ret_val := self.fnDictionary.value( self.pdfImmuneName ).fn
               ;
             DSubclinical:
-              if ( self.fnDictionary.contains( self.subclinicalName ) ) then
-                ret_val := self.fnDictionary.value( self.subclinicalName ).fn
+              if ( self.fnDictionary.contains( self.pdfSubclinicalName ) ) then
+                ret_val := self.fnDictionary.value( self.pdfSubclinicalName ).fn
               ;
             DClinical:
-              if ( self.fnDictionary.contains( self.clinicalName ) ) then
-                ret_val := self.fnDictionary.value( self.clinicalName ).fn
+              if ( self.fnDictionary.contains( self.pdfClinicalName ) ) then
+                ret_val := self.fnDictionary.value( self.pdfClinicalName ).fn
               ;
             DPrevalence:
-              if ( self.fnDictionary.contains( self.prevalenceName ) ) then
-                ret_val := self.fnDictionary.value( self.prevalenceName ).fn
+              if ( self.fnDictionary.contains( self.relPrevalenceName ) ) then
+                ret_val := self.fnDictionary.value( self.relPrevalenceName ).fn
               ;
+
+            TrDelay:
+              if ( self.fnDictionary.contains( self.tracingParams.pdfTraceDelayName ) ) then
+                ret_val := self.fnDictionary.value( self.tracingParams.pdfTraceDelayName ).fn
+              ;
+
+            TeDelay:
+              if ( self.fnDictionary.contains( self.testingParams.pdfTestDelayName ) ) then
+                ret_val := self.fnDictionary.value( self.testingParams.pdfTestDelayName ).fn
+              ;
+
             DetProbReportVsFirstDetection:
               if ( self.fnDictionary.contains( self.detectionParams.relReportVsFirstDetectionName ) ) then
                 ret_val := self.fnDictionary.value( self.detectionParams.relReportVsFirstDetectionName ).fn
@@ -642,9 +711,11 @@ implementation
               if ( self.fnDictionary.contains( self.detectionParams.relObsVsTimeClinicalName ) ) then
                 ret_val := self.fnDictionary.value( self.detectionParams.relObsVsTimeClinicalName ).fn
               ;
+
+
             VacImmunePeriod:
-              if ( self.fnDictionary.contains( self.vaccinationParams.vaccImmunePdfName ) ) then
-                ret_val := self.fnDictionary.value( self.vaccinationParams.vaccImmunePdfName ).fn
+              if ( self.fnDictionary.contains( self.vaccinationParams.pdfVaccImmuneName ) ) then
+                ret_val := self.fnDictionary.value( self.vaccinationParams.pdfVaccImmuneName ).fn
               ;
           end;
         end;
@@ -656,14 +727,20 @@ implementation
 
   procedure TProductionType.removeChart( const chartName: string );
     begin
-      if( chartName = self.latentName ) then self.latentName := '';
-      if( chartName = self.immuneName ) then self.immuneName := '';
-      if( chartName = self.subclinicalName ) then self.subclinicalName := '';
-      if( chartName = self.clinicalName ) then self.clinicalName := '';
-      if( chartName = self.prevalenceName ) then self.prevalenceName := '';
+      if( chartName = self.pdfLatentName ) then self.pdfLatentName := '';
+      if( chartName = self.pdfImmuneName ) then self.pdfImmuneName := '';
+      if( chartName = self.pdfSubclinicalName ) then self.pdfSubclinicalName := '';
+      if( chartName = self.pdfClinicalName ) then self.pdfClinicalName := '';
+      if( chartName = self.relPrevalenceName ) then self.relPrevalenceName := '';
+
+      if( chartName = self.tracingParams.pdfTraceDelayName ) then self.tracingParams.pdfTraceDelayName := '';
+
+      if( chartName = self.testingParams.pdfTestDelayName ) then self.testingParams.pdfTestDelayName := '';
+
       if( chartName = self.detectionParams.relReportVsFirstDetectionName ) then self.detectionParams.relReportVsFirstDetectionName := '';
       if( chartName = self.detectionParams.relObsVsTimeClinicalName ) then self.detectionParams.relObsVsTimeClinicalName := '';
-      if( chartName = self.vaccinationParams.vaccImmunePdfName ) then self.vaccinationParams.vaccImmunePdfName := '';
+
+      if( chartName = self.vaccinationParams.pdfVaccImmuneName ) then self.vaccinationParams.pdfVaccImmuneName := '';
 
       // The _updated flag will be set by the properties above, if necessary
     end
@@ -674,69 +751,69 @@ implementation
 // TProductionType Data validation
 //-----------------------------------------------------------------------------
   function TProductionType.validateDiseaseParams( err: PString = nil ): boolean;
-  	var
-    	msg: string;
-    	submsg: string;
+    var
+      msg: string;
+      submsg: string;
 
       includePrevalence: boolean;
-  	begin
-    	result := true;
-			msg := '';
+    begin
+      result := true;
+      msg := '';
 
       if( not simulateTransition ) then
-				exit
+        exit
       ;
 
       includePrevalence := (_sim as TSMSimulationInput).useWithinHerdPrevalence;
 
       submsg := '';
-      if( nil = diseaseLatent ) then
-      	begin
-       		if( err <> nil ) then msg := msg + '  ' + tr( 'Latent period PDF is not set.' ) + endl;
+      if( nil = pdfDiseaseLatent ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Latent period PDF is not set.' ) + endl;
           result := false;
         end
-      else if( not( diseaseLatent.validate( @submsg) ) ) then
-      	begin
-					if( err <> nil ) then msg := msg + '  ' + tr( 'Latent period PDF is not valid:' ) + ' ' + submsg + endl;
-          result := false;
-        end
-      ;
-
-      submsg := '';
-      if( nil = diseaseSubclinical ) then
-      	begin
-       		if( err <> nil ) then msg := msg + '  ' + tr( 'Subclinical period PDF is not set.' ) + endl;
-          result := false;
-        end
-      else if( not( diseaseSubclinical.validate( @submsg) ) ) then
-      	begin
-					if( err <> nil ) then msg := msg + '  ' + tr( 'Subclinical period PDF is not valid:' ) + ' ' + submsg + endl;
+      else if( not( pdfDiseaseLatent.validate( @submsg) ) ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Latent period PDF is not valid:' ) + ' ' + submsg + endl;
           result := false;
         end
       ;
 
       submsg := '';
-      if( nil = diseaseClinical) then
-      	begin
-       		if( err <> nil ) then msg := msg + '  ' + tr( 'Clinical period PDF is not set.' ) + endl;
+      if( nil = pdfDiseaseSubclinical ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Subclinical period PDF is not set.' ) + endl;
           result := false;
         end
-      else if( not( diseaseClinical.validate( @submsg) ) ) then
-      	begin
-					if( err <> nil ) then msg := msg + '  ' + tr( 'Clinical period PDF is not valid:' ) + ' ' + submsg + endl;
+      else if( not( pdfDiseaseSubclinical.validate( @submsg) ) ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Subclinical period PDF is not valid:' ) + ' ' + submsg + endl;
           result := false;
         end
       ;
 
       submsg := '';
-      if( nil = diseaseImmune ) then
-      	begin
-       		if( err <> nil ) then msg := msg + '  ' + tr( 'Immune period PDF is not set.' ) + endl;
+      if( nil = pdfDiseaseClinical) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Clinical period PDF is not set.' ) + endl;
           result := false;
         end
-      else if( not( diseaseImmune.validate( @submsg) ) ) then
-      	begin
-					if( err <> nil ) then msg := msg + '  ' + tr( 'Immune period PDF is not valid:' ) + ' ' + submsg + endl;
+      else if( not( pdfDiseaseClinical.validate( @submsg) ) ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Clinical period PDF is not valid:' ) + ' ' + submsg + endl;
+          result := false;
+        end
+      ;
+
+      submsg := '';
+      if( nil = pdfDiseaseImmune ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Immune period PDF is not set.' ) + endl;
+          result := false;
+        end
+      else if( not( pdfDiseaseImmune.validate( @submsg) ) ) then
+        begin
+          if( err <> nil ) then msg := msg + '  ' + tr( 'Immune period PDF is not valid:' ) + ' ' + submsg + endl;
           result := false;
         end
       ;
@@ -744,12 +821,12 @@ implementation
       submsg := '';
       if( includePrevalence ) then
         begin
-          if( nil = diseasePrevalence ) then
+          if( nil = relDiseasePrevalence ) then
             begin
               if( err <> nil ) then msg := msg + '  ' + tr( 'Prevalence REL function is not set.' ) + endl;
               result := false;
             end
-          else if( not( diseasePrevalence.validate( @submsg) ) ) then
+          else if( not( relDiseasePrevalence.validate( @submsg) ) ) then
             begin
               if( err <> nil ) then msg := msg + '  ' + tr( 'Prevalence REL function is not valid:' ) + ' ' + submsg + endl;
               result := false;
@@ -759,55 +836,67 @@ implementation
       ;
 
       if( ( result = false ) and ( err <> nil ) ) then
-      	err^ := err^ + msg
+        err^ := err^ + msg
       ;
     end
   ;
 
 
   function TProductionType.validate( err: PString = nil ): boolean;
-  	var
-    	msg: string;
-    	submsg: string;
+    var
+      msg: string;
+      submsg: string;
 
       includeDetection: boolean;
       includeDestruction: boolean;
+      includeTracing: boolean;
+      includeTesting: boolean;
       includeVaccination: boolean;
       includeCosts: boolean;
       includeZones: boolean;
-  	begin
-    	result := true;
-			msg := '';
+    begin
+      result := true;
+      msg := '';
 
       includeDetection := (_sim as TSMSimulationInput).includeDetectionGlobal;
       includeDestruction := (_sim as TSMSimulationInput).includeDestructionGlobal;
+      includeTracing := (_sim as TSMSimulationInput).includeTracingGlobal;
+      includeTesting := (_sim as TSMSimulationInput).includeTracingTestingGlobal;
       includeVaccination := (_sim as TSMSimulationInput).includeVaccinationGlobal;
       includeCosts := (_sim as TSMSimulationInput).includeCostsGlobal;
       includeZones := (_sim as TSMSimulationInput).includeZonesGlobal;
       
-      dbcout( 'Validating production type ' + productionTypeDescr, DBPRODUCTIONTYPE );
+      dbcout( 'Validating production type ' + productionTypeDescr, DBSHOWMSG );
 
-			submsg := '';
+      if( 0 = unitCount ) then
+        begin
+          dbcout( 'Production type is not valid: there are no units.', DBSHOWMSG );
+          if( nil <> err ) then msg := msg + tr( 'There are no units of this production type.' ) + endl;
+          result := false;
+        end
+      ;
+
+      submsg := '';
       if( not( validateDiseaseParams( @submsg ) ) ) then
-      	begin
-        	dbcout( 'Disease params are invalid: ' + submsg, DBPRODUCTIONTYPE );
-        	if( nil <> err ) then msg := msg + submsg + endl;
+        begin
+          dbcout( 'Disease params are invalid: ' + submsg, DBSHOWMSG );
+          if( nil <> err ) then msg := msg + submsg + endl;
           result := false;
         end
       ;
 
       submsg := '';
       if( includeDetection and useDetection ) then
-      	begin
+        begin
           if( nil = detectionParams ) then
-          	begin
-            	dbcout( 'Detection is indicated but not set', DBPRODUCTIONTYPE );
+            begin
+              dbcout( 'Detection is indicated but not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Detection is indicated, but parameters are not set.' ) + endl;
               result := false;
             end
           else if( not( detectionParams.validate( @submsg ) ) ) then
             begin
-            	dbcout( 'Detection params are invalid: ' + endl + submsg, DBPRODUCTIONTYPE );
+              dbcout( 'Detection params are invalid: ' + endl + submsg, DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Detection parameters are not valid:' ) + ' ' + endl + submsg + endl;
               result := false;
             end
@@ -816,36 +905,74 @@ implementation
       ;
 
       submsg := '';
-      if( includeDestruction {and useDestruction} ) then
-      	begin
-        	if( nil = destructionParams ) then
-          	begin
-            	dbcout( 'Destruction is indicated but not set', DBPRODUCTIONTYPE );
+      if( includeDestruction and includeDetection ) then
+        begin
+          if( nil = destructionParams ) then
+            begin
+              dbcout( 'Destruction is indicated but not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction is indicated, but parameters are not set.' ) + endl;
-            	result := false;
+              result := false;
             end
           else if( not( destructionParams.validate( @submsg ) ) ) then
-          	begin
-            	dbcout( 'Destruction params are invalid: ' + msg, DBPRODUCTIONTYPE );
+            begin
+              dbcout( 'Destruction params are invalid: ' + msg, DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction parameters are not valid:' ) + ' ' + submsg + endl;
-            	result := false;
+              result := false;
             end
           ;
         end
       ;
 
       submsg := '';
-      if( includeVaccination and isRingVaccTrigger ) then
-      	begin
+       if( includeTracing and includeDetection ) then
+        begin
+          if( nil = tracingParams ) then
+            begin
+              dbcout( 'Tracing is indicated but not set', DBSHOWMSG );
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Tracing is indicated, but parameters are not set.' ) + endl;
+              result := false;
+            end
+          else if( not( tracingParams.validate( @submsg ) ) ) then
+            begin
+              dbcout( 'Tracing params are invalid: ' + msg, DBSHOWMSG );
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Tracing parameters are not valid:' ) + ' ' + submsg + endl;
+              result := false;
+            end
+          ;
+        end
+      ;
+
+      submsg := '';
+      if( includeTesting and includeDetection ) then
+        begin
+          if( nil = testingParams ) then
+            begin
+              dbcout( 'Diagnostic testing is indicated but not set', DBSHOWMSG );
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Diagnostic testing is indicated, but parameters are not set.' ) + endl;
+              result := false;
+            end
+          else if( not( testingParams.validate( @submsg ) ) ) then
+            begin
+              dbcout( 'Diagnostic testing params are invalid: ' + msg, DBSHOWMSG );
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Diagnostic testing parameters are not valid:' ) + ' ' + submsg + endl;
+              result := false;
+            end
+          ;
+        end
+      ;
+
+      submsg := '';
+      if( ( includeVaccination and isRingVaccTrigger ) and includeDetection ) then
+        begin
           if( nil = ringVaccParams ) then
             begin
-            	dbcout( 'Ring vacc is indicated but not set', DBPRODUCTIONTYPE );
+              dbcout( 'Ring vacc is indicated but not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Ring vaccination is indicated, but parameters are not set.' ) + endl;
               result := false;
             end
           else if( not( ringVaccParams.validate( @submsg ) ) ) then
             begin
-            	dbcout( 'Ring vacc params are invalid: ' + submsg, DBPRODUCTIONTYPE );
+              dbcout( 'Ring vacc params are invalid: ' + submsg, DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Ring vaccination parameters are not valid:' ) + ' ' + submsg + endl;
               result := false;
             end
@@ -854,46 +981,70 @@ implementation
       ;
 
       submsg := '';
-      if( includeVaccination and useVaccination ) then
-      	begin
+      if( ( includeVaccination and useVaccination ) and includeDetection ) then
+        begin
           if( nil = vaccinationParams ) then
             begin
-            	dbcout( 'Vacc indicated, not set', DBPRODUCTIONTYPE );
+              dbcout( 'Vacc indicated, not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination is indicated, but parameters are not set.' ) + endl;
               result := false;
             end
           else if( not( vaccinationParams.validate( @submsg ) ) ) then
             begin
-            	dbcout( 'Vacc params are invalid: ' + submsg, DBPRODUCTIONTYPE );
+              dbcout( 'Vacc params are invalid: ' + submsg, DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination parameters are not valid:' ) + ' ' + submsg + endl;
               result := false;
             end
           ;
-      	end
+        end
+      ;
+
+      // If there are any initially vaccinated units of the production type, then there must be a vaccine model.
+      submsg := '';
+      if
+      ( ( not( includeVaccination ) ) or ( not( useVaccination ) ) )
+      and
+        ( (_sim as TSMSimulationInput).database.containsInitiallyVaccinatedUnits( self.productionTypeID ) )
+      then
+        begin
+          if( nil <> err ) then msg := msg + '  ' + tr( 'Units of this production type are initially vaccine immune, but parameters for vaccine immunity are not provided.' ) + endl;
+          result := false;
+        end
       ;
 
       submsg := '';
-      if( includeCosts ) then
+      if( includeCosts and includeDetection ) then
         begin
           if( nil = costParams ) then
             begin
-              dbcout( 'Cost is indicated but not set', DBPRODUCTIONTYPE );
+              dbcout( 'Cost is indicated but not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Cost accounting is indicated, but parameters are not set.' ) + endl;
               result := false;
             end
           else
             begin
-              if( isDestrTarget and not( costParams.validateDestr( @submsg ) ) ) then
+              if (( includeTracing and useTracing ) and not( costParams.validateTracing( @submsg ) ) ) then
                 begin
-                  dbcout( 'Cost params are invalid: ' + submsg, DBPRODUCTIONTYPE );
+                  dbcout( 'Trace params are invalid: ' + submsg, DBSHOWMSG );
+                  if( nil <> err ) then msg := msg + '  ' + tr( 'Tracing cost parameters are not valid:' ) + ' ' + submsg + endl;
+                  result := false;
+                end
+              ;
+
+              // Cost parameters currently include the cost of diagnostic
+              // testing as a subcomponent of tracing cost parameters.
+
+              if (( includeDestruction and isDestrTarget ) and not( costParams.validateDestr( @submsg ) ) ) then
+                begin
+                  dbcout( 'Cost params are invalid: ' + submsg, DBSHOWMSG );
                   if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction cost parameters are not valid:' ) + ' ' + submsg + endl;
                   result := false;
                 end
               ;
 
-              if( isVaccTarget and not( costParams.validateVacc( @submsg ) ) ) then
+              if (( includeVaccination and isVaccTarget ) and not( costParams.validateVacc( @submsg ) ) ) then
                 begin
-                  dbcout( 'Cost params are invalid: ' + submsg, DBPRODUCTIONTYPE );
+                  dbcout( 'Cost params are invalid: ' + submsg, DBSHOWMSG );
                   if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination cost parameters are not valid:' ) + ' ' + submsg + endl;
                   result := false;
                 end
@@ -904,17 +1055,17 @@ implementation
       ;
 
       submsg := '';
-      if( includeZones ) then
+      if( includeZones and includeDetection ) then
         begin
           if( nil = zoneParams ) then
             begin
-              dbcout( 'Zones are indicated but not set', DBPRODUCTIONTYPE );
+              dbcout( 'Zones are indicated but not set', DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Use of zones is indicated, but parameters are not set.' ) + endl;
               result := false;
             end
           else if( not( zoneParams.validate( @submsg ) ) ) then
             begin
-              dbcout( 'Zone params are invalid: ' + submsg, DBPRODUCTIONTYPE );
+              dbcout( 'Zone params are invalid: ' + submsg, DBSHOWMSG );
               if( nil <> err ) then msg := msg + '  ' + tr( 'Zone parameters are not valid:' ) + ' ' + submsg + endl;
               result := false;
             end
@@ -923,8 +1074,8 @@ implementation
       ;
 
       if( ( result = false ) and ( err <> nil ) ) then
-      	begin
-					msg := endl + ansiReplaceStr( tr( 'Production type xyz:' ), 'xyz', productionTypeDescr ) + endl + msg;
+        begin
+          msg := endl + ansiReplaceStr( tr( 'Production type xyz:' ), 'xyz', productionTypeDescr ) + endl + msg;
           err^ := err^ + msg;
         end
       ;
@@ -937,33 +1088,26 @@ implementation
 //-----------------------------------------------------------------------------
 // TProductionType Database population
 //-----------------------------------------------------------------------------
-  function TProductionType.populateDatabase( db: TSMDatabase; const forceInsert: boolean = false ): integer;
-  	var
-    	q: string;
+  function TProductionType.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer;
+    var
+      q: string;
       dict: TQueryDictionary;
     begin
       dict := TQueryDictionary.create();
 
-      if( ( 0 < self.productionTypeID ) and ( not forceInsert ) ) then
+      if( ( 0 < self.productionTypeID ) and ( updateAction <> MDBAForceInsert ) ) then
         updateDB( db )
       else
-      	self.productionTypeID := db.addProductionType( self.productionTypeDescr, self.simulateTransition, self.productionTypeID )
+        begin
+          self.productionTypeID := db.addProductionType( self.productionTypeDescr, self.simulateTransition, self.productionTypeID );
+          //rbh 20110620 Added call to updateDB() below because disease parameter chart IDs were not being set for inProductionType on XML Import
+          updateDB( db );
+        end
       ;
 
       // Populate control measures in the same way, whether updating or creating a new record
-      
-      // FIX ME: make 'detection' part of detectionParams.
-//SPC:  10/06/2006 -- Moved this to the detectionParams populateDatebase routine,
-//                    assuming that the presence of the object indications a "true"
-//                    value for this field.
-//
-//SPC:  10/31/2006 -- Moved back here because the formDetection editing in this program can reset this
-//                    value and still leave the detection object untouched.
-//
 
-      dict['useDetection'] := boolToStr( self.useDetection );
-
-      dict['useDiseaseTransition'] := boolToStr( self._simulateTransition );
+      dict['useDiseaseTransition'] := usBoolToText( self._simulateTransition );
 
       if( nil <> detectionParams ) then
         begin
@@ -977,6 +1121,22 @@ implementation
         begin
           if( destructionParams.updated ) then
             destructionParams.populateDatabase( db, self.productionTypeID )
+          ;
+        end
+      ;
+
+      if( nil <> tracingParams ) then
+        begin
+          if( tracingParams.updated ) then
+            tracingParams.populateDatabase( db, self.productionTypeID )
+          ;
+        end
+      ;
+
+      if( nil <> testingParams ) then
+        begin
+          if( testingParams.updated ) then
+            testingParams.populateDatabase( db, self.productionTypeID )
           ;
         end
       ;
@@ -1014,7 +1174,7 @@ implementation
       ;
 
       q := writeQuery(
-      	'inProductionType',
+        'inProductionType',
         QUpdate,
         dict,
         'WHERE `productionTypeID` = ' + intToStr( self.productionTypeID )
@@ -1032,54 +1192,54 @@ implementation
 
 
   procedure TProductionType.updateDB( db: TSMDatabase );
-  	var
-    	q: string;
+    var
+      q: string;
       dict: TQueryDictionary;
       idstr: string;
-  	begin
+    begin
       dict := TQueryDictionary.create();
 
       dict['descr'] := db.sqlQuote( self.productionTypeDescr );
 
-      dict['useDiseaseTransition'] := boolToStr( self.simulateTransition );
+      dict['useDiseaseTransition'] := usBoolToText( self.simulateTransition );
 
-      if( nil <> diseaseLatent ) then
-      	idstr := intToStr( diseaseLatent.id )
+      if( nil <> pdfDiseaseLatent ) then
+        idstr := intToStr( pdfDiseaseLatent.id )
       else
-      	idstr := DATABASE_NULL_VALUE
+        idstr := DATABASE_NULL_VALUE
       ;
       dict['disLatentPeriodPdfID'] := idstr;
 
-      if( nil <> diseaseSubclinical ) then
-      	idstr := intToStr( diseaseSubclinical.id )
+      if( nil <> pdfDiseaseSubclinical ) then
+        idstr := intToStr( pdfDiseaseSubclinical.id )
       else
-      	idstr := DATABASE_NULL_VALUE
+        idstr := DATABASE_NULL_VALUE
       ;
       dict['disSubclinicalPeriodPdfID'] := idstr;
 
-      if( nil <> diseaseClinical ) then
-      	idstr := intToStr( diseaseClinical.id )
+      if( nil <> pdfDiseaseClinical ) then
+        idstr := intToStr( pdfDiseaseClinical.id )
       else
-      	idstr := DATABASE_NULL_VALUE
+        idstr := DATABASE_NULL_VALUE
       ;
       dict['disClinicalPeriodPdfID'] := idstr;
 
-      if( nil <> diseaseImmune ) then
-      	idstr := intToStr( diseaseImmune.id )
+      if( nil <> pdfDiseaseImmune ) then
+        idstr := intToStr( pdfDiseaseImmune.id )
       else
-      	idstr := DATABASE_NULL_VALUE
+        idstr := DATABASE_NULL_VALUE
       ;
       dict['disImmunePeriodPdfID'] := idstr;
 
-      if( nil <> diseasePrevalence ) then
-      	idstr := intToStr( diseasePrevalence.id )
+      if( nil <> relDiseasePrevalence ) then
+        idstr := intToStr( relDiseasePrevalence.id )
       else
-      	idstr := DATABASE_NULL_VALUE
+        idstr := DATABASE_NULL_VALUE
       ;
       dict['disPrevalenceRelID'] := idstr;
 
       q := writeQuery(
-      	'inProductionType',
+        'inProductionType',
         QUpdate,
         dict,
         'WHERE [productionTypeID] = ' + intToStr( self.productionTypeID )
@@ -1090,8 +1250,8 @@ implementation
 
       db.execute( q );
 
-      // Detection, destruction, vaccination, and cost
-      // parameters are updated by the original call to
+      // Detection, destruction, tracing, testing, vaccination,
+      // and cost parameters are updated by the original call to
       // populateDatabase. It isn't necessary to do anything
       // with them here.
     end
@@ -1103,44 +1263,44 @@ implementation
 //-----------------------------------------------------------------------------
 // TProductionType XML export
 //-----------------------------------------------------------------------------
-	function TProductionType.ssDiseaseModelXml(): string;
+  function TProductionType.ssDiseaseModelXml(): string;
     var
       useWithinHerdPrevalence: boolean;
-		begin
+    begin
       useWithinherdPrevalence := (_sim as TSMSimulationInput).useWithinHerdPrevalence;
 
-    	if( simulateTransition ) then
-      	begin
+      if( simulateTransition ) then
+        begin
           result := '  <disease-model production-type="' + encodeXml( self.productionTypeDescr ) + '" production-type-id="' + intToStr( self.productionTypeID ) + '">' + endl;
 
-          if( nil <> diseaseLatent ) then
+          if( nil <> pdfDiseaseLatent ) then
             begin
               result := result + '    <latent-period>' + endl;
-              result := result + diseaseLatent.ssXml( 3 );
+              result := result + pdfDiseaseLatent.ssXml( 3 );
               result := result + '    </latent-period>' + endl;
             end
           ;
 
-          if( nil <> diseaseSubclinical ) then
+          if( nil <> pdfDiseaseSubclinical ) then
             begin
-              result := result + '    <infectious-subclinical-period>' + endl;
-              result := result + diseaseSubclinical.ssXml( 3 );
+            result := result + '    <infectious-subclinical-period>' + endl;
+              result := result + pdfDiseaseSubclinical.ssXml( 3 );
               result := result + '    </infectious-subclinical-period>' + endl;
             end
           ;
 
-          if( nil <> diseaseClinical ) then
+          if( nil <> pdfDiseaseClinical ) then
             begin
               result := result + '    <infectious-clinical-period>' + endl;
-              result := result + diseaseClinical.ssXml( 3 );
+              result := result + pdfDiseaseClinical.ssXml( 3 );
               result := result + '    </infectious-clinical-period>' + endl;
             end
           ;
 
-          if( nil <> diseaseImmune ) then
+          if( nil <> pdfDiseaseImmune ) then
             begin
               result := result + '    <immunity-period>' + endl;
-              result := result + diseaseImmune.ssXml( 3 );
+              result := result + pdfDiseaseImmune.ssXml( 3 );
               result := result + '    </immunity-period>' + endl;
             end
           ;
@@ -1148,7 +1308,7 @@ implementation
           if( useWithinHerdPrevalence ) then
             begin
               result := result + '    <prevalence>' + endl;
-              result := result + diseasePrevalence.ssXml( 3 );
+              result := result + relDiseasePrevalence.ssXml( 3 );
               result := result + '    </prevalence>' + endl;
             end
           ;
@@ -1156,19 +1316,98 @@ implementation
           result := result + '  </disease-model>' + endl;
         end
       else
-      	result := ''
+        result := ''
       ;
 
     end
   ;
 
 
-	function TProductionType.ssDetectionXml(): string;
-  	begin
+  function TProductionType.ssDetectionXml(): string;
+    begin
       if( useDetection ) then
-				result := detectionParams.ssXML( self.productionTypeID )
+        result := detectionParams.ssXML( self.productionTypeID )
       else
-      	result := ''
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssContactRecorderXml( const maxPeriod: integer ): string;
+    begin
+      if( useTracing ) then
+        result := tracingParams.ssContactRecorderXml( self.productionTypeID, maxPeriod )
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssTracingXml(): string;
+    begin
+      if( useTracing ) then
+        result := tracingParams.ssXml( self.productionTypeID )
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssExamXml(): string;
+    begin
+      if( useTracingExam ) then
+        result := tracingParams.ssExamXml( self.productionTypeID, useTesting, self.testingParams )
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssTestXml(): string;
+    begin
+      if( useTesting ) then
+        result := testingParams.ssXml( self.productionTypeID )
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssBasicDestrXml(): string;
+    var
+      destrPriorityList: TQStringLongIntMap;
+      priority: integer;
+    begin
+      if( useBasicDestruction ) then
+        begin
+          destrPriorityList := (_sim as TSMSimulationInput).controlParams.ssDestrPriorities;
+          priority := destrPriorityList[ self.productionTypeDescr + '+' + 'basic' ];
+
+          result := destructionParams.ssBasicDestrModelXml( productionTypeID, priority );
+        end
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TProductionType.ssTraceDestrXml(): string;
+    var
+      destrPriorityList: TQStringLongIntMap;
+    begin
+      if( useTraceDestruction ) then
+        begin
+          destrPriorityList := (_sim as TSMSimulationInput).controlParams.ssDestrPriorities;
+          result := destructionParams.ssTraceDestrModelXml( productionTypeID, destrPriorityList );
+        end
+      else
+        result := ''
       ;
     end
   ;
@@ -1218,14 +1457,13 @@ implementation
         begin
           toType := it.current();
 
-          dbcout( 'To type ' + toType.productionTypeDescr + ' should be destroyed: ' + usBoolToText( toType.isDestrRingTarget ), DBPRODUCTIONTYPE );
+          dbcout( 'To type ' + toType.productionTypeDescr + ' should be destroyed: ' + usBoolToText( toType.isDestrRingTarget ), DBSHOWMSG );
 
           if( toType.isDestrRingTarget ) then
             begin
               priority := destrPriorityList[ toType.productionTypeDescr + '+' + 'ring' ];
 
-              str := str + endl;
-              str := str + '  <ring-destruction-model to-production-type="' + toType.xmlProdTypeDescr + '" from-production-type="' + fromType.xmlProdTypeDescr + '">' + endl;
+              str := str + '  <ring-destruction-model to-production-type="' + encodeXml( toType.productionTypeDescr ) + '" from-production-type="' + encodeXml( fromType.productionTypeDescr ) + '">' + endl;
               str := str + '    <priority>' + intToStr( priority ) + '</priority> <!-- Based on the "to" type and destuction reason (ring) -->' + endl;
               str := str + '    <radius>' + endl;
               str := str + '      <value>' + usFloatToStr( fromType.destructionParams.ringRadius ) + '</value>' + endl;
@@ -1291,14 +1529,14 @@ implementation
         begin
           toType := it.current();
 
-          dbcout( 'From type ' + fromType.productionTypeDescr + ' is ring vacc trigger: ' + usBoolToText( fromType.isRingVaccTrigger ), DBPRODUCTIONTYPE );
-          dbcout( 'To type ' + toType.productionTypeDescr + ' should be vaccinated: ' + usBoolToText( toType.useVaccination ), DBPRODUCTIONTYPE );
+          dbcout( 'From type ' + fromType.productionTypeDescr + ' is ring vacc trigger: ' + usBoolToText( fromType.isRingVaccTrigger ), DBSHOWMSG );
+          dbcout( 'To type ' + toType.productionTypeDescr + ' should be vaccinated: ' + usBoolToText( toType.useVaccination ), DBSHOWMSG );
 
           if( toType.useVaccination ) then
             begin
               priority := vaccPriorityList[ toType.productionTypeDescr + '+' + 'ring' ];
 
-              str := str + '  <ring-vaccination-model to-production-type="' + toType.xmlProdTypeDescr + '" from-production-type="' + fromType.xmlProdTypeDescr + '">' + endl;
+              str := str + '  <ring-vaccination-model to-production-type="' + encodeXml( toType.productionTypeDescr ) + '" from-production-type="' + encodeXml( fromType.productionTypeDescr ) + '">' + endl;
 
               str := str + '    <priority>' + intToStr( priority ) + '</priority> <!-- Priority is based only on the "to" type -->' + endl;
 
@@ -1311,6 +1549,8 @@ implementation
               str := str + '      <value>' + intToStr( toType.ringVaccParams.minTimeBetweenVacc ) + '</value>' + endl;
               str := str + '      <units><xdf:unit>day</xdf:unit></units>' + endl;
               str := str + '    </min-time-between-vaccinations>' + endl;
+
+              str := str + '    <vaccinate-detected-units>' + usBoolToText( toType.ringVaccParams.vaccinateDetected ) + '</vaccinate-detected-units>' + endl;
 
               str := str + '  </ring-vaccination-model>' + endl;
               str := str + endl;
@@ -1330,6 +1570,229 @@ implementation
   function TProductionType.ssZoneXml(): string;
     begin
       result := zoneParams.ssXml( self.productionTypeID );
+    end
+  ;
+
+
+  function TProductionType.ssEconXml( const includeZonesGlobal: boolean; zoneList: TZoneList ): string;
+    var
+      it: TZoneListIterator;
+    begin
+      result := costParams.ssXml( isDestrTarget, isVaccTarget, self.productionTypeID );
+
+      if( includeZonesGlobal ) then
+        begin
+          // FIX ME: Does the "background" zone need to be included here?
+          // (I don't think so, but someone should check...)
+
+          it := TZoneListIterator.create( zoneList );
+          while( nil <> it.current() ) do
+            begin
+              result := result
+                + '  <economic-model production-type="' + self.productionTypeDescr + '" production-type-id="' + intToStr( self.productionTypeID ) + '" zone="' + it.current().descr + '">' + endl
+                + '    <surveillance>' + endl
+                + '      <value>' + usFloatToStr( zoneParams.zonePtParamsList.paramsForZone( it.current().id ).costSurvPerAnimalDay ) + '</value>' + endl
+                + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+                + '    </surveillance>' + endl
+                + '  </economic-model>' + endl + endl
+              ;
+              it.incr();
+            end
+          ;
+          it.Free();
+        end
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// TProductionType: XML import
+//-----------------------------------------------------------------------------
+  procedure TProductionType.importDiseaseXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    var
+      e: pointer;
+
+      latentPeriod: TPdf;
+      infectiousSubClinicalPeriod: TPdf;
+      infectiousClinicalPeriod: TPdf;
+      immunityPeriod: TPdf;
+      prevalenceChart: TRelFunction;
+    begin
+      latentPeriod := nil;
+      infectiousSubClinicalPeriod := nil;
+      infectiousClinicalPeriod := nil;
+      immunityPeriod := nil;
+      prevalenceChart := nil;
+
+      e := sdew.GetElementByName( model, 'latent-period' );
+      if( nil <> e ) then
+        latentPeriod := createPdfFromXml( e, sdew )
+      ;
+
+      e := sdew.GetElementByName( model, 'infectious-subclinical-period' );
+      if( nil <> e ) then
+        infectiousSubClinicalPeriod := createPdfFromXml( e, sdew )
+      ;
+
+      e := sdew.GetElementByName( model, 'infectious-clinical-period' );
+      if( nil <> e ) then
+        infectiousClinicalPeriod := createPdfFromXml( e, sdew )
+      ;
+
+      e := sdew.GetElementByName( model, 'immunity-period' );
+      if( nil <> e ) then
+        immunityPeriod := createPdfFromXml( e, sdew )
+      ;
+
+      e := sdew.GetElementByName( model, 'prevalence' );
+      if( nil <> e ) then
+        prevalenceChart := createRelFromXml( e, sdew )
+      ;
+
+      if( nil <> latentPeriod ) then
+        begin
+          if ( latentPeriod.name = '' ) then
+            latentPeriod.name := self.productionTypeDescr + ' latent period'
+          ;
+          dbcout( latentPeriod.name, DBSHOWMSG );
+          latentPeriod.dbField := word( DLatent );
+          self.pdfLatentName := fnDictionary.checkAndInsert( latentPeriod );
+          self.simulateTransition := true;
+        end
+      else
+        appendToPstring( errMsg, tr( 'Disease XML is missing a function for the latent period.' ) )
+      ;
+
+      if( nil <> infectiousSubClinicalPeriod ) then
+        begin
+          if ( infectiousSubClinicalPeriod.name = '' ) then
+            infectiousSubClinicalPeriod.name := self.productionTypeDescr + ' subclinical period'
+          ;
+          dbcout( infectiousSubClinicalPeriod.name, DBSHOWMSG );
+          infectiousSubClinicalPeriod.dbField := word( DSubclinical );
+          self.pdfSubclinicalName := fnDictionary.checkAndInsert( infectiousSubClinicalPeriod );
+          self.simulateTransition := true;
+        end
+      else
+        appendToPstring( errMsg, tr( 'Disease XML is missing a function for the subclinical period.' ) )
+      ;
+
+      if( nil <> infectiousClinicalPeriod ) then
+        begin
+          if ( infectiousClinicalPeriod.name = '' ) then
+            infectiousClinicalPeriod.name := self.productionTypeDescr + ' clinical period'
+          ;
+          dbcout( infectiousClinicalPeriod.name, DBSHOWMSG );
+          infectiousClinicalPeriod.dbField := word( DClinical );
+          self.pdfClinicalName := fnDictionary.checkAndInsert( infectiousClinicalPeriod );
+          self.simulateTransition := true;
+        end
+      else
+        appendToPstring( errMsg, tr( 'Disease XML is missing a function for the clinical period.' ) )
+      ;
+
+      if( nil <> immunityPeriod ) then
+        begin
+          if ( immunityPeriod.name = '' ) then
+            immunityPeriod.name := self.productionTypeDescr + ' immune period'
+          ;
+          dbcout( immunityPeriod.name, DBSHOWMSG );
+          immunityPeriod.dbField := word( DImmune );
+          self.pdfImmuneName := fnDictionary.checkAndInsert( immunityPeriod );
+          self.simulateTransition := true;
+        end
+      else
+        appendToPstring( errMsg, tr( 'Disease XML is missing a function for the natural immune period.' ) )
+      ;
+
+      if( nil <> prevalenceChart ) then
+        begin
+          if ( prevalenceChart.name = '' ) then
+            prevalenceChart.name := self.productionTypeDescr + ' prevalence'
+          ;
+          dbcout( prevalenceChart.name, DBSHOWMSG );
+          prevalenceChart.dbField := word( DPrevalence );
+          self.relPrevalenceName := fnDictionary.checkAndInsert( prevalenceChart );
+          self.simulateTransition := true;
+          (self.sim as TSMSimulationInput).useWithinHerdPrevalence := true;
+        end
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    var
+      modelName: string;
+    begin
+      modelName := sdew.GetElementName( model );
+
+      if( 'disease-model' = modelName ) then
+        importDiseaseXml( model, sdew, errMsg )
+      ;
+      if( _detection.xmlModelList.contains( modelName ) ) then
+        _detection.importXml( model, sdew, errMsg )
+      ;
+      if( _zoneParams.xmlModelList.contains( modelName ) ) then
+        _zoneParams.importXml( model, sdew, errMsg )
+      ;
+      if( _vacc.xmlModelList.contains( modelName ) ) then
+        _vacc.importXml( model, sdew, errMsg )
+      ;
+      if( _ringVacc.xmlModelList.contains( modelName ) ) then
+        _ringVacc.importXml( model, sdew, errMsg )
+      ;
+      if( _destr.xmlModelList.contains( modelName ) ) then
+        _destr.importXml( model, sdew, errMsg )
+      ;
+      if( _trace.xmlModelList.contains( modelName ) ) then
+        _trace.importXml( model, sdew, errMsg )
+      ;
+      if( _testing.xmlModelList.contains( modelName ) ) then
+        _testing.importXml( model, sdew, errMsg )
+      ;
+    end
+  ;
+
+
+  class function TProductionType.createXmlModelList(): TQStringList;
+    var
+      list: TQStringList;
+    begin
+      result := TQStringList.create();
+
+      result.Append( 'disease-model' ); // TProductionType
+
+      list := TDetectionParams.createXmlModelList();
+      result.merge( list );
+      list.Free();
+
+      list := TProdTypeZoneParams.createXmlModelList();
+      result.merge( list );
+      list.Free();
+
+      list := TVaccinationParams.createXmlModelList();
+      result.merge( list );
+      list.free();
+
+      list := TRingVaccParams.createXmlModelList();
+      result.merge( list );
+      list.free();
+
+      list := TDestructionParams.createXmlModelList();
+      result.merge( list );
+      list.free();
+
+      list := TTracingParams.createXmlModelList();
+      result.merge( list );
+      list.free();
+
+      list := TTestingParams.createXmlModelList();
+      result.merge( list );
+      list.free();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -1407,57 +1870,57 @@ implementation
     var
       msg: string;
     begin;
-    	msg := '++BEGIN TPRODUCTIONTYPE DEBUG' + endl;
+      msg := '++BEGIN TPRODUCTIONTYPE DEBUG' + endl;
       msg := msg + 'ProductionTypeID: ' + intToStr(self.productionTypeID) + endl;
       msg := msg + 'ProductionType: ' +  self.productionTypeDescr + endl;
-      msg := msg + 'simulateTransition: ' + boolToStr(self.simulateTransition) + endl;
+      msg := msg + 'simulateTransition: ' + usBoolToText(self.simulateTransition) + endl;
 
       if( updated ) then msg := msg + '**UPDATED**' + endl;
 
       dbcout( msg, true );
 
-      if( nil <> diseaseLatent ) then
-      	begin
+      if( nil <> pdfDiseaseLatent ) then
+        begin
           dbcout( 'diseaseLatent', true );
-          diseaseLatent.debug();
+          pdfDiseaseLatent.debug();
         end
       else
-      	dbcout( 'NO LATENT PERIOD DEFINED', true )
+        dbcout( 'NO LATENT PERIOD DEFINED', true )
       ;
 
-      if( nil <> diseaseSubclinical ) then
-      	begin
+      if( nil <> pdfDiseaseSubclinical ) then
+        begin
           dbcout( endl + 'diseaseSubclinical', true );
-          diseaseSubclinical.debug();
+          pdfDiseaseSubclinical.debug();
         end
       else
-      	dbcout( endl + 'NO SUBCLINICAL PERIOD DEFINED', true )
+        dbcout( endl + 'NO SUBCLINICAL PERIOD DEFINED', true )
       ;
 
-      if( nil <> diseaseClinical ) then
-      	begin
+      if( nil <> pdfDiseaseClinical ) then
+        begin
           dbcout( endl + 'diseaseClinical', true );
-          diseaseClinical.debug();
+          pdfDiseaseClinical.debug();
         end
       else
-      	dbcout( endl + 'NO CLINICAL PERIOD DEFINED', true )
+        dbcout( endl + 'NO CLINICAL PERIOD DEFINED', true )
       ;
 
-      if( nil <> diseaseImmune ) then
-      	begin
+      if( nil <> pdfDiseaseImmune ) then
+        begin
           dbcout( endl + 'diseaseImmune', true);
-          diseaseImmune.debug();
+          pdfDiseaseImmune.debug();
         end
       else
-      	dbcout( endl + 'NO IMMUNE PERIOD DEFINED', true )
+        dbcout( endl + 'NO IMMUNE PERIOD DEFINED', true )
       ;
 
       if( (_sim as TSMSimulationInput).useWithinHerdPrevalence ) then
         begin
-          if( nil <> diseasePrevalence ) then
+          if( nil <> relDiseasePrevalence ) then
             begin
               dbcout( endl + 'diseasePrevalence', true);
-              diseasePrevalence.debug();
+              relDiseasePrevalence.debug();
             end
           else
             dbcout( endl + 'NO PREVALENCE FUNCTION DEFINED', true )
@@ -1468,8 +1931,8 @@ implementation
       ;
 
       if( useDetection ) then
-      	begin
-      		dbcout( endl + 'Detection will be conducted.', true );
+        begin
+          dbcout( endl + 'Detection will be conducted.', true );
           if( nil <> _detection ) then
             _detection.debug()
           else
@@ -1477,12 +1940,12 @@ implementation
           ;
         end
       else
-      	dbcout( endl + 'Detection will not be conducted.', true )
+        dbcout( endl + 'Detection will not be conducted.', true )
       ;
 
       if( isDestrTarget or isRingDestrTrigger ) then
-      	begin
-        	dbcout( endl + 'Destruction will be used with or is triggered by this production type.', true );
+        begin
+          dbcout( endl + 'Destruction will be used with or is triggered by this production type.', true );
           if( nil <> _destr ) then
             _destr.debug()
           else
@@ -1490,15 +1953,39 @@ implementation
           ;
         end
       else
-      	dbcout( endl + 'Destruction is not used with or triggered by this production type.', true );
+        dbcout( endl + 'Destruction is not used with or triggered by this production type.', true );
+      ;
+
+      if( nil <> _trace ) then
+        begin
+          if( _trace.useTracing ) then
+            _trace.debug()
+          else
+            dbcout( endl + 'Tracing will not be conducted.', true )
+          ;
+        end
+      else
+        dbcout( endl + 'TRACING IS UNDEFINED', true )
+      ;
+
+       if( nil <> _testing ) then
+        begin
+          if( _testing.useTesting ) then
+            _testing.debug()
+          else
+            dbcout( endl + 'Diagnostic testing will not be conducted.', true )
+          ;
+        end
+      else
+        dbcout( endl + 'DIAGNOSTIC TESTING IS UNDEFINED', true )
       ;
 
       if( nil <> _vacc ) then
-      	begin
+        begin
           if( _vacc.useVaccination ) then
             _vacc.debug()
           else
-          	dbcout( endl + 'Vaccination will not be conducted.', true )
+            dbcout( endl + 'Vaccination will not be conducted.', true )
           ;
         end
       else
@@ -1529,8 +2016,6 @@ implementation
         dbcout( 'ANIMAL COUNT IS NOT SET', true )
       ;
 
-      // FIX ME: debug the control parameters!
-
       dbcout( '--END TPRODUCTIONTYPE DEBUG' + endl, true );
     end
   ;
@@ -1541,9 +2026,9 @@ implementation
 //-----------------------------------------------------------------------------
 // TProductionType functions for handling model outputs
 //-----------------------------------------------------------------------------
-	procedure TProductionType.clearAllRecords( db: TSMDatabase );
-  	begin
-    	_outputs.clear();
+  procedure TProductionType.clearAllRecords( db: TSMDatabase );
+    begin
+      _outputs.clear();
       _initialOutputs.clear();
 
       // This function is called whenever a simulation is launched.
@@ -1565,33 +2050,28 @@ implementation
 
 
   procedure TProductionType.resetIterationRecords();
-  	begin
+    begin
       // This restores current data to its original condition.
-      _outputs.setDailyRecordsFrom( _initialOutputs );
-
-      // Units with an initial state other than susceptible
-      // will be set by the core model code.  Initially susceptible
-      // units, though, need to be set here.
-      _outputs.tscUSusc := _initialOutputs.tscUSusc;
-      _outputs.tscASusc := _initialOutputs.tscASusc;
+      _outputs.setAllRecordsFrom( _initialOutputs );
     end
   ;
 
 
   procedure TProductionType.prepareForDay( day: integer );
-  	begin
-    	_outputs.clearNewDailyCounts();
+    begin
+      _outputs.clearNewDailyCounts();
     end
   ;
 
 
   procedure TProductionType.processDailyRecords( db: TSMDatabase; iteration: integer; day: integer );
-  	begin
+    begin
       _outputs.insertDatabaseOutputs( DRTDaily, db, productionTypeID, iteration, day );
     end
   ;
 
 
+  // FIX ME: add tracing costs!
   procedure TProductionType.processIterationRecords( db: TSMDatabase; iteration: integer );
     var
       includeCostsDestr: boolean;
@@ -1614,13 +2094,35 @@ implementation
   ;
 
 
-  function TProductionType.addDetection( const herdAnimalCount: integer; const day: integer ): boolean;
-  	begin
-      inc( _outputs.detnUClin );
-      inc( _outputs.detnAClin, herdAnimalCount );
-      inc( _outputs.detcUClin );
-      inc( _outputs.detcAClin, herdAnimalCount );
-      inc( _outputs.appUInfectious );
+  function TProductionType.addDetectionEvent( const herdAnimalCount: integer; const d: THRDDetect; const day: integer ): boolean;
+    begin
+      ( _myList as TProductionTypeList ).detectHerd();
+      
+      case d.reason of
+        NAADSMDetectionClinicalSigns:
+          begin
+            inc( _outputs.detnUClin );
+            inc( _outputs.detnAClin, herdAnimalCount );
+            inc( _outputs.detcUClin );
+            inc( _outputs.detcAClin, herdAnimalCount );
+            inc( _outputs.appdUInfectious );
+          end
+        ;
+        NAADSMDetectionDiagnosticTest:
+          begin
+            inc( _outputs.detnUTest );
+            inc( _outputs.detnATest, herdAnimalCount );
+            inc( _outputs.detcUTest );
+            inc( _outputs.detcATest, herdAnimalCount );
+            inc( _outputs.appdUInfectious ); // FIX ME: Think about this...
+          end
+        ;
+        else
+          raise exception.Create( 'Unsupported detection reason (' + intToStr( cardinal( d.reason ) ) + ') in TProductionType.addDetectionEvent()' )
+        ;
+      end;
+
+      _outputs.lastDetection := day;
 
       if( -1 = _outputs.firstDetection ) then
         begin
@@ -1634,7 +2136,7 @@ implementation
   ;
 
 
-  procedure TProductionType.addZoneFocus( const day: integer );
+  procedure TProductionType.addZoneFocusEvent( const day: integer );
     begin
       inc( _outputs.zonnFoci );
       inc( _outputs.zoncFoci );
@@ -1644,16 +2146,65 @@ implementation
 
   procedure TProductionType.decrementApparentInfectiousUnits();
     begin
-      dec( _outputs.appUInfectious );
+      dec( _outputs.appdUInfectious );
     end
   ;
 
 
-  function TProductionType.addDestructionEvent( const herdAnimalCount: integer; reason: string; const day: integer ): boolean;
-  	begin
-    	reason := fixup( reason );
+  procedure TProductionType.recordInfectedAtFirstDetection();
+    begin
+      _outputs.firstDetUInf := _outputs.infcUAll + _outputs.infcUIni;
+      _outputs.firstDetAInf := _outputs.infcAAll + _outputs.infcAIni;
+    end
+  ;
 
-      if( -1 = _outputs.firstDestruction ) then
+
+  procedure TProductionType.addDestructionQueueEvent( herd: TObject; const day: integer );
+    begin
+      _outputs.addToDestrQueue( ( herd as THerd ).initialSize, day );
+      if( nil = _myList ) then
+        raise exception.create( '_myList is nil in TProductionType.addDestructionQueueEvent()' )
+      else
+        ( _myList as TProductionTypeList ).addToDestrQueue( ( herd as THerd ).initialSize, day )
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.addVaccinationQueueEvent( herd: TObject; const day: integer );
+    begin
+      _outputs.addToVaccQueue( ( herd as THerd ).initialSize, day );
+
+      if( nil = _myList ) then
+        raise exception.create( '_myList is nil in TProductionType.addVaccinationQueueEvent()' )
+      else
+        ( _myList as TProductionTypeList ).addToVaccQueue( ( herd as THerd ).initialSize, day )
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.subtractVaccinationQueueEvent( herd: TObject {THerd} );
+    begin
+      _outputs.removeFromVaccQueue( ( herd as THerd ).initialSize );
+      
+      if( nil = _myList ) then
+        raise exception.create( '_myList is nil in TProductionType.subtractVaccinationQueueEvent()' )
+      else
+        ( _myList as TProductionTypeList ).removeFromVaccQueue( ( herd as THerd ).initialSize )
+      ;
+    end
+  ;
+
+
+  function TProductionType.addDestructionEvent( herd: TObject; const c: THRDControl; const day: integer ): boolean;
+    var
+      h: THerd;
+    begin
+      h := herd as THerd;
+
+      // Remember not to count units that start out as destroyed as the first destruction.
+      if( ( -1 = _outputs.firstDestruction ) and ( NAADSMControlInitialState <> c.reason ) ) then
         begin
           _outputs.firstDestruction := day;
           result := true;
@@ -1662,46 +2213,86 @@ implementation
         result := false
       ;
 
-      if( 'trace out-indirect contact' = reason ) then
-      	begin
-          inc( _outputs.descUInd );
-          inc( _outputs.descAInd, herdAnimalCount );
-        end
-      else if( 'trace out-direct contact' = reason ) then
-      	begin
-          inc( _outputs.descUDir );
-          inc( _outputs.descADir, herdAnimalCount );
-        end
-      else if( 'ring destruction' = reason ) then
-      	begin
-          inc( _outputs.descURing );
-          inc( _outputs.descARing, herdAnimalCount );
-        end
-      else if( 'reported diseased' = reason ) then
-      	begin
-          inc( _outputs.descUDet );
-          inc( _outputs.descADet, herdAnimalCount );
-        end
-      else if( 'initially destroyed' = reason ) then
+      case c.reason of
+        NAADSMControlTraceForwardDirect:
+          begin
+            inc( _outputs.descUDirFwd );
+            inc( _outputs.descADirFwd, h.initialSize );
+          end
+        ;
+        NAADSMControlTraceForwardIndirect:
+          begin
+            inc( _outputs.descUIndFwd );
+            inc( _outputs.descAIndFwd, h.initialSize );
+          end
+        ;
+        NAADSMControlTraceBackDirect:
+          begin
+            inc( _outputs.descUDirBack );
+            inc( _outputs.descADirBack, h.initialSize );
+          end
+        ;
+        NAADSMControlTraceBackIndirect:
+          begin
+            inc( _outputs.descUIndBack );
+            inc( _outputs.descAIndBack, h.initialSize );
+          end
+        ;
+        NAADSMControlRing:
+          begin
+            inc( _outputs.descURing );
+            inc( _outputs.descARing, h.initialSize );
+          end
+        ;
+        NAADSMControlDetection:
+          begin
+            inc( _outputs.descUDet );
+            inc( _outputs.descADet, h.initialSize );
+          end
+        ;
+        NAADSMControlInitialState:
+          begin
+            inc( _outputs.descUIni );
+            inc( _outputs.descAIni, h.initialSize );
+          end
+        ;
+        else
+          raise exception.Create( 'Unrecognized destruction reason (' + intToStr( cardinal( c.reason ) ) + ') in TProductionType.addDestructionEvent' )
+        ;
+      end;
+
+      
+      // Deal with destruction queue
+      //----------------------------
+      if( NAADSMControlInitialState <> c.reason ) then
         begin
-          inc( _outputs.descUIni );
-          inc( _outputs.descAIni, herdAnimalCount );
+          _outputs.processDestruction( h.initialSize, day, c.dayCommitmentMade, h.ctrlActivities.isQueuedForVacc );
+          if( nil = _myList ) then
+            raise exception.Create( '_myList is nil in TProductionType.addDestructionEvent()' )
+          else
+            ( _myList as TProductionTypeList ).destroyHerd( h.initialSize, day, c.dayCommitmentMade )
+          ;
         end
-      else
-				raise exception.Create( 'Unrecognized destruction reason (' + reason + ') in TProductionType.addDestructionEvent' )
       ;
 
+      // Deal with daily totals
+      //-----------------------
+      // Do this even for initially destroyed units.
+      // "day" will have the special value -1 to initially destroyed units.
       inc( _outputs.desnUAll );
-      inc( _outputs.desnAAll, herdAnimalCount );
+      inc( _outputs.desnAAll, h.initialSize );
     end
   ;
 
 
-  function TProductionType.addVaccinationEvent( const herdAnimalCount: integer; reason: string; const day: integer ): boolean;
-  	begin
-    	reason := fixup( reason );
+  function TProductionType.addVaccinationEvent( herd: TObject; const c: THRDControl; const day: integer ): boolean;
+    var
+      h: THerd;
+    begin
+      h := herd as THerd;
 
-      if( -1 = _outputs.firstVaccination ) then
+      // Remember not to count units that start out as vaccinated as the first vaccination.
+      if( ( -1 = _outputs.firstVaccination ) and ( NAADSMControlInitialState <> c.reason ) ) then
         begin
           _outputs.firstVaccination := day;
           result := true;
@@ -1710,131 +2301,437 @@ implementation
         result := false
       ;
 
-      if( 'ring vaccination' = reason ) then
-      	begin
-          inc( _outputs.vaccURing );
-          inc( _outputs.vaccARing, herdAnimalCount );
-        end
-      else if( 'initially immune' = reason ) then
+      case c.reason of
+        NAADSMControlRing:
+          begin
+            inc( _outputs.vaccURing );
+            inc( _outputs.vaccARing, h.initialSize );
+          end
+        ;
+        NAADSMControlInitialState:
+          begin
+            inc( _outputs.vaccUIni );
+            inc( _outputs.vaccAIni, h.initialSize );
+          end
+        ;
+        else
+          raise exception.Create( 'Unrecognized vaccination reason (' + intToStr( cardinal( c.reason ) ) + ') in TProductionType.addVaccinationEvent' )
+        ;
+      end;
+
+
+      // Deal with vaccination queue
+      //----------------------------
+      if( NAADSMControlInitialState <> c.reason ) then
         begin
-          inc( _outputs.vaccUIni );
-          inc( _outputs.vaccAIni, herdAnimalCount );
-        end
-      else
-				raise exception.Create( 'Unrecognized vaccination reason (' + reason + ') in TProductionType.addVaccinationEvent' )
-      ;
-
-      inc( _outputs.vaccnUAll );
-      inc( _outputs.vaccnAAll, herdAnimalCount );
-
-    end
-  ;
-
-
-  procedure TProductionType.addAttemptedTraceEvent( const herdAnimalCount: integer; mechanism: string );
-    begin
-    	mechanism := fixup( mechanism );
-
-      if( 'direct contact' = mechanism ) then
-      	begin
-          inc( _outputs.trcUDirp );
-          inc( _outputs.trcADirp, herdAnimalCount );
-        end
-      else if( 'indirect contact' = mechanism ) then
-      	begin
-          inc( _outputs.trcUIndp );
-          inc( _outputs.trcAIndp, herdAnimalCount );
-        end
-      else
-      	raise exception.Create( 'Unrecognized trace reason (' + mechanism + ') in TProductionType.addAttemptedTraceEvent' )
-      ;
-    end
-  ;
-
-
-  procedure TProductionType.addTraceEvent( const herdAnimalCount: integer; mechanism: string );
-  	begin
-    	mechanism := fixup( mechanism );
-
-      if( 'direct contact' = mechanism ) then
-      	begin
-          inc( _outputs.trnUDir );
-          inc( _outputs.trnADir, herdAnimalCount );
-          inc( _outputs.trcUDir );
-          inc( _outputs.trcADir, herdAnimalCount );
-        end
-      else if( 'indirect contact' = mechanism ) then
-      	begin
-          inc( _outputs.trnUInd );
-          inc( _outputs.trnAInd, herdAnimalCount );
-          inc( _outputs.trcUInd );
-          inc( _outputs.trcAInd, herdAnimalCount );
-        end
-      else
-      	raise exception.Create( 'Unrecognized trace reason (' + mechanism + ') in TProductionType.addTraceEvent' )
-      ;
-    end
-  ;
-
-
-	procedure TProductionType.addExposedByMechanism( const herdAnimalCount: integer; mechanism: string );
-  	begin
-    	mechanism := fixup( mechanism );
-
-      if( 'direct contact' = mechanism ) then
-      	begin
-          inc( _outputs.expcUDir );
-          inc( _outputs.expcADir, herdAnimalCount );
-        end
-      else if( 'indirect contact' = mechanism ) then
-      	begin
-          inc( _outputs.expcUInd );
-          inc( _outputs.expcAInd, herdAnimalCount );
-        end
-      else
-      	raise exception.Create( 'Unrecognized exposure mechanism (' + mechanism + ') in TProductionType.addExposedByMechanism' )
-      ;
-
-    end
-  ;
-
-
-	procedure TProductionType.addInfectedByMechanism( const herdAnimalCount: integer; infMech: string; const day: integer );
-  	begin
-    	infMech := fixup( infMech );
-
-   		if( 'initially infected' = infMech ) then
-      	begin
-          if( 1 < day ) then
-            raise exception.Create( '''Initial'' infection occurring after day 1.' )
+          _outputs.processVaccination( h.initialSize, day, c.dayCommitmentMade );
+          if( nil = _myList ) then
+            raise exception.create( '_myList is nil in TProductionType.addVaccinationEvent()' )
+          else
+            ( _myList as TProductionTypeList ).vaccinateHerd( h.initialSize, day, c.dayCommitmentMade )
           ;
-          inc( _outputs.infcUIni );
-          inc( _outputs.infcAIni, herdAnimalCount );
         end
-      else if( 'airborne spread' = infMech ) then
-      	begin
-          inc( _outputs.infcUAir );
-          inc( _outputs.infcAAir, herdAnimalCount );
-          inc( _outputs.infnUAir );
-          inc( _outputs.infnAAir, herdAnimalCount );
+      ;
+
+      // Deal with daily totals
+      //-----------------------
+      // Do this even for initially vaccinated units.
+      // "day" will have the special value -1 to initially vaccinated units.
+      inc( _outputs.vacnUAll );
+      inc( _outputs.vacnAAll, h.initialSize );
+    end
+  ;
+
+
+  procedure TProductionType.addAttemptedTraceEvent( const herdAnimalCount: integer; const t: THRDTrace );
+    begin
+      if( NAADSMDirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.trcUDirpFwd );
+                inc( _outputs.trcADirpFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.trcUDirpBack );
+                inc( _outputs.trcADirpBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.Create( 'Unrecognized trace type in TProductionType.addAttemptedTraceEvent' )
+            ;
+          end;
         end
-      else if( 'direct contact' = infMech ) then
-      	begin
-          inc( _outputs.infcUDir );
-          inc( _outputs.infcADir, herdAnimalCount );
-          inc( _outputs.infnUDir );
-          inc( _outputs.infnADir, herdAnimalCount );
-        end
-      else if( 'indirect contact' = infMech ) then
-      	begin
-          inc( _outputs.infcUInd );
-          inc( _outputs.infcAInd, herdAnimalCount );
-          inc( _outputs.infnUInd );
-          inc( _outputs.infnAInd, herdAnimalCount );
+      else if( NAADSMIndirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.trcUIndpFwd );
+                inc( _outputs.trcAIndpFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.trcUIndpBack );
+                inc( _outputs.trcAIndpBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.Create( 'Unrecognized trace direction (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addAttemptedTraceEvent' )
+            ;
+          end;
         end
       else
-      	raise exception.Create( 'Unrecognized infection mechanism (' + infMech + ') in TProductionType.addInfectedByMechanism' )
+        raise exception.Create( 'Unrecognized contact type reason (' + intToStr( cardinal( t.contactType ) ) + ') in TProductionType.addAttemptedTraceEvent' )
       ;
+    end
+  ;
+
+
+  procedure TProductionType.addTraceOrigin( const t: THRDTrace );
+    begin
+      if( NAADSMDirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.tonUDirFwd );
+                inc( _outputs.tocUDirFwd );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.tonUDirBack );
+                inc( _outputs.tocUDirBack );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addTraceOrigin' )
+            ;
+          end;
+        end
+      else if( NAADSMIndirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.tonUIndFwd );
+                inc( _outputs.tocUIndFwd );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.tonUIndBack );
+                inc( _outputs.tocUIndBack );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addTraceOrigin' )
+            ;
+          end;
+        end
+      else
+        raise exception.Create( 'Unrecognized contact type (' + intToStr( cardinal( t.contactType ) ) + ') in TProductionType.addTraceOrigin' )
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.addTraceEvent( const herdAnimalCount: integer; const t: THRDTrace );
+    begin
+      if( NAADSMDirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.trnUDirFwd );
+                inc( _outputs.trnADirFwd, herdAnimalCount );
+                inc( _outputs.trcUDirFwd );
+                inc( _outputs.trcADirFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.trnUDirBack );
+                inc( _outputs.trnADirBack, herdAnimalCount );
+                inc( _outputs.trcUDirBack );
+                inc( _outputs.trcADirBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addTraceEvent' )
+            ;
+          end;
+        end
+      else if( NAADSMIndirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                inc( _outputs.trnUIndFwd );
+                inc( _outputs.trnAIndFwd, herdAnimalCount );
+                inc( _outputs.trcUIndFwd );
+                inc( _outputs.trcAIndFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                inc( _outputs.trnUIndBack );
+                inc( _outputs.trnAIndBack, herdAnimalCount );
+                inc( _outputs.trcUIndBack );
+                inc( _outputs.trcAIndBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addTraceEvent' )
+            ;
+          end;
+        end
+      else
+        raise exception.Create( 'Unrecognized contact type (' + intToStr( cardinal( t.contactType ) ) + ') in TProductionType.addTraceEvent' )
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.addHerdExamEvent( const herdAnimalCount: integer; const e: THRDExam );
+    begin
+      // Regardless of contact type, increment exmnUAll and exmnAll
+      //-----------------------------------------------------------
+      inc( _outputs.exmnUAll );
+      inc( _outputs.exmnAAll, herdAnimalCount );
+
+      // Depending on contact type, increment the appropriate cumulative values
+      // NOTE: Some day, it might be necessary to break down the new (incident)
+      // counts by contact type, but we're not doing it yet.
+      //-----------------------------------------------------------------------
+      if( NAADSMDirectContact = e.contactType ) then
+        begin
+          case e.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                //inc( _outputs.exmnUDirFwd ); // Not yet(?) implemented
+                //inc( _outputs.exmnADirFwd, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.exmcUDirFwd );
+                inc( _outputs.exmcADirFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                //inc( _outputs.exmnUDirBack );  // Not yet(?) implemented
+                //inc( _outputs.exmnADirBack, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.exmcUDirBack );
+                inc( _outputs.exmcADirBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( e.traceType ) ) + ') in TProductionType.addHerdExamEvent' )
+            ;
+          end;
+        end
+      else if( NAADSMIndirectContact = e.contactType ) then
+        begin
+          case e.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                //inc( _outputs.exmnUIndFwd );  // Not yet(?) implemented
+                //inc( _outputs.exmnAIndFwd, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.exmcUIndFwd );
+                inc( _outputs.exmcAIndFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                //inc( _outputs.exmnUIndBack );  // Not yet(?) implemented
+                //inc( _outputs.exmnAIndBack, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.exmcUIndBack );
+                inc( _outputs.exmcAIndBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( e.traceType ) ) + ') in TProductionType.addHerdExamEvent' )
+            ;
+          end;
+        end
+      else
+        raise exception.Create( 'Unrecognized contact type (' + intToStr( cardinal( e.contactType ) ) + ') in TProductionType.addHerdExamEvent' )
+      ;
+    end
+  ;
+
+
+  procedure TProductionType.addDiagnosticTestEvent( const herdAnimalCount: integer; const t: THRDTest );
+    begin
+      // Deal with contact type and direction
+      //-------------------------------------
+      if( NAADSMDirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                //inc( _outputs.tstnUDirFwd );  // Not yet(?) implemented
+                //inc( _outputs.tstnADirFwd, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.tstcUDirFwd );
+                inc( _outputs.tstcADirFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                //inc( _outputs.tstnUDirBack );  // Not yet(?) implemented
+                //inc( _outputs.tstnADirBack, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.tstcUDirBack );
+                inc( _outputs.tstcADirBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addDiagnosticTestEvent' )
+            ;
+          end;
+        end
+      else if( NAADSMIndirectContact = t.contactType ) then
+        begin
+          case t.traceType of
+            NAADSMTraceForwardOrOut:
+              begin
+                //inc( _outputs.tstnUIndFwd );  // Not yet(?) implemented
+                //inc( _outputs.tstnAIndFwd, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.tstcUIndFwd );
+                inc( _outputs.tstcAIndFwd, herdAnimalCount );
+              end
+            ;
+            NAADSMTraceBackOrIn:
+              begin
+                //inc( _outputs.tstnUIndBack );  // Not yet(?) implemented
+                //inc( _outputs.tstnAIndBack, herdAnimalCount );  // Not yet(?) implemented
+                inc( _outputs.tstcUIndBack );
+                inc( _outputs.tstcAIndBack, herdAnimalCount );
+              end
+            ;
+            else
+              raise exception.create( 'Unrecognized trace direction (' + intToStr( cardinal( t.traceType ) ) + ') in TProductionType.addDiagnosticTestEvent' )
+            ;
+          end;
+        end
+      else
+        raise exception.Create( 'Unrecognized contactType (' + intToStr( cardinal( t.contactType ) ) + ') in TProductionType.addDiagnosticTestEvent' )
+      ;
+
+      // Deal with test result
+      //----------------------
+      case t.testResult of
+        NAADSMTestTruePositive:
+          begin
+            inc( _outputs.tstnUTruePos );
+            inc( _outputs.tstnATruePos, herdAnimalCount );
+            inc( _outputs.tstcUTruePos );
+            inc( _outputs.tstcATruePos, herdAnimalCount );
+          end
+        ;
+        NAADSMTestTrueNegative:
+          begin
+            inc( _outputs.tstnUTrueNeg );
+            inc( _outputs.tstnATrueNeg, herdAnimalCount );
+            inc( _outputs.tstcUTrueNeg );
+            inc( _outputs.tstcATrueNeg, herdAnimalCount );
+          end
+        ;
+        NAADSMTestFalsePositive:
+          begin
+            inc( _outputs.tstnUFalsePos );
+            inc( _outputs.tstnAFalsePos, herdAnimalCount );
+            inc( _outputs.tstcUFalsePos );
+            inc( _outputs.tstcAFalsePos, herdAnimalCount );
+          end
+        ;
+        NAADSMTestFalseNegative:
+          begin
+            inc( _outputs.tstnUFalseNeg );
+            inc( _outputs.tstnAFalseNeg, herdAnimalCount );
+            inc( _outputs.tstcUFalseNeg );
+            inc( _outputs.tstcAFalseNeg, herdAnimalCount );
+          end
+        ;
+        else
+          raise exception.Create( 'Unrecognized test result (' + intToStr( ord( t.testResult ) ) + ') in TProductionType.addDiagnosticTestEvent' )
+        ;
+      end;
+    end
+  ;
+
+
+  procedure TProductionType.addExposureEvent( const herdAnimalCount: integer; const e: THRDExpose );
+    begin
+      case e.exposureMethod of
+        NAADSMDirectContact:
+          begin
+            inc( _outputs.expcUDir );
+            inc( _outputs.expcADir, herdAnimalCount );
+          end
+        ;
+        NAADSMIndirectContact:
+          begin
+            inc( _outputs.expcUInd );
+            inc( _outputs.expcAInd, herdAnimalCount );
+          end
+        ;
+        NAADSMAirborneSpread:
+          begin
+            // Exposures by airborne spread are not (yet?) recorded,
+            // but this function will still be called.
+          end
+        ;
+        else
+          raise exception.Create( 'Unrecognized exposure mechanism (' + intToStr( cardinal( e.exposureMethod ) ) + ') in TProductionType.addExposedByMechanism' )
+        ;
+      end;
+    end
+  ;
+
+
+  procedure TProductionType.addInfectionEvent( const herdAnimalCount: integer; const r: THRDInfect; const day: integer );
+    begin
+      case r.infectionSourceType of
+        NAADSMInitiallyInfected:
+          begin
+            if( 1 < day ) then
+              raise exception.Create( '''Initial'' infection occurring after day 1.' )
+            ;
+            inc( _outputs.infcUIni );
+            inc( _outputs.infcAIni, herdAnimalCount );
+          end
+        ;
+        NAADSMAirborneSpread:
+          begin
+            inc( _outputs.infcUAir );
+            inc( _outputs.infcAAir, herdAnimalCount );
+            inc( _outputs.infnUAir );
+            inc( _outputs.infnAAir, herdAnimalCount );
+          end
+        ;
+        NAADSMDirectContact:
+          begin
+            inc( _outputs.infcUDir );
+            inc( _outputs.infcADir, herdAnimalCount );
+            inc( _outputs.infnUDir );
+            inc( _outputs.infnADir, herdAnimalCount );
+          end
+        ;
+        NAADSMIndirectContact:
+          begin
+            inc( _outputs.infcUInd );
+            inc( _outputs.infcAInd, herdAnimalCount );
+            inc( _outputs.infnUInd );
+            inc( _outputs.infnAInd, herdAnimalCount );
+          end
+        ;
+        else
+          raise exception.Create( 'Unrecognized infection mechanism (' + intToStr( cardinal( r.infectionSourceType ) ) + ') in TProductionType.addInfectedByMechanism' )
+        ;
+      end;
     end
   ;
 
@@ -1842,13 +2739,13 @@ implementation
    Set daily and cumulative numbers of animals/herds in the various disease states
    according to their initial values in the database (dynHerd.initialStateCode)
   }
-  procedure TProductionType.setInitialDailyRecords( const herdAnimalCount: integer; const herdDiseaseState: TTransitionState );
-  	begin
+  procedure TProductionType.setInitialDailyRecords( const herdAnimalCount: integer; const herdDiseaseState: TNAADSMDiseaseState );
+    begin
 
-      dbcout( '*** TProductionType.setInitialDailyRecords', DBPRODUCTIONTYPE );
+      dbcout( '*** TProductionType.setInitialDailyRecords', DBSHOWMSG );
 
-    	case herdDiseaseState of
-        tsSusceptible:
+      case herdDiseaseState of
+        NAADSMStateSusceptible:
           begin
             inc( _initialOutputs.tsdUSusc );
             inc( _initialOutputs.tsdASusc, herdAnimalCount );
@@ -1856,7 +2753,7 @@ implementation
             inc( _initialOutputs.tscASusc, herdAnimalCount );
           end
         ;
-        tsLatent:
+        NAADSMStateLatent:
           begin
             inc( _initialOutputs.tsdULat );
             inc( _initialOutputs.tsdALat, herdAnimalCount );
@@ -1864,7 +2761,7 @@ implementation
             inc( _initialOutputs.tscALat, herdAnimalCount );
           end
         ;
-        tsSubClinical:
+        NAADSMStateSubclinical:
           begin
             inc( _initialOutputs.tsdUSubc );
             inc( _initialOutputs.tsdASubc, herdAnimalCount );
@@ -1872,7 +2769,7 @@ implementation
             inc( _initialOutputs.tscASubc, herdAnimalCount );
           end
         ;
-        tsClinical:
+        NAADSMStateClinical:
           begin
             inc( _initialOutputs.tsdUClin );
             inc( _initialOutputs.tsdAClin, herdAnimalCount );
@@ -1880,7 +2777,7 @@ implementation
             inc( _initialOutputs.tscAClin, herdAnimalCount );
           end
         ;
-        tsNaturalImmune:
+        NAADSMStateNaturallyImmune:
           begin
             inc( _initialOutputs.tsdUNImm );
             inc( _initialOutputs.tsdANImm, herdAnimalCount );
@@ -1888,7 +2785,7 @@ implementation
             inc( _initialOutputs.tscANImm, herdAnimalCount );
           end
         ;
-        tsVaccineImmune:
+        NAADSMStateVaccineImmune:
           begin
             inc( _initialOutputs.tsdUVImm );
             inc( _initialOutputs.tsdAVImm, herdAnimalCount );
@@ -1896,7 +2793,7 @@ implementation
             inc( _initialOutputs.tscAVImm, herdAnimalCount );
           end
         ;
-        tsDestroyed:
+        NAADSMStateDestroyed:
           begin
             inc( _initialOutputs.tsdUDest );
             inc( _initialOutputs.tsdADest, herdAnimalCount );
@@ -1904,8 +2801,8 @@ implementation
             inc( _initialOutputs.tscADest, herdAnimalCount );
           end
         ;
-				else
-        	raise exception.Create( 'Unrecognized herd status in TProductionType.makeDailyRecord' )
+        else
+          raise exception.Create( 'Unrecognized herd status in TProductionType.makeDailyRecord' )
         ;
       end;
     end
@@ -1913,89 +2810,25 @@ implementation
 
 
   procedure TProductionType.updateDailyRecordsProdType(
-        herdAnimalCount: integer;
-        oldState: TTransitionState;
-        newState: TTransitionState
+        const herdAnimalCount: integer;
+        const oldState: TNAADSMDiseaseState;
+        const newState: TNAADSMDiseaseState;
+        const day: integer
       );
-  	begin
-      // Decrement the daily number of units in oldState
-      // Subtract herdAnimalCount from the daily number of animals in oldState
-    	// Increment the daily number of units in newState
-      // Add the herdAnimalCount to the daily number of animals in newState
-    	// Increment the running number of units in newState
-      // Add the herdAnimalCount to the running number of animals in newState
-
-      dbcout( '*** TProductionType.updateDailyRecordsProdType', DBPRODUCTIONTYPE );
-
-      if( newState = oldState ) then
-        // do nothing
-      else
+    begin
+      dbcout( '*** TProductionType.updateDailyRecordsProdType', DBSHOWMSG );
+(*
+      if( 1 = day ) then
         begin
-          _outputs.decrementDailyCounts( herdAnimalCount, oldState );
-
-          case newState of
-            tsSusceptible:
-              begin
-                inc( _outputs.tsdUSusc );
-                inc( _outputs.tsdASusc, herdAnimalCount );
-                inc( _outputs.tscUSusc );
-                inc( _outputs.tscASusc, herdAnimalCount );
-              end
-            ;
-            tsLatent:
-              begin
-                inc( _outputs.tsdULat );
-                inc( _outputs.tsdALat, herdAnimalCount );
-                inc( _outputs.tscULat );
-                inc( _outputs.tscALat, herdAnimalCount );
-              end
-            ;
-            tsSubClinical:
-              begin
-                inc( _outputs.tsdUSubc );
-                inc( _outputs.tsdASubc, herdAnimalCount );
-                inc( _outputs.tscUSubc );
-                inc( _outputs.tscASubc, herdAnimalCount );
-              end
-            ;
-            tsClinical:
-              begin
-                inc( _outputs.tsdUClin );
-                inc( _outputs.tsdAClin, herdAnimalCount );
-                inc( _outputs.tscUClin );
-                inc( _outputs.tscAClin, herdAnimalCount );
-              end
-            ;
-            tsNaturalImmune:
-              begin
-                inc( _outputs.tsdUNImm );
-                inc( _outputs.tsdANImm, herdAnimalCount );
-                inc( _outputs.tscUNImm );
-                inc( _outputs.tscANImm, herdAnimalCount );
-              end
-            ;
-            tsVaccineImmune:
-              begin
-                inc( _outputs.tsdUVImm );
-                inc( _outputs.tsdAVImm, herdAnimalCount );
-                inc( _outputs.tscUVImm );
-                inc( _outputs.tscAVImm, herdAnimalCount );
-              end
-            ;
-            tsDestroyed:
-              begin
-                inc( _outputs.tsdUDest );
-                inc( _outputs.tsdADest, herdAnimalCount );
-                inc( _outputs.tscUDest );
-                inc( _outputs.tscADest, herdAnimalCount );
-              end
-            ;
-            else
-              raise exception.Create( 'Unrecognized herd status in TProductionType.makeDailyRecord' )
-            ;
-          end;
-
+          // Do nothing: initial conditions are taken care of in resetIterationRecords
+          dbcout2( 'TProductionType.updateDailyRecordsProdType on day 1' );
         end
+      else
+*)
+      if( newState = oldState ) then
+        // Do nothing: there is no change
+      else
+        _outputs.updateDailyCounts( herdAnimalCount, oldState, newState, day )
       ;
     end
   ;
@@ -2007,109 +2840,96 @@ implementation
 // TProductionType properties
 //-----------------------------------------------------------------------------
 
-	// Disease states
+  // Disease states
   //---------------
-  procedure TProductionType.setLatentName( val: string );
+  procedure TProductionType.setPdfLatentName( val: string );
     begin
       val := trim( val );
-      _latentName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _pdfLatentName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
 
+      _pdfLatentName := val;
       _updated := true;
     end
   ;
 
 
-  procedure TProductionType.setSubclinicalName( val: string );
+  procedure TProductionType.setPdfSubclinicalName( val: string );
     begin
       val := trim( val );
-      _subclinicalName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _pdfSubclinicalName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
+
+      _pdfSubclinicalName := val;
       _updated := true;
     end
   ;
 
 
-  procedure TProductionType.setClinicalName( val: string );
+  procedure TProductionType.setPdfClinicalName( val: string );
     begin
       val := trim( val );
-      _clinicalName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _pdfClinicalName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
+
+      _pdfClinicalName := val;
       _updated := true;
     end
   ;
 
 
-  procedure TProductionType.setImmuneName( val: string );
+  procedure TProductionType.setPdfImmuneName( val: string );
     begin
       val := trim( val );
-      _immuneName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
-      
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _pdfImmuneName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
+
+      _pdfImmuneName := val;
       _updated := true;
     end
   ;
 
 
-  procedure TProductionType.setPrevalenceName( val: string );
+  procedure TProductionType.setRelPrevalenceName( val: string );
     begin
       val := trim( val );
-      _prevalenceName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
-      
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _relPrevalenceName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
+
+      _relPrevalenceName := val;
       _updated := true;
     end
   ;
 
 
-  function TProductionType.getDiseaseLatent(): TPdf;
+  function TProductionType.getPdfDiseaseLatent(): TPdf;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _latentName ) ) then
+          if( fnDictionary.contains( _pdfLatentName ) ) then
             begin
-              if( fnDictionary.value( _latentName ).fn is TPdf ) then
-                result := fnDictionary.value( _latentName ).fn as TPdf
+              if( fnDictionary.value( _pdfLatentName ).fn is TPdf ) then
+                result := fnDictionary.value( _pdfLatentName ).fn as TPdf
               else
                 begin
-                  setLatentName( '' );
+                  setPdfLatentName( '' );
                   result := nil;
                 end
               ;
@@ -2123,19 +2943,19 @@ implementation
   ;
 
 
-  function TProductionType.getDiseaseSubclinical(): TPdf;
+  function TProductionType.getPdfDiseaseSubclinical(): TPdf;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _subclinicalName ) ) then
+          if( fnDictionary.contains( _pdfSubclinicalName ) ) then
             begin
-              if( fnDictionary.value( _subclinicalName ).fn is TPdf ) then
-                result := fnDictionary.value( _subclinicalName ).fn as TPdf
+              if( fnDictionary.value( _pdfSubclinicalName ).fn is TPdf ) then
+                result := fnDictionary.value( _pdfSubclinicalName ).fn as TPdf
               else
                 begin
-                  setSubclinicalName( '' );
+                  setPdfSubclinicalName( '' );
                   result := nil;
                 end
               ;
@@ -2149,19 +2969,19 @@ implementation
   ;
 
 
-  function TProductionType.getDiseaseClinical(): TPdf;
+  function TProductionType.getPdfDiseaseClinical(): TPdf;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _clinicalName ) ) then
+          if( fnDictionary.contains( _pdfClinicalName ) ) then
             begin
-              if( fnDictionary.value( _clinicalName ).fn is TPdf ) then
-                result := fnDictionary.value( _clinicalName ).fn as TPdf
+              if( fnDictionary.value( _pdfClinicalName ).fn is TPdf ) then
+                result := fnDictionary.value( _pdfClinicalName ).fn as TPdf
               else
                 begin
-                  setClinicalName( '' );
+                  setPdfClinicalName( '' );
                   result := nil;
                 end
               ;
@@ -2175,19 +2995,19 @@ implementation
   ;
 
 
-  function TProductionType.getDiseaseImmune(): TPdf;
+  function TProductionType.getPdfDiseaseImmune(): TPdf;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _immuneName ) ) then
+          if( fnDictionary.contains( _pdfImmuneName ) ) then
             begin
-              if( fnDictionary.value( _immuneName ).fn is TPdf ) then
-                result := fnDictionary.value( _immuneName ).fn as TPdf
+              if( fnDictionary.value( _pdfImmuneName ).fn is TPdf ) then
+                result := fnDictionary.value( _pdfImmuneName ).fn as TPdf
               else
                 begin
-                  setImmuneName( '' );
+                  setPdfImmuneName( '' );
                   result := nil;
                 end
               ;
@@ -2201,19 +3021,19 @@ implementation
   ;
 
 
-  function TProductionType.getDiseasePrevalence(): TRelFunction;
+  function TProductionType.getRelDiseasePrevalence(): TRelFunction;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _prevalenceName ) ) then
+          if( fnDictionary.contains( _relPrevalenceName ) ) then
             begin
-              if( fnDictionary.value( _prevalenceName ).fn is TRelFunction ) then
-                result := fnDictionary.value( _prevalenceName ).fn as TRelFunction
+              if( fnDictionary.value( _relPrevalenceName ).fn is TRelFunction ) then
+                result := fnDictionary.value( _relPrevalenceName ).fn as TRelFunction
               else
                 begin
-                  setPrevalenceName( '' );
+                  setRelPrevalenceName( '' );
                   result := nil;
                 end
               ;
@@ -2263,44 +3083,44 @@ implementation
         end
       ;
 
-      if( fnDictionary.contains( _latentName ) ) then
+      if( fnDictionary.contains( _pdfLatentName ) ) then
         begin
-          if( not( fnDictionary.value( _latentName ).fn is TPdf ) ) then
+          if( not( fnDictionary.value( _pdfLatentName ).fn is TPdf ) ) then
             begin
-              setLatentName( '' );
+              setPdfLatentName( '' );
               result := false;
             end
           ;
         end
       ;
 
-      if( fnDictionary.contains( _subclinicalName ) ) then
+      if( fnDictionary.contains( _pdfSubclinicalName ) ) then
         begin
-          if( not( fnDictionary.value( _subclinicalName ).fn is TPdf ) ) then
+          if( not( fnDictionary.value( _pdfSubclinicalName ).fn is TPdf ) ) then
             begin
-              setSubclinicalName( '' );
+              setPdfSubclinicalName( '' );
               result := false;
             end
           ;
         end
       ;
 
-      if( fnDictionary.contains( _clinicalName ) ) then
+      if( fnDictionary.contains( _pdfClinicalName ) ) then
         begin
-          if( not( fnDictionary.value( _clinicalName ).fn is TPdf ) ) then
+          if( not( fnDictionary.value( _pdfClinicalName ).fn is TPdf ) ) then
             begin
-              setClinicalName( '' );
+              setPdfClinicalName( '' );
               result := false;
             end
           ;
         end
       ;
 
-      if( fnDictionary.contains( _immuneName ) ) then
+      if( fnDictionary.contains( _pdfImmuneName ) ) then
         begin
-          if( not( fnDictionary.value( _immuneName ).fn is TPdf ) ) then
+          if( not( fnDictionary.value( _pdfImmuneName ).fn is TPdf ) ) then
             begin
-              setImmuneName( '' );
+              setPdfImmuneName( '' );
               result := false;
             end
           ;
@@ -2308,11 +3128,11 @@ implementation
       ;
 
       includePrevalence := (_sim as TSMSimulationInput).useWithinHerdPrevalence;
-      if( includePrevalence and fnDictionary.contains( _prevalenceName ) ) then
+      if( includePrevalence and fnDictionary.contains( _relPrevalenceName ) ) then
         begin
-          if( not( fnDictionary.value( _prevalenceName ).fn is TRelFunction ) ) then
+          if( not( fnDictionary.value( _relPrevalenceName ).fn is TRelFunction ) ) then
             begin
-              setPrevalenceName( '' );
+              setRelPrevalenceName( '' );
               result := false;
             end
           ;
@@ -2322,23 +3142,15 @@ implementation
   ;
 
 
-  function TProductionType.getlatentName(): string; begin result := _latentName; end;
-  function TProductionType.getsubclinicalName(): string; begin result := _subclinicalName; end;
-  function TProductionType.getclinicalName(): string; begin result := _clinicalName; end;
-  function TProductionType.getimmuneName(): string; begin result := _immuneName; end;
-  function TProductionType.getPrevalenceName(): string; begin result := _prevalenceName; end;
+  function TProductionType.getPdfLatentName(): string; begin result := _pdfLatentName; end;
+  function TProductionType.getPdfSubclinicalName(): string; begin result := _pdfSubclinicalName; end;
+  function TProductionType.getPdfClinicalName(): string; begin result := _pdfClinicalName; end;
+  function TProductionType.getPdfImmuneName(): string; begin result := _pdfImmuneName; end;
+  function TProductionType.getRelPrevalenceName(): string; begin result := _relPrevalenceName; end;
 
 
   // Detection
   //----------
-  procedure TProductionType.setUseDetection( val: boolean );
-    begin
-      _useDetection := val;
-      _updated := true;
-    end
-  ;
-
-
   procedure TProductionType.setDetectionParams( sv: TDetectionParams );
     begin
       if( nil <> _detection ) then freeAndNil( _detection );
@@ -2348,27 +3160,37 @@ implementation
   ;
 
 
-  function TProductionType.getUseDetection(): boolean; begin result := _useDetection; end;
+  function TProductionType.getUseDetection(): boolean;
+    begin
+      if( nil = detectionParams ) then
+        result := false
+      else
+        result := detectionParams.useDetection
+      ;
+    end
+  ;
+
   function TProductionType.getDetectionParams(): TDetectionParams; begin result := _detection; end;
 
 
   // Destruction
   //------------
-  (*
-  procedure TProductionType.setUseDestruction( val: boolean );
-    begin
-      _useDestruction := val;
-      _updated := true;
-    end
-  ;
-  *)
-
   procedure TProductionType.setDestructionParams( dem: TDestructionParams );
     begin
       if( nil <> _destr ) then freeAndNil( _destr );
       _destr := dem;
       _updated := true;
-      //_useDestruction := true;
+    end
+  ;
+
+
+  function TProductionType.getUseBasicDestruction(): boolean;
+    begin
+      if( nil = destructionParams ) then
+        result := false
+      else
+        result := destructionParams.destroyDetectedUnits
+      ;
     end
   ;
 
@@ -2407,12 +3229,90 @@ implementation
     end
   ;
 
+
+  function TProductionType.getUseTraceDestruction(): boolean;
+    begin
+      if( nil = _destr ) then
+        result := false
+      else
+        result := _destr.useTraceDestruction
+      ;
+    end
+  ;
+
+
+  function TProductionType.getUseDestruction(): boolean;
+    begin
+      result :=
+        isRingDestrTarget
+      or
+        useBasicDestruction
+      or
+        useTraceDestruction
+      ;
+    end
+  ;
+
+  // Tracing
+  //--------
+  procedure TProductionType.setTracingParams( dem: TTracingParams );
+    begin
+      if( nil <> _trace ) then freeAndNil( _trace );
+      _trace := dem;
+      _updated := true;
+    end
+  ;
+
+  function TProductionType.getTracingParams(): TTracingParams; begin result := _trace; end;
+
+  function TProductionType.getUseTracing(): boolean;
+    begin
+      if( nil = tracingParams ) then
+        result := false
+      else
+        result := tracingParams.useTracing
+      ;
+    end
+  ;
+
+  function TProductionType.getUseTracingExam(): boolean;
+    begin
+      if( nil = tracingParams ) then
+        result := false
+      else
+        result := tracingParams.useTracingExam
+      ;
+    end
+  ;
+
+  // Testing
+  //--------
+  procedure TProductionType.setTestingParams( dem: TTestingParams );
+    begin
+      if( nil <> _testing ) then freeAndNil( _testing );
+      _testing := dem;
+      _updated := true;
+    end
+  ;
+
+  function TProductionType.getTestingParams(): TTestingParams; begin result := _testing; end;
+
+  function TProductionType.getUseTesting(): boolean;
+    begin
+      if( nil = testingParams ) then
+        result := false
+      else
+        result := testingParams.useTesting
+      ;
+    end
+  ;
+
   // Zones
   //-------
-  procedure TProductionType.setZoneParams( z: TZoneParams );
-  	begin
+  procedure TProductionType.setZoneParams( z: TProdTypeZoneParams );
+    begin
       if( nil <> _zoneParams ) then freeAndNil( _zoneParams );
-   		_zoneParams := z;
+      _zoneParams := z;
       _updated := true;
     end
   ;
@@ -2430,34 +3330,34 @@ implementation
     end
   ;
 
-  function TProductionType.getZoneParams(): TZoneParams; begin result := _zoneParams; end;
+  function TProductionType.getZoneParams(): TProdTypeZoneParams; begin result := _zoneParams; end;
 
   // Vaccination
   //------------
   procedure TProductionType.setVaccinationParams( vp: TVaccinationParams );
-  	begin
+    begin
       if( nil <> _vacc ) then freeAndNil( _vacc );
-   		_vacc := vp;
+      _vacc := vp;
       _updated := true;
     end
   ;
 
 
   procedure TProductionType.setRingVaccParams( rvp: TRingVaccParams );
-  	begin
+    begin
       if( nil <> _ringVacc ) then freeAndNil( _ringVacc );
-   		_ringVacc := rvp;
+      _ringVacc := rvp;
       _updated := true;
     end
   ;
 
 
   function TProductionType.getIsRingVaccTrigger(): boolean;
-  	begin
-    	if( nil = ringVaccParams ) then
-      	result := false
+    begin
+      if( nil = ringVaccParams ) then
+        result := false
       else
-    		result := ringVaccParams.useRing
+        result := ringVaccParams.useRing
       ;
     end
   ;
@@ -2465,11 +3365,11 @@ implementation
 
 
   function TProductionType.getUseVaccination(): boolean;
-  	begin
-    	if( nil = vaccinationParams ) then
-      	result := false
+    begin
+      if( nil = vaccinationParams ) then
+        result := false
       else
-      	result := vaccinationparams.useVaccination
+        result := vaccinationParams.useVaccination
       ;
     end
   ;
@@ -2516,7 +3416,8 @@ implementation
                 begin
                  result := true;
                  exit;
-                end;
+                end
+              ;
             end
           ;
 
@@ -2526,7 +3427,30 @@ implementation
                 begin
                  result := true;
                  exit;
-                end;
+                end
+              ;
+            end
+          ;
+
+          if( nil <> _trace ) then
+            begin
+              if( _trace.updated ) then
+                begin
+                 result := true;
+                 exit;
+                end
+              ;
+            end
+          ;
+
+          if( nil <> _testing ) then
+            begin
+              if( _testing.updated ) then
+                begin
+                 result := true;
+                 exit;
+                end
+              ;
             end
           ;
 
@@ -2536,7 +3460,8 @@ implementation
                 begin
                  result := true;
                  exit;
-                end;
+                end
+              ;
             end
           ;
 
@@ -2555,9 +3480,10 @@ implementation
             begin
               if( _ringVacc.updated ) then
                 begin
-                 result := true;
-                 exit;
-                end;
+                  result := true;
+                  exit;
+                end
+              ;
             end
           ;
 
@@ -2565,9 +3491,10 @@ implementation
             begin
               if( _vacc.updated ) then
                 begin
-                 result := true;
-                 exit;
-                end;              
+                  result := true;
+                  exit;
+                end
+              ;
             end
           ;
         end
@@ -2602,12 +3529,13 @@ implementation
       oldProdTypeDescr := _productionTypeDescr;
 
       _productionTypeDescr := val;
-      _xmlProdTypeDescr := encodeXml( val );
 
       _detection.prodTypeDescr := val;
       _ringVacc.prodTypeDescr := val;
       _zoneParams.prodTypeDescr := val;
       _destr.prodTypeDescr := val;
+      _trace.prodTypeDescr := val;
+      _testing.prodTypeDescr := val;
       _costs.prodTypeDescr := val;
       _vacc.prodTypeDescr := val;
 
@@ -2632,8 +3560,8 @@ implementation
 
   function TProductionType.getProdTypeID() : integer; begin result := _productionTypeID; end;
 
-  function TProductionType.getCurrentOutputs(): TSMSimOutByProdType; begin result := _outputs; end;
-  function TProductionType.getInitialOutputs(): TSMSimOutByProdType; begin result := _initialOutputs; end;
+  function TProductionType.getCurrentOutputs(): TSMDailyOutput; begin result := _outputs; end;
+  function TProductionType.getInitialOutputs(): TSMDailyOutput; begin result := _initialOutputs; end;
 
   procedure TProductionType.setRemoved( val: boolean ); begin _removed := val; _updated := true; end;
   function TProductionType.getRemoved(): boolean; begin result := _removed; end;

@@ -88,7 +88,6 @@ object FrameCostsDestr: TFrameCostsDestr
       EditAlign = eaLeft
       TabOrder = 0
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleDestrCleaningPerUnit: TREEdit
       Left = 256
@@ -98,7 +97,6 @@ object FrameCostsDestr: TFrameCostsDestr
       EditAlign = eaLeft
       TabOrder = 1
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleDestrIndemnificationPerAnimal: TREEdit
       Left = 256
@@ -108,7 +106,6 @@ object FrameCostsDestr: TFrameCostsDestr
       EditAlign = eaLeft
       TabOrder = 2
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleDestrEuthanasiaPerAnimal: TREEdit
       Left = 256
@@ -118,7 +115,6 @@ object FrameCostsDestr: TFrameCostsDestr
       EditAlign = eaLeft
       TabOrder = 3
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
     object rleDestrDisposalPerAnimal: TREEdit
       Left = 256
@@ -128,7 +124,6 @@ object FrameCostsDestr: TFrameCostsDestr
       EditAlign = eaLeft
       TabOrder = 4
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
   end
   object pnlNoDestruction: TPanel

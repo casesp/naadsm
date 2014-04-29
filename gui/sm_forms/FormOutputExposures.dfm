@@ -1,8 +1,8 @@
 inherited FormOutputExposures: TFormOutputExposures
-  Left = 799
-  Top = 22
+  Left = 704
+  Top = 383
   Width = 700
-  Caption = 'Exposures for 1 iteration'
+  Caption = 'Exposures and traces for 1 iteration'
   Constraints.MinHeight = 65
   Constraints.MinWidth = 700
   OnResize = FormResize
@@ -12,32 +12,28 @@ inherited FormOutputExposures: TFormOutputExposures
     Width = 692
     Height = 57
     inherited pnlProdTypes: TPanel
-      Left = 217
-      Width = 474
+      Left = 249
+      Width = 442
       Height = 55
       object lblSourcePT: TLabel [0]
         Left = 24
         Top = 6
-        Width = 113
+        Width = 60
         Height = 13
-        Caption = 'Source production type:'
+        Caption = 'Source type:'
       end
       object lblRecipientPT: TLabel [1]
         Left = 24
         Top = 30
-        Width = 124
+        Width = 71
         Height = 13
-        Caption = 'Recipient production type:'
+        Caption = 'Recipient type:'
       end
-      object lblIteration: TLabel [2]
-        Left = 364
-        Top = 8
-        Width = 41
-        Height = 13
-        Caption = 'Iteration:'
+      inherited lblIteration: TLabel
+        Left = 296
       end
       inherited cboProdTypes: TComboBox
-        Left = 182
+        Left = 118
         Width = 169
       end
       inherited pnlDecorator3: TPanel
@@ -47,11 +43,16 @@ inherited FormOutputExposures: TFormOutputExposures
         Height = 48
       end
       inherited cboZones: TComboBox
+        Left = 192
+        Top = 20
         Width = 169
-        TabOrder = 4
+        TabOrder = 5
+      end
+      inherited cboIteration: TComboBox
+        Left = 364
       end
       object cboRecipientProdTypes: TComboBox
-        Left = 182
+        Left = 118
         Top = 28
         Width = 169
         Height = 21
@@ -59,16 +60,6 @@ inherited FormOutputExposures: TFormOutputExposures
         ItemHeight = 13
         TabOrder = 3
         OnCloseUp = cboRecipientProdTypesCloseUp
-      end
-      object cboIteration: TComboBox
-        Left = 417
-        Top = 4
-        Width = 52
-        Height = 21
-        Style = csDropDownList
-        ItemHeight = 13
-        TabOrder = 5
-        OnChange = cboIterationChange
       end
     end
     inherited pnlButtons: TPanel
@@ -135,7 +126,7 @@ inherited FormOutputExposures: TFormOutputExposures
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object lblDay: TLabel
+    object lblTextEntry: TLabel
       Left = 328
       Top = 8
       Width = 22
@@ -151,23 +142,7 @@ inherited FormOutputExposures: TFormOutputExposures
       Caption = 'Exposure type:'
       Visible = False
     end
-    object lblSourceHerdID: TLabel
-      Left = 392
-      Top = 8
-      Width = 71
-      Height = 13
-      Caption = 'Source unit ID:'
-      Visible = False
-    end
-    object lblRecipientHerdID: TLabel
-      Left = 400
-      Top = 24
-      Width = 82
-      Height = 13
-      Caption = 'Recipient unit ID:'
-      Visible = False
-    end
-    object lblStatus: TLabel
+    object lblDiseaseState: TLabel
       Left = 384
       Top = 6
       Width = 33
@@ -190,11 +165,14 @@ inherited FormOutputExposures: TFormOutputExposures
         '(No filter)'
         'Day'
         'Source unit ID'
-        'Source unit status'
-        'Exposure type'
-        'Exposure success'
+        'Source status'
+        'Source zone'
+        'Exp. type'
+        'Is adequate'
         'Recipient unit ID'
-        'Recipient unit status')
+        'Recipient status'
+        'Recipient zone'
+        'Day of initiation')
     end
     object cboExposureType: TComboBox
       Left = 476
@@ -207,11 +185,16 @@ inherited FormOutputExposures: TFormOutputExposures
       Visible = False
       OnChange = cboExposuresChange
       Items.Strings = (
-        'Direct contacts'
-        'Indirect contacts'
-        'Airborne spread')
+        'Exposure, direct'
+        'Exposure, indirect'
+        'Exposure, airborne'
+        'Exposure, local-area'
+        'Trace forward, direct'
+        'Trace forward, indirect'
+        'Trace back, direct'
+        'Trace back, indirect')
     end
-    object rleDay: TREEdit
+    object rleTextEntry: TREEdit
       Left = 472
       Top = 4
       Width = 101
@@ -219,33 +202,9 @@ inherited FormOutputExposures: TFormOutputExposures
       EditAlign = eaLeft
       TabOrder = 2
       Visible = False
-      OnEnter = rleDayEnter
-      OnExit = rleExit
-      OnKeyUp = rleKeyUp
-    end
-    object rleSourceHerdID: TREEdit
-      Left = 460
-      Top = 7
-      Width = 101
-      Height = 21
-      EditAlign = eaLeft
-      TabOrder = 4
-      Visible = False
-      OnEnter = rleSourceHerdIDEnter
-      OnExit = rleExit
-      OnKeyUp = rleKeyUp
-    end
-    object rleRecipientHerdID: TREEdit
-      Left = 468
-      Top = 15
-      Width = 101
-      Height = 21
-      EditAlign = eaLeft
-      TabOrder = 5
-      Visible = False
-      OnEnter = rleRecipientHerdIDEnter
-      OnExit = rleExit
-      OnKeyUp = rleKeyUp
+      OnEnter = rleTextEntryEnter
+      OnExit = rleTextEntryExit
+      OnKeyUp = rleTextEntryKeyUp
     end
     object pnlExposureSuccess: TPanel
       Left = 376
@@ -253,10 +212,10 @@ inherited FormOutputExposures: TFormOutputExposures
       Width = 321
       Height = 22
       BevelOuter = bvNone
-      TabOrder = 6
+      TabOrder = 4
       Visible = False
       object rdoSuccess: TRadioButton
-        Left = 8
+        Left = 0
         Top = 4
         Width = 129
         Height = 17
@@ -274,14 +233,14 @@ inherited FormOutputExposures: TFormOutputExposures
         OnClick = rdoClick
       end
     end
-    object cboStatus: TComboBox
+    object cboDiseaseState: TComboBox
       Left = 452
       Top = 16
       Width = 153
       Height = 21
       Style = csDropDownList
       ItemHeight = 13
-      TabOrder = 7
+      TabOrder = 5
       Visible = False
       OnChange = cboExposuresChange
       Items.Strings = (
@@ -421,11 +380,14 @@ inherited FormOutputExposures: TFormOutputExposures
         'Source unit ID'
         'Source type'
         'Source status'
+        'Source zone'
         'Exp. type'
-        'Exp. success'
+        'Is adequate'
         'Recipient unit ID'
         'Recipient type'
-        'Recipient status')
+        'Recipient status'
+        'Recipient zone'
+        'Day of initiation')
     end
     object rdoAscending: TRadioButton
       Left = 392

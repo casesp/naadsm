@@ -4,7 +4,7 @@ unit RemoteDatabaseParams;
 RemoteDatabaseParams.pas
 ------------------------
 Begin: 2007/03/19
-Last revision: $Date: 2007/11/19 16:44:45 $ $Author: areeves $
+Last revision: $Date: 2007-11-19 16:44:45 $ $Author: areeves $
 Version number: $Revision: 1.4 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org

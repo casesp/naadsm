@@ -4,7 +4,7 @@ unit FrameSummaryEpiCurvesDensity;
 FrameSummaryEpiCurvesDensity.pas/dfm
 -----------------------------
 Begin: 2008/01/15
-Last revision: $Date: 2008/03/12 21:19:15 $ $Author: areeves $
+Last revision: $Date: 2008-03-12 21:19:15 $ $Author: areeves $
 Version number: $Revision: 1.2 $
 Project: NAADSM
 Website: http://www.naadsm.org

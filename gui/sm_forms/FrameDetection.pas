@@ -4,13 +4,13 @@ unit FrameDetection;
 FrameDetection.pas/dfm
 -----------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version: $Revision: 1.15 $
+Last revision: $Date: 2011-03-31 05:05:36 $ $Author: areeves $
+Version: $Revision: 1.17.6.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -64,11 +64,12 @@ implementation
 
 	uses
     MyStrUtils,
-    GuiStrUtils,
     I88n,
-    
-    FormSMWizardBase,
-    ChartFunction
+
+    FunctionEnums,
+    ChartFunction,
+
+    FormSMWizardBase
   ;
 
 	constructor TFrameDetection.create( AOwner: TComponent );
@@ -80,15 +81,17 @@ implementation
       smrProbReportVsDaysInfectious.chartType := CTRel;
       smrProbReportVsDaysInfectious.minY := 0.0;
       smrProbReportVsDaysInfectious.maxY := 0.0; // there is no maximum
-      smrProbReportVsDaysInfectious.xUnits := UnitsDays;
-      smrProbReportVsDaysInfectious.yUnits := UnitsPercent;
+      smrProbReportVsDaysInfectious.xUnits := UDays;
+      smrProbReportVsDaysInfectious.yUnits := UPercentProbability;
+      smrProbReportVsDaysInfectious.setChartField( DetProbObsVsTimeClinical );
 
       smrProbVsFirstDetection.setForm( AOwner as TFormSMWizardBase );
       smrProbVsFirstDetection.chartType := CTRel;
       smrProbVsFirstDetection.minY := 0.0;
       smrProbVsFirstDetection.maxY := 0.0; // there is no maximum
-      smrProbVsFirstDetection.xUnits := UnitsDays;
-      smrProbVsFirstDetection.yUnits := UnitsPercent;
+      smrProbVsFirstDetection.xUnits := UDays;
+      smrProbVsFirstDetection.yUnits := UPercentProbability;
+      smrProbVsFirstDetection.setChartField( DetProbReportVsFirstDetection );
     end
   ;
   

@@ -4,13 +4,13 @@ unit FormSummaryEpiCurves;
 FormSummaryEpiCurves.pas/dfm
 -----------------------------
 Begin: 2005/10/14
-Last revision: $Date: 2008/03/12 22:10:48 $ $Author: areeves $
-Version: $Revision: 1.18 $
+Last revision: $Date: 2009-09-19 18:41:23 $ $Author: areeves $
+Version: $Revision: 1.20 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -135,7 +135,6 @@ implementation
 
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     MyGraphicsUtils,
     I88n,
@@ -153,13 +152,17 @@ implementation
     begin
       inherited create( AOwner );
       translateUI();
+
+      lblIteration.Visible := false;
+      cboIteration.Visible := false;
       
       _ScrollBarVisibleCheck := false;
+      
       _smSim := sim;
       _smdb := db;
 
       // Populate the dropdown list
-      setupComboBox();
+      setupProdTypeComboBox();
 
       // Create the summary epi curves object
       _epiCurves := TSMSummaryEpiCurves.create( _smdb );

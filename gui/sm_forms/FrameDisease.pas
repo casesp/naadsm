@@ -4,13 +4,13 @@ unit FrameDisease;
 FrameDisease.pas/dfm
 --------------------
 Begin: 2005/03/19
-Last revision: $Date: 2008/04/18 20:35:17 $ $Author: areeves $
-Version: $Revision: 1.20 $
+Last revision: $Date: 2011-03-31 05:05:36 $ $Author: areeves $
+Version: $Revision: 1.24.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,10 +76,10 @@ implementation
 
 	uses
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     I88n,
 
+    FunctionEnums,
     ChartFunction,
 
     FormSMWizardBase
@@ -95,26 +95,31 @@ implementation
 
       smcLatent.setForm( AOwner as TFormSMWizardBase );
       smcLatent.chartType := CTPdf;
-	  	smcLatent.xUnits := UnitsDays;
-                                                                                         
+	  	smcLatent.xUnits := UDays;
+      smcLatent.setChartField( DLatent );
+
       smcSubclinical.setForm( AOwner as TFormSMWizardBase );
       smcSubclinical.chartType := CTPdf;
-	  	smcSubclinical.xUnits := UnitsDays;
+	  	smcSubclinical.xUnits := UDays;
+      smcSubclinical.setChartField( DSubclinical );
 
       smcClinical.setForm( AOwner as TFormSMWizardBase );
       smcClinical.chartType := CTPdf;
-	  	smcClinical.xUnits := UnitsDays;
+	  	smcClinical.xUnits := UDays;
+      smcClinical.setChartField( DClinical );
 
       smcImmune.setForm( AOwner as TFormSMWizardBase );
       smcImmune.chartType := CTPdf;
-	  	smcImmune.xUnits := UnitsDays;
+	  	smcImmune.xUnits := UDays;
+      smcImmune.setChartField( DImmune );
 
       smrPrevalence.setForm( AOwner as TFormSMWizardBase );
       smrPrevalence.chartType := CTRel;
       smrPrevalence.minY := 0.0;
       smrPrevalence.maxY := 100.0; // Remember: this is a percent.
-      smrPrevalence.xUnits := UnitsDays;
-      smrPrevalence.yUnits := UnitsPercent;
+      smrPrevalence.xUnits := UDays;
+      smrPrevalence.yUnits := UPercent;
+      smrPrevalence.setChartField( DPrevalence );
     end
   ;
 

@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -61,32 +58,6 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
 
 drop table `inGeneral`; 
 
-
--- `inGeneral` : Table of inGeneral
--- 	`inGeneralID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`scenarioDescr` : The description of the scenario.
--- 	`iterations` : The number of iterations of this scenario that should be run.
--- 	`days` : The number of days that iterations of this scenario should run, if the command Run->Start and run until specified day... is used.
--- 	`simStopReason` : The criterion used to end each iteration.  This may be that the specified number of days has passed, the first detection has occurred, or the outbreak has ended.
--- 	`includeContactSpread` : Indicates whether disease spread by direct or indirect contact is used in the scenario.
--- 	`includeAirborneSpread` : Indicates whether airborne spread is used in the model.
--- 	`useAirborneExponentialDecay` : Indicates whether exponential decay (TRUE) or linear decay (FALSE) is used with airborne spread.
--- 	`useWithinHerdPrevalence` : useWithinHerdPrevalence is of inGeneral
--- 	`includeCosts` : Indicates whether direct costs should be tracked in the model.
--- 	`costTrackDestruction` : costTrackDestruction is of inGeneral
--- 	`costTrackVaccination` : costTrackVaccination is of inGeneral
--- 	`costTrackZoneSurveillance` : costTrackZoneSurveillance is of inGeneral
--- 	`useFixedRandomSeed` : Indicates whether a specified seed value for the random number generator should be used.
--- 	`randomSeed` : The specified seed value for the random number generator.
--- 	`saveAllDailyOutputs` : Indicates whether daily outputs should be stored for every iteration.
--- 	`saveDailyOutputsForIterations` : The number of iterations for which daily outputs should be stored.  The minimum value is 3.
--- 	`writeDailyStatesFile` : Indicates whether a plain text file with the state of each unit on each day of each iteration should be written.
--- 	`dailyStatesFileName` : The file name of the plain text file described above.
--- 	`saveDailyEvents` : Indicates whether all events should be recorded in the scenario database.
--- 	`saveDailyExposures` : Indicates whether all exposures should be recorded in the scenario database.
--- 	`useCustomOutputs` : Indicates whether custom outputs should be generated.
--- 	`writeNAADSMapOutput` : writeNAADSMapOutput is of inGeneral
--- 	`NAADSMapDirectory` : NAADSMapDirectory is of inGeneral  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -148,8 +119,6 @@ alter table `inGeneral`
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Update existing table `DBSchemaVersion`.
 create table `DBSchemaVersion_IM0` ( 
 	`VersionNumber` VARCHAR(255),
 	`VersionApplication` CHAR(10),
@@ -166,13 +135,6 @@ insert into `DBSchemaVersion_IM0` (`VersionNumber`, `VersionApplication`, `Versi
 
 drop table `DBSchemaVersion`; 
 
-
--- `DBSchemaVersion` : Table of DBSchemaVersion
--- 	`VersionNumber` : The minimum version of NAADSM capable of using this database.
--- 	`VersionApplication` : This value is always "NAADSMXXXX".
--- 	`VersionDate` : The date and time that the version indicated above was released.
--- 	`VersionInfoURL` : An Internet address where more information about this version may be found.
--- 	`VersionID` : VersionID partly identifies DBSchemaVersion  
 create table `DBSchemaVersion` ( 
 	`VersionNumber` VARCHAR(255),
 	`VersionApplication` CHAR(10),
@@ -194,6 +156,3 @@ drop table `DBSchemaVersion_IM0`;
 alter table `DBSchemaVersion`
 	add constraint `DBSchemaVersion_PK` primary key (`VersionNumber`, `VersionApplication`) ; 
 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

@@ -4,13 +4,13 @@ unit GlobalControlParams;
 GlobalControlParams.pas
 ------------------------
 Begin: 2005/06/03
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.39 $
+Last revision: $Date: 2010-08-04 18:36:56 $ $Author: rhupalo $
+Version number: $Revision: 1.49.4.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -20,18 +20,28 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
-    RelFunction,
-    SMDatabase,
+    QLists,
+    QStringMaps,
+
+    Sdew,
+
     Models,
-    FunctionEnums,
+    ModelDatabase,
     ChartFunction,
-    QStringMaps
+    RelFunction,
+
+    SMDatabase,
+    FunctionEnums
   ;
 
   type TGlobalControlParams = class( TModelWithFunctions )
     protected
+      _xmlModelList: TQStringList;
+
       _useDetectionGlobal: boolean;
       _useTracingGlobal: boolean;
+      _useTracingHerdExamGlobal: boolean;
+      _useTracingTestingGlobal: boolean;
       _useDestrGlobal: boolean;
       _useVaccGlobal: boolean;
       _useZonesGlobal: boolean;
@@ -41,24 +51,29 @@ interface
 
       _vaccDetectedUnitsBeforeStart: integer;
 
-      _destrCapacityName: string;
-      _vaccCapacityName: string;
+      _relDestrCapacityName: string;
+      _relVaccCapacityName: string;
 
       _destrPriorityOrder: string;
       _destrReasonOrder: string;
       _vaccPriorityOrder: string;
+      _vaccReasonOrder: string;
 
       // for determining priority order of destruction and vaccination for SharcSpread-compatible XML
       _destrOrderList: TQStringLongIntMap;
       _vaccOrderList: TQStringLongIntMap;
 
-
       procedure initialize();
+
+      // XML import
+      function getXmlModelList(): TQStringList;
 
 			// property getters and setters
       //-----------------------------
       procedure setUseDetectionGlobal( val: boolean );
       procedure setUseTracingGlobal( val: boolean );
+      procedure setUseTracingHerdExamGlobal( val: boolean );
+      procedure setUseTracingTestingGlobal( val: boolean );
       procedure setUseDestrGlobal( val: boolean );
       procedure setUseVaccGlobal( val: boolean );
       procedure setUseZonesGlobal( val: boolean );
@@ -67,6 +82,8 @@ interface
 
       function getUseDetectionGlobal(): boolean;
       function getUseTracingGlobal(): boolean;
+      function getUseTracingHerdExamGlobal(): boolean;
+      function getUseTracingTestingGlobal(): boolean;
       function getUseDestrGlobal(): boolean;
       function getUseVaccGlobal(): boolean;
       function getUseZonesGlobal(): boolean;
@@ -80,22 +97,24 @@ interface
       function getDestrPriorityOrder(): string;
       function getDestrReasonOrder(): string;
       function getVaccPriorityOrder(): string;
+      procedure setVaccReasonOrder( val: string );
+      function getVaccReasonOrder(): string;
 
       function getSSDestrPriorities(): TQStringLongIntMap;
-      procedure setSSDestrPriorities( newPriorities:TQStringLongIntMap );
+      procedure setSSDestrPriorities( newPriorities: TQStringLongIntMap );
       procedure buildSSDestructionPriorities();
 
       function getSSVaccPriorities(): TQStringLongIntMap;
-      procedure setSSVaccPriorities( newPriorities:TQStringLongIntMap );
+      procedure setSSVaccPriorities( newPriorities: TQStringLongIntMap );
       procedure buildSSVaccPriorities();
 
-      procedure setdestrCapacityName( val: string );
-      procedure setvaccCapacityName( val: string );
-      function getdestrCapacityName(): string;
-      function getvaccCapacityName(): string;
+      procedure setRelDestrCapacityName( val: string );
+      procedure setRelVaccCapacityName( val: string );
+      function getRelDestrCapacityName(): string;
+      function getRelVaccCapacityName(): string;
 
-      function getDestrCapacity(): TRelFunction;
-      function getVaccCapacity(): TRelFunction;
+      function getRelDestrCapacity(): TRelFunction;
+      function getRelVaccCapacity(): TRelFunction;
 
 
       // Overridden from TModel
@@ -105,6 +124,7 @@ interface
     public
       constructor create(); overload;
       constructor create( db: TSMDatabase; sim: TObject ); overload;
+      constructor create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil ); overload;
       constructor create( const src: TGlobalControlParams; sim: TObject ); overload;
       destructor destroy(); override;
 
@@ -117,17 +137,26 @@ interface
       procedure removeChart( const chartName: string ); override;
       function functionsAreValid(): boolean; override;
 
-      function hasChartName( const chartName: string; const whichChart: TSMChart ): boolean;
+      function hasChartName( const chartName: string; const whichChart: TSMChart ): boolean; override;
 
 			function validate( err: PString = nil ): boolean; override;
       procedure debug(); override;
       function ssXml(): string; override;
-      function populateDatabase( db: TSMDatabase; update: boolean = false ): integer; reintroduce;
+      function populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer; reintroduce;
+
+      // XML import
+      //-----------
+      class function createXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+      property xmlModelList: TQStringList read getXmlModelList;
 
       procedure recalculatePriorities();
 
       property useDetectionGlobal: boolean read getUseDetectionGlobal write setUseDetectionGlobal;
       property useTracingGlobal: boolean read getuseTracingGlobal write setUseTracingGlobal;
+      property useTracingHerdExamGlobal: boolean read getuseTracingHerdExamGlobal write setUseTracingHerdExamGlobal;
+      property useTracingTestingGlobal: boolean read getuseTracingTestingGlobal write setUseTracingTestingGlobal;
+
       property useDestructionGlobal: boolean read getUseDestrGlobal write setUseDestrGlobal;
       property useVaccGlobal: boolean read getUseVaccGlobal write setUseVaccGlobal;
       property useZonesGlobal: boolean read getUseZonesGlobal write setUseZonesGlobal;
@@ -138,15 +167,16 @@ interface
       property destrPriorityOrder: string read getDestrPriorityOrder write setDestrPriorityOrder;
       property destrReasonOrder: string read getDestrReasonOrder write setDestrReasonOrder;
       property vaccPriorityOrder: string read getVaccPriorityOrder write setVaccPriorityOrder;
+      property vaccReasonOrder: string read getVaccReasonOrder write setVaccReasonOrder;
 
       property ssDestrPriorities: TQStringLongIntMap read getSSDestrPriorities write setSSDestrPriorities;
       property ssVaccPriorities: TQStringLongIntMap read getSSVaccPriorities write setSSVaccPriorities;
 
-      property destrCapacityName: string read getdestrCapacityName write setdestrCapacityName;
-      property vaccCapacityName: string read getvaccCapacityName write setvaccCapacityName;
+      property relDestrCapacityName: string read getRelDestrCapacityName write setRelDestrCapacityName;
+      property relVaccCapacityName: string read getRelVaccCapacityName write setRelVaccCapacityName;
 
-      property destrCapacity: TRelFunction read getDestrCapacity;
-      property vaccCapacity: TRelFunction read getVaccCapacity;
+      property relDestrCapacity: TRelFunction read getRelDestrCapacity;
+      property relVaccCapacity: TRelFunction read getRelVaccCapacity;
 
     end
   ;
@@ -162,11 +192,11 @@ implementation
     Variants,
 
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     SqlClasses,
     CStringList,
     I88n,
+    Points,
 
     ProductionType,
     ProductionTypeList,
@@ -189,10 +219,13 @@ implementation
   constructor TGlobalControlParams.create( const src: TGlobalControlParams; sim: TObject );
     begin
       inherited create( src );
+      initialize();
       _sim := sim;
 
       _useDetectionGlobal := src._useDetectionGlobal;
       _useTracingGlobal := src._useTracingGlobal;
+      _useTracingHerdExamGlobal := src._useTracingHerdExamGlobal;
+      _useTracingTestingGlobal := src._useTracingTestingGlobal;
       _useDestrGlobal := src._useDestrGlobal;
       _useVaccGlobal := src._useVaccGlobal;
       _useZonesGlobal := src._useZonesGlobal;
@@ -202,32 +235,19 @@ implementation
 
       _vaccDetectedUnitsBeforeStart := src._vaccDetectedUnitsBeforeStart;
 
-      // Don't use the "set" functions here.
-      // Otherwise, the function reference counters will get screwed up.
-      _destrCapacityName := src._destrCapacityName;
-      _vaccCapacityName := src._vaccCapacityName;
+      setRelDestrCapacityName( src._relDestrCapacityName );
+      setRelVaccCapacityName( src._relVaccCapacityName );
 
       _destrPriorityOrder := src._destrPriorityOrder;
       _destrReasonOrder := src._destrReasonOrder;
       _vaccPriorityOrder := src._vaccPriorityOrder;
+      _vaccReasonOrder := src._vaccReasonOrder;
 
-      if( nil <> src._destrOrderList ) then
-        begin
-          _destrOrderList := TQStringLongIntMap.create();
-          _destrOrderList.assign( src._destrOrderList );
-        end
-      else
-        _destrOrderList := nil
-      ;
+      _destrOrderList.clear();
+      _destrOrderList.assign( src._destrOrderList );
 
-      if( nil <> src._vaccOrderList ) then
-        begin
-          _vaccOrderList := TQStringLongIntMap.create();
-          _vaccOrderList.assign( src._vaccOrderList );
-        end
-      else
-        _vaccOrderList := nil
-      ;
+      _vaccOrderList.clear();
+      _vaccOrderList.assign( src._vaccOrderList );
 
       _updated := src._updated;
     end
@@ -254,6 +274,8 @@ implementation
         //+ ' inControlsGlobal.controlsGlobalID,'
         + ' inControlsGlobal.includeDetection,'
         + ' inControlsGlobal.includeTracing,'
+        + ' inControlsGlobal.includeTracingHerdExam,'
+        + ' inControlsGlobal.includeTracingTesting,'
         + ' inControlsGlobal.includeDestruction,'
         + ' inControlsGlobal.destrProgramDelay,'
         + ' inControlsGlobal.destrCapacityRelID,'
@@ -292,6 +314,18 @@ implementation
         useTracingGlobal := false
       ;
 
+      if( null <> row.field('includeTracingHerdExam') ) then
+        useTracingHerdExamGlobal := boolean( row.field('includeTracingHerdExam') )
+      else
+        useTracingHerdExamGlobal := false
+      ;
+
+      if( null <> row.field('includeTracingTesting') ) then
+        useTracingTestingGlobal := boolean( row.field('includeTracingTesting') )
+      else
+        useTracingTestingGlobal := false
+      ;
+
       if( null <> row.field('includeDestruction') ) then
         useDestructionGlobal := boolean( row.field('includeDestruction') )
       else
@@ -301,7 +335,7 @@ implementation
 
       if( null <> row.field('destrCapacityRelID') ) then
         begin
-      	  setdestrCapacityName( row.field( 'destrCapacityChartName' ) );
+      	  setRelDestrCapacityName( row.field( 'destrCapacityChartName' ) );
         end
       ;
 
@@ -314,7 +348,7 @@ implementation
 
       if( null <> row.field('vaccCapacityRelID') ) then
         begin
-      	  setvaccCapacityName( row.field( 'vaccCapacityChartName' ) );
+      	  setRelVaccCapacityName( row.field( 'vaccCapacityChartName' ) );
         end
       ;
 
@@ -329,6 +363,8 @@ implementation
       if( null <> row.field('vaccPriorityOrder') ) then
         vaccPriorityOrder := row.field('vaccPriorityOrder')
       ;
+
+      _vaccReasonOrder := 'ring'; // This is currently the only reason for vaccination.
 
       if( null <> row.field('includeZones' ) ) then
         useZonesGlobal := boolean( row.field('includeZones') )
@@ -346,12 +382,43 @@ implementation
   ;
 
 
+  constructor TGlobalControlParams.create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil );
+    var
+      nModels: integer;
+      modelName: string;
+      i: integer;
+      model: pointer;
+    begin
+    	inherited create();
+    	initialize();
+      _sim := sim;
+
+      nModels := sdew.GetElementCount( models );
+
+      for i := 0 to nModels - 1 do
+        begin
+          model := sdew.GetElementByIndex( models, i );
+          modelName := sdew.GetElementName( model );
+
+          if( xmlModelList.contains( modelName ) ) then
+            importXml( model, sdew, errMsg )
+          ;
+        end
+      ;
+    end
+  ;
+
+
 	procedure TGlobalControlParams.initialize();
   	begin
+      _xmlModelList := nil;
+
       _destrProgramDelay := 0;
 
       _useDetectionGlobal := false;
       _useTracingGlobal := false;
+      _useTracingHerdExamGlobal := false;
+      _useTracingTestingGlobal := false;
       _useDestrGlobal := false;
       _useVaccGlobal := false;
       _useZonesGlobal := false;
@@ -361,9 +428,10 @@ implementation
       _destrPriorityOrder := '';
       _destrReasonOrder  := '';
       _vaccPriorityOrder  := '';
+      _vaccReasonOrder := '';
 
-      _destrOrderList := nil;
-      _vaccOrderList := nil;
+      _destrOrderList := TQStringLongIntMap.create();
+      _vaccOrderList := TQStringLongIntMap.create();
 
       _updated := false;
     end
@@ -372,6 +440,12 @@ implementation
 
   destructor TGlobalControlParams.destroy();
   	begin
+      freeAndNil( _xmlModelList );
+
+      // Don't free functions, but decrement their reference counters.
+      setRelDestrCapacityName( '' );
+      setRelVaccCapacityName( '' );
+      
     	freeAndNil( _destrOrderList );
       freeAndNil( _vaccOrderList );
 
@@ -382,8 +456,8 @@ implementation
 
   procedure TGlobalControlParams.recalculatePriorities();
     begin
-      freeAndNil( _destrOrderList );
-      freeAndNil( _vaccOrderList );  
+      buildSSDestructionPriorities();
+      buildSSVaccPriorities();
     end
   ;
 
@@ -429,8 +503,8 @@ implementation
       ;
 
       case whichChart of
-        DestrCapacityGlobal: self.destrCapacityName := newName;
-        vaccCapacityGlobal: self.vaccCapacityName := newName;
+        DestrCapacityGlobal: self.relDestrCapacityName := newName;
+        vaccCapacityGlobal: self.relVaccCapacityName := newName;
       end;
     end
   ;
@@ -439,8 +513,8 @@ implementation
   function TGlobalControlParams.hasChartName( const chartName: string; const whichChart: TSMChart ): boolean;
     begin
       case whichChart of
-        DestrCapacityGlobal: result := ( chartName = self.destrCapacityName );
-        VaccCapacityGlobal: result := ( chartName = self.vaccCapacityName );
+        DestrCapacityGlobal: result := ( chartName = self.relDestrCapacityName );
+        VaccCapacityGlobal: result := ( chartName = self.relVaccCapacityName );
         else
           begin
             raise exception.Create( 'Unrecognized whichChart in TGlobalControlParams.hasChartName' );
@@ -462,13 +536,13 @@ implementation
       case whichChart of
         DestrCapacityGlobal:
           begin
-            Item := (_sim as TSMSimulationInput).functionDictionary.value( self.destrCapacityName );
+            Item := (_sim as TSMSimulationInput).functionDictionary.value( self.relDestrCapacityName );
             if ( nil <> Item ) then
               ret_val := Item.fn;
           end;
         VaccCapacityGlobal:
           begin
-            Item := (_sim as TSMSimulationInput).functionDictionary.value( self.vaccCapacityName );
+            Item := (_sim as TSMSimulationInput).functionDictionary.value( self.relVaccCapacityName );
             if ( nil <> Item ) then
               ret_val := Item.fn;
           end;
@@ -481,8 +555,8 @@ implementation
 
   procedure TGlobalControlParams.removeChart( const chartName: string );
     begin
-      if( chartName = self.vaccCapacityName ) then self.vaccCapacityName :='';
-      if( chartName = self.destrCapacityName ) then self.destrCapacityName := '';
+      if( chartName = self.relVaccCapacityName ) then self.relVaccCapacityName :='';
+      if( chartName = self.relDestrCapacityName ) then self.relDestrCapacityName := '';
 
       // The _updated flag will be set by the properties above, if necessary
     end
@@ -492,7 +566,7 @@ implementation
 //-----------------------------------------------------------------------------
 // Database population
 //-----------------------------------------------------------------------------
-  function TGlobalControlParams.populateDatabase( db: TSMDatabase; update: boolean = false ): integer;
+  function TGlobalControlParams.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer;
   	var
       qDict: TQueryDictionary;
       q: string;
@@ -501,31 +575,32 @@ implementation
 
       qDict['controlsGlobalID'] := db.sqlQuote( DB_SCHEMA_APPLICATION );
       
-      qDict['includeDetection'] := boolToStr( useDetectionGlobal );
-      qDict['includeTracing'] := boolToStr( useTracingGlobal );
-      qDict['includeDestruction'] := boolToStr( useDestructionGlobal );
-      qDict['includeVaccination'] := boolToStr( useVaccGlobal );
-      qDict['includeZones'] := boolToStr( useZonesGlobal );
+      qDict['includeDetection'] := usBoolToText( useDetectionGlobal );
+      qDict['includeTracing'] := usBoolToText( useTracingGlobal );
+      qDict['includeTracingHerdExam'] := usBoolToText( useTracingHerdExamGlobal );
+      qDict['includeTracingTesting'] := usBoolToText( useTracingTestingGlobal );
+      qDict['includeDestruction'] := usBoolToText( useDestructionGlobal );
+      qDict['includeVaccination'] := usBoolToText( useVaccGlobal );
+      qDict['includeZones'] := usBoolToText( useZonesGlobal );
 
       qDict['destrProgramDelay'] := intToStr( destrProgramDelay );
 
-      if( nil <> destrCapacity ) then
-      	qDict['destrCapacityRelID'] := intToStr( destrCapacity.id )
+      if( nil <> relDestrCapacity ) then
+      	qDict['destrCapacityRelID'] := intToStr( relDestrCapacity.id )
       else
       	qDict['destrCapacityRelID'] := DATABASE_NULL_VALUE
       ;
 
-      //  These were commented out...., uncommented on 10-10-2006 by SPC
       qDict['destrPriorityOrder'] := db.sqlQuote( self.destrPriorityOrder );
-      //  Added this check...10-10-2006, SPC.
-      if ( length( self.destrReasonOrder ) <= 0 ) then
-        self.destrReasonOrder := 'basic,direct,indirect,ring';
+      if( 0 >= length( self.destrReasonOrder ) ) then
+        self.destrReasonOrder := 'basic,direct-forward,indirect-forward,ring,direct-back,indirect-back'
+      ;
       qDict['destrReasonOrder'] := db.sqlQuote( self.destrReasonOrder );
 
       qDict['vaccDetectedUnitsBeforeStart'] := intToStr( vaccDetectedUnitsBeforeStart );
 
-      if( nil <> vaccCapacity ) then
-      	qDict['vaccCapacityRelID'] := intToStr( vaccCapacity.id )
+      if( nil <> relVaccCapacity ) then
+      	qDict['vaccCapacityRelID'] := intToStr( relVaccCapacity.id )
       else
       	qDict['vaccCapacityRelID'] := DATABASE_NULL_VALUE
       ;
@@ -533,7 +608,7 @@ implementation
       //  This was commented out...., uncommented on 10-10-2006 by SPC
       qDict['vaccPriorityOrder'] := db.sqlQuote( self.vaccPriorityOrder );
 
-      if( update ) then
+      if( MDBAForceUpdate = updateAction ) then
       	q := writeQuery( 'inControlsGlobal', QUpdate, qDict )
       else
       	q := writeQuery( 'inControlsGlobal', QInsert, qDict )
@@ -559,6 +634,8 @@ implementation
     	s: string;
       includeDestruction: boolean;
       includeVaccination: boolean;
+      tmpRel: TRelFunction;
+      tmpPnts: RPointArray;
     begin
     	s := endl;
 
@@ -588,21 +665,29 @@ implementation
         s := s + '      <value>0</value>' + endl;
       ;
 
-      s := s + '      ' + chartUnitTypeAsSSXml( UnitsDays ) + endl;
+      s := s + '      ' + chartUnitTypeAsSSXml( UDays ) + endl;
       s := s + '    </destruction-program-delay>' + endl;
 
 
       // Destruction capacity
-      //----------------------
+            //----------------------
       s := s + '    <destruction-capacity>' + endl;
 
       if( includeDestruction ) then
-        s := s + destrCapacity.ssXml( 3 )
+        s := s + relDestrCapacity.ssXml( 3 )
       else // use default capacity of 0
         begin
-          s := s + '      <value>1</value>   <value>0</value>' + endl;
+          {s := s + '      <value>1</value>   <value>0</value>' + endl;
           s := s + '      <units><xdf:unit>day</xdf:unit></units>' + endl;
-          s := s + '      <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>' + endl;
+          s := s + '      <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>' + endl;}
+
+          SetLength(tmpPnts, 1);
+          tmpPnts[0].x := 1;
+          tmpPnts[0].y := 0;
+          tmpRel := TRELFunction.create(tmpPnts, UDays, UHerdsPerDay);
+          tmpRel.name := 'Default Destruction Capacity';
+          s := s + tmpRel.ssXml( 3 );
+          freeAndNil(tmpRel);
         end
       ;
 
@@ -636,17 +721,24 @@ implementation
       s := s + '    <vaccination-capacity>' + endl;
 
       if( includeVaccination ) then
-        s := s + vaccCapacity.ssXml( 3 )
+        s := s + relVaccCapacity.ssXml( 3 )
       else // use default capacity of 0
         begin
-          s := s + '      <value>1</value>   <value>0</value>' + endl;
+          {s := s + '      <value>1</value>   <value>0</value>' + endl;
           s := s + '      <units><xdf:unit>day</xdf:unit></units>' + endl;
-          s := s + '      <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>' + endl;
+          s := s + '      <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>' + endl;}
+
+          SetLength(tmpPnts, 1);
+          tmpPnts[0].x := 1;
+          tmpPnts[0].y := 0;
+          tmpRel := TRELFunction.create(tmpPnts, UDays, UHerdsPerDay);
+          tmpRel.name := 'Default Vaccination Capacity';
+          s := s + tmpRel.ssXml( 3 );
+          freeAndNil(tmpRel);
+          
         end
       ;
-
       s := s + '    </vaccination-capacity>' + endl;
-
 
       // Vaccination priority
       //----------------------
@@ -714,14 +806,28 @@ implementation
             end
           ;
 
-          if( nil = destrCapacity ) then
+          if( nil = relDestrCapacity ) then
             begin
               if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction capacity is not set.' ) + endl;
               result := false;
             end
-          else if( not( destrCapacity.validate( @submsg) ) ) then
+          else if( not( relDestrCapacity.validate( @submsg) ) ) then
             begin
               if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction capacity is not valid:' ) + ' ' + submsg + endl;
+              result := false;
+            end
+          ;
+
+          if( 0 = length( trim( destrPriorityOrder ) ) ) then
+            begin
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction priority order is not set.' ) + endl;
+              result := false;
+            end
+          ;
+
+          if( 0 = length( trim( destrReasonOrder ) ) ) then
+            begin
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Destruction reason order is not set.' ) + endl;
               result := false;
             end
           ;
@@ -740,14 +846,21 @@ implementation
             end
           ;
 
-          if( nil = vaccCapacity ) then
+          if( nil = relVaccCapacity ) then
             begin
               if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination capacity is not set.' ) + endl;
               result := false;
             end
-          else if( not( vaccCapacity.validate( @submsg) ) ) then
+          else if( not( relVaccCapacity.validate( @submsg) ) ) then
             begin
               if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination capacity is not valid:' ) + ' ' + submsg + endl;
+              result := false;
+            end
+          ;
+
+          if( 0 = length( trim( vaccPriorityOrder ) ) ) then
+            begin
+              if( nil <> err ) then msg := msg + '  ' + tr( 'Vaccination priority order is not set.' ) + endl;
               result := false;
             end
           ;
@@ -805,62 +918,73 @@ implementation
       ;
       *)
 
-      if( nil <> _vaccOrderList ) then freeAndNil( _vaccOrderList );
+      _vaccOrderList.clear();
 
-      _vaccOrderList := TQStringLongIntMap.create();
+      if( 0 < (_sim as TSMSimulationInput).ptList.Count ) then
+        begin
+          ptList := TProductionTypeList.create( (_sim as TSMSimulationInput).ptList, _sim );
+          ptList.SortByVaccOrder();
 
-      ptList := TProductionTypeList.create( (_sim as TSMSimulationInput).ptList, _sim );
-      ptList.SortByVaccOrder();
+          it := TProductionTypeListIterator.create( ptList );
 
-      it := TProductionTypeListIterator.create( ptList );
+          reasonList := TCStringList.create( vaccReasonOrder, ',' );
 
-      reasonList := TCStringList.create( vaccReasonOrder, ',' );
+          i := 1;
 
-      i := 1;
-
-      if( pos( 'production type', vaccPriorityOrder ) < pos( 'reason', vaccPriorityOrder ) ) then
-      	begin
-        	// Production type is higher priority than vaccination reason
-          // So production type is the outer loop
-          it.toFirst();
-          while( nil <> it.current() ) do
-          	begin
-             	reason := reasonList.first();
-              while( nil <> reason ) do
-              	begin
-									_vaccOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
-                	inc( i );
-               		reason := reasonList.next();
-                end
-              ;
-           		it.incr();
-            end
-          ;
-        end
-      else
-      	begin
-        	// Vaccination reason is higher priority than production type
-          // So vaccination reason is the outer loop
-          reason := reasonList.first();
-          while( nil <> reason ) do
-          	begin
-            	it.toFirst();
-
+          if( pos( 'production type', vaccPriorityOrder ) < pos( 'reason', vaccPriorityOrder ) ) then
+            begin
+              // Production type is higher priority than vaccination reason
+              // So production type is the outer loop
+              it.toFirst();
               while( nil <> it.current() ) do
-              	begin
-                	_vaccOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
-                	inc( i );
-                	it.incr();
+                begin
+                  if( it.current().isVaccTarget ) then
+                    begin
+                      reason := reasonList.first();
+                      while( nil <> reason ) do
+                        begin
+                          _vaccOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
+                          inc( i );
+                          reason := reasonList.next();
+                        end
+                      ;
+                    end
+                  ;
+                  it.incr();
                 end
               ;
-            	reason := reasonList.next();
+            end
+          else
+            begin
+              // Vaccination reason is higher priority than production type
+              // So vaccination reason is the outer loop
+              reason := reasonList.first();
+              while( nil <> reason ) do
+                begin
+                  it.toFirst();
+
+                  while( nil <> it.current() ) do
+                    begin
+                      if( it.current().isVaccTarget ) then
+                        begin
+                          _vaccOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
+                          inc( i );
+                        end
+                      ;
+                      it.incr();
+                    end
+                  ;
+                  reason := reasonList.next();
+                end
+              ;
             end
           ;
+
+          freeAndNil( reasonList );
+          freeAndNil( it );
+          freeAndNil( ptList );
         end
       ;
-      freeAndNil( reasonList );
-      freeAndNil( it );
-      freeAndNil( ptList );
     end
   ;
 
@@ -892,15 +1016,12 @@ implementation
         end
       ;
 
-      if( length( 'basic,direct,indirect,ring' ) <> length( destrReasonOrder ) ) then
-      	destrReasonOrder := 'basic,direct,indirect,ring'
+      if( length( 'basic,direct-forward,indirect-forward,ring,direct-back,indirect-back' ) <> length( destrReasonOrder ) ) then
+      	destrReasonOrder := 'basic,direct-forward,indirect-forward,ring,direct-back,indirect-back'
       ;
 
-      if( nil <> _destrOrderList ) then freeAndNil( _destrOrderList );
+      _destrOrderList.clear();
 
-      _destrOrderList := TQStringLongIntMap.create();
-
-      //ptList := TProductionTypeList.create( db, OrderDestrPriority );
       ptList := TProductionTypeList.create( (_sim as TSMSimulationInput).ptList, _sim );
       ptList.SortByDestrOrder();
 
@@ -917,12 +1038,16 @@ implementation
           it.toFirst();
           while( nil <> it.current() ) do
           	begin
-             	reason := reasonList.first();
-              while( nil <> reason ) do
-              	begin
-									_destrOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
-                	inc( i );
-               		reason := reasonList.next();
+              if( it.current().isDestrTarget ) then
+                begin
+                  reason := reasonList.first();
+                  while( nil <> reason ) do
+                    begin
+                      _destrOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
+                      inc( i );
+                      reason := reasonList.next();
+                    end
+                  ;
                 end
               ;
            		it.incr();
@@ -939,8 +1064,12 @@ implementation
             	it.toFirst();
               while( nil <> it.current() ) do
               	begin
-                	_destrOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
-                	inc( i );
+                  if( it.current().isDestrTarget ) then
+                    begin
+                	    _destrOrderList[ it.current().productionTypeDescr + '+' + reason ] := i;
+                	    inc( i );
+                    end
+                  ;
                 	it.incr();
                 end
               ;
@@ -971,10 +1100,10 @@ implementation
       dbcout( 'Use destruction: ' + usBoolToText( useDestructionGlobal ), true  );
       dbcout( 'destrProgramDelay: ' + intToStr( destrProgramDelay ), true  );
 
-      if( nil <> destrCapacity ) then
+      if( nil <> relDestrCapacity ) then
         begin
           dbcout( 'Destruction capacity:', true  );
-          destrCapacity.debug();
+          relDestrCapacity.debug();
         end
       else
         dbcout( 'Destruction capacity is nil', true )
@@ -982,11 +1111,11 @@ implementation
 
       dbcout( 'Use vaccination: ' + usBoolToText( useVaccGlobal ), true  );
       dbcout( 'Begin vaccination after x detections: ' + intToStr( vaccDetectedUnitsBeforeStart ), true  );
-      
-      if( nil <> vaccCapacity ) then
+
+      if( nil <> relVaccCapacity ) then
         begin
           dbcout( 'Vaccination capacity:', true  );
-          vaccCapacity.debug();
+          relVaccCapacity.debug();
         end
       else
         dbcout( 'Vaccination capacity is nil', true )
@@ -1006,6 +1135,8 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TGlobalControlParams.setUseDetectionGlobal( val: boolean ); begin _useDetectionGlobal := val; _updated := true; end;
   procedure TGlobalControlParams.setUseTracingGlobal( val: boolean ); begin _useTracingGlobal := val; _updated := true; end;
+  procedure TGlobalControlParams.setUseTracingHerdExamGlobal( val: boolean ); begin _useTracingHerdExamGlobal := val; _updated := true; end;
+  procedure TGlobalControlParams.setUseTracingTestingGlobal( val: boolean ); begin _useTracingTestingGlobal := val; _updated := true; end;
   procedure TGlobalControlParams.setUseDestrGlobal( val: boolean ); begin _useDestrGlobal := val; _updated := true; end;
   procedure TGlobalControlParams.setUseVaccGlobal( val: boolean ); begin _useVaccGlobal := val; _updated := true; end;
   procedure TGlobalControlParams.setUseZonesGlobal( val: boolean ); begin _useZonesGlobal := val; _updated := true; end;
@@ -1015,6 +1146,29 @@ implementation
 
   function TGlobalControlParams.getUseDetectionGlobal(): boolean; begin result := _useDetectionGlobal; end;
   function TGlobalControlParams.getUseTracingGlobal(): boolean; begin result := _useTracingGlobal; end;
+
+  function TGlobalControlParams.getUseTracingHerdExamGlobal(): boolean;
+    begin
+      result :=
+        _useTracingGlobal
+      and
+        _useTracingHerdExamGlobal
+      ;
+    end
+  ;
+
+  function TGlobalControlParams.getUseTracingTestingGlobal(): boolean;
+    begin
+      result :=
+        _useTracingGlobal
+      and
+        _useTracingHerdExamGlobal
+      and
+        _useTracingTestingGlobal
+      ;
+    end
+  ;
+
   function TGlobalControlParams.getUseDestrGlobal(): boolean; begin result := _useDestrGlobal; end;
   function TGlobalControlParams.getUseVaccGlobal(): boolean; begin result := _useVaccGlobal; end;
   function TGlobalControlParams.getUseZonesGlobal(): boolean; begin result := _useZonesGlobal; end;
@@ -1025,10 +1179,52 @@ implementation
   procedure TGlobalControlParams.setDestrPriorityOrder( val: string ); begin _destrPriorityOrder := val; _updated := true;  end;
   procedure TGlobalControlParams.setDestrReasonOrder( val: string ); begin _destrReasonOrder := val; _updated := true;  end;
   procedure TGlobalControlParams.setVaccPriorityOrder( val: string ); begin _vaccPriorityOrder := val; _updated := true; end;
+  procedure TGlobalControlParams.setVaccReasonOrder( val: string ); begin _vaccReasonorder := val; _updated := true; end;
 
-  function TGlobalControlParams.getDestrPriorityOrder(): string; begin Result := _destrPriorityOrder; end;
-  function TGlobalControlParams.getDestrReasonOrder(): string; begin Result := _destrReasonOrder; end;
-  function TGlobalControlParams.getVaccPriorityOrder(): string; begin Result := _vaccPriorityOrder; end;
+  
+  function TGlobalControlParams.getDestrPriorityOrder(): string;
+    begin
+      if( 0 < length( trim( _destrPriorityOrder ) ) ) then
+        result := _destrPriorityOrder
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TGlobalControlParams.getDestrReasonOrder(): string;
+    begin
+      if( 0 < length( trim( _destrReasonOrder ) ) ) then
+        result := _destrReasonOrder
+      else
+        result := ''
+      ;
+    end
+  ;
+
+
+  function TGlobalControlParams.getVaccPriorityOrder(): string;
+    begin
+      if( 0 < length( trim( _vaccPriorityOrder ) ) ) then
+        result := _vaccPriorityOrder
+      else
+        result := ''
+      ;
+    end
+  ;
+
+  
+  function TGlobalControlParams.getVaccReasonOrder(): string;
+    begin
+      if( 0 < length( trim( _vaccReasonOrder ) ) ) then
+        result := _vaccReasonOrder
+      else
+        result := ''
+      ;
+    end
+  ;
+
 
   // FIX ME!
   function TGlobalControlParams.getUpdated(): boolean; begin result := _updated; end;
@@ -1036,7 +1232,7 @@ implementation
 
 	function TGlobalControlParams.getSSDestrPriorities(): TQStringLongIntMap;
    	begin
-   		if( nil = _destrOrderList ) then
+   		if( ( nil <> ( _sim as TSMSimulationInput).ptList ) and ( _sim as TSMSimulationInput).ptList.updated ) then
       	buildSSDestructionPriorities()
       ;
       result := _destrOrderList;
@@ -1049,83 +1245,83 @@ implementation
       if ( nil <> _destrOrderList ) then
         begin
           freeAndNil( _destrOrderList );
-        end;
+        end
+      ;
 
       _destrOrderList := newPriorities;
-    end;
+    end
+  ;
 
 
   function TGlobalControlParams.getSSVaccPriorities(): TQStringLongIntMap;
   	begin
-    	if( nil = _vaccOrderList ) then
+      if( ( nil <> ( _sim as TSMSimulationInput).ptList ) and ( _sim as TSMSimulationInput).ptList.updated ) then
       	buildSSVaccPriorities()
       ;
       result := _vaccOrderList;
     end
   ;
 
-  procedure TGlobalControlParams.setSSVaccPriorities( newPriorities:TQStringLongIntMap );
+
+  procedure TGlobalControlParams.setSSVaccPriorities( newPriorities: TQStringLongIntMap );
     begin
       if ( nil <> _vaccOrderList ) then
         begin
           freeAndNil( _vaccOrderList );
-        end;
+        end
+      ;
 
       _vaccOrderList := newPriorities;
-    end;
+    end
+  ;
 
-  procedure TGlobalControlParams.setdestrCapacityName( val: string );
+
+  procedure TGlobalControlParams.setRelDestrCapacityName( val: string );
     begin
       val := trim( val );
-      _destrCapacityName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _relDestrCapacityName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
 
+      _relDestrCapacityName := val;
       _updated := true;
     end
   ;
 
 
-  procedure TGlobalControlParams.setvaccCapacityName( val: string );
+  procedure TGlobalControlParams.setRelVaccCapacityName( val: string );
     begin
       val := trim( val );
-      _vaccCapacityName := val;
 
-      if( '' <> val ) then
-        begin
-          if( fnDictionary.contains( val ) ) then
-            fnDictionary.value( val ).incrRefCounter()
-          ;
-        end
-      ;
+      // Decrement the reference counter for the old function...
+      decrFnRefCounter( _relVaccCapacityName );
+      // ...and increment the reference counter for the new function.
+      incrFnRefCounter( val );
 
+      _relVaccCapacityName := val;
       _updated := true;
     end
   ;
 
 
-  function TGlobalControlParams.getdestrCapacityName(): string; begin result := _destrCapacityName; end;
-  function TGlobalControlParams.getvaccCapacityName(): string; begin result := _vaccCapacityName; end;
+  function TGlobalControlParams.getRelDestrCapacityName(): string; begin result := _relDestrCapacityName; end;
+  function TGlobalControlParams.getRelVaccCapacityName(): string; begin result := _relVaccCapacityName; end;
 
-  function TGlobalControlParams.getDestrCapacity(): TRelFunction;
+  function TGlobalControlParams.getRelDestrCapacity(): TRelFunction;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _destrCapacityName ) ) then
+          if( fnDictionary.contains( _relDestrCapacityName ) ) then
             begin
-              if( fnDictionary.value( _destrCapacityName ).fn is TRelFunction ) then
-                result := fnDictionary.value( _destrCapacityName ).fn as TRelFunction
+              if( fnDictionary.value( _relDestrCapacityName ).fn is TRelFunction ) then
+                result := fnDictionary.value( _relDestrCapacityName ).fn as TRelFunction
               else
                 begin
-                  setDestrCapacityName( '' );
+                  setRelDestrCapacityName( '' );
                   result := nil;
                 end
               ;
@@ -1139,19 +1335,19 @@ implementation
   ;
 
 
-  function TGlobalControlParams.getVaccCapacity(): TRelFunction;
+  function TGlobalControlParams.getRelVaccCapacity(): TRelFunction;
     begin
       if( nil = fnDictionary ) then
         result := nil
       else
         begin
-          if( fnDictionary.contains( _vaccCapacityName ) ) then
+          if( fnDictionary.contains( _relVaccCapacityName ) ) then
             begin
-              if( fnDictionary.value( _vaccCapacityName ).fn is TRelFunction ) then
-                result := fnDictionary.value( _vaccCapacityName ).fn as TRelFunction
+              if( fnDictionary.value( _relVaccCapacityName ).fn is TRelFunction ) then
+                result := fnDictionary.value( _relVaccCapacityName ).fn as TRelFunction
               else
                 begin
-                  setVaccCapacityName( '' );
+                  setRelVaccCapacityName( '' );
                   result := nil;
                 end
               ;
@@ -1169,22 +1365,22 @@ implementation
     begin
       result := true;
 
-      if( _useDestrGlobal and fnDictionary.contains( _destrCapacityName ) ) then
+      if( _useDestrGlobal and fnDictionary.contains( _relDestrCapacityName ) ) then
         begin
-          if( not( fnDictionary.value( _destrCapacityName ).fn is TRelFunction ) ) then
+          if( not( fnDictionary.value( _relDestrCapacityName ).fn is TRelFunction ) ) then
             begin
-              setDestrCapacityName( '' );
+              setRelDestrCapacityName( '' );
               result := false;
             end
           ;
         end
       ;
 
-      if( _useVaccGlobal and fnDictionary.contains( _vaccCapacityName ) ) then
+      if( _useVaccGlobal and fnDictionary.contains( _relVaccCapacityName ) ) then
         begin
-          if( not( fnDictionary.value( _vaccCapacityName ).fn is TRelFunction ) ) then
+          if( not( fnDictionary.value( _relVaccCapacityName ).fn is TRelFunction ) ) then
             begin
-              setVaccCapacityName( '' );
+              setRelVaccCapacityName( '' );
               result := false;
             end
           ;
@@ -1193,4 +1389,126 @@ implementation
     end
   ;
 //-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// XML import
+//-----------------------------------------------------------------------------
+  class function TGlobalControlParams.createXmlModelList(): TQStringList;
+    begin
+      result := TQStringList.create();
+      result.Append( 'resources-and-implementation-of-controls-model' );
+    end
+  ;
+
+
+  function TGlobalControlParams.getXmlModelList(): TQStringList;
+    begin
+      if( nil = _xmlModelList ) then
+        _xmlModelList := createXmlModelList()
+      ;
+
+      result := _xmlModelList;
+    end
+  ;
+
+
+  procedure TGlobalControlParams.importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    var
+      delay: integer;
+      priorityOrder: string;
+      chart: TRelFunction;
+      subElement: pointer;
+      ssubElement: pointer;
+    begin
+      //  Get Destruction global settings
+      subElement := sdew.GetElementByName( model, 'destruction-program-delay' );
+      if ( nil <> subElement ) then
+        begin
+          // Ignoring Units here....always days.
+          ssubElement := Sdew.GetElementByName( SubElement, 'value' );
+          if ( nil <> ssubElement ) then
+            begin
+              delay := myStrToInt( Sdew.GetElementContents( ssubElement ), -1 );
+              self.destrProgramDelay := delay;
+            end
+        else
+          appendToPstring( errMsg, tr( 'No destruction-program-delay value found in this xml file.' )  )
+        ;
+        end
+      else
+        appendToPstring( errMsg, tr( 'No destruction-program-delay element found in this xml file.' ) )
+      ;
+
+      subElement := sdew.GetElementByName( model, 'destruction-priority-order');
+      if ( nil <> subElement ) then
+        begin
+          priorityOrder := sdew.GetElementContents( subElement );
+          self.destrPriorityOrder := PriorityOrder;
+        end
+      else
+        appendToPstring( errMsg, tr('No destruction-priority-order element found in this xml file.' ) )
+      ;
+
+      subElement := Sdew.GetElementByName( model, 'destruction-capacity' );
+      if ( nil <> subElement ) then
+        begin
+          chart := createRelFromXml( subElement, sdew );
+        
+          if ( strIsEmpty( Chart.name ) ) then
+            chart.name := 'Destruction capacity'
+          ;
+
+          chart.xUnits :=  chartUnitTypeFromXml( 'days' );
+          chart.yUnits := chartUnitTypeFromXml( 'units per day' );
+          chart.dbField := word( DestrCapacityGlobal );
+          self.relDestrCapacityName := fnDictionary.checkAndInsert( chart );
+        end
+      else
+        appendToPString( errMsg, tr( 'No destruction-capacity element found in this xml file.' ) )
+      ;
+
+      // Get Vaccination global settings...
+      subElement := Sdew.GetElementByName( model, 'vaccination-program-delay' );
+      if ( nil <> subElement ) then
+        begin
+          Delay := StrToInt( Sdew.GetElementContents( subElement ) );
+          self.vaccDetectedUnitsBeforeStart := Delay;
+        end
+      else
+        appendToPString( errMsg, tr('No vaccination-program-delay element found in this xml file.' ) )
+      ;
+
+      subElement := Sdew.GetElementByName( model, 'vaccination-priority-order' );
+      if ( nil <> subElement ) then
+        begin
+          priorityOrder := Sdew.GetElementContents( subElement );
+          self.vaccPriorityOrder := priorityOrder;
+        end
+      else
+        appendToPString( errMsg, tr( 'No vaccination-priority-order element found in this xml file.' ) )
+      ;
+
+      subElement := Sdew.GetElementByName( model, 'vaccination-capacity' );
+      if ( nil <> subElement ) then
+        begin
+          chart := createRelFromXml( subElement, sdew );
+        
+          if ( strIsEmpty( chart.name ) ) then
+            chart.name := 'Vaccination capacity'
+          ;
+          chart.xUnits :=  chartUnitTypeFromXml( 'days' );
+          chart.yUnits := chartUnitTypeFromXml( 'units per day' );
+          chart.dbField := word( VaccCapacityGlobal );
+          self.relVaccCapacityName := fnDictionary.checkAndInsert( chart );
+        end
+      else
+        appendToPString( errMsg, tr('Warning: No vaccination-capacity element found in this xml file' ) )
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
 end.

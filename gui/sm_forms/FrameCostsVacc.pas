@@ -4,13 +4,13 @@ unit FrameCostsVacc;
 FrameCostsVacc.pas/dfm
 ----------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version number: $Revision: 1.3 $
+Last revision: $Date: 2009-08-17 17:38:17 $ $Author: areeves $
+Version number: $Revision: 1.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -56,9 +56,6 @@ interface
 
       procedure processTextEntry( Sender: TObject );
 
-      { This function deals with a little bug in TREEdit.}
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-
 		protected
     	// properties
       _prodType: TProductionType;
@@ -90,7 +87,6 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n
   ;
@@ -149,27 +145,12 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFrameCostsVacc.processTextEntry( Sender: TObject );
   	begin
-      _prodType.costParams.vaccSetupPerUnit := myStrToFloat( rleVaccSetupPerUnit.text, -1.0 );
+      _prodType.costParams.vaccSetupPerUnit := uiStrToFloat( rleVaccSetupPerUnit.text, -1.0 );
       _prodType.costParams.vaccThreshold := myStrToInt( rleVaccThreshold.text, -1 );
-      _prodType.costParams.vaccBaselinePerAnimal := myStrToFloat( rleVaccBaselinePerAnimal.text, -1.0 );
-      _prodType.costParams.vaccAdditionalPerAnimal := myStrToFloat( rleVaccAdditionalPerAnimal.text, -1.0 );
+      _prodType.costParams.vaccBaselinePerAnimal := uiStrToFloat( rleVaccBaselinePerAnimal.text, -1.0 );
+      _prodType.costParams.vaccAdditionalPerAnimal := uiStrToFloat( rleVaccAdditionalPerAnimal.text, -1.0 );
 
       _prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameCostsVacc.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -210,21 +191,21 @@ implementation
           _loading := true;
 
           if( 0.0 <= _prodType.costParams.VaccAdditionalPerAnimal ) then
-            rleVaccAdditionalPerAnimal.text := uiFloatToStr( _prodType.costParams.VaccAdditionalPerAnimal, 2, true )
+            rleVaccAdditionalPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.VaccAdditionalPerAnimal, 2, true )
           else
             rleVaccAdditionalPerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.VaccBaselinePerAnimal ) then
-            rleVaccBaselinePerAnimal.text := uiFloatToStr( _prodType.costParams.VaccBaselinePerAnimal, 2, true )
+            rleVaccBaselinePerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.VaccBaselinePerAnimal, 2, true )
           else
             rleVaccBaselinePerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.VaccSetupPerUnit ) then
-            rleVaccSetupPerUnit.text := uiFloatToStr( _prodType.costParams.VaccSetupPerUnit, 2, true )
+            rleVaccSetupPerUnit.text := uiFloatToStrZeroPadded( _prodType.costParams.VaccSetupPerUnit, 2, true )
           else
             rleVaccSetupPerUnit.text := ''
           ;

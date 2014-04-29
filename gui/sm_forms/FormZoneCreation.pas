@@ -4,13 +4,13 @@ unit FormZoneCreation;
 FormZoneCreation.pas/dfm
 ------------------------
 Begin: 2006/12/19
-Last revision: $Date: 2008/03/12 22:10:49 $ $Author: areeves $
-Version: $Revision: 1.7 $
+Last revision: $Date: 2010-09-09 14:29:38 $ $Author: rhupalo $
+Version: $Revision: 1.10.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -74,7 +74,6 @@ interface
       procedure lstZonesChange(Sender: TObject);
       procedure lstZonesMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
       procedure processTextEntry( Sender: TObject );
 
     protected
@@ -89,7 +88,7 @@ interface
       // Reimplemented functions
       //-------------------------
       { Properties }
-      function getSelectedProdTypeIndex(): integer; override;
+      function getSelectedZoneIndex(): integer; override;
 
       { Load zone names from database and populate the list box }
       procedure initializeFromSim(); override;
@@ -102,7 +101,6 @@ interface
       //--------------------
       procedure UpdateButtons();
       procedure updateListBox();
-
 
     public
       // Construction/destruction
@@ -130,7 +128,6 @@ implementation
     SqlClasses,
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -308,7 +305,13 @@ implementation
     begin
       zList := _smScenarioCopy.simInput.zoneList;
 
-      NewZoneDescr := inputBox('', tr( 'Please enter a name for the new zone.' ), '');
+      NewZoneDescr := msgInput(
+        tr( 'Please enter a name for the new zone.' ),
+        '', // regexp
+        '', // caption
+        IMGQuestion,
+        self
+      );
       NewZoneDescr := trim( NewZoneDescr );
 
       if( '' = NewZoneDescr ) then
@@ -352,6 +355,9 @@ implementation
           z := TZone.create( _nextAddID, NewZoneDescr, 0.0, zList.sim );
           zList.append( z );
           dec( _nextAddID );
+
+          _selectedZoneIndex := 32000; // This will force a reset to the end of the list in updateListBox()
+
           updateListBox();
         end
       ;
@@ -369,9 +375,12 @@ implementation
 
       oldZName := lstZones.Items.Strings[lstZones.ItemIndex];
 
-			newZName := InputBox(
-        '',
-        'Rename zone "' + oldZName + '".',
+      newZName := msgInput(
+        ansiReplaceStr( tr( 'Modify zone name for xyz.' ), 'xyz', oldZName ),
+        '', // regexp
+        '', // caption
+        IMGQuestion,
+        self,
         oldZName
       );
 
@@ -450,6 +459,8 @@ implementation
         end
       ;
 
+      _selectedZoneIndex := -1; // This will force a reset to the head of the list in updateListBox()
+
       updateListBox();
     end
   ;
@@ -462,7 +473,8 @@ implementation
 //-----------------------------------------------------------------------------
 	function TFormZoneCreation.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.includeZonesGlobal ) then
+      // need detection in order to conduct tracing
+    	if (( _smScenarioCopy.simInput.includeZonesGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
         result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin
@@ -527,7 +539,10 @@ implementation
         ( 0 < lstZones.Items.Count )
       then
         begin
-          lstZones.ItemIndex := lstZones.Items.Count - 1;
+          if( 0 > _selectedZoneIndex ) then _selectedZoneIndex := 0;
+          if( lstZones.Items.Count <= _selectedZoneIndex ) then _selectedZoneIndex := lstZones.Items.Count - 1;
+
+          lstZones.ItemIndex := _selectedZoneIndex;
           _selectedZone := lstZones.items.objects[ lstZones.ItemIndex ] as TZone;
         end
       else
@@ -546,32 +561,19 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFormZoneCreation.lstZonesChange(Sender: TObject);
     begin
-      _selectedZone := lstZones.Items.Objects[lstZones.ItemIndex] as TZone;
+      _selectedZoneIndex := lstZones.ItemIndex;
+      _selectedZone := lstZones.Items.Objects[_selectedZoneIndex] as TZone;
       updateButtons();
     end
   ;
 
   procedure TFormZoneCreation.lstZonesMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer); begin updateButtons(); end;
 
-  // This function deals with a little bug in TREEdit.
-  procedure TFormZoneCreation.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
-    end
-  ;
-
   
   procedure TFormZoneCreation.processTextEntry( Sender: TObject );
   	begin
       if( nil <> _selectedZone ) then
-        _selectedZone.radius := myStrToFloat( rleRadius.text, -1.0 )
+        _selectedZone.radius := uiStrToFloat( rleRadius.text, -1.0 )
       else
         raise exception.create( 'There is no _selectedZone in TFormZoneCreation.processTextEntry' )
       ;
@@ -584,13 +586,9 @@ implementation
 //-----------------------------------------------------------------------------
 // Properties reimplemented from TFormSMWizardBase
 //-----------------------------------------------------------------------------
-  function TFormZoneCreation.getSelectedProdTypeIndex(): integer;
+  function TFormZoneCreation.getSelectedZoneIndex(): integer;
     begin
-      if( 0 = _removedCount ) then
-        result := _selectedProdTypeIndex
-      else
-        result := -1
-      ;
+      result := lstZones.ItemIndex;
     end
   ;
 //-----------------------------------------------------------------------------

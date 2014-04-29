@@ -4,13 +4,13 @@ unit FormProdTypePairs;
 FormProdTypePairs.pas/dfm
 -------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2009-08-19 00:11:13 $ $Author: areeves $
+Version: $Revision: 1.28 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -115,7 +115,6 @@ implementation
 
 	uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n,
@@ -230,8 +229,6 @@ implementation
       ;
 
       allPairsList := TProductionTypePairList.create( ptList );
-      dbcout2( 'allPairsList: ' + intToStr( allPairsList.Count ) );
-      dbcout2( 'selectedPairsList: ' + intToStr( selectedPairsList.Count ) );
 			allPairsList.subtract( selectedPairsList );
 
       it.Free();
@@ -340,7 +337,9 @@ implementation
 						+ lbxDest.Items[lbxDest.ItemIndex]) = -1
 					;
 
-					if( not BitBtnAdd.Enabled ) then ShowMessage( 'This combination of production types is already selected' );
+					if( not BitBtnAdd.Enabled ) then
+            ShowMessage( tr( 'This combination of production types is already selected' ) )
+          ;
 				end
 			;
 

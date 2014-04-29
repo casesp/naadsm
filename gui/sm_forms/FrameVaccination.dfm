@@ -2,13 +2,13 @@ object FrameVaccination: TFrameVaccination
   Left = 0
   Top = 0
   Width = 462
-  Height = 322
+  Height = 341
   TabOrder = 0
   object pnlRingVacc: TPanel
     Left = 0
-    Top = 217
+    Top = 257
     Width = 462
-    Height = 105
+    Height = 84
     Align = alClient
     TabOrder = 0
     object lblVaccRingRadius: TLabel
@@ -44,14 +44,13 @@ object FrameVaccination: TFrameVaccination
       EditAlign = eaLeft
       TabOrder = 1
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
   end
   object pnlVaccination: TPanel
     Left = 0
     Top = 0
     Width = 462
-    Height = 217
+    Height = 257
     Align = alTop
     TabOrder = 1
     object pnlUseVacc: TPanel
@@ -85,7 +84,7 @@ object FrameVaccination: TFrameVaccination
       Left = 1
       Top = 49
       Width = 460
-      Height = 167
+      Height = 207
       Align = alClient
       BevelOuter = bvNone
       Constraints.MinWidth = 460
@@ -180,6 +179,16 @@ object FrameVaccination: TFrameVaccination
         EditAlign = eaLeft
         TabOrder = 2
         OnExit = processTextEntry
+      end
+      object cbxVaccinateDetected: TCheckBox
+        Left = 24
+        Top = 168
+        Width = 361
+        Height = 17
+        Caption = 'Vaccinate detected, infected units of this production type'
+        TabOrder = 3
+        WordWrap = True
+        OnClick = processClick
       end
     end
   end

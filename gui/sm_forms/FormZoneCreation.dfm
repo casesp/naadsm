@@ -158,7 +158,6 @@ inherited FormZoneCreation: TFormZoneCreation
         TabOrder = 0
         Text = '1.5'
         OnExit = processTextEntry
-        OnKeyDown = rleKeyDown
       end
     end
   end

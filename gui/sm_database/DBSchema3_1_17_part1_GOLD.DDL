@@ -7,12 +7,7 @@
 --    Connected data source : naadsm-3_1_x
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
-
-
-
--- Create new table `readOutputFrequencyCodes`.
--- `readOutputFrequencyCodes` : Table of readOutputFrequencyCodes
--- 	`definition` : definition is of readOutputFrequencyCodes  
+ 
 create table `readOutputFrequencyCodes` ( 
 	`outputFrequencyCode` CHAR(2),
 	`definition` VARCHAR(255), constraint `readOutputFrequencyCodes_PK` primary key (`outputFrequencyCode`) ); 
@@ -22,8 +17,6 @@ INSERT INTO `readOutputFrequencyCodes` (outputFrequencyCode, definition) VALUES 
 INSERT INTO `readOutputFrequencyCodes` (outputFrequencyCode, definition) VALUES ("IZ", "One output per iteration per zone");
 INSERT INTO `readOutputFrequencyCodes` (outputFrequencyCode, definition) VALUES ("ZP", "One output per iteration per zone per production type");
 
-
--- Update existing table `inCustomOutputDefinitions`.
 create table `inCustomOutputDefinitions_IM0` ( 
 	`defID` COUNTER,
 	`outputName` VARCHAR(100),
@@ -47,13 +40,6 @@ alter table `inCustomOutputDefinitions`
 
 drop table `inCustomOutputDefinitions`; 
 
-
--- `inCustomOutputDefinitions` : Table of inCustomOutputDefinitions
--- 	`defID` : defID identifies inCustomOutputDefinitions
--- 	`outputName` : outputName is of inCustomOutputDefinitions
--- 	`outputTypeCode` : outputTypeCode is of inCustomOutputDefinitions
--- 	`outputFrequencyCode` : outputFrequencyCode is of inCustomOutputDefinitions
--- 	`sql` : sql is of inCustomOutputDefinitions  
 create table `inCustomOutputDefinitions` ( 
 	`defID` COUNTER,
 	`outputName` VARCHAR(100),
@@ -62,14 +48,6 @@ create table `inCustomOutputDefinitions` (
 	`isProdTypeOutput` BIT,
 	`isIterationOutput` BIT,
 	`sql` LONGTEXT); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inCustomOutputDefinitions`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inCustomOutputDefinitions' :
--- 	`defID`
--- 	`outputTypeCode`
-
 
 insert into `inCustomOutputDefinitions` (`outputName`, `outputTypeCode`, `isProdTypeOutput`, `isIterationOutput`, `sql`) 
     select `inCustomOutputDefinitions_IM0`.`outputName`, 
@@ -86,16 +64,6 @@ drop table `inCustomOutputDefinitions_IM0`;
 alter table `inCustomOutputDefinitions`
 	add constraint `inCustomOutputDefinitions_PK` primary key (`defID`) ; 
 
-
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`readOutputFrequencyCodes`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'readOutputFrequencyCodes' :
--- 	`outputFrequencyCode`
-
-
--- Update existing table `outIterationByZoneAndProductionType`.
 create table `outIterationByZoneAndProductionType_IM0` ( 
 	`iteration` INTEGER,
 	`zoneID` INTEGER,
@@ -124,14 +92,6 @@ alter table `outIterationByZoneAndProductionType`
 
 drop table `outIterationByZoneAndProductionType`; 
 
-
--- `outIterationByZoneAndProductionType` : Table of outIterationByZoneAndProductionType
--- 	`iteration` : iteration identifies outIterationByZoneAndProductionType
--- 	`zoneID` : zoneID partly identifies outIterationByZoneAndProductionType
--- 	`productionTypeID` : productionTypeID partly identifies outIterationByZoneAndProductionType
--- 	`unitDaysInZone` : unitDaysInZone is of outIterationByZoneAndProductionType
--- 	`animalDaysInZone` : animalDaysInZone is of outIterationByZoneAndProductionType
--- 	`costSurveillance` : costSurveillance is of outIterationByZoneAndProductionType  
 create table `outIterationByZoneAndProductionType` ( 
 	`iteration` INTEGER,
 	`zoneID` INTEGER,
@@ -139,15 +99,6 @@ create table `outIterationByZoneAndProductionType` (
 	`unitDaysInZone` LONG,
 	`animalDaysInZone` LONG,
 	`costSurveillance` CURRENCY); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIterationByZoneAndProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIterationByZoneAndProductionType' :
--- 	`iteration`
--- 	`zoneID`
--- 	`productionTypeID`
-
 
 insert into `outIterationByZoneAndProductionType` (`iteration`, `zoneID`, `productionTypeID`, `unitDaysInZone`, `animalDaysInZone`, `costSurveillance`) 
     select `outIterationByZoneAndProductionType_IM0`.`iteration`, 
@@ -161,12 +112,9 @@ insert into `outIterationByZoneAndProductionType` (`iteration`, `zoneID`, `produ
 
 drop table `outIterationByZoneAndProductionType_IM0`; 
 
-
 alter table `outIterationByZoneAndProductionType`
 	add constraint `outIterationByZoneAndProductionType_PK` primary key (`iteration`, `zoneID`, `productionTypeID`) ; 
 
-
--- Update existing table `outDailyByZoneAndProductionType`.
 create table `outDailyByZoneAndProductionType_IM0` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -198,17 +146,7 @@ alter table `outDailyByZoneAndProductionType`
 
 
 drop table `outDailyByZoneAndProductionType`; 
-
-
--- `outDailyByZoneAndProductionType` : Table of outDailyByZoneAndProductionType
--- 	`iteration` : iteration identifies outDailyByZoneAndProductionType
--- 	`day` : day partly identifies outDailyByZoneAndProductionType
--- 	`zoneID` : zoneID partly identifies outDailyByZoneAndProductionType
--- 	`productionTypeID` : productionTypeID partly identifies outDailyByZoneAndProductionType
--- 	`unitDaysInZone` : unitDaysInZone is of outDailyByZoneAndProductionType
--- 	`animalDaysInZone` : animalDaysInZone is of outDailyByZoneAndProductionType
--- 	`unitsInZone` : unitsInZone is of outDailyByZoneAndProductionType
--- 	`animalsInZone` : animalsInZone is of outDailyByZoneAndProductionType  
+ 
 create table `outDailyByZoneAndProductionType` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -218,16 +156,6 @@ create table `outDailyByZoneAndProductionType` (
 	`animalDaysInZone` LONG,
 	`unitsInZone` LONG,
 	`animalsInZone` LONG); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyByZoneAndProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyByZoneAndProductionType' :
--- 	`iteration`
--- 	`day`
--- 	`zoneID`
--- 	`productionTypeID`
-
 
 insert into `outDailyByZoneAndProductionType` (`iteration`, `day`, `zoneID`, `productionTypeID`, `unitDaysInZone`, `animalDaysInZone`, `unitsInZone`, `animalsInZone`) 
     select `outDailyByZoneAndProductionType_IM0`.`iteration`, 
@@ -246,10 +174,7 @@ drop table `outDailyByZoneAndProductionType_IM0`;
 
 alter table `outDailyByZoneAndProductionType`
 	add constraint `outDailyByZoneAndProductionType_PK` primary key (`iteration`, `zoneID`, `productionTypeID`, `day`) ; 
-
-
--- Create new table `inSelectDailyOutputs`.
--- `inSelectDailyOutputs` : Table of inSelectDailyOutputs  
+ 
 create table `inSelectDailyOutputs` ( 
 	`inSelectDailyOutputID` CHAR(10),
 	`stsdUSusc` BIT,
@@ -336,14 +261,6 @@ create table `inSelectDailyOutputs` (
 	`sunitsInZone` BIT,
 	`sanimalsInZone` BIT, constraint `inSelectDailyOutput_PK` primary key (`inSelectDailyOutputID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inSelectDailyOutputs`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inSelectDailyOutputs' :
--- 	`inSelectDailyOutputID`
-
-
--- Restore foreign key constraints for existing tables
 alter table `outIterationByZoneAndProductionType`
 	add constraint `inZone_outIterationByZoneAndProductionType_FK1` foreign key (
 		`zoneID`)
@@ -374,12 +291,9 @@ alter table `inCustomOutputDefinitions`
 	 references `readOutputTypeCodes` (
 		`outputTypeCode`); 
 
--- Add foreign key constraints to table `inCustomOutputDefinitions`.
 alter table `inCustomOutputDefinitions`
 	add constraint `readOutputFrequencyCodes_inCustomOutputDefinitions_FK1` foreign key (
 		`outputFrequencyCode`)
 	 references `readOutputFrequencyCodes` (
 		`outputFrequencyCode`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

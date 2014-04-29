@@ -4,7 +4,7 @@ unit FrameSingleEpiCurve;
 FrameSingleEpiCurve.pas/dfm
 ---------------------------
 Begin: 2005/12/13
-Last revision: $Date: 2008/03/12 22:10:51 $ $Author: areeves $
+Last revision: $Date: 2008-03-12 22:10:51 $ $Author: areeves $
 Version number: $Revision: 1.6 $
 Project: NAADSM
 Website: http://www.naadsm.org

@@ -4,13 +4,13 @@ unit FrameAirborneSpread;
 FrameAirborneSpread.pas/dfm
 ---------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.31 $
+Last revision: $Date: 2011-03-31 05:05:36 $ $Author: areeves $
+Version: $Revision: 1.37.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,27 +19,27 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-		Windows, 
-		Messages, 
-		SysUtils, 
-		Variants, 
-		Classes, 
-		Graphics, 
-		Controls, 
-		Forms, 
-		Dialogs,
+  uses
+    Windows, 
+    Messages, 
+    SysUtils, 
+    Variants, 
+    Classes, 
+    Graphics, 
+    Controls, 
+    Forms, 
+    Dialogs,
     StdCtrls,
     REEdit,
     ExtCtrls,
     
-    AirborneSpreadModel,
+    AirborneSpreadParams,
 
-		FrameFunctionEditor,
-		FrameSMFunctionEditor,    
+    FrameFunctionEditor,
+    FrameSMFunctionEditor,    
     
     FrameWindDirection
-	;
+  ;
 
   type TFrameAirborneSpread = class( TFrame )    
       pnlParams: TPanel;
@@ -50,7 +50,7 @@ interface
       
       fraWindDir: TFrameWindDirection;
       
-    	smcTransportDelay: TFrameSMFunctionEditor;
+      smcTransportDelay: TFrameSMFunctionEditor;
       lblTransportDelay: TLabel;
       pnlUseAirborneSpread: TPanel;
       cbxUseAirborneSpread: TCheckBox;
@@ -59,13 +59,11 @@ interface
 
       procedure processText( sender: TObject );
       procedure cbxUseAirborneSpreadClick(Sender: TObject);
-  		procedure processWindDirText( sender: TObject );
-
-    procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
+      procedure processWindDirText( sender: TObject );
 
     protected
       // properties
-      _am: TAirborneSpreadModel;
+      _am: TAirborneSpreadParams;
 
       _myParent: TWinControl;
 
@@ -74,8 +72,8 @@ interface
       procedure translateUI();
 
       // properties
-      procedure setASM( val: TAirborneSpreadModel );
-      function getASM(): TAirborneSpreadModel;
+      procedure setASM( val: TAirborneSpreadParams );
+      function getASM(): TAirborneSpreadParams;
 
       procedure setUseExp( val: boolean );
       function getUseExp(): boolean;
@@ -88,7 +86,7 @@ interface
 
       function isValid(): boolean;
 
-      property airborneSpreadModel: TAirborneSpreadModel read getASM write setASM;
+      property airborneSpreadParams: TAirborneSpreadParams read getASM write setASM;
       property useAirborneExponentialDecay: boolean read getUseExp write setUseExp;
     end
   ;
@@ -98,15 +96,17 @@ implementation
 {$R *.dfm}
 
 
-	uses
-  	RegExpDefs,
-    FormSMWizardBase,
+  uses
+    RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
+    I88n,
+
+    FunctionEnums,
     ChartFunction,
-    I88n
+
+    FormSMWizardBase
   ;
 
 
@@ -118,8 +118,8 @@ implementation
 //-----------------------------------------------------------------------------
 // Construction/initialization/destruction
 //-----------------------------------------------------------------------------
-	constructor TFrameAirborneSpread.create( AOwner: TComponent );
-  	begin
+  constructor TFrameAirborneSpread.create( AOwner: TComponent );
+    begin
       inherited create( AOwner );
       translateUI();
       
@@ -130,7 +130,8 @@ implementation
 
       smcTransportDelay.setForm( AOwner as TFormSMWizardBase );
       smcTransportDelay.chartType := CTPdf;
-      smcTransportDelay.xUnits := UnitsDays;
+      smcTransportDelay.xUnits := UDays;
+      smcTransportDelay.setChartField( AIRDelay );
 
       rleMaxSpread.InputExpression := RE_DECIMAL_INPUT;
       rleProbSpread1km.InputExpression := RE_DECIMAL_INPUT;
@@ -164,8 +165,8 @@ implementation
 
 
   destructor TFrameAirborneSpread.destroy();
-  	begin
-    	inherited destroy();
+    begin
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -177,8 +178,8 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFrameAirborneSpread.updateDisplay();
     begin
-    	if( nil <> _am ) then
-      	begin
+      if( nil <> _am ) then
+        begin
           cbxUseAirborneSpread.Checked := _am.useAirborne;
 
           if( 0 <= _am.maxSpread ) then
@@ -210,10 +211,10 @@ implementation
     begin
       dbcout( 'Processing text in TFrameAirborneSpread', DBSHOWMSG );
 
-    	if( nil <> _am ) then
-      	begin
-          _am.maxSpread := myStrToFloat( rleMaxSpread.text, -1.0 );
-          _am.probSpread1km := myStrToFloat( rleProbSpread1km.text, -1.0 );
+      if( nil <> _am ) then
+        begin
+          _am.maxSpread := uiStrToFloat( rleMaxSpread.text, -1.0 );
+          _am.probSpread1km := uiStrToFloat( rleProbSpread1km.text, -1.0 );
           _am.updated := true;
         end
       ;
@@ -223,8 +224,8 @@ implementation
 
   procedure TFrameAirborneSpread.cbxUseAirborneSpreadClick(Sender: TObject);
     begin
-    	if( nil <> _am ) then
-      	begin
+      if( nil <> _am ) then
+        begin
           _am.useAirborne := cbxUseAirborneSpread.checked;
           _am.updated := true;
           updateDisplay();
@@ -235,7 +236,7 @@ implementation
 
 
   procedure TFrameAirborneSpread.processWindDirText( sender: TObject );
-  	begin
+    begin
       fraWindDir.processText( sender );
 
       _am.windStart := fraWindDir.startAngle;
@@ -267,38 +268,38 @@ implementation
     end
   ;
 
-  function TFrameAirborneSpread.getASM(): TAirborneSpreadModel;
-  	begin
-    	if( nil <> _am ) then
-      	begin
+  function TFrameAirborneSpread.getASM(): TAirborneSpreadParams;
+    begin
+      if( nil <> _am ) then
+        begin
           _am.windStart := fraWindDir.startAngle;
           _am.windEnd := fraWindDir.endAngle;
           _am.updated := true;
         end
       ;
 
-    	result := _am;
+      result := _am;
     end
   ;
 
 
-  procedure TFrameAirborneSpread.setASM( val: TAirborneSpreadModel );
-  	begin
-    	_am := val;
+  procedure TFrameAirborneSpread.setASM( val: TAirborneSpreadParams );
+    begin
+      _am := val;
       updateDisplay();
     end
   ;
 
   function TFrameAirborneSpread.isValid(): boolean;
-  	begin
+    begin
       result := true;
 
       if( cbxUseAirborneSpread.Checked ) then
         begin
           if
-            ( 0 > myStrToFloat( rleProbSpread1km.text, -1.0 ) )
+            ( 0.0 > uiStrToFloat( rleProbSpread1km.text, -1.0 ) )
           or
-            ( 1 < myStrToFloat( rleProbSpread1km.text, -1.0 ) )
+            ( 1.0 < uiStrToFloat( rleProbSpread1km.text, -1.0 ) )
           then
             begin
               msgOK(
@@ -316,7 +317,7 @@ implementation
 
           if( useAirborneExponentialDecay ) then
             begin
-              if( 1.0 = myStrToFloat( rleProbSpread1km.Text, -1.0 ) ) then
+              if( 1.0 = uiStrToFloat( rleProbSpread1km.Text, -1.0 ) ) then
                 begin
                   msgOK(
                     tr( 'Probability of spread at 1 km must be less than 1 for exponential decay.' ),
@@ -335,7 +336,7 @@ implementation
 
           if( not( useAirborneExponentialDecay ) ) then
             begin
-              if( 1 > myStrToFloat( rleMaxSpread.Text, -1.0 ) ) then
+              if( 1.0 > uiStrToFloat( rleMaxSpread.Text, -1.0 ) ) then
                 begin
                   msgOK(
                     tr( 'Maximum distance of spread must be at least 1 km.' ),
@@ -359,19 +360,5 @@ implementation
   ;
 //-----------------------------------------------------------------------------
 
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameAirborneSpread.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
-    end
-  ;
 
 end.

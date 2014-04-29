@@ -4,13 +4,13 @@ unit FrameWindDirection;
 FrameWindDirection.pas/dfm
 --------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/03/12 22:10:54 $ $Author: areeves $
-Version number: $Revision: 1.18 $
+Last revision: $Date: 2011-07-06 19:04:01 $ $Author: areeves $
+Version number: $Revision: 1.19.6.2 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -86,7 +86,6 @@ implementation
  	uses
 		Math,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     RegExpDefs,
     I88n
@@ -123,10 +122,10 @@ implementation
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          lblWindRange.Caption := tr( 'Range of wind direction (0-360 degrees,  0 degrees = north, proceeding clockwise):' );
-          lblWindStart.Caption := capitalize( tr( 'from' ) );
-          lblWindEnd.Caption := capitalize( tr( 'to' ) );
-          lblWindDir.Caption := tr( 'Wind direction (blue indicates selected range):' );
+          lblWindRange.Caption := tr( 'Area at risk of exposure around an infectious unit located at the center of the circle (0-360 degrees, 0/360 degrees = north, proceeding clockwise):' );
+          lblWindStart.Caption := capitalize( tr( 'Start' ) );
+          lblWindEnd.Caption := capitalize( tr( 'End' ) );
+          lblWindDir.Caption := tr( 'Area at risk of exposure (blue indicates affected area):' );
         end
       ;
 

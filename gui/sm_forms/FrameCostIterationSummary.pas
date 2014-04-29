@@ -4,13 +4,13 @@ unit FrameCostIterationSummary;
 FrameCostIterationSummary.pas/dfm
 ---------------------------------
 Begin: 2005/01/23
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version number: $Revision: 1.17 $
+Last revision: $Date: 2011-03-09 20:12:59 $ $Author: areeves $
+Version number: $Revision: 1.22.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -134,7 +134,7 @@ interface
       destructor destroy(); override;
 
       procedure resetSim( db: TSMDatabase; sim: TSMSimulationInput; pt: TProductionType; newItr: Integer = -1 );
-      procedure setProdType( pt: TProductionType );
+      procedure setProdType( pt: TProductionType; const simIsRunning: boolean );
 
       procedure reset();
 
@@ -156,7 +156,6 @@ implementation
   uses
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -336,7 +335,7 @@ implementation
           db2 := _smdb as TSqlDatabase;
           _sqlRes := TSqlResult.Create( db2 );
 
-          setProdType( pt );
+          setProdType( pt, false );
         end
       ;
 
@@ -345,10 +344,14 @@ implementation
   ;
 
 
-  procedure TFrameCostIterationSummary.setProdType( pt: TProductionType );
+  procedure TFrameCostIterationSummary.setProdType( pt: TProductionType; const simIsRunning: boolean );
     begin
       dbcout( 'TFrameCostIterationSummary.setProdType...', DBFRAMECOSTITERATIONSUMMARY );
       _selectedPT := pt;
+
+      if( simIsRunning ) then
+        _currentItr := -1
+      ;
 
 			setUpFromDatabase( _currentItr );
       dbcout( 'Done TFrameCostIterationSummary.setProdType', DBFRAMECOSTITERATIONSUMMARY );
@@ -446,8 +449,8 @@ implementation
           + ' desnAAll,'
 
           // New daily counts for vaccination for any reason
-          + ' vaccnUAll,'
-          + ' vaccnAAll'
+          + ' vacnUAll,'
+          + ' vacnAAll'
         + ' FROM'
           + ' outDailyByProductionType'
         + ' WHERE'
@@ -505,14 +508,14 @@ implementation
             destrAnimalCount := 0
           ;
 
-          if( null <> row.field('vaccnUAll') ) then
-            vaccUnitCount := row.field('vaccnUAll')
+          if( null <> row.field('vacnUAll') ) then
+            vaccUnitCount := row.field('vacnUAll')
           else
             vaccUnitCount := 0
           ;
 
-          if( null <> row.field('vaccnAAll') ) then
-            vaccAnimalCount := row.field('vaccnAAll')
+          if( null <> row.field('vacnAAll') ) then
+            vaccAnimalCount := row.field('vacnAAll')
           else
             vaccAnimalCount := 0
           ;
@@ -574,9 +577,9 @@ implementation
          		( ptit.current().productionTypeDescr = selectedPTName ) // This production type is selected
 					then
             begin
-              animalsAlreadyVaccinated := ptit.current().currentOutputs.vaccATotal - ptit.current().currentOutputs.vaccnAAll;
+              animalsAlreadyVaccinated := ptit.current().currentOutputs.vaccAAll - ptit.current().currentOutputs.vacnAAll;
               calculateDestrCostsForDay( ptit.current(), day, ptit.current().currentOutputs.desnUAll, ptit.current().currentOutputs.desnAAll );
-              calculateVaccCostsForDay( ptit.current(), day, ptit.current().currentOutputs.vaccnUAll, ptit.current().currentOutputs.vaccnAAll, animalsAlreadyVaccinated );
+              calculateVaccCostsForDay( ptit.current(), day, ptit.current().currentOutputs.vacnUAll, ptit.current().currentOutputs.vacnAAll, animalsAlreadyVaccinated );
               updateCumulArraysForDay( day );
             end
           ;
@@ -961,7 +964,6 @@ procedure TFrameCostIterationSummary.Splitter1Moved(Sender: TObject);
 
   procedure TFrameCostIterationSummary.cbxShowChartClick(Sender: TObject);
     begin
-      dbcout2('Inside cbxShowChartClick.');
       resizeContents();
     end
   ;

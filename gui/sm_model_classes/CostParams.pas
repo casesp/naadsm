@@ -4,13 +4,13 @@ unit CostParams;
 CostParams.pas
 --------------
 Begin: 2005/12/15
-Last revision: $Date: 2008/10/15 16:23:09 $ $Author: areeves $
-Version number: $Revision: 1.17 $
+Last revision: $Date: 2011-08-26 17:12:15 $ $Author: areeves $
+Version number: $Revision: 1.24.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -80,14 +80,14 @@ interface
       function populateDatabase( db: TSMDatabase; ptID: integer ): integer; reintroduce;
 			function validate( err: PString = nil ): boolean; override;
       procedure debug(); override;
-      function ssXML(): string; override;
+      function ssXML( const useDestruction, useVaccination: boolean; const productionTypeID: integer ): string; reintroduce;
 
       function validateDestr( err: PString = nil ): boolean;
       function validateVacc( err: PString = nil ): boolean;
       function validateTracing( err: PString = nil ): boolean;
 
       procedure insertDatabaseOutputs(
-        outputs: TSMSimOutByProdType;
+        outputs: TSMDailyOutput;
       	db: TSMDatabase;
         ptID: integer;
         includeDestructionCosts: boolean;
@@ -97,13 +97,13 @@ interface
 
       // Cost calculations
       //------------------
-      function destrAppraisalCosts( const unitsDestroyed: longint ): double;
-      function destrCleaningCosts( const unitsDestroyed: longint ): double;
+      function destrAppraisalCosts( const uniNAADSMStateDestroyed: longint ): double;
+      function destrCleaningCosts( const uniNAADSMStateDestroyed: longint ): double;
       function destrEuthanasiaCosts( const animalsDestroyed: longint ): double;
       function destrIndemnificationCosts( const animalsDestroyed: longint ): double;
       function destrDisposalCosts( const animalsDestroyed: longint ): double;
 
-      function destrTotalCosts( const unitsDestroyed, animalsDestroyed: longint ): double;
+      function destrTotalCosts( const uniNAADSMStateDestroyed, animalsDestroyed: longint ): double;
 
       function vaccSetupCosts( const unitsVaccinated: longint ): double;
 
@@ -143,7 +143,6 @@ implementation
     SysUtils,
 
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     SqlClasses,
     I88n,
@@ -265,16 +264,16 @@ implementation
 //-----------------------------------------------------------------------------
 // Cost calculations
 //-----------------------------------------------------------------------------
-  function TCostParams.destrAppraisalCosts( const unitsDestroyed: longint ): double;
+  function TCostParams.destrAppraisalCosts( const uniNAADSMStateDestroyed: longint ): double;
     begin
-      result := _destrAppraisalPerUnit * unitsDestroyed;
+      result := _destrAppraisalPerUnit * uniNAADSMStateDestroyed;
     end
   ;
 
 
-  function TCostParams.destrCleaningCosts( const unitsDestroyed: longint ): double;
+  function TCostParams.destrCleaningCosts( const uniNAADSMStateDestroyed: longint ): double;
     begin
-      result := _destrCleaningPerUnit * unitsDestroyed;
+      result := _destrCleaningPerUnit * uniNAADSMStateDestroyed;
     end
   ;
 
@@ -300,11 +299,11 @@ implementation
   ;
 
 
-  function TCostParams.destrTotalCosts( const unitsDestroyed, animalsDestroyed: longint ): double;
+  function TCostParams.destrTotalCosts( const uniNAADSMStateDestroyed, animalsDestroyed: longint ): double;
     begin
       result :=
-        destrAppraisalCosts( unitsDestroyed )
-        + destrCleaningCosts( unitsDestroyed )
+        destrAppraisalCosts( uniNAADSMStateDestroyed )
+        + destrCleaningCosts( uniNAADSMStateDestroyed )
         + destrEuthanasiaCosts( animalsDestroyed )
         + destrIndemnificationCosts( animalsDestroyed )
         + destrDisposalCosts( animalsDestroyed )
@@ -573,7 +572,7 @@ implementation
 
 
   procedure TCostParams.insertDatabaseOutputs(
-        outputs: TSMSimOutByProdType;
+        outputs: TSMDailyOutput;
         db: TSMDatabase;
         ptID: integer;
         includeDestructionCosts: boolean;
@@ -584,8 +583,8 @@ implementation
       qDict: TQueryDictionary;
       q: string;
     begin
-      self.debug();
-      
+      //self.debug();
+
       qDict := TQueryDictionary.create();
 
       qDict['iteration'] := intToStr( iteration );
@@ -593,11 +592,11 @@ implementation
 
       if( includeDestructionCosts ) then
         begin
-          qDict['destrAppraisal'] := usFloatToStr( destrAppraisalCosts( outputs.descUTotal ), 2, true );
-          qDict['destrCleaning'] := usFloatToStr( destrCleaningCosts( outputs.descUTotal ), 2, true );
-          qDict['destrEuthanasia'] := usFloatToStr( destrEuthanasiaCosts( outputs.descATotal ), 2, true );
-          qDict['destrIndemnification'] := usFloatToStr( destrIndemnificationCosts( outputs.descATotal ), 2, true );
-          qDict['destrDisposal'] := usFloatToStr( destrDisposalCosts( outputs.descATotal ), 2, true );
+          qDict['destrAppraisal'] := usFloatToStr( destrAppraisalCosts( outputs.descUAll ), 2, true );
+          qDict['destrCleaning'] := usFloatToStr( destrCleaningCosts( outputs.descUAll ), 2, true );
+          qDict['destrEuthanasia'] := usFloatToStr( destrEuthanasiaCosts( outputs.descAAll ), 2, true );
+          qDict['destrIndemnification'] := usFloatToStr( destrIndemnificationCosts( outputs.descAAll ), 2, true );
+          qDict['destrDisposal'] := usFloatToStr( destrDisposalCosts( outputs.descAAll ), 2, true );
         end
       else
         begin
@@ -611,8 +610,8 @@ implementation
 
       if( includeVaccinationCosts ) then
         begin
-          qDict['vaccSetup'] := usFloatToStr( vaccSetupCosts( outputs.vaccUTotal ), 2, true );
-          qDict['vaccVaccination'] := usFloatToStr( vaccTotalVaccinationCosts( outputs.vaccATotal ), 2, true );
+          qDict['vaccSetup'] := usFloatToStr( vaccSetupCosts( outputs.vaccUAll ), 2, true );
+          qDict['vaccVaccination'] := usFloatToStr( vaccTotalVaccinationCosts( outputs.vaccAAll ), 2, true );
         end
       else
         begin
@@ -632,17 +631,73 @@ implementation
       if( remoteDBParams.useRemoteDatabase ) then
         db.remoteExecute( q )
       else
-        db.execute( q )
+        begin
+          if not( db.execute( q ) ) then
+            raise exception.create( tr( 'Database records could not be saved.  Query failed:') + ' ' + q )
+          ;
+        end
       ;
 
       qDict.free();
     end
   ;
 
-  function TCostParams.ssXML(): string;
+
+  function TCostParams.ssXML( const useDestruction, useVaccination: boolean; const productionTypeID: integer ): string;
     begin
-      // Cost parameters have no XML if used with the GUI
-      result := '';
+      // Cost parameters have no XML if used with the GUI.
+      // XML here is used for the supercomputer version.
+      
+      result := '  <economic-model production-type="' + prodTypeDescr + '" production-type-id="' + intToStr( productionTypeID ) + '">' + endl;
+
+      if( useVaccination ) then
+        begin
+          result := result
+            + '    <vaccination-fixed>' + endl
+            + '      <value>' + usFloatToStr( vaccSetupPerUnit ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </vaccination-fixed>' + endl
+            + '    <vaccination>' + endl
+            + '      <value>' + usFloatToStr( vaccBaselinePerAnimal ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </vaccination>' + endl
+            + '    <baseline-vaccination-capacity>' + intToStr( vaccThreshold ) + '</baseline-vaccination-capacity>' + endl
+            + '    <additional-vaccination>' + endl
+            + '      <value>' + usFloatToStr( vaccAdditionalPerAnimal ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </additional-vaccination>' + endl
+          ;
+        end
+      ;
+
+      if( useDestruction ) then
+        begin
+          result := result
+            + '    <appraisal>' + endl
+            + '      <value>' + usFloatToStr( destrAppraisalPerUnit ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </appraisal>' + endl
+            + '    <euthanasia>' + endl
+            + '      <value>' + usFloatToStr( destrEuthanasiaPerAnimal ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </euthanasia>' + endl
+            + '    <indemnification>' + endl
+            + '      <value>' + usFloatToStr( destrIndemnificationPerAnimal ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </indemnification>' + endl
+            + '    <carcass-disposal>' + endl
+            + '      <value>' + usFloatToStr( destrDisposalPerAnimal ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </carcass-disposal>' + endl
+            + '    <cleaning-disinfecting>' + endl
+            + '      <value>' + usFloatToStr( destrCleaningPerUnit ) + '</value>' + endl
+            + '      <units><xdf:unit>USD</xdf:unit></units>' + endl
+            + '    </cleaning-disinfecting>' + endl
+          ;
+        end
+      ;
+
+      result := result + '  </economic-model>' + endl;
     end
   ;
 //-----------------------------------------------------------------------------

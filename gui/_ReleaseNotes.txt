@@ -1,10 +1,42 @@
+NOTES FOR 3.1.22
+===============
+Version 3.1.22 is a recommended update from 3.1.21.
+
+Version 3.1.22 introduces the following bug fixes:
+* The disease status of units placed in the destruction queue as a result of tracing or ring destruction is now checked to ensure that units that have already been destroyed do not artificially inflate the length of the queue.
+*  Validation of destruction and vaccination priorities is improved.
+*  Destruction priorities are now preserved when XML scenario files are imported.
+*  Memory leaks that occur during XML import have been fixed.
+*  Several Spanish-language displays have been improved.
+*  Various cosmetic issues have been corrected.
+
+3.1.22 also introduces the following new feature:
+* Delimited plain-text files with international formatting can now be imported and exported.
+
+
+NOTES FOR 3.1.21
+===============
+Version 3.1.21 is a recommended update from 3.1.20.
+
+The ability to create and/or edit relational functions has been restored after accidentally being removed in version 3.1.20.
+
+
+NOTES FOR 3.1.20
+===============
+Version 3.1.20 is a recommended update from 3.1.19.
+
+This version corrects a bug that may occur when the option to use within-unit prevalence of disease is used in combination with user-specified durations for initial disease states.
+Version 3.1.20 also introduces features that enable finer control over the durations of the initial disease state of initially infected units.
+
+
 NOTES FOR 3.1.19
 ===============
-Version 3.1.19 is a recommended update from 3.1.18.
+Version 3.1.19 is a minor update from 3.1.18.
 
-This version fixes the following bugs in the user interface:
-* Some production type combinations cannot be selected.
-* Parameters for airborne spready may not validate properly even when specified correctly.
+Version 3.1.19 introduces the following bug fixes:
+* Problems in the production type combinations window have been corrected to enable selection of all possible production type combinations
+* A bug in the airborne spread window has been corrected to allow proper validation of model parameters.
+
 
 NOTES FOR 3.1.18
 ===============

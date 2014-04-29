@@ -1,5 +1,5 @@
 inherited FormProdTypeBase: TFormProdTypeBase
-  Left = 855
+  Left = 1026
   Top = 253
   Caption = 'Scenario parameters'
   Icon.Data = {

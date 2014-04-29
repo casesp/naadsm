@@ -4,13 +4,13 @@ unit FrameTracing;
 FrameTracing.pas
 ----------------
 Begin: 2006/02/05
-Last revision: $Date: 2008/04/18 20:35:18 $ $Author: areeves $
-Version number: $Revision: 1.3 $
+Last revision: $Date: 2011-05-16 23:11:04 $ $Author: areeves $
+Version number: $Revision: 1.9.4.5 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -30,28 +30,45 @@ interface
     Forms,
     Dialogs,
     StdCtrls,
+    ExtCtrls,
+
     REEdit,
+
+    FrameFunctionEditor,
+    FrameSMFunctionEditor,
 
     ProductionType
   ;
 
   type TFrameTracing = class( TFrame )
-    	rleSurvDirectTracePeriod: TREEdit;
-    	lblSurvDirectTracePeriod: TLabel;
-    	rleSurvIndirectTracePeriod: TREEdit;
-    	lblSurvIndirectTracePeriod: TLabel;
-    	lblSurvDirectSuccess: TLabel;
-    	rleSurvDirectSuccess: TREEdit;
-    	rleSurvIndirectSuccess: TREEdit;
-    	lblSurvIndirectSuccess: TLabel;
-      cbxDirectTrace: TCheckBox;
-      cbxIndirectTrace: TCheckBox;
-      lblTraceForward: TLabel;
-    	
+      pnlTraceTypes: TPanel;
+      cbxTraceDirectForward: TCheckBox;
+      cbxTraceIndirectForward: TCheckBox;
+      cbxTraceDirectBack: TCheckBox;
+      cbxTraceIndirectBack: TCheckBox;
+
+      pnlTraceDirectParams: TPanel;
+      lblDirectContactParams: TLabel;
+      rleSurvDirectTracePeriod: TREEdit;
+      lblSurvDirectTracePeriod: TLabel;
+      lblSurvDirectSuccess: TLabel;
+      rleSurvDirectSuccess: TREEdit;
+
+      pnlTraceIndirectParams: TPanel;
+      lblIndirectContactParams: TLabel;
+      lblSurvIndirectTracePeriod: TLabel;
+      rleSurvIndirectTracePeriod: TREEdit;
+      lblSurvIndirectSuccess: TLabel;
+      rleSurvIndirectSuccess: TREEdit;
+
+      pnlTracingDelayParams: TPanel;
+      lblAllTraceParams: TLabel;
+      smcTracingDelay: TFrameSMFunctionEditor;
+      imgPdf: TImage;
+      lblTracingDelay: TLabel;
+
       procedure processClick( Sender: TObject );
       procedure processTextEntry( Sender: TObject );
-
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
 
   	protected
     	// properties
@@ -62,6 +79,7 @@ interface
       _myParent: TWinControl;
 
       procedure translateUI();
+      procedure translateUIManual();
 
       // Display
       procedure setDirectEnabled();
@@ -92,9 +110,13 @@ implementation
 	uses
   	RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
-    I88n
+    I88n,
+
+    FunctionEnums,
+    ChartFunction,
+
+    FormSMWizardBase
   ;
 
 //-----------------------------------------------------------------------------
@@ -114,6 +136,12 @@ implementation
       rleSurvIndirectSuccess.InputExpression := RE_DECIMAL_INPUT;
       rleSurvIndirectTracePeriod.InputExpression := RE_INTEGER_INPUT;
 
+      smcTracingDelay.setForm( AOwner as TFormSMWizardBase );
+      smcTracingDelay.chartType := CTPdf;
+	  	smcTracingDelay.xUnits := UDays;
+      smcTracingDelay.unitsLocked := true;
+      smcTracingDelay.setChartField( TrDelay );
+
       _loading := false;
     end
   ;
@@ -121,24 +149,39 @@ implementation
 
   procedure TFrameTracing.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:53 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FrameTracing.dfm
-      // File date: Thu Feb 8 17:04:54 2007
+      // This function was generated automatically by Caption Collector 0.6.2.
+      // Generation date: Mon Apr 28 16:42:33 2008
+      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Gilpin/sm_forms/FrameTracing.dfm
+      // File date: Mon Apr 28 16:00:36 2008
 
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          lblSurvDirectTracePeriod.Caption := tr( 'Days before detection:' );
-          lblSurvIndirectTracePeriod.Caption := tr( 'Days before detection:' );
+          lblSurvDirectTracePeriod.Caption := tr( 'Days before detection (critical period):' );
           lblSurvDirectSuccess.Caption := tr( 'Probability of trace success (0 to 1):' );
+          lblDirectContactParams.Caption := tr( 'For tracing of DIRECT contacts:' );
+          lblIndirectContactParams.Caption := tr( 'For tracing of INDIRECT contacts:' );
+          lblSurvIndirectTracePeriod.Caption := tr( 'Days before detection (critical period):' );
           lblSurvIndirectSuccess.Caption := tr( 'Probability of trace success (0 to 1):' );
-          lblTraceForward.Caption := tr( 'Trace-forward (trace-out) investigations' );
-          cbxDirectTrace.Caption := tr( 'Trace direct contacts' );
-          cbxIndirectTrace.Caption := tr( 'Trace indirect contacts' );
+          imgPdf.Hint := tr( 'This parameter is a probability density function' );
+          lblTracingDelay.Caption := tr( 'Delay for carrying out trace investigation:' );
+          lblAllTraceParams.Caption := tr( 'For ANY trace investigation:' );
+          cbxTraceDirectForward.Caption := tr( 'Conduct TRACE FORWARD investigations to search for DIRECT contacts where the reported unit was the SOURCE of contact and was of this production type' );
+          cbxTraceIndirectForward.Caption := tr( 'Conduct TRACE FORWARD investigations to search for INDIRECT contacts where the reported unit was the SOURCE of contact and was of this production type' );
+          cbxTraceDirectBack.Caption := tr( 'Conduct TRACE BACK investigations to search for DIRECT contacts where the reported unit was the RECIPIENT of contact and was of this production type' );
+          cbxTraceIndirectBack.Caption := tr( 'Conduct TRACE BACK investigations to search for INDIRECT contacts where the reported unit was the RECIPIENT of contact and was of this production type' );
         end
       ;
 
+      // If any phrases are found that could not be automatically extracted by
+      // Caption Collector, modify the following function to take care of them.
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFrameTracing.translateUIManual();
+    begin
     end
   ;
     
@@ -161,8 +204,10 @@ implementation
         begin
           _prodType.updated := true;
 
-          _prodType.destructionParams.traceDirectContact := cbxDirectTrace.Checked;
-          _prodType.destructionParams.traceIndirectContact := cbxIndirectTrace.Checked;
+          _prodType.tracingParams.traceDirectForward := cbxTraceDirectForward.Checked;
+          _prodType.tracingParams.traceIndirectForward := cbxTraceIndirectForward.Checked;
+          _prodType.tracingParams.traceDirectBack := cbxTraceDirectBack.Checked;
+          _prodType.tracingParams.traceIndirectBack := cbxTraceIndirectBack.Checked;
 
           updateDisplay();
         end
@@ -173,28 +218,13 @@ implementation
 
   procedure TFrameTracing.processTextEntry( Sender: TObject );
   	begin
-      _prodType.destructionParams.directTracePeriod := myStrToInt( rleSurvDirectTracePeriod.Text, -1 );
-      _prodType.destructionParams.directTraceSuccess := myStrToFloat( rleSurvDirectSuccess.Text, -1.0 );
+      _prodType.tracingParams.directTracePeriod := myStrToInt( rleSurvDirectTracePeriod.Text, -1 );
+      _prodType.tracingParams.directTraceSuccess := uiStrToFloat( rleSurvDirectSuccess.Text, -1.0 );
 
-      _prodType.destructionParams.indirectTracePeriod := myStrToInt( rleSurvIndirectTracePeriod.Text, -1 );
-      _prodType.destructionParams.indirectTraceSuccess := myStrToFloat( rleSurvIndirectSuccess.Text, -1.0 );
+      _prodType.tracingParams.indirectTracePeriod := myStrToInt( rleSurvIndirectTracePeriod.Text, -1 );
+      _prodType.tracingParams.indirectTraceSuccess := uiStrToFloat( rleSurvIndirectSuccess.Text, -1.0 );
 
    		_prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameTracing.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -205,75 +235,80 @@ implementation
 // Display
 //-----------------------------------------------------------------------------
   procedure TFrameTracing.updateDisplay();
+    var
+      anyTracing: boolean;
   	begin
+      anyTracing :=
+        cbxTraceDirectForward.Checked
+      or
+        cbxTraceDirectBack.Checked
+      or
+        cbxTraceIndirectForward.Checked
+      or
+        cbxTraceIndirectBack.Checked
+      ;
+
       setDirectEnabled();
       setIndirectEnabled();
+
+      lblAllTraceParams.Enabled := anyTracing;
+      imgPdf.Enabled := anyTracing;
+      lblTracingDelay.Enabled := anyTracing;
+      smcTracingDelay.enabled := anyTracing;
     end
   ;
 
 
   procedure TFrameTracing.setDirectEnabled();
+    var
+      enableControls: boolean;
   	begin
-      if( 0 <= _prodType.destructionParams.directTracePeriod ) then
-        rleSurvDirectTracePeriod.Text := intToStr( _prodType.destructionParams.directTracePeriod )
+      enableControls := ( cbxTraceDirectForward.Checked or cbxTraceDirectBack.Checked );
+
+      if( enableControls and ( 0 <= _prodType.tracingParams.directTracePeriod ) ) then
+        rleSurvDirectTracePeriod.Text := intToStr( _prodType.tracingParams.directTracePeriod )
       else
         rleSurvDirectTracePeriod.Text := ''
       ;
 
-      if( 0.0 <= _prodType.destructionParams.directTraceSuccess ) then
-        rleSurvDirectSuccess.Text := uiFloatToStr( _prodType.destructionParams.directTraceSuccess )
+      if( enableControls and ( 0.0 <= _prodType.tracingParams.directTraceSuccess ) ) then
+        rleSurvDirectSuccess.Text := uiFloatToStr( _prodType.tracingParams.directTraceSuccess )
       else
         rleSurvDirectSuccess.Text := ''
       ;
 
-      if( ( cbxDirectTrace.Checked ) ) then
-      	begin
-       		rleSurvDirectTracePeriod.Enabled := true;
-          rleSurvDirectSuccess.Enabled := true;
-          lblSurvDirectSuccess.enabled := true;
-          lblSurvDirectTracePeriod.enabled := true;
-        end
-      else
-      	begin
-          rleSurvDirectSuccess.Enabled := false;
-          rleSurvDirectTracePeriod.Enabled := false;
-          lblSurvDirectSuccess.enabled := false;
-          lblSurvDirectTracePeriod.enabled := false;
-        end
-      ;
+      lblDirectContactParams.Enabled := enableControls;
+      rleSurvDirectTracePeriod.Enabled := enableControls;
+      rleSurvDirectSuccess.Enabled := enableControls;
+      lblSurvDirectSuccess.enabled := enableControls;
+      lblSurvDirectTracePeriod.enabled := enableControls;
     end
   ;
 
 
   procedure TFrameTracing.setIndirectEnabled();
+    var
+      enableControls: boolean;
   	begin
-      if( 0 <= _prodType.destructionParams.indirectTracePeriod ) then
-        rleSurvIndirectTracePeriod.Text := intToStr( _prodType.destructionParams.indirectTracePeriod )
+      enableControls := ( cbxTraceIndirectForward.checked or cbxTraceIndirectBack.Checked );
+
+      if( enableControls and ( 0 <= _prodType.tracingParams.indirectTracePeriod ) ) then
+        rleSurvIndirectTracePeriod.Text := intToStr( _prodType.tracingParams.indirectTracePeriod )
       else
         rleSurvIndirectTracePeriod.Text := ''
       ;
 
-      if( 0 <= _prodType.destructionParams.indirectTraceSuccess ) then
-        rleSurvIndirectSuccess.Text := uiFloatToStr( _prodType.destructionParams.indirectTraceSuccess )
+      if( enableControls and ( 0 <= _prodType.tracingParams.indirectTraceSuccess ) ) then
+        rleSurvIndirectSuccess.Text := uiFloatToStr( _prodType.tracingParams.indirectTraceSuccess )
       else
         rleSurvIndirectSuccess.Text := ''
       ;
 
-      if( cbxIndirectTrace.checked ) then
-      	begin
-       		rleSurvIndirectTracePeriod.Enabled := true;
-          rleSurvIndirectSuccess.Enabled := true;
-          lblSurvIndirectSuccess.enabled := true;
-          lblSurvIndirectTracePeriod.enabled := true;
-        end
-      else
-      	begin
-          rleSurvIndirectSuccess.Enabled := false;
-          rleSurvIndirectTracePeriod.Enabled := false;
-          lblSurvIndirectSuccess.enabled := false;
-          lblSurvIndirectTracePeriod.enabled := false;
-        end
-      ;
+      lblIndirectContactParams.Enabled := enableControls;
+      rleSurvIndirectSuccess.Enabled := enableControls;
+      rleSurvIndirectTracePeriod.Enabled := enableControls;
+      lblSurvIndirectSuccess.enabled := enableControls;
+      lblSurvIndirectTracePeriod.enabled := enableControls;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -296,8 +331,12 @@ implementation
 
     	_prodType := val;
 
-      cbxDirectTrace.Checked := _prodType.destructionParams.traceDirectContact;
-      cbxIndirectTrace.checked := _prodType.destructionparams.traceIndirectContact;
+      cbxTraceDirectForward.Checked := _prodType.tracingParams.traceDirectForward;
+      cbxTraceIndirectForward.checked := _prodType.tracingParams.traceIndirectForward;
+      cbxTraceDirectBack.Checked := _prodType.tracingParams.traceDirectBack;
+      cbxTraceIndirectBack.checked := _prodType.tracingParams.traceIndirectBack;
+
+      // Text entries are updated by the updateDisplay() function, called below.
 
       _loading := false;
 
@@ -310,12 +349,12 @@ implementation
     begin
       result := true;
 
-      if( cbxDirectTrace.Checked ) then
+      if( cbxTraceDirectForward.Checked or cbxTraceDirectBack.Checked ) then
         begin
           if
-            ( 0 > myStrToFloat( rleSurvDirectSuccess.text ) )
+            ( 0 > uiStrToFloat( rleSurvDirectSuccess.text ) )
           or
-            ( 1 < myStrToFloat( rleSurvDirectSuccess.text ) )
+            ( 1 < uiStrToFloat( rleSurvDirectSuccess.text ) )
           then
             begin
               msgOK(
@@ -333,12 +372,12 @@ implementation
         end
       ;
 
-      if( cbxIndirectTrace.Checked ) then
+      if( cbxTraceIndirectForward.Checked or cbxTraceIndirectBack.Checked ) then
         begin
           if
-            ( 0 > myStrToFloat( rleSurvIndirectSuccess.text ) )
+            ( 0 > uiStrToFloat( rleSurvIndirectSuccess.text ) )
           or
-            ( 1 < myStrToFloat( rleSurvIndirectSuccess.text ) )
+            ( 1 < uiStrToFloat( rleSurvIndirectSuccess.text ) )
           then
             begin
               msgOK(

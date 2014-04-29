@@ -4,8 +4,8 @@ unit FormCostsDestr;
 FormCostsDestr.pas/dfm
 ----------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version number: $Revision: 1.6 $
+Last revision: $Date: 2010-09-09 14:29:36 $ $Author: rhupalo $
+Version number: $Revision: 1.6.12.1 $
 Project: (various)
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
@@ -135,7 +135,8 @@ implementation
 //-----------------------------------------------------------------------------
   function TFormCostsDestr.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.costTrackDestruction ) then
+      // need detection of disease in order to conduct destruction campaign and incurr costs
+    	if ( _smScenarioCopy.simInput.includeDetectionGlobal and _smScenarioCopy.simInput.includeDestructionGlobal and _smScenarioCopy.simInput.costTrackDestruction ) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin

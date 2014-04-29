@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Update existing table `inProductionType`.
 create table `inProductionType_IM0` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -148,19 +145,7 @@ alter table `inProductionType`
 
 
 drop table `inProductionType`; 
-
-
--- `inProductionType` : Table of inProductionType
--- 	`useCosts` : useCosts is of inProductionType
--- 	`costDestrAppraisalPerUnit` : costDestrAppraisalPerUnit is of inProductionType
--- 	`costDestrCleaningPerUnit` : costDestrCleaningPerUnit is of inProductionType
--- 	`costDestrEuthanasiaPerAnimal` : costDestrEuthanasiaPerAnimal is of inProductionType
--- 	`costDestrIndemnificationPerAnimal` : costDestrIndemnificationPerAnimal is of inProductionType
--- 	`costDestrDisposalPerAnimal` : costDestrDisposalPerAnimal is of inProductionType
--- 	`costVaccSetupPerUnit` : costVaccSetupPerUnit is of inProductionType
--- 	`costVaccThreshold` : costVaccThreshold is of inProductionType
--- 	`costVaccBaselinePerAnimal` : costVaccBaselinePerAnimal is of inProductionType
--- 	`costVaccAdditionalPerAnimal` : costVaccAdditionalPerAnimal is of inProductionType  
+ 
 create table `inProductionType` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -248,8 +233,6 @@ drop table `inProductionType_IM0`;
 alter table `inProductionType`
 	add constraint `inProductionType_PK` primary key (`productionTypeID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inProductionType`
 	add constraint `FK1` foreign key (
 		`disLatentPeriodPdfID`)
@@ -334,5 +317,3 @@ alter table `outIterationCosts`
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

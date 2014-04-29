@@ -4,13 +4,13 @@ unit FrameVaccination;
 FrameVaccination.pas/dfm
 ------------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version: $Revision: 1.24 $
+Last revision: $Date: 2011-03-31 04:25:04 $ $Author: areeves $
+Version: $Revision: 1.34.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -51,19 +51,18 @@ interface
       lblDaysToImmunity: TLabel;
       lblMinTimeBetwVacc: TLabel;
       smcVaccImmunePeriod: TFrameSMFunctionEditor;
+      imgPdf: TImage;
       rleDaysToImmunity: TREEdit;
       rleMinTimeBetwVacc: TREEdit;
+      cbxVaccinateDetected: TCheckBox;
 
       pnlRingVacc: TPanel;
       cbxRingVacc: TCheckBox;
       lblVaccRingRadius: TLabel;
       rleVaccRingRadius: TREEdit;
-    imgPdf: TImage;
 
       procedure processClick( Sender: TObject );
       procedure processTextEntry( Sender: TObject );
-
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
 
   	protected
     	// properties
@@ -98,7 +97,6 @@ implementation
 	uses
   	ChartFunction,
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     FormSMWizardBase,
     FunctionEnums,
@@ -124,8 +122,9 @@ implementation
 
       smcVaccImmunePeriod.setForm( AOwner as TFormSMWizardBase );
       smcVaccImmunePeriod.chartType := CTPdf;
-	  	smcVaccImmunePeriod.xUnits := UnitsDays;
+	  	smcVaccImmunePeriod.xUnits := UDays;
       smcVaccImmunePeriod.unitsLocked := true;
+      smcVaccImmunePeriod.setChartField( VacImmunePeriod );
     end
   ;
   
@@ -137,6 +136,8 @@ implementation
       // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FrameVaccination.dfm
       // File date: Thu Oct 12 14:33:58 2006
 
+      // MODIFIED BY HAND, 7/1/09 (A. Reeves)
+
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
@@ -147,9 +148,9 @@ implementation
           lblDaysToImmunity.Caption := tr( 'Delay in unit immunity following vaccination (days):' );
           lblMinTimeBetwVacc.Caption := tr( 'Minimum time between vaccinations (days):' );
           imgPdf.Hint := tr( 'This parameter is a probability density function' );
+          cbxVaccinateDetected.Caption := tr( 'Vaccinate detected, infected units of this production type' );
         end
       ;
-
     end
   ;
 //-----------------------------------------------------------------------------
@@ -189,7 +190,13 @@ implementation
       if( not _loading ) then
         begin
         	_prodType.vaccinationParams.useVaccination := cbxVaccinate.Checked;
+          _prodType.ringVaccParams.vaccinateDetected := cbxVaccinateDetected.checked;
           _prodType.ringVaccParams.useRing := cbxRingVacc.Checked;
+          
+          if ( not cbxVaccinate.Checked ) then
+            _prodType.ringVaccParams.vaccPriority := -1
+          ;
+            
           _prodType.updated := true;
         end
       ;
@@ -203,24 +210,9 @@ implementation
   	begin
      	_prodType.vaccinationParams.daysToImmunity := myStrToInt( rleDaysToImmunity.text, -1 );
       _prodType.ringVaccParams.minTimeBetweenVacc := myStrToInt( rleMinTimeBetwVacc.Text, -1 );
-      _prodType.ringVaccParams.ringRadius := myStrToFloat( rleVaccRingRadius.Text, -1.0 );
+      _prodType.ringVaccParams.ringRadius := uiStrToFloat( rleVaccRingRadius.Text, -1.0 );
 
       _prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameVaccination.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -283,6 +275,8 @@ implementation
       else
         rleMinTimeBetwVacc.Text := ''
       ;
+
+      cbxVaccinateDetected.Checked := _prodType.ringVaccParams.vaccinateDetected;
 
       cbxRingVacc.Checked := _prodType.ringVaccParams.useRing;
 

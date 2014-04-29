@@ -4,13 +4,13 @@ unit FormProdTypePairBase;
 FormProdTypePairBase.pas/dfm
 ----------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.36 $
+Last revision: $Date: 2009-06-05 19:52:34 $ $Author: areeves $
+Version: $Revision: 1.37 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -119,7 +119,6 @@ implementation
 		// Utility functions
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -382,7 +381,7 @@ implementation
         end
       ;
 
-      frm.Free();
+      frm.Release();
     end
   ;
 //-----------------------------------------------------------------------------
