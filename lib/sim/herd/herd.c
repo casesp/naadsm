@@ -77,13 +77,9 @@ double trunc (double);
 
 #define EPSILON 0.001
 
-#ifdef USE_SC_GUILIB
-#  include <sc_naadsm_outputs.h>
-#endif
-
 #include <replace.h>
 
-#include "naadsm.h"
+#include <naadsm.h>
 
 
 #ifndef WIN_DLL
@@ -610,6 +606,7 @@ HRD_new_herd (HRD_production_type_t production_type,
     herd->size = size;
   herd->x = x;
   herd->y = y;
+  herd->may_be_initially_infected = FALSE;
   herd->status = herd->initial_status = Susceptible;
   herd->days_in_status = 0;
   herd->days_in_initial_status = 0;
@@ -628,19 +625,6 @@ HRD_new_herd (HRD_production_type_t production_type,
   herd->vaccinate_change_request = NULL;
   herd->quarantine_change_request = FALSE;
   herd->destroy_change_request = FALSE;
-  
-#ifdef USE_SC_GUILIB
-  herd->production_types = NULL;
-  herd->ever_infected = FALSE;
-  herd->day_first_infected = 0;
-  herd->zone = NULL;
-  herd->cum_infected = 0;
-  herd->cum_detected = 0;
-  herd->cum_destroyed = 0;
-  herd->cum_vaccinated = 0;
-  herd->apparent_status = asUnknown;
-  herd->apparent_status_day = 0;
-#endif
 
   return herd;
 }
@@ -857,9 +841,6 @@ endElement (void *userData, const char *name)
   else if (strcmp (name, "production-type") == 0)
     {
       GPtrArray *production_type_names;
-#ifdef USE_SC_GUILIB
-      GPtrArray *production_type_ids;
-#endif
       char *tmp, *tmp2;
       int i;
 
@@ -874,45 +855,7 @@ endElement (void *userData, const char *name)
       g_assert (tmp2 != NULL);
       g_free (tmp);
       production_type_names = partial->herds->production_type_names;
-#ifdef USE_SC_GUILIB
-      production_type_ids = partial->herds->production_types;
-      /*  duplicate the production type names into the old production_type_names
-       *  list.  This will run only one time. */
-      if ( 0 >= production_type_names->len )
-      {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-		   "Building production_type_names list\n");
 
-        for (i = 0; i < production_type_ids->len; i++)
-          {
-            g_ptr_array_add (production_type_names, g_strdup( ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i )) )->name));
-          };
-      }
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-			 "Finding production type name in production_type_ids list\n");
-
-      for (i = 0; i < production_type_ids->len; i++)
-        {
-          if (strcasecmp (tmp2, ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->name  ) == 0)
-	  {
-#ifdef DEBUG
-	    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-		   "Found production type: %s, production-type-id: %i, at index: %i\n", ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->name, ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->id, i );
-#endif
-             break;
-	   };
-        }
-
-      if ( i >= production_type_ids->len )
-      {
-        /*  We have a problem, this production type was never defined ...
-         *  we don't have any of the details necessary to use the SRC_GUILIB
-         *  reporting */
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL,
-                 "  this productin type was never defined, can not proceed \"%s\"", tmp2);
-        g_assert( 0 == 1 );
-      }
-#else
       for (i = 0; i < production_type_names->len; i++)
         {
           if (strcasecmp (tmp2, g_ptr_array_index (production_type_names, i)) == 0)
@@ -928,15 +871,11 @@ endElement (void *userData, const char *name)
                  "  adding new production type \"%s\"", tmp2);
 #endif
         }
-#endif
       else
         g_free (tmp2);
 
       partial->herd->production_type = i;
 
-#ifdef USE_SC_GUILIB
-      partial->herd->production_types = partial->herds->production_types;
-#endif
       partial->herd->production_type_name = g_ptr_array_index (production_type_names, i);
       g_string_truncate (partial->s, 0);
     }
@@ -1174,6 +1113,27 @@ endElement (void *userData, const char *name)
       g_string_truncate (partial->s, 0);
     }
 
+  /* may-be-initially-infected tag */
+
+  else if ( 0 == strcmp (name, "may-be-initially-infected") )
+    {
+      char *tmp;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  accumulated string = \"%s\"", tmp);
+#endif
+
+      partial->herd->may_be_initially_infected = ( 0 == strcasecmp( tmp, "true" ) );
+
+      /* In this case, the actual initial status will be set elsewhere. */
+      partial->herd->status = partial->herd->initial_status = Susceptible;
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
+
+
   /* status tag */
 
   else if (strcmp (name, "status") == 0)
@@ -1193,6 +1153,7 @@ endElement (void *userData, const char *name)
         {
           g_warning ("status missing on line %lu of %s, setting to Susceptible",
                      (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+
           status = Susceptible;
         }
       else if (isdigit (tmp[0]))
@@ -1244,16 +1205,7 @@ endElement (void *userData, const char *name)
           status = Susceptible;
         }
       partial->herd->status = partial->herd->initial_status = status;
-#ifdef USE_SC_GUILIB
-	  if ( status == Destroyed )
-		partial->herd->apparent_status = asDestroyed;
-	  else if ( status == VaccineImmune )
-		partial->herd->apparent_status = asVaccinated;
-	  else
-		partial->herd->apparent_status = asUnknown;
 
-	  partial->herd->apparent_status_day = 0;
-#endif
       g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
@@ -1391,6 +1343,7 @@ endElement (void *userData, const char *name)
 #if DEBUG
       s = pj_get_def (projection, 0);
       g_debug ("projection = %s", s);
+      free (s);
 #endif
       partial->herds->projection = projection;
       g_free (tmp);
@@ -1487,9 +1440,6 @@ HRD_new_herd_list (void)
 
   herds = g_new (HRD_herd_list_t, 1);
   herds->list = g_array_new (FALSE, FALSE, sizeof (HRD_herd_t));
-#ifdef USE_SC_GUILIB
-  herds->production_types = NULL;
-#endif
   herds->production_type_names = g_ptr_array_new ();
   herds->projection = NULL;
 
@@ -1592,11 +1542,7 @@ HRD_herd_list_project (HRD_herd_list_t * herds, projPJ projection)
  * @return a herd list.
  */
 HRD_herd_list_t *
-#ifdef USE_SC_GUILIB
-HRD_load_herd_list (const char *filename, GPtrArray *production_types)
-#else
 HRD_load_herd_list (const char *filename)
-#endif
 {
   FILE *fp;
   HRD_herd_list_t *herds;
@@ -1610,11 +1556,8 @@ HRD_load_herd_list (const char *filename)
     {
       g_error ("could not open file \"%s\": %s", filename, strerror (errno));
     }
-#ifdef USE_SC_GUILIB
-  herds = HRD_load_herd_list_from_stream (fp, filename, production_types);
-#else
   herds = HRD_load_herd_list_from_stream (fp, filename);
-#endif
+
   fclose (fp);
 
 #if DEBUG
@@ -1635,11 +1578,7 @@ HRD_load_herd_list (const char *filename)
  * @return a herd list.
  */
 HRD_herd_list_t *
-#ifdef USE_SC_GUILIB
-HRD_load_herd_list_from_stream (FILE * stream, const char *filename, GPtrArray *production_types)
-#else
 HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
-#endif
 {
   HRD_herd_list_t *herds;
   HRD_partial_herd_list_t to_pass;
@@ -1659,10 +1598,6 @@ HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
     filename = "input";
 
   herds = HRD_new_herd_list ();
-
-#ifdef USE_SC_GUILIB
-  herds->production_types = production_types;
-#endif
 
   parser = XML_ParserCreate (NULL);
   if (parser == NULL)
@@ -1769,12 +1704,12 @@ HRD_herd_list_to_string (HRD_herd_list_t * herds)
     {
       substring = HRD_herd_to_string (HRD_herd_list_get (herds, 0));
       g_string_assign (s, substring);
-      free (substring);
+      g_free (substring);
       for (i = 1; i < nherds; i++)
         {
           substring = HRD_herd_to_string (HRD_herd_list_get (herds, i));
           g_string_append_printf (s, "\n%s", substring);
-          free (substring);
+          g_free (substring);
         }
     }
   /* don't return the wrapper object */
@@ -2092,13 +2027,6 @@ HRD_reset (HRD_herd_t * herd)
   herd->quarantined = FALSE;
   herd->in_vaccine_cycle = FALSE;
   herd->in_disease_cycle = FALSE;
-#ifdef USE_SC_GUILIB
-  herd->ever_infected = FALSE;
-  herd->day_first_infected = 0;
-  herd->zone = NULL;
-  herd->apparent_status = asUnknown;
-  herd->apparent_status_day = 0;
-#endif
   HRD_herd_clear_change_requests (herd);
 }
 

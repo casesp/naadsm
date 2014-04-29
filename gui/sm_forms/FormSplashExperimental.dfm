@@ -92,24 +92,21 @@ object FormSplashExperimental: TFormSplashExperimental
           Left = 1
           Top = 67
           Width = 518
-          Height = 26
+          Height = 13
           Align = alTop
-          Caption = 
-            'Copyright '#169' 2003 - 2007 Animal Population Health Institute at Co' +
-            'lorado State University and University of Guelph'
+          Caption = 'Copyright '#169' 2003 - 2013 NAADSM Development Team'
           WordWrap = True
         end
         object lblExplanation: TLabel
           Left = 1
-          Top = 102
+          Top = 89
           Width = 518
-          Height = 72
+          Height = 54
           Align = alTop
           Caption = 
-            'This is an experimental version of the North American Animal Dis' +
-            'ease Spread Model.  This version deviates from the published con' +
-            'ceptual specification in ways that may significantly affect the ' +
-            'simulation outcome. '
+            'This is an experimental version of NAADSM.  This version deviate' +
+            's from the published conceptual specification in ways that may s' +
+            'ignificantly affect simulation outcomes. '
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
           Font.Height = -16
@@ -120,7 +117,7 @@ object FormSplashExperimental: TFormSplashExperimental
         end
         object lblAdditionalInfo: TLabel
           Left = 1
-          Top = 183
+          Top = 152
           Width = 518
           Height = 14
           Align = alTop
@@ -142,7 +139,7 @@ object FormSplashExperimental: TFormSplashExperimental
         end
         object pnlSpacer2: TPanel
           Left = 1
-          Top = 93
+          Top = 80
           Width = 518
           Height = 9
           Align = alTop
@@ -150,7 +147,7 @@ object FormSplashExperimental: TFormSplashExperimental
         end
         object pnlSpacer3: TPanel
           Left = 1
-          Top = 174
+          Top = 143
           Width = 518
           Height = 9
           Align = alTop

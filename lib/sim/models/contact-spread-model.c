@@ -127,10 +127,6 @@
 #include "general.h"
 #include "contact-spread-model.h"
 
-#ifdef USE_SC_GUILIB
-#  include <sc_naadsm_outputs.h>
-#endif
-
 #if !HAVE_ROUND && HAVE_RINT
 #  define round rint
 #endif

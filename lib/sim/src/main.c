@@ -598,9 +598,7 @@
 #include "reporting.h"
 #include "rng.h"
 
-#ifdef USE_SC_GUILIB
-#include "sc_naadsm_outputs.h"
-#endif
+#include "herd-randomizer.h"
 #if HAVE_MPI && !CANCEL_MPI
 #  include "mpix.h"
 #endif
@@ -795,19 +793,14 @@ default_projection (HRD_herd_list_t * herds)
 
 /* WARNING: If the parameters to this function change, then a change is
  * also required in the Delphi user interface! */
-#ifdef USE_SC_GUILIB
-DLL_API void
-run_sim_main (char *herd_file,
-              char *parameter_file,
-              double fixed_rng_value, int verbosity, int seed, char *production_type_file)
-#else
 DLL_API void
 run_sim_main (char *herd_file,
               char *parameter_file,
               double fixed_rng_value, int verbosity, int seed)
-#endif
 {
   unsigned int ndays, nruns, day, run;
+  gboolean randomize_herds;
+  int initial_state_numbers[HRD_NSTATES];
   RPT_reporting_t *last_day_of_outbreak;
   RPT_reporting_t *clock_time;
   RPT_reporting_t *version;
@@ -833,12 +826,8 @@ run_sim_main (char *herd_file,
   char *summary;
   m_total_time = total_processor_time = 0.0;
 
-#ifdef USE_SC_GUILIB
-  GPtrArray *production_types;
-
-  production_types = NULL;
-  sprintf( _scenario.version, "Version: %s, Spec: %s", current_version(), specification_version() );
-#endif
+  for( i = 0; i < HRD_NSTATES; ++i )
+    initial_state_numbers[i] = 0;
 
   /* This line prints a Byte Order Mark (BOM) that indicates that the output is
    * in UTF-8.  Not currently used. */
@@ -881,20 +870,10 @@ run_sim_main (char *herd_file,
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
 
-#ifdef USE_SC_GUILIB
-  if ( NULL != production_type_file )
-  {
-    production_types = PRT_load_production_type_list ( production_type_file );
-  };
-#endif
   /* Get the list of herds. */
   if (herd_file)
     {
-#ifdef USE_SC_GUILIB
-      herds = HRD_load_herd_list ( herd_file, production_types );
-#else
       herds = HRD_load_herd_list ( herd_file );
-#endif
       nherds = HRD_herd_list_length (herds);
     }
   else
@@ -941,16 +920,14 @@ run_sim_main (char *herd_file,
   /* Pre-create a "background" zone. */
   zones = ZON_new_zone_list (nherds);
   zone = ZON_new_zone ("", -1, 0.0);
-#ifdef USE_SC_GUILIB
-  zone->_herdDays = NULL;
-  zone->_animalDays = NULL;
-#endif
+
   ZON_zone_list_append (zones, zone);
 
   /* Get the simulation parameters and sub-models. */
   nmodels =
     naadsm_load_models (parameter_file, herds, herds->projection, zones,
-                        &ndays, &nruns, &models, reporting_vars, &exit_conditions );
+                        &ndays, &nruns, &randomize_herds, initial_state_numbers,
+                        &models, reporting_vars, &exit_conditions );
   nzones = ZON_zone_list_length (zones);
 
   /* The clock time reporting variable is special -- it can only be reported
@@ -975,16 +952,9 @@ run_sim_main (char *herd_file,
   g_debug ("simulation %u days x %u runs", ndays, nruns);
 #endif
 
-
   /* Initialize the pseudo-random number generator. */
-#ifdef USE_SC_GUILIB
-  if ( _scenario.random_seed == 0 )
-     rng = RAN_new_generator ( -1 );
-  else
-    rng = RAN_new_generator( _scenario.random_seed );
-#else
   rng = RAN_new_generator (seed);
-#endif
+
   if (fixed_rng_value >= 0 && fixed_rng_value < 1)
     {
       RAN_fix (rng, fixed_rng_value);
@@ -998,23 +968,8 @@ run_sim_main (char *herd_file,
   m_total_time = total_processor_time = 0.0;
   total_runs = 0;
 
-#ifdef USE_SC_GUILIB
-  sc_sim_start( herds, production_types, zones );
-#else
   if (NULL != naadsm_sim_start)
     naadsm_sim_start ();
-#endif
-
-
-/*
-#ifdef USE_SC_GUILIB
-  write_scenario_SQL();
-  write_job_SQL();
-  write_production_types_SQL( production_types );
-  write_zones_SQL( zones );
-  fflush(NULL);
-#endif
-*/
 
   naadsm_create_event (manager, EVT_new_declaration_of_outputs_event(reporting_vars), herds, zones, rng);
 
@@ -1045,15 +1000,8 @@ run_sim_main (char *herd_file,
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "resetting everything before start of simulation");
 #endif
 
-/*
-#error TODO:  After removing the infectious_herd updates from the sc_naadsm functions make sure to call them from near here if the optimizations have been defined
-*/
-#ifdef USE_SC_GUILIB
-      sc_iteration_start ( production_types, herds,  run);
-#else
       if (NULL != naadsm_iteration_start)
         naadsm_iteration_start (run);
-#endif
 
       if ( _iteration.infectious_herds != NULL )
       {
@@ -1072,6 +1020,11 @@ run_sim_main (char *herd_file,
       /* Reset all zones. */
       ZON_zone_list_reset (zones);
 
+      /* Reset initial disease states, if necessary. */
+      if( randomize_herds )
+        randomize_initial_states( herds, HRD_NSTATES, initial_state_numbers, rng );
+        
+      /* Reset some iteration variables. */
       active_infections_yesterday = TRUE;
       pending_actions = TRUE;
       disease_end_recorded = FALSE;
@@ -1098,13 +1051,10 @@ run_sim_main (char *herd_file,
                 break;
             }
 
-      _iteration.current_day = day;
-#ifdef USE_SC_GUILIB
-          sc_day_start( production_types );
-#else
+          _iteration.current_day = day;
+
           if (NULL != naadsm_day_start)
             naadsm_day_start (day);
-#endif
 
 #if DEBUG && defined( USE_MPI )
           double m_start_day_time = MPI_Wtime();
@@ -1154,13 +1104,9 @@ run_sim_main (char *herd_file,
           /* Should the end of the disease phase be recorded? */
           if (!disease_end_recorded && !active_infections_today)
             {
-
-#ifdef USE_SC_GUILIB
-              sc_disease_end( day );
-#else
               if (NULL != naadsm_disease_end)
                 naadsm_disease_end (day);
-#endif
+
               disease_end_recorded = TRUE;
             }
 
@@ -1189,12 +1135,8 @@ run_sim_main (char *herd_file,
 #if DEBUG
                   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "can exit early on end of outbreak");
 #endif
-#ifdef USE_SC_GUILIB
-          sc_outbreak_end( day );
-#else
                   if (NULL != naadsm_outbreak_end)
                     naadsm_outbreak_end (day);
-#endif
                   RPT_reporting_set_integer (last_day_of_outbreak, day - 1, NULL);
                   early_exit = TRUE;
                 }
@@ -1241,12 +1183,8 @@ run_sim_main (char *herd_file,
           if (NULL != naadsm_set_zone_perimeters)
             naadsm_set_zone_perimeters (zones);
 
-#ifdef USE_SC_GUILIB
-          sc_day_complete( day, run, production_types, zones );
-#else
           if (NULL != naadsm_day_complete)
             naadsm_day_complete (day);
-#endif
 
 #if defined( USE_MPI ) && !CANCEL_MPI
   m_day_end_time = MPI_Wtime();
@@ -1254,12 +1192,8 @@ run_sim_main (char *herd_file,
 #endif
         } /* end loop over days of one Monte Carlo trial */
 
-#ifdef USE_SC_GUILIB
-      sc_iteration_complete( zones, herds, production_types, run );
-#else
       if (NULL != naadsm_iteration_complete)
         naadsm_iteration_complete (run);
-#endif
 
 #if defined( USE_MPI ) && !CANCEL_MPI
   m_end_time = MPI_Wtime();
@@ -1270,29 +1204,6 @@ run_sim_main (char *herd_file,
 #endif
     }                           /* loop over all Monte Carlo trials */
 
-#ifdef USE_SC_GUILIB
-
-#if defined( USE_MPI ) && !CANCEL_MPI
-    if ( me.np > 1 )
-    {
-      MPI_Reduce( &m_total_time, &total_processor_time, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD );
-      MPI_Reduce( &run, &total_runs, 1, MPI_UNSIGNED_LONG, MPI_SUM, 0, MPI_COMM_WORLD );
-    }
-    else
-#endif
-    {
-      total_processor_time = m_total_time;
-      total_runs = run;
-    };
-#if defined( USE_MPI ) && !CANCEL_MPI
-    if ( me.rank == 0 )
-#endif
-    {
-      _scenario.total_processor_time = total_processor_time;
-      _scenario.iterations_completed = total_runs;
-      sc_sim_complete( -1, herds, production_types, zones );
-    };
-#else
   /* Inform the GUI that the simulation has ended */
   if (NULL != naadsm_sim_complete)
     {
@@ -1307,7 +1218,6 @@ run_sim_main (char *herd_file,
           naadsm_sim_complete (-1);
         }
     }
-#endif
 
   /* Clean up. */
   RPT_free_reporting (last_day_of_outbreak);

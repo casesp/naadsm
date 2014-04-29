@@ -10,7 +10,7 @@ Project: NAADSM and related applications
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2012 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -48,10 +48,10 @@ interface
     // versions may use the same database schema (e.g. applications 3.0.63
     // and 3.0.64 both used database schema 3.0.63).
     DB_SCHEMA_APPLICATION = 'NAADSMXXXX';
-    DB_SCHEMA_VERSION = '4.0.9';
+    DB_SCHEMA_VERSION = '4.1.0';
 
-    DB_SCHEMA_DATE = '10/13/2011 5:01:02 PM';
-    DB_SCHEMA_ID = '1318546862'; // Number of seconds from 1970-01-01 00:00:00 to schema date.
+    DB_SCHEMA_DATE = '08/13/2013 6:03:25 PM';
+    DB_SCHEMA_ID = '1376438605'; // Number of seconds from 1970-01-01 00:00:00 to schema date.
     DB_SCHEMA_INFO_URL = '';
 
 
@@ -535,13 +535,18 @@ implementation
           if( DBUpdateSpecChange > result ) then result := DBUpdateSpecChange;
         end
 
+      else if( '4.0.9' = _vNumber ) then
+        begin
+          if( DBUpdateSpecChange > result ) then result := DBUpdateMinorChanges;
+        end
+
       // There will be more to do here some day.
 
       // The last entry here should be the current schema version.
       // This exception ensures that someone doesn't get too carried away with copy/paste
       else if( DBUpdateOK = result ) then
         raise exception.create( 'Looks like you forgot something in TSMDatabase.setUpdateReason()')
-      else if( '4.0.9' = _vNumber ) then
+      else if( '4.1.0' = _vNumber ) then
         begin
           if( DBUpdateOK > result ) then result := DBUpdateOK;
         end
@@ -921,6 +926,35 @@ implementation
         end
       ;
 
+      // Updated 4.0.9 to 4.1.0
+      //-----------------------
+      if( '4.0.9' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 4.0.9', true );
+
+            execSuccess :=
+              processDDLCommands( getResourceAsString( 'DBSchema4_1_0' ) )
+            and
+              self.execute( 'UPDATE `inGeneral` SET `useLASSizeAdjustment` = TRUE' )
+            ;
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '4.1.0';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
       //------ IMPORTANT -----------------------------------------------------
       // DON'T FORGET: when updating this function, also update makeDBTables()
       //----------------------------------------------------------------------
@@ -999,6 +1033,8 @@ implementation
                 ( ( '4.0.8' = _vNumber ) and ( 1317423145 = _vid ) )
               or
                 ( ( '4.0.9' = _vNumber ) and ( 1318546862 = _vid ) )
+              or
+                ( ( '4.1.0' = _vNumber ) and ( 1376438605 = _vid ) )
               then
                 result := true
               ;
@@ -1322,6 +1358,9 @@ implementation
       // These are necessary for proper cost accounting.
       processDDLCommands( getResourceAsString( 'DBSchema4_0_9' ) );
       populateSelectDailyOutputsFor4_0_9();
+      // 4.1.0 introduced options to limit the use of size adjustments for local-area spread
+      // and to use previously experimental capabilities to randomize selection of initially infected herds.
+      processDDLCommands( getResourceAsString( 'DBSchema4_1_0' ) );
 
       // Add additional DDL 'files' here as needed
 
@@ -1381,6 +1420,10 @@ implementation
 
       dict['writeNAADSMapOutput'] := self.sqlBool( false );
       dict['NAADSMapDirectory'] := DATABASE_NULL_VALUE;
+
+      dict['initInfectedRandomize'] := usBoolToText( false );
+
+      dict['useLASSizeAdjustment'] := usBoolToText( false );
 
       execute( writeQuery( 'inGeneral', QInsert, dict ) );
       dict.Free();
@@ -4060,6 +4103,8 @@ implementation
 
           else if
             ( '4.0.13' = outputVersion )
+          or
+            ( '4.1.0' = outputVersion )
           then
             result := VERSOK
 

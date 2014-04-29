@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2009 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -45,6 +45,8 @@ interface
       _id: integer;
       _modelType: TModelType;
       _thisModelIsUsed: boolean;
+
+      _includeLASSizeAdjustment: boolean;
 
       //-----------------------------------------------------------------------------
       // These may not be needed, now that I have a class for production type pair.
@@ -89,6 +91,9 @@ interface
 
       function getThisModelIsUsed(): boolean;
       procedure setThisModelIsUsed( val: boolean );
+
+      function getIncludeLASSizeAdjustment(): boolean;
+      procedure setIncludeLASSizeAdjustment( val: boolean );
 
       procedure setDistBetwUnits( val: double );
       procedure setNInfectiousInSource( val: integer );
@@ -142,6 +147,7 @@ interface
       property probSpread: double read getProbSpread write setProbSpread;
 
       property thisModelIsUsed: boolean read getThisModelIsUsed write setThisModelIsUsed;
+      property includeLASSizeAdjustment: boolean read getIncludeLASSizeAdjustment write setIncludeLASSizeAdjustment;
       property modelType: TModelType read _modelType;
 
       property isValid: boolean read getIsValid;
@@ -209,13 +215,13 @@ implementation
       _sim := nil;
       _modelType := MTUnspecified;
       _thisModelIsUsed := false;
+      _includeLASSizeAdjustment := false;
 
       _distBetwUnits := -1.0;
       _nInfectiousInSource := -1;
       _nSusceptibleInReceipient := -1;
       _probSpread := -1.0;
 
-      _thisModelIsUsed := false;
       _updated := false;
     end
   ;
@@ -259,6 +265,7 @@ implementation
       _toProdTypeID := src._toProdTypeID;
 
       _thisModelIsUsed := src._thisModelIsUsed;
+      _includeLASSizeAdjustment := src._includeLASSizeAdjustment;
 
       _distBetwUnits := src._distBetwUnits;
       _nInfectiousInSource := src._nInfectiousInSource;
@@ -548,6 +555,9 @@ implementation
   procedure TLocalAreaSpreadBase.setThisModelIsUsed( val: boolean ); begin _thisModelIsUsed := val; _updated := true; end;
   function TLocalAreaSpreadBase.getThisModelIsUsed(): boolean; begin result := _thisModelIsUsed; end;
 
+  procedure TLocalAreaSpreadBase.setIncludeLASSizeAdjustment( val: boolean ); begin _includeLASSizeAdjustment := val; _updated := true; end;
+  function TLocalAreaSpreadBase.getIncludeLASSizeAdjustment(): boolean; begin result := _includeLASSizeAdjustment; end;
+
   procedure TLocalAreaSpreadBase.setDistBetwUnits( val: double ); begin _distBetwUnits := val; end;
   procedure TLocalAreaSpreadBase.setNInfectiousInSource( val: integer ); begin _nInfectiousInSource := val; end;
   procedure TLocalAreaSpreadBase.setNSusceptibleInReceipient( val: integer ); begin _nSusceptibleInReceipient := val; end;
@@ -707,12 +717,20 @@ function TLocalAreaSpreadBase.ssXml(): string;
         + '">' + endl
       ;
 
-      str := str + '      <herd-size-infectious>' + intToStr( nInfectiousInSource ) + '</herd-size-infectious>' + endl;
-      str := str + '      <herd-size-susceptible>' + intToStr( nSusceptibleInReceipient ) + '</herd-size-susceptible>' + endl;
+      if( ( sim as TSMSimulationInput ).includeLASSizeAdjustmentGlobal ) then
+        begin
+          str := str + '      <herd-size-infectious>' + intToStr( nInfectiousInSource ) + '</herd-size-infectious>' + endl;
+          str := str + '      <herd-size-susceptible>' + intToStr( nSusceptibleInReceipient ) + '</herd-size-susceptible>' + endl;
+        end
+      else
+        str := str + '      <!-- Size adjustment for local-area and airborne spread is not used -->' + endl
+      ;
+
       str := str + '      <herd-distance>' + endl;
       str := str + '        <value>' + usFloatToStr( distBetwUnits ) + '</value>' + endl;
       str := str + '        <units><xdf:unit>km</xdf:unit></units>' + endl;
       str := str + '      </herd-distance>' + endl;
+
       //rbh special case - calc of K may require a probability smaller than 6 decimals (if so, it will be in exponential format)
       str := str + '      <prob>' + usFloatToStr( probSpread, 10 ) + '</prob>' + endl;
 
@@ -791,14 +809,22 @@ function TLocalAreaSpreadBase.ssXml(): string;
       //----------------------
       subElement := Sdew.GetElementByName( model, 'herd-size-infectious' );
       if ( nil = subElement ) then
-        appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N infectious in source herd.' ) )
+        begin
+          // This is not an error in NAADSM 4.1.
+          // XML without herd-size-infectious or herd-size-susceptible do not use size to adjust probability of spread.
+
+          //appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N infectious in source herd.' ) );
+        end
       else
         begin
           val := usStrToFloat( Sdew.GetElementContents( subElement ), NaN);
           if( isNaN( val ) ) then
             appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N infectious in source herd.' ) )
           else
-            self.nInfectiousInSource := RoundDbl( val )
+            begin
+              self.nInfectiousInSource := RoundDbl( val );
+              _includeLASSizeAdjustment := true;
+            end
           ;
         end
       ;
@@ -807,14 +833,22 @@ function TLocalAreaSpreadBase.ssXml(): string;
       //----------------------
       subElement := Sdew.GetElementByName( model, 'herd-size-susceptible' );
       if ( nil = subElement ) then
-        appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N susceptible in recipient herd.' ) )
+        begin
+          // This is not an error in NAADSM 4.1.
+          // XML without herd-size-infectious or herd-size-susceptible do not use size to adjust probability of spread.
+
+          //appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N susceptible in recipient herd.' ) )
+        end
       else
         begin
           val := usStrToFloat( Sdew.GetElementContents( subElement ), NaN);
           if( isNaN( val ) ) then
             appendToPString( errMsg, tr( modelName + ' XML does not contain valid value for N susceptible in recipient herd.' ) )
           else
-            self.nSusceptibleInReceipient := RoundDbl( val )
+            begin
+              self.nSusceptibleInReceipient := RoundDbl( val );
+              _includeLASSizeAdjustment := true;
+            end
           ;
         end
       ;

@@ -524,12 +524,6 @@ ZON_new_zone (char *name, int level, double radius)
   z->area = 0;
   z->perimeter = 0;
   z->nholes_filled = 0;
-#ifdef USE_SC_GUILIB
-  z->max_area = 0.0;
-  z->max_day = 0;
-  z->_herdDays = g_hash_table_new( g_direct_hash, g_direct_equal );
-  z->_animalDays = g_hash_table_new( g_direct_hash, g_direct_equal );
-#endif
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ZON_new_zone");
@@ -1108,23 +1102,6 @@ ZON_reset (ZON_zone_t * zone)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ZON_reset");
 #endif
 
-#ifdef USE_SC_GUILIB
-  zone->max_area = 0.0;
-  zone->max_day = 0;
-
-  if ( zone->_herdDays != NULL )
-  {
-    g_hash_table_destroy( zone->_herdDays );
-    zone->_herdDays = g_hash_table_new( g_direct_hash, g_direct_equal );
-  };
-
-  if ( zone->_animalDays != NULL )
-  {
-    g_hash_table_destroy( zone->_animalDays );
-    zone->_animalDays =  g_hash_table_new( g_direct_hash, g_direct_equal );
-  };
-#endif
-
 /* If this is the "background" zone, there's nothing to do. */
   if (zone->radius < EPSILON)
   {
@@ -1263,94 +1240,5 @@ ZON_update_perimeter (ZON_zone_t *zone)
 
   return perimeter;
 }
-
-#ifdef USE_SC_GUILIB
-  void addToZoneTotals( unsigned short int _day, ZON_zone_t *_zone, unsigned int _prod_id, unsigned int _herd_size   )
-  {
-    guint herdCount, animalCount;
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER addToZoneTotals");
-#endif  
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Checking Herd Days...");
-#endif    
-
-if ( _zone == NULL )
-{
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, "----- EXIT addToZoneTotals, premature exit, _zone == NULL !");       
-  return;
-};
-  
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Zone herdDays, for zone (%s), hash table size is: %i", ((_zone->name != NULL)? _zone->name:"NONE"),  g_hash_table_size( _zone->_herdDays) );
-#endif    
-
-    if ( g_hash_table_size( _zone->_herdDays ) == 0 )
-    {  
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...inserting first one.");
-#endif          
-  	  herdCount = 1;
-      g_hash_table_insert( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
-    }
-    else
-    {
-	  if ( g_hash_table_lookup( _zone->_herdDays, GUINT_TO_POINTER(_prod_id) ) == NULL )
-	  {
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...inserting.");
-#endif            
-  	    herdCount = 1;
-        g_hash_table_insert( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
-	  }
-	  else
-	  {
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...replacing.");
-#endif           
-        herdCount =  GPOINTER_TO_UINT(g_hash_table_lookup( _zone->_herdDays, GUINT_TO_POINTER(_prod_id) )) + 1;
-        g_hash_table_replace( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
-	  };
-    };
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Checkig Animal Days...");
-#endif   
-
-    if ( g_hash_table_size( _zone->_animalDays ) == 0 ) 
-    {   
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...inserting first one.");
-#endif           
-      animalCount = _herd_size;      
-      g_hash_table_insert( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
-    }
-    else
-    {
-	  if ( g_hash_table_lookup( _zone->_animalDays, GUINT_TO_POINTER(_prod_id) ) == NULL )
-	  {
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...inserting.");
-#endif            
-		animalCount = _herd_size;      
-        g_hash_table_insert( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
-	  }
-	  else
-	  {
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...replacing.");
-#endif           
-  	    animalCount =  GPOINTER_TO_UINT( g_hash_table_lookup( _zone->_animalDays, GUINT_TO_POINTER(_prod_id) )) + _herd_size;
-        g_hash_table_replace( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
-	  };
-    };    
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT addToZoneTotals");
-#endif 
- 
-  }
-#endif
 
 /* end of file zone.c */

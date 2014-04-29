@@ -115,7 +115,7 @@ implementation
           Caption := tr( 'About NAADSM' ) + '-' + BRANCHNAME;
           btnOK.Caption := tr( '&OK' );
           btnLicense.Caption := tr( '&License...' );
-          lblExplanation.Caption := tr( 'This is an experimental version of NAADSM.  This version deviates from the published conceptual specification in ways that may significantly affect the simulation outcome.' );
+          lblExplanation.Caption := tr( 'This is an experimental version of NAADSM.  This version deviates from the published conceptual specification in ways that may significantly affect simulation outcomes.' );
           lblVersion.Caption := ansiReplaceStr( ansiReplaceStr( tr( 'Version xyz Build abc' ), 'xyz', MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER ), 'abc', BUILDNUMBER);
           lblWebsite.Caption := tr( 'lblWebsite' );
           lblAppTitle.Caption := 'NAADSM-' + BRANCHNAME;

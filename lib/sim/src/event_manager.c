@@ -139,14 +139,10 @@ naadsm_exposure_event_to_callback (gpointer data, gpointer user_data)
       update.exposure_method = NAADSM_UnspecifiedInfectionType;     
     }
 
-#ifdef USE_SC_GUILIB
-  sc_expose_herd( details->exposed_herd, update );
-#else
   if (NULL != naadsm_expose_herd)
     {
       naadsm_expose_herd (update);
     }
-#endif
 
   return;
 }
@@ -167,14 +163,10 @@ naadsm_infection_event_to_callback (gpointer data, gpointer user_data)
   update.herd_index = details->herd->index;
   update.day = details->day;
 
-#ifdef USE_SC_GUILIB
-  sc_infect_herd( details->day, details->herd, update );
-#else
   if (NULL != naadsm_infect_herd)
     {
       naadsm_infect_herd (update);
     }
-#endif
 
   return;
 }
@@ -195,14 +187,10 @@ naadsm_detection_event_to_callback (gpointer data, gpointer user_data)
   detection.reason = details->means;
   detection.test_result = details->test_result;
   
-#ifdef USE_SC_GUILIB
-  sc_detect_herd( details->day, herd, detection );
-#else  
   if (NULL != naadsm_detect_herd)
     {
       naadsm_detect_herd (detection);
-    }
-#endif   
+    }  
 }
 
 
@@ -243,12 +231,8 @@ naadsm_trace_result_event_to_callback (gpointer data, gpointer user_data)
   else
     trace.success = NAADSM_SuccessFalse; 
 
-  #ifdef USE_SC_GUILIB
-    sc_trace_herd( details->exposed_herd, trace );
-  #else
     if (NULL != naadsm_trace_herd)
       naadsm_trace_herd (trace);
-  #endif
 }
 
 
@@ -287,14 +271,10 @@ naadsm_vaccination_canceled_event_to_callback (gpointer data, gpointer user_data
   update.day_commitment_made = details->day_commitment_made;
   update.reason = 0; /* This is unused for "vaccination canceled" events */
  
-#ifdef USE_SC_GUILIB
-  sc_cancel_herd_vaccination( details->day, details->herd, update );
-#else
   if (NULL != naadsm_cancel_herd_vaccination)
     {
       naadsm_cancel_herd_vaccination (update);
     };
-#endif
 
   return;
 }
@@ -325,14 +305,10 @@ naadsm_vaccination_event_to_callback (gpointer data, gpointer user_data)
       update.reason = NAADSM_ControlReasonUnspecified;
     }
 
-#ifdef USE_SC_GUILIB
-  sc_vaccinate_herd( details->day, details->herd, update );
-#else
   if (NULL != naadsm_vaccinate_herd)
     {
       naadsm_vaccinate_herd (update);
     };
-#endif
 
   return;
 }
@@ -389,14 +365,10 @@ naadsm_destruction_event_to_callback (gpointer data, gpointer user_data)
       update.reason = NAADSM_ControlReasonUnspecified;
     }
 
-#ifdef USE_SC_GUILIB
-  sc_destroy_herd( details->day, details->herd, update );
-#else
   if (NULL != naadsm_destroy_herd)
     {
       naadsm_destroy_herd (update);
     }
-#endif
 
   return;
 }
@@ -417,14 +389,10 @@ naadsm_destruction_canceled_event_to_callback (gpointer data, gpointer user_data
   update.day_commitment_made = details->day_commitment_made;
   update.reason = 0; /* This is unused for "destruction canceled" events */
  
-#ifdef USE_SC_GUILIB
-  sc_cancel_herd_destruction( details->day, details->herd, update );
-#else
   if (NULL != naadsm_cancel_herd_destruction)
     {
       naadsm_cancel_herd_destruction (update);
     }
-#endif
 
   return;
 }
@@ -443,14 +411,10 @@ naadsm_unit_state_change_event_to_callback (gpointer data, gpointer user_data)
   update.herd_index = details->herd->index;
   update.status = (NAADSM_disease_state) (details->new_state);
 
-#ifdef USE_SC_GUILIB
-  sc_change_herd_state ( details->herd, update );
-#else
   if (NULL != naadsm_change_herd_state)
     {
       naadsm_change_herd_state (update);
     }
-#endif
 
   return;
 }
@@ -496,12 +460,8 @@ naadsm_examine_herd_event_to_callback (gpointer data, gpointer user_data)
       g_error( "Unrecognized event reason (%s) in naadsm_examine_herd_event_to_callback", details->reason );
     }
 
-  #ifdef USE_SC_GUILIB
-    sc_examine_herd( details->herd, exam );
-  #else
     if (NULL != naadsm_examine_herd)
       naadsm_examine_herd (exam);
-  #endif
     
   return;  
 }
@@ -556,12 +516,8 @@ naadsm_test_result_event_to_callback (gpointer data, gpointer user_data)
   else if( !(details->positive) && !(details->correct) )
     test.test_result = NAADSM_TestFalseNegative;
     
-  #ifdef USE_SC_GUILIB
-    sc_test_herd( details->herd, test );
-  #else
-    if (NULL != naadsm_test_herd)
-      naadsm_test_herd (test);
-  #endif
+  if (NULL != naadsm_test_herd)
+    naadsm_test_herd (test);
   
   return;
 }

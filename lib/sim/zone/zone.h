@@ -106,12 +106,6 @@ typedef struct
   double area;
   double perimeter;
   unsigned int nholes_filled;
-#ifdef USE_SC_GUILIB
-  double max_area;
-  unsigned short int max_day;
-  GHashTable *_herdDays;
-  GHashTable *_animalDays;
-#endif
 }
 ZON_zone_t;
 
@@ -219,9 +213,5 @@ double ZON_update_area (ZON_zone_t *);
 double ZON_update_perimeter (ZON_zone_t *);
 
 #define ZON_level(F) (F->parent->level)
-
-#ifdef USE_SC_GUILIB
-  void addToZoneTotals( unsigned short int _day, ZON_zone_t *_zone, unsigned int _prod_id, unsigned int _herd_size   );
-#endif
 
 #endif /* !ZONE_H */

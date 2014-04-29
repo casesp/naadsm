@@ -1790,12 +1790,8 @@ handle_request_for_zone_focus_event (struct naadsm_model_t_ *self,
 #endif
   ZON_zone_list_add_focus (zones, herd->x, herd->y);
 
-#ifdef USE_SC_GUILIB
-  sc_make_zone_focus( event->day, herd );
-#else
   if( NULL != naadsm_make_zone_focus )
     naadsm_make_zone_focus (herd->index);
-#endif
 
 #if DEBUG
   g_debug ("----- EXIT handle_request_for_zone_focus_event (%s)", MODEL_NAME);

@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -21,7 +21,7 @@ interface
 
   uses
     Windows, 
-    Messages, 
+    Messages,
     SysUtils, 
     Variants, 
     Classes, 
@@ -41,16 +41,16 @@ interface
       pnlParams: TPanel;
       pnlUseAirborneSpread: TPanel;
       cbxUseSpread: TCheckBox;
-
-      lblNInfectiousInSource: TLabel;
-      lblNSusceptibleInRecipient: TLabel;
-      lblDistBetwUnits: TLabel;
-      lblProbSpread: TLabel;
-      reNInfectiousInSource: TREEdit;
-      reNSusceptibleInRecipient: TREEdit;
-      reDistBetwUnits: TREEdit;
-      reProbSpread: TREEdit;
-
+    pnlSizeParams: TPanel;
+    lblNInfectiousInSource: TLabel;
+    reNInfectiousInSource: TREEdit;
+    lblNSusceptibleInRecipient: TLabel;
+    reNSusceptibleInRecipient: TREEdit;
+    pnlOtherParams: TPanel;
+    lblDistBetwUnits: TLabel;
+    reDistBetwUnits: TREEdit;
+    lblProbSpread: TLabel;
+    reProbSpread: TREEdit;
       procedure processText( sender: TObject );
       procedure cbxUseSpreadClick(Sender: TObject);
 
@@ -112,6 +112,9 @@ implementation
       
       _myParent := AOwner as TWinControl;
 
+      pnlSizeParams.BevelOuter := bvNone;
+      pnlOtherParams.BevelOuter := bvNone;
+
       reNInfectiousInSource.InputExpression := RE_INTEGER_INPUT;
       reNSusceptibleInRecipient.InputExpression := RE_INTEGER_INPUT;
       reDistBetwUnits.InputExpression := RE_DECIMAL_INPUT;
@@ -169,6 +172,12 @@ implementation
       if( nil <> _am ) then
         begin
           cbxUseSpread.Checked := _am.thisModelIsUsed;
+
+          if( _am.includeLASSizeAdjustment ) then
+            pnlSizeParams.Height :=  73
+          else
+            pnlSizeParams.Height :=  0
+          ;
 
           if( 0.0 < _am.probSpread ) then
             {Original code, if the value has >6 decimals then it rounded to 0 (and for some reason not reloaded to the edit box on re-opening scenario)!
@@ -318,39 +327,43 @@ implementation
             end
           ;
 
-          if( not( strIsEmpty( trim( reNInfectiousInSource.text ) ) ) ) then
+          if( _am.includeLASSizeAdjustment ) then
             begin
-              if ( 0 >= myStrToInt( reNInfectiousInSource.text, -1 ) ) then
+              if( not( strIsEmpty( trim( reNInfectiousInSource.text ) ) ) ) then
                 begin
-                  msgOK(
-                    tr( 'The number of infectious animals in the source unit must be greater than 0.' ),
-                    tr( 'Parameter out of range' ),
-                    IMGCritical,
-                    _myParent
-                  );
+                  if ( 0 >= myStrToInt( reNInfectiousInSource.text, -1 ) ) then
+                    begin
+                      msgOK(
+                        tr( 'The number of infectious animals in the source unit must be greater than 0.' ),
+                        tr( 'Parameter out of range' ),
+                        IMGCritical,
+                        _myParent
+                      );
 
-                  reNInfectiousInSource.SetFocus();
-                  result := false;
-                  exit;
+                      reNInfectiousInSource.SetFocus();
+                      result := false;
+                      exit;
+                    end
+                  ;
                 end
               ;
-            end
-          ;
 
-          if( not( strIsEmpty( trim( reNSusceptibleInRecipient.text ) ) ) ) then
-            begin
-              if ( 0 >= myStrToInt( reNSusceptibleInRecipient.text, -1 ) ) then
+              if( not( strIsEmpty( trim( reNSusceptibleInRecipient.text ) ) ) ) then
                 begin
-                  msgOK(
-                    tr( 'The number of susceptible animals in the recipient unit must be greater than 0.' ),
-                    tr( 'Parameter out of range' ),
-                    IMGCritical,
-                    _myParent
-                  );
+                  if ( 0 >= myStrToInt( reNSusceptibleInRecipient.text, -1 ) ) then
+                    begin
+                      msgOK(
+                        tr( 'The number of susceptible animals in the recipient unit must be greater than 0.' ),
+                        tr( 'Parameter out of range' ),
+                        IMGCritical,
+                        _myParent
+                      );
 
-                  reNSusceptibleInRecipient.SetFocus();
-                  result := false;
-                  exit;
+                      reNSusceptibleInRecipient.SetFocus();
+                      result := false;
+                      exit;
+                    end
+                  ;
                 end
               ;
             end

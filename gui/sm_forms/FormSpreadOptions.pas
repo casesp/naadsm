@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2012 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -49,6 +49,9 @@ uses
       cbxLocalArea: TCheckBox;
       gbxWindParams: TGroupBox;
       fraWindDirection: TFrameWindDirection;
+      
+      gbxSizeOptions: TGroupBox;
+      cbxSizeOptions: TCheckBox;
 
       procedure cbxClick(Sender: TObject);
       procedure processWindDirText( sender: TObject );
@@ -120,6 +123,9 @@ implementation
       cbxAirborne.Checked := _smScenarioCopy.simInput.includeAirborneSpreadGlobal;
       cbxLocalArea.Checked := _smScenarioCopy.simInput.includeLocalAreaSpreadGlobal;
 
+      gbxSizeOptions.Visible := ( cbxAirborne.Checked or cbxLocalArea.Checked );
+      cbxSizeOptions.Checked := _smScenarioCopy.simInput.includeLASSizeAdjustmentGlobal;
+
       gbxWindParams.Visible := _smScenarioCopy.simInput.includeAirborneSpreadGlobal;
       
       fraWindDirection.setAngles(
@@ -168,9 +174,13 @@ implementation
         begin
           gbxWindParams.Visible := cbxAirborne.Checked;
 
+          gbxSizeOptions.Visible := ( cbxAirborne.Checked or cbxLocalArea.Checked );
+
+
           _smScenarioCopy.simInput.includeContactSpreadGlobal := cbxContact.Checked;
           _smScenarioCopy.simInput.includeAirborneSpreadGlobal := cbxAirborne.Checked;
           _smScenarioCopy.simInput.includeLocalAreaSpreadGlobal := cbxLocalArea.Checked;
+          _smScenarioCopy.simInput.includeLASSizeAdjustmentGlobal := cbxSizeOptions.Checked;
 
           if( cbxAirborne.Checked ) then
             begin

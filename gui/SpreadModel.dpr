@@ -390,7 +390,7 @@ var
       // Check that the required DLLs are loaded
       //----------------------------------------
       if
-        ( not( naadsmLibLoaded ) )  // naadsm.dll (cheyenne.dll, laramie.dll, riverton.dll) cannot be found, or is the wrong version
+        ( not( naadsmLibLoaded ) )  // naadsm4.dll (cheyenne4.dll, laramie4.dll, riverton4.dll) cannot be found, or is the wrong version
       or
         ( not( pdfGslFnsLoaded() ) ) // libgsl.dll cannot be found or is the wrong version
       or

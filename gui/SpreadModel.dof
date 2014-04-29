@@ -113,8 +113,8 @@ RootDir=
 IncludeVerInfo=1
 AutoIncBuild=0
 MajorVer=4
-MinorVer=0
-Release=13
+MinorVer=1
+Release=0
 Build=0
 Debug=0
 PreRelease=0
@@ -126,14 +126,14 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=NAADSM Development Team
 FileDescription=
-FileVersion=4.0.13.0
+FileVersion=4.1.0.0
 InternalName=NAADSM
 LegalCopyright=Copyright 2003 - 2013 NAADSM Development Team
 LegalTrademarks=
 OriginalFilename=SpreadModel.exe
 ProductName=NAADSM
-ProductVersion=4.0.13
-Comments=Build 20130702
+ProductVersion=4.1.0
+Comments=Build 20130820
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;

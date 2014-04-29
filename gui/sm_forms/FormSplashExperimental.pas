@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -138,7 +138,7 @@ implementation
           lblVersion.Caption := tr( 'Version 3.0.78 Build 060403' );
           lblAdditionalInfo.Caption := tr( 'Please see ''About NAADSM'' for contact and support information.' );
           lblAppTitle.Caption := tr( 'NAADSM-Experimental' );
-          lblExplanation.Caption := tr( 'This is an experimental version of NAADSM.  This version deviates from the published conceptual specification in ways that may significantly affect the simulation outcome.' );
+          lblExplanation.Caption := tr( 'This is an experimental version of NAADSM.  This version deviates from the published conceptual specification in ways that may significantly affect simulation outcomes.' );
         end
       ;
 
@@ -152,7 +152,7 @@ implementation
   procedure TFormSplashExperimental.translateUIManual();
     begin
       lblAppTitle.Caption := 'NAADSM-' + BRANCHNAME;
-      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'Animal Population Health Institute at Colorado State University and University of Guelph' );
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'NAADSM Development Team' );
       lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
     end
   ;

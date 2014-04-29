@@ -232,14 +232,10 @@ check_circle_and_rezone (int id, gpointer arg)
                   zone_update.herd_index = herd->index;
                   zone_update.zone_level = zone->level;
 				  
-#ifdef USE_SC_GUILIB
-				  sc_record_zone_change( herd, zone );
-#else				  
                   if( NULL != naadsm_record_zone_change )
                     {
                       naadsm_record_zone_change( zone_update );
-                    };
-#endif				  
+                    };			  
 #if DEBUG
                   g_string_append_printf (s, ", now in zone \"%s\" (level %i)",
                                           zone->name, zone->level);
@@ -338,15 +334,11 @@ check_poly_and_rezone (int id, gpointer arg)
 
               zone_update.herd_index = herd->index;
               zone_update.zone_level = zone->level;
-			  
-#ifdef USE_SC_GUILIB
-			  sc_record_zone_change( herd, zone );
-#else			  
+			  		  
 			  if( NULL != naadsm_record_zone_change )
                 {
                   naadsm_record_zone_change( zone_update );
-                };
-#endif			  
+                };		  
 
 #if DEBUG
               g_string_append_printf (s, ", now in zone \"%s\" (level %i)", zone->name, zone->level);

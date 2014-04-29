@@ -10,7 +10,7 @@ Project: NAADSM and related applications
 Website:
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -48,6 +48,7 @@ interface
 
       _includeDirect: boolean;
       _includeIndirect: boolean;
+      _includeLASSizeAdjustment: boolean;
 
       _direct: TContactSpreadParams;
       _indirect: TContactSpreadParams;
@@ -88,6 +89,7 @@ interface
       function getIncludeIndirect(): boolean;
       function getIncludeAirborne(): boolean;
       function getIncludeLocalArea(): boolean;
+      function getIncludeLASSizeAdjustment(): boolean;
 
       procedure setIncludeDirect( val: boolean );
       procedure setIncludeIndirect( val: boolean );
@@ -147,6 +149,7 @@ interface
       property includeIndirect: boolean read getIncludeIndirect write setIncludeIndirect;
       property includeAirborne: boolean read getIncludeAirborne;
       property includeLocalArea: boolean read getIncludeLocalArea;
+      property includeLASSizeAdjustment: boolean read getIncludeLASSizeAdjustment;
 
       procedure setChart( const whichChart: TSMChart; fn: TChartFunction; addlInfo: integer = -1 ); override;
       function chart( const whichChart: TSMChart; addlInfo: integer = -1 ): TChartFunction; override;
@@ -207,6 +210,7 @@ implementation
 
       _includeDirect := false;
       _includeIndirect := false;
+      _includeLASSizeAdjustment := false;
 
       _isInDB := false;
       _added := false;
@@ -258,6 +262,7 @@ implementation
 
           _includeDirect := src._includeDirect;
           _includeIndirect := src._includeIndirect;
+          _includeLASSizeAdjustment := src._includeLASSizeAdjustment;
 
           _updated := src._updated;
         end
@@ -424,7 +429,6 @@ implementation
               dict['localAreaSpreadID'] := DATABASE_NULL_VALUE;
             end
           ;
-
 
           q := writeQuery(
             'inProductionTypePair',
@@ -658,6 +662,12 @@ implementation
       else
         result := _localArea.useLocalArea
       ;
+    end
+  ;
+
+  function TProductionTypePair.getIncludeLASSizeAdjustment(): boolean;
+    begin
+      result := _includeLASSizeAdjustment;
     end
   ;
   
@@ -911,6 +921,9 @@ implementation
         begin
           _airborne.importXml( model, sdew, errMsg );
           _airborne.thisModelIsUsed := true;
+          if( _airborne.includeLASSizeAdjustment ) then
+            _includeLASSizeAdjustment := true
+          ;
         end
       ;
 
@@ -918,6 +931,9 @@ implementation
         begin
           _localArea.importXml( model, sdew, errMsg );
           _localArea.thisModelIsUsed := true;
+          if( _airborne.includeLASSizeAdjustment ) then
+            _includeLASSizeAdjustment := true
+          ;
         end
       ;
       

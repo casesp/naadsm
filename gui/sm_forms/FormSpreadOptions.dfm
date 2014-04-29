@@ -1,6 +1,6 @@
 inherited FormSpreadOptions: TFormSpreadOptions
-  Left = 622
-  Top = 329
+  Left = 779
+  Top = 299
   Caption = 'Scenario parameters: Spread options'
   ClientHeight = 449
   ClientWidth = 623
@@ -37,7 +37,7 @@ inherited FormSpreadOptions: TFormSpreadOptions
     TabOrder = 2
     object grpSpreadOptions: TGroupBox
       Left = 96
-      Top = 16
+      Top = 8
       Width = 417
       Height = 57
       Caption = 
@@ -74,16 +74,16 @@ inherited FormSpreadOptions: TFormSpreadOptions
     end
     object gbxWindParams: TGroupBox
       Left = 96
-      Top = 80
+      Top = 128
       Width = 417
-      Height = 273
-      Caption = 'For airborne spread:'
-      TabOrder = 1
+      Height = 225
+      Caption = 'For airborne spread: '
+      TabOrder = 2
       inline fraWindDirection: TFrameWindDirection
-        Left = 48
-        Top = 24
-        Width = 289
-        Height = 225
+        Left = 16
+        Top = 16
+        Width = 385
+        Height = 201
         TabOrder = 0
         inherited rleWindStart: TREEdit
           OnExit = processWindDirText
@@ -91,6 +91,24 @@ inherited FormSpreadOptions: TFormSpreadOptions
         inherited rleWindEnd: TREEdit
           OnExit = processWindDirText
         end
+      end
+    end
+    object gbxSizeOptions: TGroupBox
+      Left = 96
+      Top = 72
+      Width = 417
+      Height = 49
+      Caption = 'For local-area and/or airborne spread: '
+      TabOrder = 1
+      object cbxSizeOptions: TCheckBox
+        Left = 8
+        Top = 20
+        Width = 401
+        Height = 17
+        Caption = 
+          'Allow probability of spread to be influenced by unit size and di' +
+          'sease prevalence'
+        TabOrder = 0
       end
     end
   end

@@ -74,36 +74,18 @@ current_version (void)
 
   #ifdef CHEYENNE
     ++i;
-    ret_val = "4.0.13-CHEYENNE";
+    ret_val = "4.1.0-CHEYENNE";
     #error "Double check all new modules for 'Cheyenne' rules."
   #endif
 
   #ifdef LARAMIE
     ++i;
-    ret_val = "4.0.13-LARAMIE";
+    ret_val = "4.1.0-LARAMIE";
     #error "Double check all new modules for 'Laramie' rules."
   #endif
 
-#ifdef RIVERTON
-  ++i;
-  ret_val = "4.0.13-RIVERTON";
-  #error "Double check all new tracing and testing modules for 'Riverton' rules."
-#endif
-
-#ifdef TORRINGTON
-  ++i;
-  ret_val = "4.0.13-TORRINGTON";
-  #error "Double check all new tracing and testing modules for 'Torrington' rules."
-#endif
-
-#ifdef WHEATLAND
-++i;
-ret_val = "4.0.13-WHEATLAND";
-#error "Double check all new tracing and testing modules for 'Wheatland' rules."
-#endif
-
   if( 0 == i ) {
-    ret_val = "4.0.13";
+    ret_val = "4.1.0";
   }
   else if( 1 == i ) {
     /* All is right with the world: do nothing. */
@@ -123,7 +105,7 @@ ret_val = "4.0.13-WHEATLAND";
 DLL_API char *
 specification_version (void)
 {
-  return "2.0.0";
+  return "2.1.0";
 }
 /*---------------------------------------------------------------------------*/
 

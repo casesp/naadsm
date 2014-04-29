@@ -37,41 +37,41 @@ interface
   // It may or may not need to be altered.
 	const
     MAJORVERSION = '4';
-    MINORVERSION = '0';
-    RELEASENUMBER = '13';
+    MINORVERSION = '1';
+    RELEASENUMBER = '0';
     MAJORVERSIONNUMBER = MAJORVERSION + '.' + MINORVERSION;
     MINORVERSIONNUMBER = RELEASENUMBER;
 
     // Add new major version numbers here as they are released.
     // Any change in the XML schema warrants a change in the minor version number (i.e., 3.2 to 3.3).
-    const ALL_MAJOR_VERSIONS: array[ 0..0 ] of string = (
-      '4.0'
+    const ALL_MAJOR_VERSIONS: array[ 0..1 ] of string = (
+      '4.0', '4.1'
     );
 
     {$IF Defined( CHEYENNE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '4.0.13-CHEYENNE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '4.1.0-CHEYENNE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Cheyenne';
       BRANCHNAMEPARENS = ' (Cheyenne) ';
-      SIM_DLL_NAME = 'cheyenne.dll';
+      SIM_DLL_NAME = 'cheyenne4.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Cheyenne';
     {$ELSEIF Defined( LARAMIE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '4.0.13-LARAMIE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '4.1.0-LARAMIE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Laramie';
       BRANCHNAMEPARENS = ' (Laramie) ';
-      SIM_DLL_NAME = 'laramie.dll';
+      SIM_DLL_NAME = 'laramie4.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Laramie';
     {$ELSE}
-      MIN_COMPATIBLE_DLL_VERSION = '4.0.13'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '4.1.0'; // Used to determine if the right version of the core model is present
       BRANCHNAME = '';
       BRANCHNAMEPARENS = ' ';
-      SIM_DLL_NAME = 'naadsm.dll';
+      SIM_DLL_NAME = 'naadsm4.dll';
       IS_EXPERIMENTAL = false;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER;
     {$IFEND}
 
-    BUILDNUMBER = '20130702';
+    BUILDNUMBER = '20130820';
 
     APPNAME = 'NAADSM';
     VERSIONNUMBER = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' Build ' + BUILDNUMBER;
@@ -79,25 +79,25 @@ interface
 
     // Used as the caption for the main form.
     {$IF Defined( DEBUG ) }
-  	  MASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-' + BUILDNUMBER;
+  	  MASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-' + BUILDNUMBER + ' BETA';
     {$ELSEIF Defined( NOSHOWVERSION ) }  // for making documentation screen captures when we want to hide the major version number
-       MASTERCAPTION = APPNAME;
+       MASTERCAPTION = APPNAME + ' BETA';
     {$ELSE}
-      MASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER;
+      MASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + ' BETA';
     {$IFEND} // main form caption options
 
     // Unused at the moment, but potentially useful
     {$IFDEF DEBUG}
-      SHORTMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-' + BUILDNUMBER;
+      SHORTMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-' + BUILDNUMBER + ' BETA';
     {$ELSE}
-      SHORTMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER;
+      SHORTMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + ' BETA';
     {$ENDIF}
 
     // Used as a caption for some dialog boxes
     {$IFDEF DEBUG}
-      SHORTERMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER;
+      SHORTERMASTERCAPTION = APPNAME + BRANCHNAMEPARENS + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' BETA';
     {$ELSE}
-      SHORTERMASTERCAPTION = SHORTMASTERCAPTION;
+      SHORTERMASTERCAPTION = SHORTMASTERCAPTION + ' BETA';
     {$ENDIF}
 
     // The application title that will appear on the app's taskbar button.

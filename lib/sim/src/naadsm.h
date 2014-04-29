@@ -233,18 +233,10 @@ HRD_zone_t;
 
 
 /* Function to start the simulation */
-#ifdef USE_SC_GUILIB
-DLL_API void
-run_sim_main (char *herd_file,
-              char *parameter_file,
-              double fixed_rng_value, int verbosity, int seed, char *production_type_file);
-#else
 DLL_API void
 run_sim_main (char *herd_file,
               char *parameter_file,
               double fixed_rng_value, int verbosity, int seed);
-#endif
-
 
 /* Functions for version tracking */
 /* ------------------------------ */

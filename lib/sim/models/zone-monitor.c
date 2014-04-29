@@ -295,24 +295,18 @@ handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
               RPT_reporting_set_real1 (local_data->max_area, zone->area, zone->name);
               RPT_reporting_set_integer1 (local_data->max_area_day, event->day, zone->name);
             }
-#ifdef USE_SC_GUILIB
-		      sc_record_zone_area( event->day, zone );
-#else		  
+
           if (NULL != naadsm_record_zone_area)     
-			     naadsm_record_zone_area (zone->level, zone->area);
-#endif		  
+			     naadsm_record_zone_area (zone->level, zone->area);		  
         }
 
       /* Don't forget to report the smallest zone to the GUI! */
       zone = ZON_zone_list_get (zones, 0);		  
-#ifdef USE_SC_GUILIB
-      sc_record_zone_area( event->day, zone );
-#else		  
+
       if (NULL != naadsm_record_zone_area)
         {  
           naadsm_record_zone_area (zone->level, zone->area);
-        };
-#endif	  
+        };  
     }
 
   if (num_units_due

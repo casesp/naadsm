@@ -76,13 +76,12 @@ object FormAboutExperimental: TFormAboutExperimental
         object lblExplanation: TLabel
           Left = 16
           Top = 96
-          Width = 451
-          Height = 72
+          Width = 465
+          Height = 90
           Caption = 
-            'This is an experimental version of the North American Animal Dis' +
-            'ease Spread Model.  This version deviates from the published con' +
-            'ceptual specification in ways that may significantly affect the ' +
-            'simulation outcome. '
+            'This is an experimental version of the NAADSM.  This version dev' +
+            'iates from the published conceptual specification in ways that m' +
+            'ay significantly affect simulation outcomes. '
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
           Font.Height = -16

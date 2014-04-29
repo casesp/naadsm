@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
                                        
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -67,6 +67,7 @@ interface
       _includeContactSpread: boolean;
       _includeAirborneSpread: boolean;
       _includeLocalAreaSpread: boolean;
+      _includeLASSizeAdjustment: boolean;
 
       _useWithinHerdPrevalence: boolean;
 
@@ -118,6 +119,7 @@ interface
       procedure setIncludeContactSpread( val: boolean );
       procedure setIncludeAirborneSpread( val: boolean );
       procedure setIncludeLocalAreaSpread( val: boolean );
+      procedure setIncludeLASSizeAdjustment( val: boolean );
       procedure setUseWithinHerdPrevalence( val: boolean );
 
       procedure setWindDirectionStart( val: integer );
@@ -138,6 +140,7 @@ interface
       function getIncludeContactSpread(): boolean;
       function getIncludeAirborneSpread(): boolean;
       function getIncludeLocalAreaSpread(): boolean;
+      function getIncludeLASSizeAdjustment(): boolean;
       function getUseWithinHerdPrevalence(): boolean;
       function getIncludeVaccination(): boolean;
 
@@ -267,6 +270,7 @@ interface
       property includeContactSpreadGlobal: boolean read getIncludeContactSpread  write setIncludeContactSpread;
       property includeAirborneSpreadGlobal: boolean read getIncludeAirborneSpread write setIncludeAirborneSpread;
       property includeLocalAreaSpreadGlobal: boolean read getIncludeLocalAreaSpread write setIncludeLocalAreaSpread;
+      property includeLASSizeAdjustmentGlobal: boolean read getIncludeLASSizeAdjustment write setIncludeLASSizeAdjustment;
       property useWithinHerdPrevalence: boolean read getUseWithinHerdPrevalence write setUseWithinHerdPrevalence;
 
       property windDirectionStart: integer read getWindDirectionStart write setWindDirectionStart;
@@ -316,6 +320,7 @@ implementation
       _includeContactSpread := false;
       _includeAirborneSpread := false;
       _includeLocalAreaSpread := false;
+      _includeLASSizeAdjustment := false;
       _useWithinHerdPrevalence := false;
 
       _windDirectionStart := 0;
@@ -471,6 +476,9 @@ implementation
           if( ptp.includeLocalArea ) then
             self.includeLocalAreaSpreadGlobal := true
           ;
+          if( ptp.includeLASSizeAdjustment ) then
+            self.includeLASSizeAdjustmentGlobal := true
+          ;
         end
       ;
 
@@ -600,7 +608,7 @@ implementation
       // Select values from inGeneral
       //-----------------------------
       q := 'SELECT'
-        + ' `includeContactSpread`, `includeAirborneSpread`, `includeLocalAreaSpread`,'
+        + ' `includeContactSpread`, `includeAirborneSpread`, `includeLocalAreaSpread`, `useLASSizeAdjustment`,'
         + ' `windDirectionStart`, `windDirectionEnd`,'
         + ' `useWithinHerdPrevalence`,'
         + ' `costTrackDestruction`, `costTrackVaccination`, `costTrackZoneSurveillance`,'
@@ -624,6 +632,10 @@ implementation
 
       if( null <> row.field('includeLocalAreaSpread') ) then
         _includeLocalAreaSpread := boolean( row.field('includeLocalAreaSpread') )
+      ;
+
+      if( null <> row.field('useLASSizeAdjustment') ) then
+        _includeLASSizeAdjustment := boolean( row.field('useLASSizeAdjustment') )
       ;
 
       if( null <> row.field('useWithinHerdPrevalence') ) then
@@ -729,6 +741,7 @@ implementation
       _destrStartDays := src._destrStartDays;
       _includeAirborneSpread := src._includeAirborneSpread;
       _includeLocalAreaSpread := src._includeLocalAreaSpread;
+      _includeLASSizeAdjustment := src._includeLASSizeAdjustment;
       _includeContactSpread := src._includeContactSpread;
 
       _costTrackDestruction := src._costTrackDestruction;
@@ -805,6 +818,7 @@ implementation
       pairedVals['includeContactSpread'] := _db.sqlBool( _includeContactSpread );
       pairedVals['includeAirborneSpread'] := _db.sqlBool( _includeAirborneSpread );
       pairedVals['includeLocalAreaSpread'] := _db.sqlBool( _includeLocalAreaSpread );
+      pairedVals['useLASSizeAdjustment'] := _db.sqlBool( _includeLASSizeAdjustment );
       pairedVals['useWithinHerdPrevalence'] := _db.sqlBool( _useWithinHerdPrevalence );
 
       pairedVals['windDirectionStart'] := intToStr( _windDirectionStart );
@@ -1010,6 +1024,7 @@ function TSMSimulationInput.findDestructionParams( typeDescr: string ): TDestruc
       dbcout( 'windDirectionStart: ' + intToStr( windDirectionStart ), true );
       dbcout( 'windDirectionEnd: ' + intToStr( windDirectionEnd ), true );
       dbcout( 'includeLocalAreaSpread: ' + usBoolToText( includeLocalAreaSpreadGlobal ), true );
+      dbcout( 'includeLASSizeAdjustment: ' + usBoolToText( includeLASSizeAdjustmentGlobal ), true );
       dbcout( 'includeDetection: ' + usBoolToText( includeDetectionGlobal ), true );
       dbcout( 'includeTracing: ' + usBoolToText( includeTracingGlobal ), true );
       dbcout( 'includeTracingHerdExam: ' + usBoolToText( includeTracingHerdExamGlobal ), true );
@@ -1267,6 +1282,7 @@ function TSMSimulationInput.findDestructionParams( typeDescr: string ): TDestruc
   procedure TSMSimulationInput.setIncludeContactSpread( val: boolean ); begin _includeContactSpread := val; _updated := true; end;
   procedure TSMSimulationInput.setIncludeAirborneSpread( val: boolean ); begin _includeAirborneSpread := val; _updated := true; end;
   procedure TSMSimulationInput.setIncludeLocalAreaSpread( val: boolean ); begin _includeLocalAreaSpread := val; _updated := true; end;
+  procedure TSMSimulationInput.setIncludeLASSizeAdjustment( val: boolean ); begin _includeLASSizeAdjustment := val; _updated := true; end;
   procedure TSMSimulationInput.setUseWithinHerdPrevalence( val: boolean ); begin _useWithinHerdPrevalence := val; _updated := true; end;
 
   procedure TSMSimulationInput.setWindDirectionStart( val: integer ); begin _windDirectionStart := val; _updated := true; end;
@@ -1366,6 +1382,7 @@ function TSMSimulationInput.findDestructionParams( typeDescr: string ): TDestruc
   function TSMSimulationInput.getIncludeContactSpread(): boolean; begin Result := _includeContactSpread; end;
   function TSMSimulationInput.getIncludeAirborneSpread(): boolean; begin Result := _includeAirborneSpread; end;
   function TSMSimulationInput.getIncludeLocalAreaSpread(): boolean; begin Result := _includeLocalAreaSpread; end;
+  function TSMSimulationInput.getIncludeLASSizeAdjustment(): boolean; begin Result := _includeLASSizeAdjustment; end;  
   function TSMSimulationInput.getUseWithinHerdPrevalence(): boolean; begin result := _useWithinHerdPrevalence; end;
 
   function TSMSimulationInput.getWindDirectionStart(): integer; begin result := _windDirectionStart; end;

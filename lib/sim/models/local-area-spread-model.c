@@ -144,6 +144,7 @@ typedef struct
 {
   double k;
   double max_spread;
+  gboolean use_herd_size_adjustments;
 }
 param_block_t;
 
@@ -303,18 +304,29 @@ check_and_infect (int id, gpointer arg)
     goto end;
 
   distance = GIS_distance (herd1->x, herd1->y, herd2->x, herd2->y);
+
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "  P = 1.0 - exp( -1.0 * %g * ( ( %d * %g ) * %d ) / %g )",
-         param_block->k, herd1->size, herd1->prevalence_infectious, herd2->size, distance);
+  if( TRUE == param_block->use_herd_size_adjustments ) {
+    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+           "  P = 1.0 - exp( -1.0 * %g * ( ( %d * %g ) * %d ) / %g )",
+           param_block->k, herd1->size, herd1->prevalence_infectious, herd2->size, distance);
+  } else {
+    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+           "  P = 1.0 - exp( -1.0 * %g / %g )",
+           param_block->k, distance);
+  }
 #endif
+
   rng = callback_data->rng;
   if (fabs(distance) < EPSILON) /* avoid divide-by-zero */
     P = 1.0;
-  else
-    P =
-      1.0 - 
-      exp(-param_block->k * (((herd1->prevalence_infectious * herd1->size) * herd2->size)) / distance);
+  else {
+    if( TRUE == param_block->use_herd_size_adjustments ) {
+      P = 1.0 - exp(-param_block->k * (((herd1->prevalence_infectious * herd1->size) * herd2->size)) / distance);
+    } else {
+      P = 1.0 - exp(-param_block->k / distance);
+    }
+  }
   r = RAN_num (rng);
 
   exposure_is_adequate = (r < P); 
@@ -713,20 +725,27 @@ set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
               }
 
             e = scew_element_by_name (params, "herd-size-infectious");
-            herd_size_infectious = PAR_get_unitless (e, &success);
-            if (success == FALSE)
-              {
-                g_warning ("setting infectious herd size to 0");
-                herd_size_infectious = 0;
-              }
+            if( NULL != e ) {
+              herd_size_infectious = PAR_get_unitless (e, &success);
+              if (success == FALSE)
+                {
+                  g_warning ("setting infectious herd size to 0");
+                  herd_size_infectious = 0;
+                }
 
-            e = scew_element_by_name (params, "herd-size-susceptible");
-            herd_size_susceptible = PAR_get_unitless (e, &success);
-            if (success == FALSE)
-              {
-                g_warning ("setting susceptible herd size to 0");
-                herd_size_susceptible = 0;
-              }
+              e = scew_element_by_name (params, "herd-size-susceptible");
+              herd_size_susceptible = PAR_get_unitless (e, &success);
+              if (success == FALSE)
+                {
+                  g_warning ("setting susceptible herd size to 0");
+                  herd_size_susceptible = 0;
+                }
+            } else {
+              // In NAADSM 4.1, it is allowed for both of these values to be 0.
+              // In this case, the size adjustment factors are not used.
+              herd_size_infectious = 0;
+              herd_size_susceptible = 0;
+            }
 
             e = scew_element_by_name (params, "herd-distance");
             herd_distance = PAR_get_length (e, &success);
@@ -753,9 +772,13 @@ set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
               }
               
             /* Calculate k. */
-            param_block->k =
-              -(log (1.0 - prob) * herd_distance) /
-               ((double) (herd_size_infectious * herd_size_susceptible));
+            if( ( 0 == herd_size_infectious ) && ( 0 == herd_size_susceptible)  ) {
+              param_block->k = -(log (1.0 - prob) * herd_distance);
+              param_block->use_herd_size_adjustments = FALSE;
+            } else {
+              param_block->k = -(log (1.0 - prob) * herd_distance) / ((double) (herd_size_infectious * herd_size_susceptible));
+              param_block->use_herd_size_adjustments = TRUE;
+            }
             
             /* The exponential falloff curve never actually gets to 0, but we
              * set the maximum distance as the distance at which the probability

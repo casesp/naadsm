@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2012 Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -116,7 +116,7 @@ implementation
           Caption := tr( 'NAADSM splash screen' );
           lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER;
           lblAdditionalInfo.Caption := tr( 'Please see ''About NAADSM'' for contact and support information.' );
-          lblCopyright.Caption := tr( 'Copyright © 2003 - 2012 Colorado State University and University of Guelph' );
+          lblCopyright.Caption := tr( 'Copyright © 2003 - 2013 NAADSM Development Team' );
         end
       ;
 
@@ -129,7 +129,7 @@ implementation
 
   procedure TFormSplash.translateUIManual();
     begin
-      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'Colorado State University and University of Guelph' );
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'NAADSM Development Team' );
       lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
     end
   ;

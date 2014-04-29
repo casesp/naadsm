@@ -49,11 +49,6 @@
 #include <glib.h>
 #include <proj_api.h>
 
-#ifdef USE_SC_GUILIB
-#  include <production_type_data.h>
-#  include <zone.h>
-#endif
-
 
 /**
  * Production types.
@@ -114,6 +109,7 @@ typedef struct
   double latitude, longitude;
   double x;                     /**< x-coordinate on a km grid */
   double y;                     /**< y-coordinate on a km grid */
+  gboolean may_be_initially_infected;
   HRD_status_t status;
   HRD_status_t initial_status;
   int days_in_initial_status;
@@ -147,22 +143,7 @@ typedef struct
   gpointer infect_change_request;
   gpointer vaccinate_change_request;
   gboolean destroy_change_request;
-  gboolean quarantine_change_request;
-
-#ifdef USE_SC_GUILIB  
-  /*  This field is used on the NAADSM-SC version if the user wants to 
-      write out the iteration summaries, as would be found in the NAADSM-PC
-      software.  This hooks into some of the "naadsm_*" functions in order to set this
-      data.  This allows for easy import of SC data into the PC database.
-  */
-  GPtrArray *production_types;  /**< Each item is a HRD_production_type_data_t structure */
-  gboolean ever_infected;
-  int day_first_infected;
-  ZON_zone_t *zone;
-  guint cum_infected, cum_detected, cum_destroyed, cum_vaccinated;
-  HRD_apparent_status_t apparent_status;  
-  guint apparent_status_day;
-#endif    
+  gboolean quarantine_change_request;   
 }
 HRD_herd_t;
 
@@ -173,16 +154,6 @@ typedef struct
 {
   GArray *list; /**< Each item is a HRD_herd_t structure. */
   GPtrArray *production_type_names; /**< Each pointer is to a regular C string. */
-  
-#ifdef USE_SC_GUILIB  
-  /*  This field is used on the NAADSM-SC version if the user wants to 
-      write out the iteration summaries, as would be found in the NAADSM-PC
-      software.  This hooks into some of the "naadsm_*" functions in order to set this
-      data.  This allows for easy import of SC data into the PC database.
-  */
-  GPtrArray *production_types;  /**< Each item is a HRD_production_type_data_t structure */
-#endif   
-
   spatial_search_t *spatial_index;
   projPJ projection; /**< The projection used to convert between the latitude,
     longitude and x,y locations of the herds.  Note that the projection object
@@ -196,13 +167,10 @@ HRD_herd_list_t;
 
 HRD_herd_list_t *HRD_new_herd_list (void);
 
-#ifdef USE_SC_GUILIB 
-  HRD_herd_list_t *HRD_load_herd_list ( const char *filename, GPtrArray *production_types );
-  HRD_herd_list_t *HRD_load_herd_list_from_stream (FILE *stream, const char *filename, GPtrArray *production_types);  
-#else
-  HRD_herd_list_t *HRD_load_herd_list (const char *filename);
-  HRD_herd_list_t *HRD_load_herd_list_from_stream (FILE *stream, const char *filename);
-#endif
+
+HRD_herd_list_t *HRD_load_herd_list (const char *filename);
+HRD_herd_list_t *HRD_load_herd_list_from_stream (FILE *stream, const char *filename);
+
 
 
 void HRD_free_herd_list (HRD_herd_list_t *);

@@ -13,77 +13,93 @@ object FrameAirborneOrLocalAreaSpread: TFrameAirborneOrLocalAreaSpread
     BevelOuter = bvNone
     TabOrder = 0
     Visible = False
-    object lblNInfectiousInSource: TLabel
-      Left = 24
-      Top = 8
-      Width = 272
-      Height = 26
-      Caption = 
-        'Number of infectious (subclinical and clinical) animals in a sou' +
-        'rce unit:'
-      WordWrap = True
-    end
-    object lblNSusceptibleInRecipient: TLabel
-      Left = 24
-      Top = 48
-      Width = 229
-      Height = 13
-      Caption = 'Number of susceptible animals in a recipient unit:'
-      WordWrap = True
-    end
-    object lblDistBetwUnits: TLabel
-      Left = 24
-      Top = 88
-      Width = 197
-      Height = 13
-      Caption = 'Distance (in km) between these two units:'
-      WordWrap = True
-    end
-    object lblProbSpread: TLabel
-      Left = 24
-      Top = 128
-      Width = 285
-      Height = 26
-      Caption = 
-        'Daily probability of xyz spread of disease between these two uni' +
-        'ts:'
-      WordWrap = True
-    end
-    object reNInfectiousInSource: TREEdit
-      Left = 344
-      Top = 8
-      Width = 57
-      Height = 21
-      EditAlign = eaLeft
+    object pnlSizeParams: TPanel
+      Left = 0
+      Top = 0
+      Width = 441
+      Height = 73
+      Align = alTop
       TabOrder = 0
-      OnExit = processText
+      object lblNInfectiousInSource: TLabel
+        Left = 24
+        Top = 8
+        Width = 272
+        Height = 26
+        Caption = 
+          'Number of infectious (subclinical and clinical) animals in a sou' +
+          'rce unit:'
+        WordWrap = True
+      end
+      object lblNSusceptibleInRecipient: TLabel
+        Left = 24
+        Top = 48
+        Width = 229
+        Height = 13
+        Caption = 'Number of susceptible animals in a recipient unit:'
+        WordWrap = True
+      end
+      object reNInfectiousInSource: TREEdit
+        Left = 344
+        Top = 8
+        Width = 57
+        Height = 21
+        EditAlign = eaLeft
+        TabOrder = 0
+        OnExit = processText
+      end
+      object reNSusceptibleInRecipient: TREEdit
+        Left = 344
+        Top = 48
+        Width = 57
+        Height = 21
+        EditAlign = eaLeft
+        TabOrder = 1
+        OnExit = processText
+      end
     end
-    object reNSusceptibleInRecipient: TREEdit
-      Left = 344
-      Top = 48
-      Width = 57
-      Height = 21
-      EditAlign = eaLeft
+    object pnlOtherParams: TPanel
+      Left = 0
+      Top = 73
+      Width = 441
+      Height = 88
+      Align = alTop
       TabOrder = 1
-      OnExit = processText
-    end
-    object reDistBetwUnits: TREEdit
-      Left = 344
-      Top = 88
-      Width = 57
-      Height = 21
-      EditAlign = eaLeft
-      TabOrder = 2
-      OnExit = processText
-    end
-    object reProbSpread: TREEdit
-      Left = 320
-      Top = 128
-      Width = 81
-      Height = 21
-      EditAlign = eaLeft
-      TabOrder = 3
-      OnExit = processText
+      object lblDistBetwUnits: TLabel
+        Left = 24
+        Top = 16
+        Width = 197
+        Height = 13
+        Caption = 'Distance (in km) between these two units:'
+        WordWrap = True
+      end
+      object lblProbSpread: TLabel
+        Left = 24
+        Top = 55
+        Width = 285
+        Height = 26
+        Caption = 
+          'Daily probability of xyz spread of disease between these two uni' +
+          'ts:'
+        WordWrap = True
+      end
+      object reDistBetwUnits: TREEdit
+        Left = 344
+        Top = 16
+        Width = 57
+        Height = 21
+        EditAlign = eaLeft
+        TabOrder = 0
+        OnExit = processText
+      end
+      object reProbSpread: TREEdit
+        Left = 320
+        Top = 60
+        Width = 81
+        Height = 21
+        EditAlign = eaLeft
+        TabOrder = 1
+        OnExit = processText
+      end
     end
   end
   object pnlUseAirborneSpread: TPanel

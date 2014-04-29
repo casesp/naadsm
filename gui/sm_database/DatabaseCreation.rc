@@ -58,4 +58,4 @@ DBSchema4_0_6           TEXT    DBSchema4_0_6_GOLD.DDL
 DBSchema4_0_7           TEXT    DBSchema4_0_7_GOLD.DDL
 DBSchema4_0_8           TEXT    DBSchema4_0_8_GOLD.DDL
 DBSchema4_0_9           TEXT    DBSchema4_0_9_GOLD.DDL
-
+DBSchema4_1_0           TEXT    DBSchema4_1_0_GOLD.DDL
