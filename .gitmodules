@@ -1,0 +1,9 @@
+[submodule "gui/libaphi_delphi_gui"]
+	path = gui/libaphi_delphi_gui
+	url = https://github.com/naadsm/libaphi_delphi_gui
+[submodule "gui/general_purpose_gui"]
+	path = gui/general_purpose_gui
+	url = https://github.com/naadsm/general_purpose_gui
+[submodule "gui/remoteDB"]
+	path = gui/remoteDB
+	url = https://github.com/naadsm/remoteDB
