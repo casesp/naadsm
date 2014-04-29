@@ -56,10 +56,6 @@ EVT_event_type_t events_listened_for[] = { EVT_NewDay, EVT_CommitmentToDestroy,
 
 
 
-extern const char *RPT_frequency_name[];
-
-
-
 /** Specialized information for this model. */
 typedef struct
 {
@@ -113,7 +109,6 @@ handle_new_day_event (struct naadsm_model_t_ *self)
                              RPT_reporting_get_integer (local_data->nanimals_awaiting_destruction, NULL),
                              NULL);
 
-end:
 #if DEBUG
   g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
 #endif
@@ -302,7 +297,6 @@ void
 reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  int i;
 
 #if DEBUG
   g_debug ("----- ENTER reset (%s)", MODEL_NAME);

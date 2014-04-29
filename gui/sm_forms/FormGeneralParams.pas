@@ -4,13 +4,13 @@ unit FormGeneralParams;
 FormGeneralParams.pas/dfm
 -------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2011-09-30 17:15:57 $ $Author: areeves $
-Version: $Revision: 1.28.4.1 $
+Last revision: $Date: 2013-06-27 19:11:26 $ $Author: areeves $
+Version: $Revision: 1.28.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

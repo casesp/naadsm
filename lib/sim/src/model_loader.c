@@ -80,8 +80,6 @@
 
 
 
-extern const char *RPT_frequency_name[];
-
 struct model_load_info_t
 {
   const char *model_name;
@@ -136,9 +134,10 @@ struct model_load_info_t model_list[] = {
 int model_list_count = (sizeof (model_list) / sizeof (struct model_load_info_t));
 
 int
-model_name_cmp (const struct model_load_info_t *c1, const struct model_load_info_t *c2)
+model_name_cmp (const void *c1, const void *c2)
 {
-  return strcmp (c1->model_name, c2->model_name);
+  return strcmp (((const struct model_load_info_t *)c1)->model_name,
+                 ((const struct model_load_info_t *)c2)->model_name);
 }
 
 
@@ -221,8 +220,6 @@ get_num_runs (scew_element * e)
  *   and longitude and x and y.
  * @param zones a list of zones.  This can be empty at first, as it may be
  *   populated while reading the parameters.
- * @param model_dir absolute or relative path to the model object files.  If
- *   NULL, DEFAULT_MODEL_DIR will be used.
  * @param ndays a location in which to store the number of days the simulation
  *   lasts.
  * @param nruns a location in which to store the number of Monte Carlo runs of
@@ -231,10 +228,13 @@ get_num_runs (scew_element * e)
  *   pointers to models.
  * @param outputs a list of output variables to report.  Their names should
  *   correspond to output elements in the parameter file.
+ * @param _exit_conditions a location in which to store a set of flags
+ *   (combined with bitwise-or) specifying when the simulation should end
+ *   (e.g., at the first detection, or when all disease is gone).
  * @return the number of models loaded.
  */
 int
-naadsm_load_models (char *parameter_file, HRD_herd_list_t * herds,
+naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
                     projPJ projection, ZON_zone_list_t * zones,
                     unsigned int *ndays, unsigned int *nruns,
                     naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions )
@@ -392,13 +392,13 @@ naadsm_load_models (char *parameter_file, HRD_herd_list_t * herds,
           (*models)[nloaded++] = model;
 
           if (singleton)
-            g_hash_table_insert (singletons, model_name, model);
+            g_hash_table_insert (singletons, (gpointer) model_name, (gpointer) model);
 
         } /* end of case where a new model instance is created */
 
 #if DEBUG
       s = model->to_string (model);
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s);
+      g_debug ("%s", s);
       g_free (s);
 #endif
     }                           /* end of loop over models */

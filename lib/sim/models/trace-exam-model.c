@@ -33,7 +33,6 @@
 #define local_printf trace_exam_model_printf
 #define local_fprintf trace_exam_model_fprintf
 #define local_free trace_exam_model_free
-#define handle_before_any_simulations_event trace_exam_model_handle_before_any_simulations_event
 #define handle_detection_event trace_exam_model_handle_detection_event
 #define handle_trace_result_event trace_exam_model_handle_trace_result_event
 
@@ -61,8 +60,8 @@
 
 
 
-#define NEVENTS_LISTENED_FOR 3
-EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations,
+#define NEVENTS_LISTENED_FOR 2
+EVT_event_type_t events_listened_for[] = {
   EVT_Detection, EVT_TraceResult };
 
 
@@ -95,41 +94,6 @@ typedef struct
     (detection_exam_day_t *). */
 }
 local_data_t;
-
-
-
-/**
- * Before any simulations, this module declares all the reasons for which it
- * may request an exam.  This is done so that other modules can initialize
- * counters.
- *
- * @param queue for any new events the module creates.
- */
-void
-handle_before_any_simulations_event (EVT_event_queue_t * queue)
-{
-  GPtrArray *reasons;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-
-  reasons = g_ptr_array_sized_new (4);
-  g_ptr_array_add (reasons, "DirFwd");
-  g_ptr_array_add (reasons, "DirBack");
-  g_ptr_array_add (reasons, "IndFwd");
-  g_ptr_array_add (reasons, "IndBack");
-  EVT_event_enqueue (queue, EVT_new_declaration_of_exam_reasons_event (reasons));
-
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
-   * the declaration event after all interested modules have processed the
-   * event. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-  return;
-}
 
 
 
@@ -169,7 +133,6 @@ handle_detection_event (struct naadsm_model_t_ *self,
    	  details->day_detected = event->day;
     }
 
-end:
 #if DEBUG
   g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
@@ -192,7 +155,7 @@ handle_trace_result_event (struct naadsm_model_t_ *self,
   local_data_t *local_data;
   HRD_herd_t *herd;
   detection_exam_day_t *details;
-  char *reason;
+  NAADSM_control_reason reason;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_trace_result_event (%s)", MODEL_NAME);
@@ -227,16 +190,16 @@ handle_trace_result_event (struct naadsm_model_t_ *self,
   if (event->contact_type == NAADSM_DirectContact)
     {
       if (event->direction == NAADSM_TraceForwardOrOut)
-        reason = "DirFwd";
+        reason = NAADSM_ControlTraceForwardDirect;
       else
-        reason = "DirBack";
+        reason = NAADSM_ControlTraceBackDirect;
     }
   else
     {
       if (event->direction == NAADSM_TraceForwardOrOut)
-        reason = "IndFwd";
+        reason = NAADSM_ControlTraceForwardIndirect;
       else
-        reason = "IndBack";
+        reason = NAADSM_ControlTraceBackIndirect;
     }
 
   EVT_event_enqueue (queue, EVT_new_exam_event (herd, event->day, reason,
@@ -287,9 +250,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 
   switch (event->type)
     {
-    case EVT_BeforeAnySimulations:
-      handle_before_any_simulations_event (queue);
-      break;
     case EVT_Detection:
       handle_detection_event (self, &(event->u.detection));
       break;

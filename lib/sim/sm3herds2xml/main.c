@@ -30,8 +30,6 @@ extern FILE *yyin;              /* defined in scanner */
 int yyparse (void);             /* defined in parser */
 extern HRD_herd_list_t *herds;  /* defined in parser */
 
-extern const char *HRD_status_name[];
-
 
 
 /**

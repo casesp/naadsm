@@ -92,8 +92,6 @@
 
 double round (double x);
 
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "contact-recorder-model"
 
@@ -742,7 +740,7 @@ is_singleton (void)
  * Adds a set of parameters to the model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   scew_element const *e;

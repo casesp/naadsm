@@ -345,6 +345,7 @@ typedef enum
   PDF_Inverse_Gaussian
 }
 PDF_dist_type_t;
+extern const char *PDF_dist_type_name[];
 
 
 

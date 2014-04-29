@@ -4,13 +4,13 @@ unit FrameZoneProdTypeParams;
 FrameZoneProdTypeParams.pas/dfm
 -------------------------------
 Begin: 2007/01/08
-Last revision: $Date: 2009-07-13 21:58:50 $ $Author: areeves $
-Version number: $Revision: 1.7 $
+Last revision: $Date: 2013-06-27 19:11:33 $ $Author: areeves $
+Version number: $Revision: 1.7.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

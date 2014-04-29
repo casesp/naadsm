@@ -4,13 +4,13 @@ unit Zone;
 Zone.pas
 --------
 Begin: 2006/12/19
-Last revision: $Date: 2011-08-26 17:12:16 $ $Author: areeves $
-Version number: $Revision: 1.25.4.3 $
+Last revision: $Date: 2013-06-27 19:11:36 $ $Author: areeves $
+Version number: $Revision: 1.25.4.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

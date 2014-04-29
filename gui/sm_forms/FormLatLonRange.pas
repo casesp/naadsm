@@ -4,13 +4,13 @@ unit FormLatLonRange;
 FormLatLonRange.pas/dfm
 -----------------------
 Begin: 2006/02/27
-Last revision: $Date: 2009-07-13 21:58:50 $ $Author: areeves $
-Version number: $Revision: 1.10 $
+Last revision: $Date: 2013-06-27 19:11:26 $ $Author: areeves $
+Version number: $Revision: 1.10.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

@@ -1198,7 +1198,7 @@ PDF_gaussian_dist_to_string (PDF_gaussian_dist_t * dist)
  * @image html inverse_gaussian.png
  *
  * @param mu the mean.
- * @param lambda the mu^3/variance.
+ * @param lambda the shape parameter, equal to mu^3/variance.
  * @return a pointer to a newly-created PDF_dist_t structure.
  */
 PDF_dist_t *
@@ -1311,6 +1311,9 @@ inverse_gaussian_inverse_cdf (double area, PDF_inverse_gaussian_dist_t * dist)
   int iter;
   double x_lo, x_hi, x, a;
   gboolean hibound_found;
+
+  /* Eliminate compiler warnings about uninitialized values */
+  x_hi = NAN;
 
   if (area == 0)
     return 0;
@@ -2357,6 +2360,9 @@ pearson5_inverse_cdf (double area, PDF_pearson5_dist_t * dist)
   double x_lo, x_hi, x, a;
   gboolean hibound_found;
 
+  /* Eliminate compiler warnings about uninitialized values */
+  x_hi = NAN;
+
   if (area == 0)
     return 0;
 
@@ -2952,6 +2958,9 @@ negative_binomial_inverse_cdf (double area, PDF_negative_binomial_dist_t * dist)
   double x_lo, x_hi, x, a, previous_x;
   gboolean hibound_found;
 
+  /* Eliminate compiler warnings about uninitialized values */
+  x_hi = NAN;
+
   if (area == 0)
     return 0;
 
@@ -3155,10 +3164,12 @@ double
 bernoulli_inverse_cdf (double area, PDF_bernoulli_dist_t * dist)
 {
   int iter;
-  unsigned int n;
   double p;
   double x_lo, x_hi, x, a, previous_x;
   gboolean hibound_found;
+
+  /* Eliminate compiler warnings about uninitialized values */
+  x_hi = NAN;
 
   if (area == 0)
     return 0;
@@ -3288,6 +3299,9 @@ binomial_inverse_cdf (double area, PDF_binomial_dist_t * dist)
   double p;
   double x_lo, x_hi, x, a, previous_x;
   gboolean hibound_found;
+
+  /* Eliminate compiler warnings about uninitialized values */
+  x_hi = NAN;
 
   if (area == 0)
     return 0;
@@ -3588,9 +3602,9 @@ hypergeometric_inverse_cdf (double area, PDF_hypergeometric_dist_t * dist)
  * variate is an array which the caller will need to g_free when it is
  * no longer needed.
  *
- * @param m, array of class counts
- * @param c, number of classes
- * @param t, number to draw
+ * @param m array of class counts
+ * @param c number of classes
+ * @param t number to draw
  * @param rng a random number generator.
  */
 unsigned int * ran_multivariate_hypergeometric (unsigned int m[],

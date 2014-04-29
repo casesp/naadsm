@@ -51,7 +51,7 @@ main (int argc, char *argv[])
   size_t bufsize = 0;
   ssize_t len;
   GString *cmd = NULL, *filename = NULL;
-  FILE *tmp_file;
+  gint tmp_file;
   char *tmp_filename;
   GError *error;
 
@@ -78,7 +78,7 @@ main (int argc, char *argv[])
           buf[len - 1] = '\0';
 
           /* Run the simulator. */
-          g_string_printf (cmd, "test/mininaadsm-fixed-rng -V 0 --model-dir=.. -h %s \> %s",
+          g_string_printf (cmd, "test/mininaadsm-fixed-rng -V 0 --model-dir=.. -h %s > %s",
                            &buf[10], tmp_filename);
           system (cmd->str);
 

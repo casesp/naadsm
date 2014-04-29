@@ -59,6 +59,8 @@
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 HRD_herd_list_t * herds;
 gboolean first_exposure_fields = TRUE;
 int ntracked_exposures;
@@ -105,13 +107,13 @@ exposure_fields_list:
        * So here in the parser we take a little care to see that the fields are
        * numbered in order starting at 1. */
       if ($1+1 != $3)
-        yyerror ("Field names are out of order", 1);
+        yyerror ("Field names are out of order");
       $$ = $3;
     }
   | exposure_fields
     {
       if (first_exposure_fields && ($1 != 1))
-        yyerror ("Field names are out of order", 1);
+        yyerror ("Field names are out of order");
       first_exposure_fields = FALSE;
       $$ = $1;
     }
@@ -123,7 +125,7 @@ exposure_fields :
       /* Exposure event fields come in threes (e.g., ExposedHN1, HowExposed1,
        * ExposedDays1). */
       if (!($1 == $3 && $3 == $5))
-        yyerror ("Field names are out of order", 1);
+        yyerror ("Field names are out of order");
       $$ = $1;
     }
   ;
@@ -177,7 +179,7 @@ herd:
       iter = $13;
       for (i = 0; i < ntracked_exposures; i++)
 	{
-	  HRD_id_t exposing_herd;
+	  int exposing_herd;
 	  unsigned short int day;
 
 	  exposing_herd = GPOINTER_TO_INT (iter->data);
@@ -223,10 +225,9 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   fprintf (stderr, "Error in herd snapshot file (line %d): %s:\n%s\n", yylineno, s, linebuf);
   fprintf (stderr, "%*s\n", 1+tokenpos, "^");
-  if (fatal) exit (EXIT_FAILURE);
   return 0;
 }

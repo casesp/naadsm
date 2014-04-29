@@ -103,7 +103,7 @@ object FormSplashExperimental: TFormSplashExperimental
           Left = 1
           Top = 102
           Width = 518
-          Height = 72
+          Height = 54
           Align = alTop
           Caption = 
             'This is an experimental version of the North American Animal Dis' +
@@ -120,7 +120,7 @@ object FormSplashExperimental: TFormSplashExperimental
         end
         object lblAdditionalInfo: TLabel
           Left = 1
-          Top = 183
+          Top = 165
           Width = 518
           Height = 14
           Align = alTop
@@ -150,7 +150,7 @@ object FormSplashExperimental: TFormSplashExperimental
         end
         object pnlSpacer3: TPanel
           Left = 1
-          Top = 174
+          Top = 156
           Width = 518
           Height = 9
           Align = alTop

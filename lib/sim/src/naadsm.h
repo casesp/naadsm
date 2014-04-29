@@ -87,8 +87,10 @@ typedef enum {
 typedef enum {
   NAADSM_DetectionReasonUnspecified,
   NAADSM_DetectionClinicalSigns,
-  NAADSM_DetectionDiagnosticTest
+  NAADSM_DetectionDiagnosticTest,
+  NAADSM_NDETECTION_REASONS
 } NAADSM_detection_reason;
+extern const char *NAADSM_detection_reason_abbrev[];
 
 
 /* Used to indicate reasons for control activities  */
@@ -100,8 +102,11 @@ typedef enum {
   NAADSM_ControlTraceBackDirect,
   NAADSM_ControlTraceBackIndirect,
   NAADSM_ControlDetection,
-  NAADSM_ControlInitialState  
+  NAADSM_ControlInitialState,
+  NAADSM_NCONTROL_REASONS
 } NAADSM_control_reason;
+extern const char *NAADSM_control_reason_name[];
+extern const char *NAADSM_control_reason_abbrev[];
 
 /* Used when a herd's actual disease state changes */
 /* FIXME: Consider combining with the appropriate enum type used internally */

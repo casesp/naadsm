@@ -122,7 +122,7 @@ REL_new_generic_chart (double *x, double *y, size_t n)
   for (i = 0; i + 1 < n;)
     {
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "i=%i", i);
+      g_debug ("i=%lu", (unsigned long)i);
 #endif
       if (gsl_fcmp (x[i], x[i + 1], EPSILON) == 0 && gsl_fcmp (y[i], y[i + 1], EPSILON) == 0)
         {
@@ -133,7 +133,7 @@ REL_new_generic_chart (double *x, double *y, size_t n)
             }
           n--;
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "removing point %i, now n=%i", i, n);
+          g_debug ("removing point %lu, now n=%lu", (unsigned long)i, (unsigned long)n);
 #endif
         }
       else
@@ -154,7 +154,7 @@ REL_new_generic_chart (double *x, double *y, size_t n)
   for (i = 0; i + 2 < n;)
     {
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "i=%i", i);
+      g_debug ("i=%lu", (unsigned long)i);
 #endif
       if (gsl_fcmp (y[i], y[i + 1], EPSILON) == 0 && gsl_fcmp (y[i + 1], y[i + 2], EPSILON) == 0)
         {
@@ -165,7 +165,7 @@ REL_new_generic_chart (double *x, double *y, size_t n)
             }
           n--;
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "removing point %i, now n=%i", i + 1, n);
+          g_debug ("removing point %lu, now n=%lu", (unsigned long)i + 1, (unsigned long)n);
 #endif
         }
       else

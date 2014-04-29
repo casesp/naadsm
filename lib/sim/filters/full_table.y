@@ -53,6 +53,8 @@
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 typedef struct
@@ -255,7 +257,7 @@ add_values (GQuark key_id, gpointer data, gpointer user_data)
           g_string_append_printf (s, "'%s'", tmp->svalue->str);
         else
           g_string_append_printf (s, "%g", tmp->value);
-        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
+        g_debug ("%s", s->str);
         g_string_free (s, TRUE);
       #endif
 
@@ -574,11 +576,10 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   fprintf (stderr, "Error in output (line %d): %s:\n%s\n", yylineno, s, linebuf);
   fprintf (stderr, "%*s\n", 1+tokenpos, "^");
-  if (fatal) exit (EXIT_FAILURE);
   return 0;
 }
 

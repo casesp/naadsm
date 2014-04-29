@@ -4,13 +4,13 @@ unit TracingParams;
 TracingParams.pas
 ------------------
 Begin: 2008/04/23
-Last revision: $Date: 2011-03-24 00:56:48 $ $Author: areeves $
-Version number: $Revision: 1.8.4.10 $
+Last revision: $Date: 2013-06-27 19:11:36 $ $Author: areeves $
+Version number: $Revision: 1.8.4.11 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2008 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2008 - 2011 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

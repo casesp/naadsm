@@ -4,13 +4,13 @@ unit Herd;
 Herd.pas
 ---------
 Begin: 2005/01/21
-Last revision: $Date: 2012-08-14 19:02:12 $ $Author: areeves $
-Version number: $Revision: 1.83.4.29 $
+Last revision: $Date: 2013-06-27 19:11:34 $ $Author: areeves $
+Version number: $Revision: 1.83.4.31 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2012 Colorado State University
+Copyright (C) 2005 - 2013 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -1191,9 +1191,15 @@ implementation
 
     procedure THerd.changeHerdState( const val: TNAADSMDiseaseState; const day: integer );
       begin
-        if( 1 = day ) then
+        // Don't record initial states as changes.
+        // Note, though, that herd states can change on day 1.
+        if
+          ( 1 = day )
+        and
+          ( self.diseaseStatus = val )
+        then
           begin
-            //dbcout( 'Herd ' + intToStr( self.id ) + ' has change state on day ' + intToStr( day ) + ': state is now ' + naadsmDiseaseStateStr( val ) );
+            dbcout( 'Herd ' + intToStr( self.id ) + ' has change state on day ' + intToStr( day ) + ': state is now ' + naadsmDiseaseStateStr( val ), DBHERD );
             exit;
           end
         ;

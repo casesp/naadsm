@@ -4,11 +4,11 @@ unit FormMain;
 FormMain.pas/dfm
 ----------------
 Begin: 2005/05/10
-Last revision: $Date: 2012-08-14 19:02:11 $ $Author: areeves $
-Version: $Revision: 1.123.4.25 $
+Last revision: $Date: 2013-06-27 19:11:27 $ $Author: areeves $
+Version: $Revision: 1.123.4.26 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2005 - 2012 Colorado State University
 

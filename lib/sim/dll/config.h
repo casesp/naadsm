@@ -149,7 +149,7 @@
 /* ================== */
 /* DON'T FORGET: When updating this version number, also update the version 
    number in the file config.in for the Linux version */ 
-#define PACKAGE_STRING "NAADSM 3.2.18"
+#define PACKAGE_STRING "NAADSM 3.2.19"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "NAADSM"
@@ -160,7 +160,7 @@
 /* ================== */
 /* DON'T FORGET: When updating this version number, also update the version 
    number in the file config.in for the Linux version */ 
-#define PACKAGE_VERSION "3.2.18"
+#define PACKAGE_VERSION "3.2.19"
 
 /* Define to use the simple SPRNG interface. */
 #define SIMPLE_SPRNG 1
@@ -177,7 +177,7 @@
 /* ================== */
 /* DON'T FORGET: When updating this version number, also update the version 
    number in the file config.in for the Linux version */ 
-#define VERSION "3.2.18"
+#define VERSION "3.2.19"
 
 /* Define this if the link test failed. */
 /* #undef WITHOUT_SPRNG */

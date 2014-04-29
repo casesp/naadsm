@@ -4,13 +4,13 @@ unit HerdKML;
 HerdKML.pas
 -----------
 Begin: 2009/10/30
-Last revision: $Date: 2010-01-29 20:44:28 $ $Author: areeves $
-Version number: $Revision: 1.1.2.6 $
+Last revision: $Date: 2013-06-27 19:11:35 $ $Author: areeves $
+Version number: $Revision: 1.1.2.7 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Ric Hupalo <Ric.Hupalo@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

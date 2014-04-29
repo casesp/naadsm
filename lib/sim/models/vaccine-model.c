@@ -80,11 +80,6 @@ EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations,
 
 
 
-extern const char *HRD_status_name[];
-extern const char *PDF_dist_type_name[];
-
-
-
 #define EPSILON 0.01
 
 

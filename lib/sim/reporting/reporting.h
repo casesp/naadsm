@@ -40,6 +40,7 @@ typedef enum
   RPT_integer, RPT_real, RPT_text, RPT_group, RPT_unknown_type
 }
 RPT_type_t;
+extern const char *RPT_type_name[];
 
 
 
@@ -58,6 +59,7 @@ typedef enum
   RPT_never, RPT_once, RPT_daily
 }
 RPT_frequency_t;
+extern const char *RPT_frequency_name[];
 
 
 
@@ -85,7 +87,7 @@ RPT_reporting_t;
 
 /* Prototypes. */
 
-RPT_reporting_t *RPT_new_reporting (char *name, RPT_type_t, RPT_frequency_t);
+RPT_reporting_t *RPT_new_reporting (const char *name, RPT_type_t, RPT_frequency_t);
 void RPT_free_reporting (RPT_reporting_t *);
 char *RPT_reporting_to_string (RPT_reporting_t *);
 char *RPT_reporting_value_to_string (RPT_reporting_t *, char *format);
@@ -95,37 +97,37 @@ int RPT_fprintf_reporting (FILE *, RPT_reporting_t *);
 
 void RPT_reporting_set_frequency (RPT_reporting_t *, RPT_frequency_t);
 
-void RPT_reporting_set_integer (RPT_reporting_t *, long, char **);
-void RPT_reporting_set_integer1 (RPT_reporting_t *, long, char *);
-void RPT_reporting_set_real (RPT_reporting_t *, double, char **);
-void RPT_reporting_set_real1 (RPT_reporting_t *, double, char *);
-void RPT_reporting_set_text (RPT_reporting_t *, char *text, char **);
-void RPT_reporting_set_text1 (RPT_reporting_t *, char *text, char *);
-void RPT_reporting_set_null (RPT_reporting_t *, char **);
-void RPT_reporting_set_null1 (RPT_reporting_t *, char *);
-void RPT_reporting_add_integer (RPT_reporting_t *, long, char **);
-void RPT_reporting_add_integer1 (RPT_reporting_t *, long, char *);
-void RPT_reporting_add_real (RPT_reporting_t *, double, char **);
-void RPT_reporting_add_real1 (RPT_reporting_t *, double, char *);
+void RPT_reporting_set_integer (RPT_reporting_t *, long, const char **);
+void RPT_reporting_set_integer1 (RPT_reporting_t *, long, const char *);
+void RPT_reporting_set_real (RPT_reporting_t *, double, const char **);
+void RPT_reporting_set_real1 (RPT_reporting_t *, double, const char *);
+void RPT_reporting_set_text (RPT_reporting_t *, char *text, const char **);
+void RPT_reporting_set_text1 (RPT_reporting_t *, char *text, const char *);
+void RPT_reporting_set_null (RPT_reporting_t *, const char **);
+void RPT_reporting_set_null1 (RPT_reporting_t *, const char *);
+void RPT_reporting_add_integer (RPT_reporting_t *, long, const char **);
+void RPT_reporting_add_integer1 (RPT_reporting_t *, long, const char *);
+void RPT_reporting_add_real (RPT_reporting_t *, double, const char **);
+void RPT_reporting_add_real1 (RPT_reporting_t *, double, const char *);
 #define RPT_reporting_sub_integer(R,I,C) RPT_reporting_add_integer(R,-(I),C)
 #define RPT_reporting_sub_integer1(R,I,C) RPT_reporting_add_integer1(R,-(I),C)
 #define RPT_reporting_sub_real(R,I,C) RPT_reporting_add_real(R,-(I),C)
 #define RPT_reporting_sub_real1(R,I,C) RPT_reporting_add_real1(R,-(I),C)
-void RPT_reporting_append_text (RPT_reporting_t *, char *text, char **);
-void RPT_reporting_append_text1 (RPT_reporting_t *, char *text, char *);
+void RPT_reporting_append_text (RPT_reporting_t *, char *text, const char **);
+void RPT_reporting_append_text1 (RPT_reporting_t *, char *text, const char *);
 void RPT_reporting_splice (RPT_reporting_t *, RPT_reporting_t *);
 void RPT_reporting_reset (RPT_reporting_t *);
 void RPT_reporting_zero (RPT_reporting_t *);
-gboolean RPT_reporting_is_null (RPT_reporting_t *, char**);
-gboolean RPT_reporting_is_null1 (RPT_reporting_t *, char*);
-long RPT_reporting_get_integer (RPT_reporting_t *, char **);
-long RPT_reporting_get_integer1 (RPT_reporting_t *, char *);
-double RPT_reporting_get_real (RPT_reporting_t *, char **);
-double RPT_reporting_get_real1 (RPT_reporting_t *, char *);
-char *RPT_reporting_get_text (RPT_reporting_t *, char **);
-char *RPT_reporting_get_text1 (RPT_reporting_t *, char *);
+gboolean RPT_reporting_is_null (RPT_reporting_t *, const char**);
+gboolean RPT_reporting_is_null1 (RPT_reporting_t *, const char*);
+long RPT_reporting_get_integer (RPT_reporting_t *, const char **);
+long RPT_reporting_get_integer1 (RPT_reporting_t *, const char *);
+double RPT_reporting_get_real (RPT_reporting_t *, const char **);
+double RPT_reporting_get_real1 (RPT_reporting_t *, const char *);
+char *RPT_reporting_get_text (RPT_reporting_t *, const char **);
+char *RPT_reporting_get_text1 (RPT_reporting_t *, const char *);
 
-RPT_frequency_t RPT_string_to_frequency (char *);
+RPT_frequency_t RPT_string_to_frequency (const char *);
 gboolean RPT_reporting_due (RPT_reporting_t *, unsigned int day);
 RPT_type_t RPT_reporting_get_type (RPT_reporting_t *);
 RPT_reporting_t *RPT_clone_reporting (RPT_reporting_t *);

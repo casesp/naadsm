@@ -174,14 +174,12 @@ object FormAboutExperimental: TFormAboutExperimental
           WordWrap = True
         end
         object lblCopyright: TLabel
-          Left = 112
+          Left = 96
           Top = 4
-          Width = 278
-          Height = 28
+          Width = 313
+          Height = 21
           Alignment = taCenter
-          Caption = 
-            'Copyright '#169' 2003 - 2007 Animal Population Health Institute at Co' +
-            'lorado State University and University of Guelph'
+          Caption = 'Copyright '#169' 2003 - 2013 NAADSM Development Team'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
           Font.Height = -11

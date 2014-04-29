@@ -1,4 +1,4 @@
-/** @file sc_naadsm_outputs.c
+/** @file sc_guilib_outputs.c
  *
  * @author Shaun Case <ShaunCase@colostate.edu><br>
  *   Animal Population Health Institute<br>

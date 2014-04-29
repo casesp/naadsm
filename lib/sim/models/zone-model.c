@@ -63,8 +63,6 @@
 
 #include "zone-model.h"
 
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "zone-model"
 

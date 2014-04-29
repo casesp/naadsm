@@ -37,6 +37,7 @@ dist_noinst_DATA = state-transition.png \
   binomial.png \
   discrete_uniform.png \
   hypergeometric.png \
+  inverse_gaussian.png \
   rel_chart.png \
   airborne.png \
   directions.png \

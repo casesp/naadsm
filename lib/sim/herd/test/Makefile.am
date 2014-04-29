@@ -2,6 +2,7 @@
 
 INCLUDES = -I.. -I$(top_srcdir)/src -I$(top_srcdir)/rel_chart -I$(top_srcdir)/general -I$(top_srcdir)/zone \
   -I$(top_srcdir)/spatial_search \
+  -I$(top_srcdir)/replace \
   @GLIB_CFLAGS@ @GSL_CFLAGS@
 if USE_SC_GUILIB
   INCLUDES += -I$(top_srcdir)/sc_guilib

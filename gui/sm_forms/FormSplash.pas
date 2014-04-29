@@ -4,11 +4,11 @@ unit FormSplash;
 FormSplash.pas/dfm
 ------------------
 Begin: 2006/04/03
-Last revision: $Date: 2012-08-14 19:02:11 $ $Author: areeves $
-Version: $Revision: 1.19.6.4 $
+Last revision: $Date: 2013-06-27 19:11:28 $ $Author: areeves $
+Version: $Revision: 1.19.6.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2006 - 2012 Colorado State University
 

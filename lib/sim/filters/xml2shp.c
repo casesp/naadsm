@@ -51,10 +51,6 @@
 
 
 
-extern const char *HRD_status_name[];
-
-
-
 /**
  * A log handler that simply discards messages.
  */

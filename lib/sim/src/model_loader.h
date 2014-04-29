@@ -25,7 +25,7 @@
 
 
 /* Prototypes. */
-int naadsm_load_models (char *parameter_file,
+int naadsm_load_models (const char *parameter_file,
                         HRD_herd_list_t *, projPJ, ZON_zone_list_t *,
                         unsigned int *ndays, unsigned int *nruns,
                         naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions);

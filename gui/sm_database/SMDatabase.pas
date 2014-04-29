@@ -4,13 +4,13 @@ unit SMDatabase;
 SMDatabase.pas
 ---------------
 Begin: 2005/01/07
-Last revision: $Date: 2012-10-01 19:59:42 $ $Author: areeves $
-Version: $Revision: 1.129.4.36 $
+Last revision: $Date: 2013-06-27 19:11:23 $ $Author: areeves $
+Version: $Revision: 1.129.4.37 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2012 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -4481,12 +4481,34 @@ implementation
     function cheyenneUpdateReason( const oldVersion: string ): TVersionUpdateReason;
     function laramieUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
     function rivertonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
-    function torringtonUpdateReason( const oldVersion: string ): TVersionUpdateReason;
-    function wheatlandUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+    function torringtonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
+    function wheatlandUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
 
   "Private" functions used to check from bugs related to very specialized conditions:
-    function bug3_1_20( db: TSMDatabase ): boolean;
+    function bug3_1_19( db: TSMDatabase ): boolean;
+    function bug3_1_22( db: TSMDatabase ): boolean;
+    function bug3_1_25( db: TSMDatabase ): boolean;
+    function zoneBug3_2_18( db: TSMDatabase ): boolean;
   *)
+
+
+  // Returns true if the scenario database contains more than 1 zone.
+  // See http://www.naadsm.org/bugs?id=180 for description.
+  function zoneBug3_2_18( db: TSMDatabase ): boolean;
+    var
+      res: TSqlResult;
+    begin
+      // If this scenario uses two or more levels of zones, a situation
+      // can occur where contacts that should be forbidden may still occur.
+      // If fewer than 2 zone levels are present, then outputs are OK.
+
+      res := TSqlResult.create( 'SELECT zoneID FROM `inZone`', (db as TSqlDatabase) );
+
+      result := ( 0 < res.numRows );
+
+      res.Free();
+    end
+  ;
 
 
   // Returns true if the scenario database contains any shipping or airborne transport delay pdfs
@@ -4556,6 +4578,10 @@ implementation
         end
       ;
 
+      if( false = result ) then
+        result := zoneBug3_2_18( db )
+      ;
+
       badCharts.Free();
       res.free();
     end
@@ -4601,6 +4627,10 @@ implementation
         result := false
       ;
 
+      if( false = result ) then
+        result := zoneBug3_2_18( db )
+      ;
+
       res.free();
     end
   ;
@@ -4639,6 +4669,10 @@ implementation
         end
       else
         result := false
+      ;
+
+      if( false = result ) then
+        result := zoneBug3_2_18( db )
       ;
 
       res.Free();
@@ -4725,7 +4759,13 @@ implementation
           ;
         end
       else if( '3.1.23-Riverton' = oldVersion ) then
-        result := VERSOK
+        begin
+          if( zoneBug3_2_18( db ) ) then
+            result := VERSBUG
+          else
+            result := VERSOK
+          ;
+        end
       else // There are no other versions of Riverton
         result := VERSUnrecognized
       ;
@@ -4733,7 +4773,7 @@ implementation
   ;
 
 
-  function torringtonUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+  function torringtonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
     begin
       if( rightStr( oldVersion, 10 ) <> 'Torrington' ) then
         result := VERSModelSpecChange
@@ -4753,7 +4793,13 @@ implementation
       or
         ( '3.2.18-Torrington' = oldVersion )
       then
-        result := VERSOK
+        begin
+          if( zoneBug3_2_18( db ) ) then
+            result := VERSBUG
+          else
+            result := VERSOK
+          ;
+        end
       else // There are no other versions of Torrington
         result := VERSUnrecognized
       ;
@@ -4761,7 +4807,7 @@ implementation
   ;
 
 
-  function wheatlandUpdateReason( const oldVersion: string ): TVersionUpdateReason;
+  function wheatlandUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
     begin
       if( rightStr( oldVersion, 9 ) <> 'Wheatland' ) then
         result := VERSModelSpecChange
@@ -4769,7 +4815,13 @@ implementation
       else if
         ( '3.2.18-Wheatland' = oldVersion )
       then
-        result := VERSOK
+        begin
+          if( zoneBug3_2_18( db ) ) then
+            result := VERSBUG
+          else
+            result := VERSOK
+          ;
+        end
       else // There are no other versions of Wheatland
         result := VERSUnrecognized
       ;
@@ -4860,9 +4912,9 @@ implementation
               else if( usingRiverton ) then
                 result := rivertonUpdateReason( self, oldVersion )
               else if( usingTorrington ) then
-                result := torringtonUpdateReason( oldVersion )
+                result := torringtonUpdateReason( self, oldVersion )
               else if( usingWheatland ) then
-                result := wheatlandUpdateReason( oldVersion )
+                result := wheatlandUpdateReason( self, oldVersion )
 
               // ...then deal with standard versions.
               else if
@@ -5024,7 +5076,13 @@ implementation
               or
                 ( '3.1.28' = oldVersion )
               then
-                result := VERSOK
+                begin
+                  if( zoneBug3_2_18( self ) ) then
+                    result := VERSBUG
+                  else
+                    result := VERSOK
+                  ;
+                end
 
 
               // Make the jump here to 3.2.x
@@ -5070,6 +5128,17 @@ implementation
                 ( '3.2.17' = oldVersion )
               or
                 ( '3.2.18' = oldVersion )                
+              then
+                begin
+                  if( zoneBug3_2_18( self ) ) then
+                    result := VERSBUG
+                  else
+                    result := VERSOK
+                  ;
+                end
+
+              else if
+                ( '3.2.19' = oldVersion )
               then
                 result := VERSOK
 

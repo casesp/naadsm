@@ -144,6 +144,9 @@ strtoi (const char *nptr, char **endptr)
   long int n;
   int i;
 
+  /* Eliminate compiler warnings about uninitialized values */
+  i = INT_MAX;
+
   /* If nptr is null, follow the behavior for no digits seen. */
   if (nptr == NULL)
     {

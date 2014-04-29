@@ -4,13 +4,13 @@ unit FormCostsZones;
 FormCostsZones.pas/dfm
 ----------------------
 Begin: 2007/04/18
-Last revision: $Date: 2010-09-09 14:29:36 $ $Author: rhupalo $
-Version number: $Revision: 1.7.4.1 $
+Last revision: $Date: 2013-06-27 19:11:25 $ $Author: areeves $
+Version number: $Revision: 1.7.4.2 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2008 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

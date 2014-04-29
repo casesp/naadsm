@@ -6,7 +6,7 @@
 # Project: NSIS installer script for NAADSM, experimental version "Wheatland"
 # Website: http://www.naadsm.org
 # Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
-# Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
 # Copyright (C) 2007 - 2012 Colorado State University
 # 

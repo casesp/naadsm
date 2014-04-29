@@ -44,9 +44,9 @@
 
 
 /* special vectors */
-const WML_Vector2 ZERO = { 0.0, 0.0 };
-const WML_Vector2 UNIT_X = { 1.0, 0.0 };
-const WML_Vector2 UNIT_Y = { 0.0, 1.0 };
+WML_Vector2 ZERO = { 0.0, 0.0 };
+WML_Vector2 UNIT_X = { 1.0, 0.0 };
+WML_Vector2 UNIT_Y = { 0.0, 1.0 };
 
 
 
@@ -792,6 +792,8 @@ WML_MergeLinear (WML_ConvexHull2 * self, WML_SortedVertex * rkP)
       /* linear order is <Q0,Q1,P>, merged hull is <Q0,P> */
       WML_SortedVertex_assign (&g_array_index (self->m_kHull, WML_SortedVertex, 1), rkP);
       break;
+    case WML_ORDER_COLLINEAR_CONTAIN:
+      g_assert_not_reached();
       /* case WML_ORDER_COLLINEAR_CONTAIN:  linear order is <Q0,P,Q1>, no change */
     }
 

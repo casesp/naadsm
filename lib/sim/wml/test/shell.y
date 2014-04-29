@@ -6,6 +6,7 @@
 #include <wml.h>
 #include <glib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define PROMPT "> "
 
@@ -54,6 +55,8 @@
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 GArray *current_points = NULL;
@@ -183,7 +186,7 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;
@@ -227,6 +230,8 @@ main (int argc, char *argv[])
     yyin = stdin;
   while (!feof(yyin))
     yyparse();
+
+  return EXIT_SUCCESS;
 }
 
 /* end of file shell.y */

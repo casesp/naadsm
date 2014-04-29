@@ -4,13 +4,13 @@ program SpreadModel;
 SpreadModel.dpr
 ----------------
 Begin: 2004/07/15
-Last revision: $Date: 2012-08-14 19:02:08 $ $Author: areeves $
-Version: $Revision: 1.164.4.17 $
+Last revision: $Date: 2013-06-27 19:11:19 $ $Author: areeves $
+Version: $Revision: 1.164.4.18 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2004 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2004 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -305,7 +305,6 @@ uses
     FormHerdExportOptions in 'sm_forms\FormHerdExportOptions.pas' {FormHerdExportOptions},
     FormLanguageSettings in 'sm_forms\FormLanguageSettings.pas' {FormLanguageSettings},
     FormRegionalSettings in 'sm_forms\FormRegionalSettings.pas' {FormRegionalSettings},
-    FrameCredits in 'sm_forms\FrameCredits.pas' {FrameCredits: TFrame},
 
     FormAboutExperimental in 'sm_forms\FormAboutExperimental.pas' {FormAboutExperimental},
     FormSplashExperimental in 'sm_forms\FormSplashExperimental.pas' {FormSplashExperimental},
@@ -646,8 +645,7 @@ var
       cout( endl );
       cout( APPNAME );
       cout(  vers );
-      cout( 'Copyright ' + COPYRIGHTDATES + ' Animal Population Health Institute at' );
-      cout( 'Colorado State University and University of Guelph.' );
+      cout( 'Copyright ' + COPYRIGHTDATES + ' NAADSM Development Team' );
       cout( 'This is free software, released under the terms of the GNU General Public' );
       cout( 'License.  Please see the source or the following URL for copying conditions.' );
       cout( 'NAADSM home page: <http://www.naadsm.org>' + endl );

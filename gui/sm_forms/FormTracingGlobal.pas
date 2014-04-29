@@ -4,13 +4,13 @@ unit FormTracingGlobal;
 FormTracingGlobal.pas/dfm
 -------------------------
 Begin: 2006/02/05
-Last revision: $Date: 2010-09-09 14:29:37 $ $Author: rhupalo $
-Version: $Revision: 1.8.6.3 $
+Last revision: $Date: 2013-06-27 19:11:29 $ $Author: areeves $
+Version: $Revision: 1.8.6.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2010 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

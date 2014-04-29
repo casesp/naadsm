@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include "herd.h"
 #include <expat.h>
+#include <replace.h>
+
 /* Expat 1.95 has this constant on my Debian system, but not on Hammerhead's
  * Red Hat system.  ?? */
 #ifndef XML_STATUS_ERROR
@@ -230,7 +232,11 @@ HRD_change_state (HRD_herd_t * herd, HRD_status_t new_state,
  *   with visible signs.
  * @param immunity_period how many days the herd's natural immunity lasts
  *   after recovery.
- * @return a pointer to a newly-created HRD_change_request_t structure.
+* @param day_in_disease_cycle how many days into the disease cycle the herd
+ *   should start.  Normally 0, but sometimes used to create an initially
+ *   infected herd that has already been diseased for a while when the
+ *   simulation begins.
+  * @return a pointer to a newly-created HRD_change_request_t structure.
  */
 HRD_change_request_t *
 HRD_new_infect_change_request (int latent_period,
@@ -2138,6 +2144,7 @@ HRD_reset (HRD_herd_t * herd)
  * </ol>
  *
  * @param herd a herd.
+ * @param infectious_herds the set of infectious herds.
  */
 void
 HRD_step (HRD_herd_t * herd, GHashTable *infectious_herds)
@@ -2266,6 +2273,10 @@ HRD_step (HRD_herd_t * herd, GHashTable *infectious_herds)
  *   with visible signs.
  * @param immunity_period how many days the herd's natural immunity lasts
  *   after recovery
+ * @param day_in_disease_cycle how many days into the disease cycle the herd
+ *   should start.  Normally 0, but sometimes used to create an initially
+ *   infected herd that has already been diseased for a while when the
+ *   simulation begins.
  */
 void
 HRD_infect (HRD_herd_t * herd,
@@ -2342,6 +2353,7 @@ HRD_destroy (HRD_herd_t * herd)
  * Removes a herd from the infectious list.
  *
  * @param herd the herd to be removed.
+ * @param infectious_herds the set of infectious herds.
  */
 void
 HRD_remove_herd_from_infectious_list( HRD_herd_t *herd,
@@ -2357,6 +2369,7 @@ HRD_remove_herd_from_infectious_list( HRD_herd_t *herd,
  * Adds a herd to the infectious list.
  *
  * @param herd the herd to be added.
+ * @param infectious_herds the set of infectious herds.
  */
 void
 HRD_add_herd_to_infectious_list( HRD_herd_t *herd,

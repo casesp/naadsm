@@ -352,6 +352,78 @@ proc stochastic_progress_test { params herds answer {test "stochastic_progress"}
 
 
 #
+# get_varnames -- returns just the variable names from a list of output
+#   variables and their values.  For example, this output:
+#
+# Run,Day,x,y:a,y:b
+# 1,1,1,2,3
+# 1,2,4,5,6
+#
+# would be sent to this function as: { {x 1 4} {y:a 2 5} {y:b 3 6} }
+#
+# and then this function would return: { x y:a y:b }
+#
+# In a stochastic setting, the incoming list has a frequency in it too:
+# { 0.5 {x 1 4} {y:a 2 5} {y:b 3 6} }
+# so this function ignores items that are just numbers.
+#
+proc get_varnames { answer } {
+	set varnames []
+	foreach varname_plus_output $answer {
+		if {![string is double $varname_plus_output]} {
+			lappend varnames [lindex $varname_plus_output 0]
+		}
+	}
+	return $varnames
+}
+
+
+
+#
+# is_subset -- checks whether list a is a subset of list b, that is, whether
+#   every item in a is also in b.
+#
+# Parameters:
+#   a            list a, the (possible) subset
+#   b            list b
+# Returns:
+#   1 if a is a subset of b.
+#
+proc is_subset { a b } {
+	set result 1
+	foreach a_item $a {
+		if { [lsearch -exact $b $a_item] == -1 } {
+			set result 0
+			break
+		}
+	}
+	return $result
+}
+
+
+
+#
+# set_difference
+#
+# Parameters:
+#   a            list a
+#   b            list b, the items to subtract from a
+# Returns:
+#   a - b
+#
+proc set_difference { a b } {
+	set result []
+	foreach a_item $a {
+		if { [lsearch -exact $b $a_item] == -1 } {
+			lappend result $a_item
+		}
+	}
+	return $result
+}
+
+
+
+#
 # variable_test -- tests that an output variable has the correct value.
 #
 # Parameters:
@@ -376,11 +448,11 @@ proc variable_test { params herds answer {test "variable"}} {
 			set output [simvaroutput_string_to_list $expect_out(1,string)]
 
 			#
-			# Check that the output has the correct number of days and variables.
+			# Check that the output has the correct variables and number of days.
 			#
-			set nvars [llength $output]
-			if { $nvars != $true_nvars } {
-				fail "$test output should have $true_nvars variables, not $nvars"
+			if { ![is_subset [get_varnames $answer] [get_varnames $output]] } {
+				set missing [set_difference [get_varnames $answer] [get_varnames $output]]
+				fail "$test output missing variable(s) $missing"
 				return
 			}
 			set ndays [expr [llength [lindex $output 0]] - 1]
@@ -392,6 +464,7 @@ proc variable_test { params herds answer {test "variable"}} {
 			#
 			# Check that individual values are correct.
 			#
+			set nvars [llength $output]
 			for {set varnum 0} {$varnum < $true_nvars} {incr varnum} {
 				set varname [lindex [lindex $answer $varnum] 0]
 				#
@@ -471,13 +544,14 @@ proc stochastic_variable_test { params herds answer {test "stochastic_variable"}
 				set output [simvaroutput_string_to_list $expect_out(1,string)]
 
 				#
-				# Check that the output has the correct number of variables.
+				# Check that the output has the correct variables.
 				#
-				set nvars [llength $output]
-				if { $nvars != $true_nvars } {
-					fail "$test output should have $true_nvars variables, not $nvars"
+				if { ![is_subset [get_varnames [lindex $answer 0]] [get_varnames $output]] } {
+					set missing [set_difference [get_varnames [lindex $answer 0]] [get_varnames $output]]
+					fail "$test output missing variable(s) $missing"
 					return
 				}
+				set nvars [llength $output]
 				set ndays [expr [llength [lindex $output 0]] - 1]
 
 				#

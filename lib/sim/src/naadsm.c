@@ -79,34 +79,34 @@ current_version (void)
 
   #ifdef CHEYENNE
     ++i;
-    ret_val = "3.2.18-CHEYENNE";
+    ret_val = "3.2.19-CHEYENNE";
     #error "Double check all new modules for 'Cheyenne' rules."
   #endif
 
   #ifdef LARAMIE
     ++i;
-    ret_val = "3.2.18-LARAMIE";
+    ret_val = "3.2.19-LARAMIE";
     #error "Double check all new modules for 'Laramie' rules."
   #endif
 
   #ifdef RIVERTON
     ++i;
-    ret_val = "3.2.18-RIVERTON";
+    ret_val = "3.2.19-RIVERTON";
     #error "Double check all new tracing and testing modules for 'Riverton' rules."
   #endif
   
   #ifdef TORRINGTON
     ++i;
-    ret_val = "3.2.18-TORRINGTON";
+    ret_val = "3.2.19-TORRINGTON";
   #endif
 
 #ifdef WHEATLAND
   ++i;
-  ret_val = "3.2.18-WHEATLAND";
+  ret_val = "3.2.19-WHEATLAND";
 #endif
 
   if( 0 == i ) {
-    ret_val = "3.2.18";
+    ret_val = "3.2.19";
   }
   else if( 1 == i ) {
     /* All is right with the world: do nothing. */
@@ -473,6 +473,20 @@ const char *NAADSM_contact_type_name[] = {
 
 const char *NAADSM_contact_type_abbrev[] = {
   "Unkn", "Dir", "Ind", "Air", "Ini", NULL
+};
+
+const char *NAADSM_detection_reason_abbrev[] = {
+  "Unkn", "Clin", "Test", NULL
+};
+
+const char *NAADSM_control_reason_name[] = {
+  "Unspecified", "Ring", "Trace Forward Direct", "Trace Forward Indirect",
+  "Trace Back Direct", "Trace Back Indirect", "Detection", "Initial State",
+  NULL
+};
+
+const char *NAADSM_control_reason_abbrev[] = {
+  "Unsp", "Ring", "DirFwd", "IndFwd", "DirBack", "IndBack", "Det", "Ini", NULL
 };
 
 /*---------------------------------------------------------------------------*/

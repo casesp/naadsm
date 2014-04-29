@@ -16,7 +16,6 @@ SUBDIRS = wml \
   sm3herds2xml \
   xml2sm3herds \
   filters \
-  dll \
   doc
 mandir= $(exec_prefix)/man
 man1_MANS=naadsm.1

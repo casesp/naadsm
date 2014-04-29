@@ -24,6 +24,10 @@
 #include "parameter.h"
 #include <glib.h>
 
+#if HAVE_MATH_H
+#  include <math.h>
+#endif
+
 #if STDC_HEADERS
 #  include <stdlib.h>
 #endif
@@ -68,6 +72,7 @@ PAR_get_real (PAR_parameter_t * param, gboolean * success)
   else
     {
       g_warning ("parameter %s is missing a \"value\" element", scew_element_name (param));
+      x = NAN;
       *success = FALSE;
     }
   return x;
@@ -523,6 +528,10 @@ PAR_get_histogram_PDF( scew_element* const fn_element )
       gboolean success;
       double* counts;
       
+      /* Eliminate compiler warnings about uninitialized values */
+      x0 = NAN;
+      x1 = NAN;
+
       /* Determine how many histogram bins there are. */
       /*----------------------------------------------*/
       nbins = 0;
@@ -1135,6 +1144,9 @@ PAR_get_boolean (PAR_parameter_t * param, gboolean * success)
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER PAR_get_boolean");
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  x = FALSE;
 
   *success = FALSE;
   if (param != NULL)

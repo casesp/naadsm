@@ -33,7 +33,6 @@
 #define local_fprintf detection_monitor_fprintf
 #define local_free detection_monitor_free
 #define handle_new_day_event detection_monitor_handle_new_day_event
-#define handle_declaration_of_detection_means_event detection_monitor_handle_declaration_of_detection_means_event
 #define handle_detection_event detection_monitor_handle_detection_event
 
 #include "model.h"
@@ -47,17 +46,14 @@
 #include "naadsm.h"
 #include "general.h"
 
-extern const char *HRD_status_name[];
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "detection-monitor"
 
 
 
-#define NEVENTS_LISTENED_FOR 3
+#define NEVENTS_LISTENED_FOR 2
 EVT_event_type_t events_listened_for[] =
-  { EVT_NewDay, EVT_DeclarationOfDetectionMeans, EVT_Detection };
+  { EVT_NewDay, EVT_Detection };
 
 
 
@@ -172,78 +168,6 @@ handle_new_day_event (struct naadsm_model_t_ *self)
 
 
 /**
- * Responds to a declaration of detection means by recording the potential
- * means of detection.
- *
- * @param self the module.
- * @param event a declaration of detection means event.
- */
-void
-handle_declaration_of_detection_means_event (struct naadsm_model_t_ * self,
-                                             EVT_declaration_of_detection_means_event_t * event)
-{
-  local_data_t *local_data;
-  unsigned int n, i, j;
-  char *means;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
-
-#if DEBUG
-  g_debug ("----- ENTER handle_declaration_of_detection_means_event (%s)", MODEL_NAME);
-#endif
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* If any potential means is not already present in our reporting variables,
-   * add it, with an initial count of 0 detections. */
-  n = event->means->len;
-  for (i = 0; i < n; i++)
-    {
-      means = (char *) g_ptr_array_index (event->means, i);
-      RPT_reporting_append_text1 (local_data->detections, "", means);
-      /* Two function calls for the first_detection and last_detection
-       * variables: one to establish the type of the sub-variables (they are
-       * integers), and one to clear them to "null" (they have no meaningful
-       * value until a detection occurs). */
-      RPT_reporting_add_integer1 (local_data->first_detection_by_means, 0, means);
-      RPT_reporting_set_null1 (local_data->first_detection_by_means, means);
-      RPT_reporting_add_integer1 (local_data->last_detection_by_means, 0, means);
-      RPT_reporting_set_null1 (local_data->last_detection_by_means, means);
-      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 0, means);
-      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 0, means);
-      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, 0, means);
-      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, 0, means);
-
-      drill_down_list[0] = means;
-      for (j = 0; j < local_data->production_types->len; j++)
-        {
-          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
-          RPT_reporting_add_integer (local_data->first_detection_by_means_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_set_null (local_data->first_detection_by_means_and_prodtype,
-                                  drill_down_list);
-          RPT_reporting_add_integer (local_data->last_detection_by_means_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_set_null (local_data->last_detection_by_means_and_prodtype,
-                                  drill_down_list);
-          RPT_reporting_add_integer (local_data->nunits_detected_by_means_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->nanimals_detected_by_means_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, 0,
-                                     drill_down_list);
-        }
-    }
-
-#if DEBUG
-  g_debug ("----- EXIT handle_declaration_of_detection_means_event (%s)", MODEL_NAME);
-#endif
-}
-
-
-
-/**
  * Records a detection.  Updates the day of first detection and day of last
  * detection, if needed.
  *
@@ -257,9 +181,10 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
+  const char *means;
   char *peek;
   gboolean first_of_means;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   HRD_detect_t detection;
   gpointer p;
   count_and_means_t *previous_detection;
@@ -271,24 +196,15 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 
-  peek = RPT_reporting_get_text1 (local_data->detections, event->means);
+  means = NAADSM_detection_reason_abbrev[event->means];
+  peek = RPT_reporting_get_text1 (local_data->detections, means);
   first_of_means = (peek == NULL) || (strlen (peek) == 0);
 
   g_string_printf (local_data->target, first_of_means ? "%u" : ",%u", herd->index);
-  RPT_reporting_append_text1 (local_data->detections, local_data->target->str, event->means);
+  RPT_reporting_append_text1 (local_data->detections, local_data->target->str, means);
 
   detection.herd_index = herd->index;
-  
-  if( 0 == strcmp( "Clin", event->means ) )
-    detection.reason = NAADSM_DetectionClinicalSigns;
-  else if( 0 == strcmp( "Test", event->means ) )
-    detection.reason = NAADSM_DetectionDiagnosticTest;
-  else
-    {
-      g_error( "Unrecoginized means of detection (%s) encountered in handle_detection_event", event->means );
-      detection.reason = 0;  
-    }
-     
+  detection.reason = event->means;
   detection.test_result = event->test_result;
   
 #ifdef USE_SC_GUILIB
@@ -318,22 +234,22 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
   if (p == NULL)
     {
       /* This unit has not been detected already today. */
-      if (RPT_reporting_is_null1 (local_data->first_detection_by_means, event->means))
-        RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, event->means);
-      RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, event->means);
+      if (RPT_reporting_is_null1 (local_data->first_detection_by_means, means))
+        RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, means);
+      RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, means);
       RPT_reporting_add_integer (local_data->nunits_detected, 1, NULL);
-      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, event->means);
+      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, means);
       RPT_reporting_add_integer1 (local_data->nunits_detected_by_prodtype, 1, herd->production_type_name);
       RPT_reporting_add_integer (local_data->nanimals_detected, herd->size, NULL);
-      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, event->means);
+      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, means);
       RPT_reporting_add_integer1 (local_data->nanimals_detected_by_prodtype, herd->size, herd->production_type_name);
       RPT_reporting_add_integer (local_data->cumul_nunits_detected, 1, NULL);
-      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, event->means);
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, means);
       RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_prodtype, 1, herd->production_type_name);
       RPT_reporting_add_integer (local_data->cumul_nanimals_detected, herd->size, NULL);
-      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, event->means);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, means);
       RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_prodtype, herd->size, herd->production_type_name);
-      drill_down_list[0] = event->means;
+      drill_down_list[0] = means;
       drill_down_list[1] = herd->production_type_name;
       if (RPT_reporting_is_null (local_data->first_detection_by_means_and_prodtype, drill_down_list))
         RPT_reporting_set_integer (local_data->first_detection_by_means_and_prodtype, event->day, drill_down_list);
@@ -349,14 +265,14 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
 
       previous_detection = g_new (count_and_means_t, 1);
       previous_detection->count = 1;
-      previous_detection->means = event->means;
+      previous_detection->means = means;
       g_hash_table_insert (local_data->detected_today, herd, previous_detection);
     } /* end of case where the unit has not been detected already today */
   else
     {
       /* This unit has been detected already today. */
       previous_detection = (count_and_means_t *) p;
-      if (previous_detection->means != event->means) /* static strings: if they match, the pointers will be identical */
+      if (previous_detection->means != means) /* static strings: if they match, the pointers will be identical */
         {
           /* This detection is by a different means than the means currently
            * recorded for this unit.  Decide whether to "change our mind" about
@@ -369,7 +285,7 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
             {
 #if DEBUG
               g_debug ("r (%g) < P (%g), replacing recorded means \"%s\" with \"%s\"",
-                       r, P, previous_detection->means, event->means);
+                       r, P, previous_detection->means, means);
 #endif
               /* We have changed our mind about what means of detection to
                * report for this unit.  Decrement the count of detections by
@@ -427,14 +343,14 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
                 }
 
               /* Increment the count of detections by the new means. */
-              if (RPT_reporting_is_null1 (local_data->first_detection_by_means, event->means))
-                RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, event->means);
-              RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, event->means);
-              RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, event->means);
-              RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, event->means);
-              RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, event->means);
-              RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, event->means);
-              drill_down_list[0] = event->means;
+              if (RPT_reporting_is_null1 (local_data->first_detection_by_means, means))
+                RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, means);
+              RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, means);
+              RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, means);
+              RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, means);
+              RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, means);
+              RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, means);
+              drill_down_list[0] = means;
               if (RPT_reporting_is_null (local_data->first_detection_by_means_and_prodtype, drill_down_list))
                 RPT_reporting_set_integer (local_data->first_detection_by_means_and_prodtype, event->day, drill_down_list);
               if (local_data->last_detection_by_means_and_prodtype->frequency != RPT_never)
@@ -451,7 +367,7 @@ handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * ev
             {
 #if DEBUG
               g_debug ("r (%g) >= P (%g), not replacing recorded means \"%s\" with \"%s\"",
-                       r, P, previous_detection->means, event->means);
+                       r, P, previous_detection->means, means);
 #endif
               ;
             } /* end of case where previously recorded means of detection is not replaced */
@@ -488,9 +404,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     {
     case EVT_NewDay:
       handle_new_day_event (self);
-      break;
-    case EVT_DeclarationOfDetectionMeans:
-      handle_declaration_of_detection_means_event (self, &(event->u.declaration_of_detection_means));
       break;
     case EVT_Detection:
       handle_detection_event (self, &(event->u.detection), rng);
@@ -731,7 +644,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   RPT_frequency_t freq;
   gboolean success;
   gboolean broken_down;
-  unsigned int i;         /* loop counter */
+  unsigned int i, j;         /* loop counters */
   char *prodtype_name;
 
 #if DEBUG
@@ -941,6 +854,48 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
       RPT_reporting_set_integer1 (local_data->nanimals_detected_by_prodtype, 0, prodtype_name);
       RPT_reporting_set_integer1 (local_data->cumul_nunits_detected_by_prodtype, 0, prodtype_name);
       RPT_reporting_set_integer1 (local_data->cumul_nanimals_detected_by_prodtype, 0, prodtype_name);
+    }
+  for (i = 0; i < NAADSM_NDETECTION_REASONS; i++)
+    {
+      const char *means;
+      const char *drill_down_list[3] = { NULL, NULL, NULL };
+      if ((NAADSM_detection_reason)i == NAADSM_DetectionReasonUnspecified)
+        continue;
+      means = NAADSM_detection_reason_abbrev[i];
+      RPT_reporting_append_text1 (local_data->detections, "", means);
+      /* Two function calls for the first_detection and last_detection
+       * variables: one to establish the type of the sub-variables (they are
+       * integers), and one to clear them to "null" (they have no meaningful
+       * value until a detection occurs). */
+      RPT_reporting_add_integer1 (local_data->first_detection_by_means, 0, means);
+      RPT_reporting_set_null1 (local_data->first_detection_by_means, means);
+      RPT_reporting_add_integer1 (local_data->last_detection_by_means, 0, means);
+      RPT_reporting_set_null1 (local_data->last_detection_by_means, means);
+      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, 0, means);
+      drill_down_list[0] = means;
+      for (j = 0; j < local_data->production_types->len; j++)
+        {
+          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
+          RPT_reporting_add_integer (local_data->first_detection_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_set_null (local_data->first_detection_by_means_and_prodtype,
+                                  drill_down_list);
+          RPT_reporting_add_integer (local_data->last_detection_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_set_null (local_data->last_detection_by_means_and_prodtype,
+                                  drill_down_list);
+          RPT_reporting_add_integer (local_data->nunits_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->nanimals_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+        }
     }
 
   local_data->target = g_string_new (NULL);

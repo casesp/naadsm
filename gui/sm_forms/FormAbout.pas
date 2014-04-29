@@ -4,13 +4,13 @@ unit FormAbout;
 FormAbout.pas/dfm
 -----------------
 Begin: 2006/04/03
-Last revision: $Date: 2012-08-14 19:02:11 $ $Author: areeves $
-Version: $Revision: 1.20.4.4 $
+Last revision: $Date: 2013-06-27 19:11:24 $ $Author: areeves $
+Version: $Revision: 1.20.4.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2012 Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -30,9 +30,7 @@ interface
     Forms,
     Dialogs,
     StdCtrls,
-    ExtCtrls,
-
-    FrameCredits
+    ExtCtrls
   ;
 
   type TFormAbout = class( TForm )
@@ -52,8 +50,6 @@ interface
       btnLicense: TButton;
     	lblCopyright: TLabel;
     	lblWebsite: TLabel;
-      sbxCredits: TScrollBox;
-      fraCredits: TFrameCredits;
       lblSupport: TLabel;
 
       procedure btnOKClick(Sender: TObject);
@@ -123,7 +119,7 @@ implementation
           lblVersion.Caption := ansiReplaceStr( ansiReplaceStr( tr( 'Version xyz Build abc' ), 'xyz', MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER ), 'abc', BUILDNUMBER);
           lblWebsite.Caption := tr( 'lblWebsite' );
           lblLicenseBlurb.Caption := tr( longString );
-          lblCopyright.Caption := tr( 'Copyright © 2003 - 2012 Colorado State University and University of Guelph' );
+          lblCopyright.Caption := tr( 'Copyright © 2003 - 2013 NAADSM Development Team' );
           lblSupport.Caption := tr( 'Please see the NAADSM website for contact and support information:' );
         end
       ;
@@ -137,7 +133,7 @@ implementation
 
   procedure TFormAbout.translateUIManual();
     begin
-      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'Colorado State University and University of Guelph' );
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'NAADSM Development Team' );
       lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
       lblWebsite.Caption := WEBSITE;
     end

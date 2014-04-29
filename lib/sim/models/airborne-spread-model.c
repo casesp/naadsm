@@ -110,7 +110,6 @@
 #define local_printf airborne_spread_model_printf
 #define local_fprintf airborne_spread_model_fprintf
 #define local_free airborne_spread_model_free
-#define handle_before_any_simulations_event airborne_spread_model_handle_before_any_simulations_event
 #define handle_new_day_event airborne_spread_model_handle_new_day_event
 #define check_and_infect airborne_spread_model_check_and_infect
 
@@ -142,14 +141,12 @@
 
 double round (double x);
 
-extern const char *HRD_status_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "airborne-spread-model"
 
 
-#define NEVENTS_LISTENED_FOR 2
-EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_NewDay };
+#define NEVENTS_LISTENED_FOR 1
+EVT_event_type_t events_listened_for[] = { EVT_NewDay };
 
 
 
@@ -188,40 +185,6 @@ typedef struct
   unsigned int rotating_index; /**< To go with pending_infections. */
 }
 local_data_t;
-
-
-
-/**
- * Before any simulations, this module declares all the causes which it may
- * state for an exposure or an infection.
- *
- * @param queue for any new events the module creates.
- */
-void
-handle_before_any_simulations_event (EVT_event_queue_t * queue)
-{
-  GPtrArray *exposure_causes, *infection_causes;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-
-  exposure_causes = g_ptr_array_sized_new (1);
-  g_ptr_array_add (exposure_causes, (gpointer)NAADSM_contact_type_abbrev[NAADSM_AirborneSpread]);
-  infection_causes = g_ptr_array_sized_new (1);
-  g_ptr_array_add (infection_causes, (gpointer)NAADSM_contact_type_abbrev[NAADSM_AirborneSpread]);
-  EVT_event_enqueue (queue, EVT_new_declaration_of_exposure_causes_event (exposure_causes));
-  EVT_event_enqueue (queue, EVT_new_declaration_of_infection_causes_event (infection_causes));
-
-  /* Note that we don't clean up the GPtrArrays.  They will be freed along with
-   * the declaration events after all interested sub-models have processed the
-   * events. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-  return;
-}
 
 
 
@@ -355,6 +318,9 @@ check_and_infect (int id, gpointer arg)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_and_infect (%s)", MODEL_NAME);
 #endif
 
+  /* Eliminate compiler warnings about uninitialized values */
+  q = NULL;
+
   callback_data = (callback_t *) arg;
   herds = callback_data->herds;
   herd1 = callback_data->herd1;
@@ -432,7 +398,7 @@ check_and_infect (int id, gpointer arg)
   day = callback_data->day;
   delay = (int) round (PDF_random (param_block->delay, rng));
   exposure = EVT_new_exposure_event (herd1, herd2, day,
-                                     NAADSM_contact_type_abbrev[NAADSM_AirborneSpread],
+                                     NAADSM_AirborneSpread,
                                      FALSE, exposure_is_adequate, delay);
   exposure->u.exposure.contact_type = NAADSM_AirborneSpread;
                                       
@@ -461,7 +427,7 @@ check_and_infect (int id, gpointer arg)
   if( (TRUE == exposure_is_adequate) && (herd2->status == Susceptible) ) 
     {
       attempt_to_infect =
-        EVT_new_attempt_to_infect_event (herd1, herd2, day, "Air");
+        EVT_new_attempt_to_infect_event (herd1, herd2, day, NAADSM_AirborneSpread);
 
       if (delay <= 0)
         {
@@ -622,9 +588,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 
   switch (event->type)
     {
-    case EVT_BeforeAnySimulations:
-      handle_before_any_simulations_event (queue);
-      break;
     case EVT_NewDay:
       handle_new_day_event (self, herds, &(event->u.new_day), rng, queue);
       break;
@@ -893,7 +856,7 @@ is_singleton (void)
  * Adds a set of parameters to an airborne spread model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   gboolean *from_production_type, *to_production_type;

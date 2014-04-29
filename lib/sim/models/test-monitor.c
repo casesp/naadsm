@@ -33,7 +33,6 @@
 #define local_printf test_monitor_printf
 #define local_fprintf test_monitor_fprintf
 #define local_free test_monitor_free
-#define handle_declaration_of_test_reasons_event test_monitor_handle_declaration_of_test_reasons_event
 #define handle_test_event test_monitor_handle_test_event
 #define handle_test_result_event test_monitor_handle_test_result_event
 
@@ -46,17 +45,13 @@
 
 #include "test-monitor.h"
 
-extern const char *HRD_status_name[];
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "test-monitor"
 
 
 
-#define NEVENTS_LISTENED_FOR 3
-EVT_event_type_t events_listened_for[] =
-  { EVT_DeclarationOfTestReasons, EVT_Test, EVT_TestResult };
+#define NEVENTS_LISTENED_FOR 2
+EVT_event_type_t events_listened_for[] = { EVT_Test, EVT_TestResult };
 
 
 
@@ -86,55 +81,6 @@ local_data_t;
 
 
 /**
- * Responds to a declaration of test reasons by recording the potential reasons
- * for a test.
- *
- * @param self the module.
- * @param event a declaration of test reasons event.
- */
-void
-handle_declaration_of_test_reasons_event (struct naadsm_model_t_ * self,
-                                          EVT_declaration_of_test_reasons_event_t * event)
-{
-  local_data_t *local_data;
-  unsigned int n, i, j;
-  char *reason;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
-
-#if DEBUG
-  g_debug ("----- ENTER handle_declaration_of_test_reasons_event (%s)", MODEL_NAME);
-#endif
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* If any potential reason is not already present in our reporting variables,
-   * add it, with an initial count of 0 tests. */
-  n = event->reasons->len;
-  for (i = 0; i < n; i++)
-    {
-      reason = (char *) g_ptr_array_index (event->reasons, i);
-      RPT_reporting_add_integer1 (local_data->cumul_nunits_tested_by_reason, 0, reason);
-      RPT_reporting_add_integer1 (local_data->cumul_nanimals_tested_by_reason, 0, reason);
-
-      drill_down_list[0] = reason;
-      for (j = 0; j < local_data->production_types->len; j++)
-        {
-          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
-          RPT_reporting_add_integer (local_data->cumul_nunits_tested_by_reason_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_nanimals_tested_by_reason_and_prodtype, 0,
-                                     drill_down_list);
-        }
-    }
-
-#if DEBUG
-  g_debug ("----- EXIT handle_declaration_of_test_reasons_event (%s)", MODEL_NAME);
-#endif
-}
-
-
-
-/**
  * Records a test.
  *
  * @param self the model.
@@ -145,7 +91,8 @@ handle_test_event (struct naadsm_model_t_ *self, EVT_test_event_t * event)
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *reason;
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER handle_test_event (%s)", MODEL_NAME);
@@ -153,14 +100,15 @@ handle_test_event (struct naadsm_model_t_ *self, EVT_test_event_t * event)
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
+  reason = NAADSM_control_reason_abbrev[event->reason];
 
   RPT_reporting_add_integer (local_data->cumul_nunits_tested, 1, NULL);
-  RPT_reporting_add_integer1 (local_data->cumul_nunits_tested_by_reason, 1, event->reason);
+  RPT_reporting_add_integer1 (local_data->cumul_nunits_tested_by_reason, 1, reason);
   RPT_reporting_add_integer1 (local_data->cumul_nunits_tested_by_prodtype, 1, herd->production_type_name);
   RPT_reporting_add_integer (local_data->cumul_nanimals_tested, herd->size, NULL);
-  RPT_reporting_add_integer1 (local_data->cumul_nanimals_tested_by_reason, herd->size, event->reason);
+  RPT_reporting_add_integer1 (local_data->cumul_nanimals_tested_by_reason, herd->size, reason);
   RPT_reporting_add_integer1 (local_data->cumul_nanimals_tested_by_prodtype, herd->size, herd->production_type_name);
-  drill_down_list[0] = event->reason;
+  drill_down_list[0] = reason;
   drill_down_list[1] = herd->production_type_name;
   if (local_data->cumul_nunits_tested_by_reason_and_prodtype->frequency != RPT_never)
     RPT_reporting_add_integer (local_data->cumul_nunits_tested_by_reason_and_prodtype, 1, drill_down_list);
@@ -196,29 +144,30 @@ handle_test_result_event (struct naadsm_model_t_ * self,
   /* -------------------------- */
   test.herd_index = event->herd->index;
 
-  if( 0 == strcmp( "DirFwd", event->reason ) )
+  if( event->reason == NAADSM_ControlTraceForwardDirect )
     {
       test.contact_type = NAADSM_DirectContact;
       test.trace_type = NAADSM_TraceForwardOrOut;  
     }
-  else if( 0 == strcmp( "DirBack", event->reason ) )
+  else if( event->reason == NAADSM_ControlTraceBackDirect )
     {
       test.contact_type = NAADSM_DirectContact;
       test.trace_type = NAADSM_TraceBackOrIn;    
     }
-  else if( 0 == strcmp( "IndFwd", event->reason ) )
+  else if( event->reason == NAADSM_ControlTraceForwardIndirect )
     {
       test.contact_type = NAADSM_IndirectContact;
       test.trace_type = NAADSM_TraceForwardOrOut;    
     }
-  else if( 0 == strcmp( "IndBack", event->reason ) )
+  else if( event->reason == NAADSM_ControlTraceBackIndirect )
     {
       test.contact_type = NAADSM_IndirectContact;
       test.trace_type = NAADSM_TraceBackOrIn;    
     }
   else
     {
-      g_error( "Unrecognize event reason (%s) in test-monitor.handle_test_result_event", event->reason );  
+      g_error( "Unrecognized event reason (%s) in test-monitor.handle_test_result_event",
+               NAADSM_control_reason_name[event->reason] );  
     } 
 
   if( event->positive && event->correct )
@@ -296,9 +245,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 
   switch (event->type)
     {
-    case EVT_DeclarationOfTestReasons:
-      handle_declaration_of_test_reasons_event (self, &(event->u.declaration_of_test_reasons));
-      break;
     case EVT_Test:
       handle_test_event (self, &(event->u.test));
       break;
@@ -522,7 +468,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   RPT_frequency_t freq;
   gboolean success;
   gboolean broken_down;
-  unsigned int i;         /* loop counter */
+  unsigned int i, j;         /* loop counters */
   char *prodtype_name;
 
 #if DEBUG
@@ -671,6 +617,28 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
       RPT_reporting_set_integer1 (local_data->cumul_nunits_falsepos_by_prodtype, 0, prodtype_name);
       RPT_reporting_set_integer1 (local_data->cumul_nunits_falseneg_by_prodtype, 0, prodtype_name);
       RPT_reporting_set_integer1 (local_data->cumul_nanimals_tested_by_prodtype, 0, prodtype_name);
+    }
+  for (i = 0; i < NAADSM_NCONTROL_REASONS; i++)
+    {
+      const char *reason;
+      const char *drill_down_list[3] = { NULL, NULL, NULL };
+      if ((NAADSM_control_reason)i == NAADSM_ControlReasonUnspecified
+          || (NAADSM_control_reason)i == NAADSM_ControlRing
+          || (NAADSM_control_reason)i == NAADSM_ControlDetection
+          || (NAADSM_control_reason)i == NAADSM_ControlInitialState)
+        continue;
+      reason = NAADSM_control_reason_abbrev[i];
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_tested_by_reason, 0, reason);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_tested_by_reason, 0, reason);
+      drill_down_list[0] = reason;
+      for (j = 0; j < local_data->production_types->len; j++)
+        {
+          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
+          RPT_reporting_add_integer (local_data->cumul_nunits_tested_by_reason_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_nanimals_tested_by_reason_and_prodtype, 0,
+                                     drill_down_list);
+        }
     }
 
 #if DEBUG

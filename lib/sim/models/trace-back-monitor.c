@@ -64,10 +64,6 @@ EVT_event_type_t events_listened_for[] = { EVT_NewDay, EVT_TraceResult };
 
 
 
-extern const char *RPT_frequency_name[];
-
-
-
 /** Specialized information for this model. */
 typedef struct
 {
@@ -141,8 +137,8 @@ handle_trace_result_event (struct naadsm_model_t_ *self, EVT_trace_result_event_
 {
   local_data_t *local_data;
   HRD_herd_t *identified_herd, *origin_herd;
-  char *contact_type_name;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *contact_type_name;
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   HRD_trace_t trace;
   
   #if DEBUG
@@ -473,8 +469,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projections,
   gboolean success;
   gboolean broken_down;
   unsigned int i, j;      /* loop counters */
-  char *contact_type_name, *prodtype_name;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *contact_type_name;
+  char *prodtype_name;
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER new (%s)", MODEL_NAME);

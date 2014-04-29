@@ -3,7 +3,7 @@ object FormAbout: TFormAbout
   Top = 223
   BorderStyle = bsDialog
   Caption = 'About NAADSM'
-  ClientHeight = 473
+  ClientHeight = 345
   ClientWidth = 517
   Color = clWhite
   Font.Charset = DEFAULT_CHARSET
@@ -22,7 +22,7 @@ object FormAbout: TFormAbout
     Left = 0
     Top = 0
     Width = 517
-    Height = 473
+    Height = 345
     Align = alClient
     BevelInner = bvLowered
     BevelWidth = 2
@@ -32,17 +32,17 @@ object FormAbout: TFormAbout
       Left = 4
       Top = 4
       Width = 509
-      Height = 465
+      Height = 337
       Align = alClient
       BevelOuter = bvNone
       Color = clAqua
       TabOrder = 0
       object pnlButtons: TPanel
         Left = 0
-        Top = 432
+        Top = 297
         Width = 509
-        Height = 33
-        Align = alBottom
+        Height = 40
+        Align = alClient
         BevelOuter = bvNone
         Color = clWhite
         TabOrder = 0
@@ -79,7 +79,7 @@ object FormAbout: TFormAbout
           Top = 0
           Width = 509
           Height = 193
-          Align = alClient
+          Align = alTop
           BevelOuter = bvNone
           Color = clWhite
           TabOrder = 0
@@ -4211,10 +4211,10 @@ object FormAbout: TFormAbout
       end
       object pnlLicense: TPanel
         Left = 0
-        Top = 328
+        Top = 193
         Width = 509
         Height = 104
-        Align = alBottom
+        Align = alTop
         BevelOuter = bvNone
         Color = clWhite
         TabOrder = 2
@@ -4232,109 +4232,13 @@ object FormAbout: TFormAbout
           WordWrap = True
         end
         object lblCopyright: TLabel
-          Left = 40
+          Left = 104
           Top = 8
-          Width = 433
-          Height = 26
+          Width = 261
+          Height = 13
           Alignment = taCenter
-          Caption = 
-            'Copyright '#169' 2003 - 2008 Colorado State University and University' +
-            ' of Guelph'
+          Caption = 'Copyright '#169' 2003 - 2013 NAADSM Development Team'
           WordWrap = True
-        end
-      end
-      object sbxCredits: TScrollBox
-        Left = 0
-        Top = 193
-        Width = 509
-        Height = 135
-        Align = alClient
-        TabOrder = 3
-        inline fraCredits: TFrameCredits
-          Left = 0
-          Top = 0
-          Width = 505
-          Height = 131
-          Align = alClient
-          TabOrder = 0
-          inherited Panel2: TPanel
-            Width = 489
-            inherited Panel4: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel8: TPanel
-            Width = 489
-          end
-          inherited Panel18: TPanel
-            Width = 489
-          end
-          inherited Panel22: TPanel
-            Width = 489
-          end
-          inherited Panel5: TPanel
-            Width = 489
-            inherited Panel7: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel9: TPanel
-            Width = 489
-            inherited Panel11: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel12: TPanel
-            Width = 489
-            inherited Panel16: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel19: TPanel
-            Width = 489
-            inherited Panel21: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel23: TPanel
-            Width = 489
-            inherited Panel25: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel29: TPanel
-            Width = 489
-            inherited Panel30: TPanel
-              Width = 487
-            end
-          end
-          inherited Panel31: TPanel
-            Width = 489
-            inherited Panel33: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel34: TPanel
-            Width = 489
-            inherited Panel36: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel1: TPanel
-            Width = 489
-          end
-          inherited Panel37: TPanel
-            Width = 489
-            inherited Panel17: TPanel
-              Width = 247
-            end
-          end
-          inherited Panel15: TPanel
-            Width = 489
-            inherited Panel39: TPanel
-              Width = 247
-            end
-          end
         end
       end
     end

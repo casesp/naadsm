@@ -191,7 +191,7 @@ handle_before_each_simulation_event (struct naadsm_model_t_ * self,
         case InfectiousSubclinical:
         case InfectiousClinical:
         case NaturallyImmune:
-          event = EVT_new_infection_event (NULL, herd, 0, "Ini");
+          event = EVT_new_infection_event (NULL, herd, 0, NAADSM_InitiallyInfected);
           event->u.infection.override_initial_state = herd->initial_status;
           event->u.infection.override_days_in_state = herd->days_in_initial_status;
           event->u.infection.override_days_left_in_state = herd->days_left_in_initial_status;
@@ -436,7 +436,7 @@ resolve_conflicts (gpointer key, gpointer value, gpointer user_data)
       e = EVT_new_infection_event (attempt->u.attempt_to_infect.infecting_herd,
                                    herd,
                                    attempt->u.attempt_to_infect.day,
-                                   attempt->u.attempt_to_infect.cause);
+                                   attempt->u.attempt_to_infect.contact_type);
       e->u.infection.override_initial_state =
         attempt->u.attempt_to_infect.override_initial_state;
       e->u.infection.override_days_in_state =
@@ -724,7 +724,7 @@ is_singleton (void)
  * Adds a set of parameters to a conflict resolver model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
 #if DEBUG
   g_debug ("----- ENTER set_params (%s)", MODEL_NAME);

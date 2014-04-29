@@ -106,8 +106,7 @@ distance_sq (double x1, double y1, double x2, double y2)
 /**
  * Creates a new spatial search object.
  *
- * @param y the single y-value.
- * @return a pointer to a newly-created REL_chart_t structure.
+ * @return a pointer to a newly-created spatial_search_t structure.
  */
 spatial_search_t *
 new_spatial_search (void)
@@ -191,8 +190,7 @@ spatial_search_add_point (spatial_search_t *searcher, double x, double y)
  * structure will be filled in.  The 8 doubles in the bounding_box array are
  * x,y pairs in counter-clockwise.
  *
- * @param herds a herd list.  The herd lats and lons should have been converted
- *   to projected x,y coordinates before this function is called.
+ * @param searcher the spatial search object.
  */
 void
 find_oriented_bounding_box (spatial_search_t *searcher)
@@ -214,6 +212,9 @@ find_oriented_bounding_box (spatial_search_t *searcher)
 #if DEBUG
   g_debug ("----- ENTER find_oriented_bounding_box");
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  private_data = NULL;
 
   npoints = searcher->npoints;
   if (npoints == 0)

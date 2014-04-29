@@ -1,14 +1,14 @@
 # NAADSMInst.nsi
 # --------------
 # Begin: 2007/01/10
-# Last revision: $Date: 2011-11-24 00:05:07 $ $Author: areeves $
-# Version: $Revision: 1.25.4.20 $
+# Last revision: $Date: 2013-06-27 19:11:22 $ $Author: areeves $
+# Version: $Revision: 1.25.4.21 $
 # Project: NSIS installer script for NAADSM
 # Website: http://www.naadsm.org
 # Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
-# Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
-# Copyright (C) 2007 - 2011 Animal Population Health Institute, Colorado State University
+# Copyright (C) 2007 - 2013 NAADSM Development Team
 # 
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 # Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -16,7 +16,7 @@
 
 
 #Name of the Program being installed
-Name "NAADSM 3.2.18"
+Name "NAADSM 3.2.19"
 
 #NOTE: Can use the 'Icon' command to specify an icon file(.ico) for the .exe file.
 Icon installerIcon.ico
@@ -25,7 +25,7 @@ Icon installerIcon.ico
 outFile "NAADSMSetup.exe"
 
 #Default Installation Directory
-installDir "$PROGRAMFILES\NAADSM 3.2.18"
+installDir "$PROGRAMFILES\NAADSM 3.2.19"
 
 #Sets the text to be shown in the license page
 LicenseData ../license.txt
@@ -35,7 +35,7 @@ page custom startDialog "" ": Start Dialog"
  Function startDialog
  
   MessageBox MB_OKCANCEL "This application will install \
-  NAADSM version 3.2.18 on your computer. \ 
+  NAADSM version 3.2.19 on your computer. \ 
   Click OK to continue." \
   IDCANCEL NoCancelAbort 
   Abort
@@ -101,16 +101,16 @@ file "..\license.txt"
 writeUninstaller $INSTDIR\NAADSMUninstall.exe
 
 #the following 2 commands add uninstall functionality in Add/Remove Programs
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.18" \
-                 "DisplayName" "NAADSM 3.2.18"
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.18" \
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19" \
+                 "DisplayName" "NAADSM 3.2.19"
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19" \
                  "UninstallString" "$INSTDIR\NAADSMUninstall.exe"
 sectionEnd
 
 #this section can also be selectively installed by the user
 #	and it is checked by default
 section "Install Start menu shortcut"
-createShortCut "$SMPROGRAMS\NAADSM 3.2.18.lnk" "$INSTDIR\SpreadModel.exe"
+createShortCut "$SMPROGRAMS\NAADSM 3.2.19.lnk" "$INSTDIR\SpreadModel.exe"
 sectionEnd
 
 #this section can be selectively installed by the user
@@ -118,7 +118,7 @@ sectionEnd
 section /o "Install desktop shortcut"
 setOutPath $DESKTOP
 #creates a shortcut to the executable file
-createShortCut "$DESKTOP\NAADSM 3.2.18.lnk" "$INSTDIR\SpreadModel.exe"
+createShortCut "$DESKTOP\NAADSM 3.2.19.lnk" "$INSTDIR\SpreadModel.exe"
 sectionEnd
 
 #brings up the uninstall confirmation page before uninstalling
@@ -156,20 +156,20 @@ section "Uninstall"
   Delete "$INSTDIR\ZipDll.dll"
   Delete "$INSTDIR\spreadmodel.ini"
 
-  ifFileExists "$SMPROGRAMS\NAADSM 3.2.18.lnk" DeleteSMlink DoNothingSM
+  ifFileExists "$SMPROGRAMS\NAADSM 3.2.19.lnk" DeleteSMlink DoNothingSM
   DeleteSMlink:
-  Delete "$SMPROGRAMS\NAADSM 3.2.18.lnk"
+  Delete "$SMPROGRAMS\NAADSM 3.2.19.lnk"
   
   DoNothingSM:
 
-  ifFileExists "$DESKTOP\NAADSM 3.2.18.lnk" DeleteDesktopLink DoNothingDESK
+  ifFileExists "$DESKTOP\NAADSM 3.2.19.lnk" DeleteDesktopLink DoNothingDESK
   DeleteDesktopLink:
-  Delete "$DESKTOP\NAADSM 3.2.18.lnk"
+  Delete "$DESKTOP\NAADSM 3.2.19.lnk"
 
   DoNothingDESK:
 
   RMDir $INSTDIR
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.18"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19"
 
 sectionEnd

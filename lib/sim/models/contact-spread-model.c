@@ -100,7 +100,6 @@
 #define local_printf contact_spread_model_printf
 #define local_fprintf contact_spread_model_fprintf
 #define local_free contact_spread_model_free
-#define handle_before_any_simulations_event contact_spread_model_handle_before_any_simulations_event
 #define handle_new_day_event contact_spread_model_handle_new_day_event
 #define handle_public_announcement_event contact_spread_model_handle_public_announcement_event
 #define check_and_choose contact_spread_model_check_and_choose
@@ -136,17 +135,14 @@
 
 double round (double x);
 
-extern const char *HRD_status_name[];
-extern const char *EVT_event_type_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "contact-spread-model"
 
 
 
-#define NEVENTS_LISTENED_FOR 3
+#define NEVENTS_LISTENED_FOR 2
 EVT_event_type_t events_listened_for[] =
-  { EVT_BeforeAnySimulations, EVT_NewDay, EVT_PublicAnnouncement };
+  { EVT_NewDay, EVT_PublicAnnouncement };
 
 
 
@@ -205,72 +201,6 @@ typedef struct
   int public_announcement_day;
 }
 local_data_t;
-
-
-
-/**
- * Before any simulations, this module declares all the causes which it may
- * state for an exposure or an infection.
- *
- * @param self this module.
- * @param queue for any new events the model creates.
- */
-void
-handle_before_any_simulations_event (struct naadsm_model_t_ * self,
-                                     EVT_event_queue_t * queue)
-{
-  local_data_t *local_data;
-  unsigned int nprod_types, i, j;
-  gboolean causes_direct, causes_indirect;
-  GPtrArray *exposure_causes, *infection_causes;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* Find out if any parameters have been defined for direct contact. */
-  nprod_types = local_data->production_types->len;
-  causes_direct = FALSE;
-  for (i = 0; i < nprod_types && causes_direct == FALSE; i++)
-    if (local_data->param_block[NAADSM_DirectContact][i] != NULL)
-      for (j = 0; j < nprod_types && causes_direct == FALSE; j++)
-        if (local_data->param_block[NAADSM_DirectContact][i][j] != NULL)
-          causes_direct = TRUE;
-
-  /* Find out if any parameters have been defined for indirect contact. */
-  causes_indirect = FALSE;
-  for (i = 0; i < nprod_types && causes_indirect == FALSE; i++)
-    if (local_data->param_block[NAADSM_IndirectContact][i] != NULL)
-      for (j = 0; j < nprod_types && causes_indirect == FALSE; j++)
-        if (local_data->param_block[NAADSM_IndirectContact][i][j] != NULL)
-          causes_indirect = TRUE;
-
-  exposure_causes = g_ptr_array_new ();
-  infection_causes = g_ptr_array_new ();
-  if (causes_direct)
-    {
-      g_ptr_array_add (exposure_causes, (char *) NAADSM_contact_type_abbrev[NAADSM_DirectContact]);
-      g_ptr_array_add (infection_causes, (char *) NAADSM_contact_type_abbrev[NAADSM_DirectContact]);
-    }
-  if (causes_indirect)
-    {
-      g_ptr_array_add (exposure_causes, (char *) NAADSM_contact_type_abbrev[NAADSM_IndirectContact]);
-      g_ptr_array_add (infection_causes, (char *) NAADSM_contact_type_abbrev[NAADSM_IndirectContact]);
-    }
-  EVT_event_enqueue (queue, EVT_new_declaration_of_exposure_causes_event (exposure_causes));
-  EVT_event_enqueue (queue, EVT_new_declaration_of_infection_causes_event (infection_causes));
-
-  /* Note that we don't clean up the GPtrArrays.  They will be freed along with
-   * the declaration events after all interested sub-models have processed the
-   * events. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-  return;
-}
 
 
 
@@ -711,7 +641,10 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new_day_event_handler - Optimized Version" );
 #endif
-  
+
+  /* Eliminate compiler warnings about uninitialized values */
+  q = NULL;
+
   max_distance = 0.0;  
   new_infections = 0;
   sum_exposures = 0;
@@ -1114,7 +1047,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
   
                         shipping_delay = (int) round (PDF_random (param_block->shipping_delay, rng));  
                         exposure = EVT_new_exposure_event (herd1, herd2, event->day,
-                                                           NAADSM_contact_type_abbrev[contact_type], TRUE, 
+                                                           contact_type, TRUE, 
                                                            contact_is_adequate, shipping_delay);
                         exposure->u.exposure.contact_type = contact_type; /* This seems redundant (exposure.cause does the same thing), but there's probably a reason.... */
                               
@@ -1147,7 +1080,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
                           new_infections = new_infections + 1;
                           attempt_to_infect = EVT_new_attempt_to_infect_event (herd1, herd2,
                                                                                event->day,
-                                                                               NAADSM_contact_type_abbrev[contact_type]);
+                                                                               contact_type);
                           if (shipping_delay <= 0)
                             EVT_event_enqueue (queue, attempt_to_infect);
                           else
@@ -1282,9 +1215,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #endif
   switch (event->type)
     {
-    case EVT_BeforeAnySimulations:
-      handle_before_any_simulations_event (self, queue);
-      break;
     case EVT_NewDay:
       handle_new_day_event (self, herds, zones, &(event->u.new_day), rng, queue);
       break;
@@ -1646,7 +1576,7 @@ is_singleton (void)
  * Adds a set of parameters to a contact spread model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   param_block_t t;

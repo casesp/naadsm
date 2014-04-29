@@ -13,8 +13,6 @@
 
 #define PROMPT "> "
 
-extern char* HRD_status_name[];
-
 /** @file herd/test/shell.c
  * A simple shell to exercise libherd.  It provides a way to create herds and
  * call the functions offered by the <a href="herd_8h.html">library</a>, so
@@ -79,6 +77,8 @@ extern char* HRD_status_name[];
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 HRD_herd_list_t *current_herds = NULL;
@@ -227,11 +227,7 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-#ifdef USE_PLAIN_YACC
-yyerror (char *s )
-#else
-yyerror (char *s, int fatal)
-#endif
+yyerror (char const *s)
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;
@@ -279,6 +275,8 @@ main (int argc, char *argv[])
     yyin = stdin;
   while (!feof(yyin))
     yyparse();
+
+  return EXIT_SUCCESS;
 }
 
 /* end of file shell.y */

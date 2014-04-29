@@ -89,7 +89,7 @@ int charpos = 0, tokenpos = 0;
     yylval.sval = g_strdup (yytext);
     return VARNAME;
   }
-  [+-]?[[:digit:]]+(\.[[:digit:]]+)([eE][+-][[:digit:]]+)? {
+  [+-]?[[:digit:]]+((\.[[:digit:]]+)|([eE][+-][[:digit:]]+)|(\.[[:digit:]]+[eE][+-][[:digit:]]+)) {
     ADJUST;
     yylval.fval = (double)atof(yytext);
     return FLOAT;

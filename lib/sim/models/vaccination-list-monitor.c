@@ -57,10 +57,6 @@ EVT_event_type_t events_listened_for[] =
 
 
 
-extern const char *RPT_frequency_name[];
-
-
-
 /** Specialized information for this model. */
 typedef struct
 {
@@ -71,7 +67,8 @@ typedef struct
     table.  If it is awaiting vaccination, its associated value will be an
     integer (cast to a gpointer using GINT_TO_POINTER) indicating how many
     times the unit is in queue. */
-  unsigned int peak_nherds, peak_nanimals;
+  unsigned int peak_nherds;
+  double peak_nanimals;
   unsigned int peak_wait;
   double sum; /**< The numerator for calculating the average wait time. */
   unsigned int count; /**< The denominator for calculating the average wait time. */
@@ -80,7 +77,7 @@ typedef struct
   unsigned int unique_herds_awaiting_vaccination;
   RPT_reporting_t *nanimals_awaiting_vaccination;
   RPT_reporting_t *nanimals_awaiting_vaccination_by_prodtype;
-  unsigned int unique_animals_awaiting_vaccination;
+  double unique_animals_awaiting_vaccination;
   RPT_reporting_t *peak_nherds_awaiting_vaccination;
   RPT_reporting_t *peak_nherds_awaiting_vaccination_day;
   RPT_reporting_t *peak_nanimals_awaiting_vaccination;
@@ -114,11 +111,10 @@ handle_new_day_event (struct naadsm_model_t_ *self)
   RPT_reporting_add_integer (local_data->unit_days_in_queue,
                              local_data->unique_herds_awaiting_vaccination,
                              NULL);
-  RPT_reporting_add_integer (local_data->animal_days_in_queue,
-                             local_data->unique_animals_awaiting_vaccination,
-                             NULL);
+  RPT_reporting_add_real (local_data->animal_days_in_queue,
+                          local_data->unique_animals_awaiting_vaccination,
+                          NULL);
 
-end:
 #if DEBUG
   g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
 #endif
@@ -143,7 +139,8 @@ handle_commitment_to_vaccinate_event (struct naadsm_model_t_ *self,
   HRD_herd_t *herd;
   gpointer p;
   int count;
-  unsigned int nherds, nanimals;
+  unsigned int nherds;
+  double nanimals;
 
 #if DEBUG
   g_debug ("----- ENTER handle_commitment_to_vaccinate_event (%s)", MODEL_NAME);
@@ -159,7 +156,7 @@ handle_commitment_to_vaccinate_event (struct naadsm_model_t_ *self,
     {
       g_hash_table_insert (local_data->status, herd, GINT_TO_POINTER(1));
       local_data->unique_herds_awaiting_vaccination += 1;
-      local_data->unique_animals_awaiting_vaccination += herd->size;
+      local_data->unique_animals_awaiting_vaccination += (double)(herd->size);
     }
   else
     {
@@ -185,15 +182,15 @@ handle_commitment_to_vaccinate_event (struct naadsm_model_t_ *self,
       RPT_reporting_set_integer (local_data->peak_nherds_awaiting_vaccination_day, event->day, NULL);
     }
 
-  RPT_reporting_add_integer (local_data->nanimals_awaiting_vaccination, herd->size, NULL);
+  RPT_reporting_add_real (local_data->nanimals_awaiting_vaccination, (double)(herd->size), NULL);
   if (local_data->nanimals_awaiting_vaccination_by_prodtype->frequency != RPT_never)
-    RPT_reporting_add_integer1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
-                                herd->size, herd->production_type_name);
-  nanimals = RPT_reporting_get_integer (local_data->nanimals_awaiting_vaccination, NULL);
+    RPT_reporting_add_real1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
+                             (double)(herd->size), herd->production_type_name);
+  nanimals = RPT_reporting_get_real (local_data->nanimals_awaiting_vaccination, NULL);
   if (nanimals > local_data->peak_nanimals)
     {
       local_data->peak_nanimals = nanimals;
-      RPT_reporting_set_integer (local_data->peak_nanimals_awaiting_vaccination, nanimals,
+      RPT_reporting_set_real (local_data->peak_nanimals_awaiting_vaccination, nanimals,
                                  NULL);
       RPT_reporting_set_integer (local_data->peak_nanimals_awaiting_vaccination_day, event->day,
                                  NULL);
@@ -255,7 +252,7 @@ handle_vaccination_event (struct naadsm_model_t_ *self, EVT_vaccination_event_t 
         {
           g_hash_table_remove (local_data->status, herd);
           local_data->unique_herds_awaiting_vaccination -= 1;
-          local_data->unique_animals_awaiting_vaccination -= herd->size;
+          local_data->unique_animals_awaiting_vaccination -= (double)(herd->size);
         }
       else
         g_hash_table_insert (local_data->status, herd, GINT_TO_POINTER(count-1));
@@ -266,10 +263,10 @@ handle_vaccination_event (struct naadsm_model_t_ *self, EVT_vaccination_event_t 
         RPT_reporting_sub_integer1 (local_data->nherds_awaiting_vaccination_by_prodtype, 1,
                                     herd->production_type_name);
 
-      RPT_reporting_sub_integer (local_data->nanimals_awaiting_vaccination, herd->size, NULL);
+      RPT_reporting_sub_real (local_data->nanimals_awaiting_vaccination, (double)(herd->size), NULL);
       if (local_data->nanimals_awaiting_vaccination_by_prodtype->frequency != RPT_never)
-        RPT_reporting_sub_integer1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
-                                    herd->size, herd->production_type_name);
+        RPT_reporting_sub_real1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
+                                 (double)(herd->size), herd->production_type_name);
     }
 
 #if DEBUG
@@ -324,7 +321,7 @@ handle_vaccination_canceled_event (struct naadsm_model_t_ *self,
     {
       g_hash_table_remove (local_data->status, herd);
       local_data->unique_herds_awaiting_vaccination -= 1;
-      local_data->unique_animals_awaiting_vaccination -= herd->size;
+      local_data->unique_animals_awaiting_vaccination -= (double)(herd->size);
     }
   else
     g_hash_table_insert (local_data->status, herd, GINT_TO_POINTER(count-1));
@@ -335,10 +332,10 @@ handle_vaccination_canceled_event (struct naadsm_model_t_ *self,
     RPT_reporting_sub_integer1 (local_data->nherds_awaiting_vaccination_by_prodtype, 1,
                                 herd->production_type_name);
 
-  RPT_reporting_sub_integer (local_data->nanimals_awaiting_vaccination, herd->size, NULL);
+  RPT_reporting_sub_real (local_data->nanimals_awaiting_vaccination, (double)(herd->size), NULL);
   if (local_data->nanimals_awaiting_vaccination_by_prodtype->frequency != RPT_never)
-    RPT_reporting_sub_integer1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
-                                herd->size, herd->production_type_name);
+    RPT_reporting_sub_real1 (local_data->nanimals_awaiting_vaccination_by_prodtype,
+                             (double)(herd->size), herd->production_type_name);
 
 #if DEBUG
   g_debug ("----- EXIT handle_vaccination_canceled_event (%s)", MODEL_NAME);
@@ -401,7 +398,6 @@ void
 reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  int i;
 
 #if DEBUG
   g_debug ("----- ENTER reset (%s)", MODEL_NAME);
@@ -632,7 +628,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   local_data->nherds_awaiting_vaccination_by_prodtype =
     RPT_new_reporting ("vacwU", RPT_group, RPT_never);
   local_data->nanimals_awaiting_vaccination =
-    RPT_new_reporting ("vacwAAll", RPT_integer, RPT_never);
+    RPT_new_reporting ("vacwAAll", RPT_real, RPT_never);
   local_data->nanimals_awaiting_vaccination_by_prodtype =
     RPT_new_reporting ("vacwA", RPT_group, RPT_never);
   local_data->peak_nherds_awaiting_vaccination =
@@ -640,7 +636,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   local_data->peak_nherds_awaiting_vaccination_day =
     RPT_new_reporting ("vacwUMaxDay", RPT_integer, RPT_never);
   local_data->peak_nanimals_awaiting_vaccination =
-    RPT_new_reporting ("vacwAMax", RPT_integer, RPT_never);
+    RPT_new_reporting ("vacwAMax", RPT_real, RPT_never);
   local_data->peak_nanimals_awaiting_vaccination_day =
     RPT_new_reporting ("vacwAMaxDay", RPT_integer, RPT_never);
   local_data->peak_wait_time =
@@ -650,7 +646,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   local_data->unit_days_in_queue =
     RPT_new_reporting ("vacwUDaysInQueue", RPT_integer, RPT_never);
   local_data->animal_days_in_queue =
-    RPT_new_reporting ("vacwADaysInQueue", RPT_integer, RPT_never);
+    RPT_new_reporting ("vacwADaysInQueue", RPT_real, RPT_never);
   g_ptr_array_add (self->outputs, local_data->nherds_awaiting_vaccination);
   g_ptr_array_add (self->outputs, local_data->nherds_awaiting_vaccination_by_prodtype);
   g_ptr_array_add (self->outputs, local_data->nanimals_awaiting_vaccination);
@@ -728,8 +724,8 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
     {
       RPT_reporting_set_integer1 (local_data->nherds_awaiting_vaccination_by_prodtype, 0,
                                   (char *) g_ptr_array_index (local_data->production_types, i));
-      RPT_reporting_set_integer1 (local_data->nanimals_awaiting_vaccination_by_prodtype, 0,
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
+      RPT_reporting_set_real1 (local_data->nanimals_awaiting_vaccination_by_prodtype, 0,
+                               (char *) g_ptr_array_index (local_data->production_types, i));
     }
 
   /* Initialize the herd status table. */

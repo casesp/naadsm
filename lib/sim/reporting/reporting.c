@@ -77,7 +77,7 @@ const int RPT_frequency_day[] = { 0, 0, 1 };
  * @return a pointer to a newly-created, initialized RPT_reporting_t structure.
  */
 RPT_reporting_t *
-RPT_new_reporting (char *name, RPT_type_t type, RPT_frequency_t frequency)
+RPT_new_reporting (const char *name, RPT_type_t type, RPT_frequency_t frequency)
 {
   RPT_reporting_t *reporting;
 
@@ -446,7 +446,7 @@ RPT_reporting_set_frequency (RPT_reporting_t * reporting, RPT_frequency_t freque
  *   assumed to be an integer output variable.
  */
 void
-RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subelement_name)
+RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -500,7 +500,7 @@ RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subel
  *   output variable.
  */
 void
-RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subelement_name)
+RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -513,7 +513,7 @@ RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subel
   else
     {
       if (reporting->type != RPT_group)
-        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+        g_error ("Attempting to drill down to subelement \"%d\" of variable \"%s\", but \"%s\" is type %s, not group",
                  subelement_name[0], reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
@@ -545,7 +545,7 @@ RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subel
  *   assumed to be an integer output variable.
  */
 void
-RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subelement_name)
+RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -599,7 +599,7 @@ RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subel
  *   output variable.
  */
 void
-RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subelement_name)
+RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -613,7 +613,7 @@ RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subel
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -644,7 +644,7 @@ RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subel
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 long
-RPT_reporting_get_integer (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_integer (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -683,7 +683,7 @@ RPT_reporting_get_integer (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 long
-RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_integer1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -698,7 +698,7 @@ RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -721,7 +721,7 @@ RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
  *   assumed to be a real output variable.
  */
 void
-RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subelement_name)
+RPT_reporting_set_real (RPT_reporting_t * reporting, double value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -775,7 +775,7 @@ RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subele
  *   variable.
  */
 void
-RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subelement_name)
+RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -789,7 +789,7 @@ RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subele
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -820,7 +820,7 @@ RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subele
  *   assumed to be a real output variable.
  */
 void
-RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subelement_name)
+RPT_reporting_add_real (RPT_reporting_t * reporting, double value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -874,7 +874,7 @@ RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subele
  *   variable.
  */
 void
-RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subelement_name)
+RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -888,7 +888,7 @@ RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subele
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -919,7 +919,7 @@ RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subele
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 double
-RPT_reporting_get_real (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_real (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -958,7 +958,7 @@ RPT_reporting_get_real (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 double
-RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_real1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -973,7 +973,7 @@ RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -997,7 +997,7 @@ RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
  *   assumed to be a text output variable.
  */
 void
-RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelement_name)
+RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1052,7 +1052,7 @@ RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelem
  *   variable.
  */
 void
-RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelement_name)
+RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1066,7 +1066,7 @@ RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelem
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -1097,7 +1097,7 @@ RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelem
  *   assumed to be a text output variable.
  */
 void
-RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **subelement_name)
+RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1151,7 +1151,7 @@ RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **sube
  *   variable.
  */
 void
-RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *subelement_name)
+RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1165,7 +1165,7 @@ RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *sube
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -1196,7 +1196,7 @@ RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *sube
  * @returns the value, or NULL if a non-existent subelement was specified.
  */
 char *
-RPT_reporting_get_text (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_text (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1235,7 +1235,7 @@ RPT_reporting_get_text (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or NULL if a non-existent subelement was specified.
  */
 char *
-RPT_reporting_get_text1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_text1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1250,7 +1250,7 @@ RPT_reporting_get_text1 (RPT_reporting_t * reporting, char *subelement_name)
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -1298,7 +1298,7 @@ RPT_reporting_set_null_as_GDataForeachFunc (GQuark key_id, gpointer data, gpoint
  *   not a group variable, or if you want all sub-categories set to NULL.
  */
 void
-RPT_reporting_set_null (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_set_null (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1352,7 +1352,7 @@ RPT_reporting_set_null (RPT_reporting_t * reporting, char **subelement_name)
  *   or if you want all sub-categories set to NULL.
  */
 void
-RPT_reporting_set_null1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_set_null1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1370,7 +1370,7 @@ RPT_reporting_set_null1 (RPT_reporting_t * reporting, char *subelement_name)
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -1399,7 +1399,7 @@ RPT_reporting_set_null1 (RPT_reporting_t * reporting, char *subelement_name)
  * @returns TRUE if the variable is null, FALSE otherwise.
  */
 gboolean
-RPT_reporting_is_null (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_is_null (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1437,7 +1437,7 @@ RPT_reporting_is_null (RPT_reporting_t * reporting, char **subelement_name)
  * @returns TRUE if the variable is null, FALSE otherwise.
  */
 gboolean
-RPT_reporting_is_null1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_is_null1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1451,7 +1451,7 @@ RPT_reporting_is_null1 (RPT_reporting_t * reporting, char *subelement_name)
     {
       if (reporting->type != RPT_group)
         g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
-                 subelement_name[0], reporting->name, reporting->name,
+                 subelement_name, reporting->name, reporting->name,
                  RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
@@ -1621,7 +1621,7 @@ RPT_reporting_zero (RPT_reporting_t * reporting)
  *   RPT_never if s does not match any enumeration value.
  */
 RPT_frequency_t
-RPT_string_to_frequency (char *s)
+RPT_string_to_frequency (const char *s)
 {
   RPT_frequency_t type;
 
@@ -1694,6 +1694,9 @@ RPT_reporting_get_type (RPT_reporting_t * reporting)
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER RPT_reporting_get_type");
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  type = RPT_unknown_type;
 
   if (reporting == NULL)
     goto end;

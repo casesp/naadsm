@@ -86,8 +86,6 @@ double round (double x);
 
 #include "naadsm.h"
 
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "trace-back-destruction-model"
 
@@ -282,6 +280,8 @@ handle_record (EVT_event_t *exposure_record,
  *
  * @param self the model.
  * @param e an exposure event.
+ * @param rng a random number generator.
+ * @param queue for any new events the model creates.
  */
 void
 handle_exposure_event (struct naadsm_model_t_ *self, EVT_event_t * e,

@@ -2,7 +2,8 @@
 
 INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/herd -I$(top_srcdir)/rel_chart \
   -I$(top_srcdir)/spatial_search \
-  -I$(top_srcdir)/general -I$(top_srcdir)/sc_guilib -I$(top_srcdir)/zone
+  -I$(top_srcdir)/general -I$(top_srcdir)/sc_guilib -I$(top_srcdir)/zone \
+  -I$(top_srcdir)/replace
 INCLUDES += @GLIB_CFLAGS@ @GSL_CFLAGS@
 
 bin_PROGRAMS = xml2sm3herds

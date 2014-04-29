@@ -4,13 +4,13 @@ unit FormLanguageSettings;
 FormLanguageSettings.pas/dfm
 ----------------------------
 Begin: 2007/03/08
-Last revision: $Date: 2008-03-12 22:10:52 $ $Author: areeves $
-Version number: $Revision: 1.2 $
+Last revision: $Date: 2013-06-27 19:11:26 $ $Author: areeves $
+Version number: $Revision: 1.2.16.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2008 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

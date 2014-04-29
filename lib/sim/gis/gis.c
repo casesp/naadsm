@@ -306,7 +306,7 @@ GIS_point_in_polygon (gpc_polygon * poly, float x, float y)
   gboolean c = FALSE;
 
   for (i = 0; i < poly->num_contours; i++)
-    if (c = GIS_point_in_contour (&(poly->contour[i]), x, y))
+    if ((c = GIS_point_in_contour (&(poly->contour[i]), x, y)))
       break;
 
   return c;

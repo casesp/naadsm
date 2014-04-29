@@ -4,13 +4,13 @@ unit FormExport;
 FormExport.pas/dfm
 ------------------
 Begin: 2005/03/15
-Last revision: $Date: 2009-11-06 16:34:38 $ $Author: areeves $
-Version: $Revision: 1.35.4.1 $
+Last revision: $Date: 2013-06-27 19:11:26 $ $Author: areeves $
+Version: $Revision: 1.35.4.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

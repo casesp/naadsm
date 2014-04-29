@@ -111,8 +111,9 @@ get_initially_destroyed_herds (HRD_herd_list_t * herds, HRD_herd_t *** list)
  * Returns the herds with a given production type.
  *
  * @param herds a herd list.
+ * @param nherds the number of herds in the herd list.
  * @param production_type the desired production_type.
- * @param list a location in which to store the address of a list of pointers
+ * @param array a location in which to store the address of a list of pointers
  *   to herds.
  * @return the number of herds with the given production_type.
  */

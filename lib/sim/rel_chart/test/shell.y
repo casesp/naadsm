@@ -57,6 +57,8 @@
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 REL_chart_t *current_chart = NULL;
@@ -71,7 +73,6 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
 
 %token CHART
 %token LOOKUP RANGE
-%token NUM
 %token LPAREN RPAREN COMMA
 %token <fval> NUM
 %type <lval> num_list
@@ -172,11 +173,7 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-#ifdef USE_PLAIN_YACC
-yyerror (char *s)
-#else
-yyerror (char *s, int fatal)
-#endif
+yyerror (char const *s)
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;
@@ -220,6 +217,8 @@ main (int argc, char *argv[])
     yyin = stdin;
   while (!feof(yyin))
     yyparse();
+
+  return EXIT_SUCCESS;
 }
 
 /* end of file shell.y */

@@ -33,7 +33,6 @@
 #define local_fprintf exposure_monitor_fprintf
 #define local_free exposure_monitor_free
 #define handle_new_day_event exposure_monitor_handle_new_day_event
-#define handle_declaration_of_exposure_causes_event exposure_monitor_handle_declaration_of_exposure_causes_event
 #define handle_exposure_event exposure_monitor_handle_exposure_event
 
 #include "model.h"
@@ -51,13 +50,8 @@
 
 
 
-#define NEVENTS_LISTENED_FOR 3
-EVT_event_type_t events_listened_for[] =
-  { EVT_NewDay, EVT_DeclarationOfExposureCauses, EVT_Exposure };
-
-
-
-extern const char *RPT_frequency_name[];
+#define NEVENTS_LISTENED_FOR 2
+EVT_event_type_t events_listened_for[] = { EVT_NewDay, EVT_Exposure };
 
 
 
@@ -126,61 +120,6 @@ handle_new_day_event (struct naadsm_model_t_ *self)
 
 
 /**
- * Responds to a declaration of exposure causes by recording the potential
- * causes of exposure.
- *
- * @param self the model.
- * @param event a declaration of exposure causes event.
- */
-void
-handle_declaration_of_exposure_causes_event (struct naadsm_model_t_ *self,
-                                             EVT_declaration_of_exposure_causes_event_t * event)
-{
-  local_data_t *local_data;
-  unsigned int n, i, j;
-  char *cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
-
-#if DEBUG
-  g_debug ("----- ENTER handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
-#endif
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* If any potential cause is not already present in our reporting variables,
-   * add it, with an initial count of 0 exposures. */
-  n = event->causes->len;
-  for (i = 0; i < n; i++)
-    {
-      cause = (char *) g_ptr_array_index (event->causes, i);
-      RPT_reporting_append_text1 (local_data->exposures, "", cause);
-      RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_cause, 0, cause);
-
-      drill_down_list[0] = cause;
-      for (j = 0; j < local_data->production_types->len; j++)
-        {
-          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
-          RPT_reporting_add_integer (local_data->num_units_exposed_by_cause_and_prodtype, 0, drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_num_units_exposed_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->num_animals_exposed_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_num_animals_exposed_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-        }
-    }
-
-#if DEBUG
-  g_debug ("----- EXIT handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
-#endif
-}
-
-
-
-/**
  * Responds to an exposure event by recording it.
  *
  * @param self the model.
@@ -191,9 +130,10 @@ handle_exposure_event (struct naadsm_model_t_ *self, EVT_exposure_event_t * even
 {
   local_data_t *local_data;
   HRD_herd_t *exposing_herd, *exposed_herd;
+  const char *cause;
   char *peek;
   gboolean first_of_cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   HRD_expose_t update;
   
 #if DEBUG
@@ -205,14 +145,15 @@ handle_exposure_event (struct naadsm_model_t_ *self, EVT_exposure_event_t * even
   exposed_herd = event->exposed_herd;
 
   /* Update the text string that lists exposed herd indices. */
-  peek = RPT_reporting_get_text1 (local_data->exposures, event->cause);
+  cause = NAADSM_contact_type_abbrev[event->contact_type];
+  peek = RPT_reporting_get_text1 (local_data->exposures, cause);
   first_of_cause = (peek == NULL) || (strlen (peek) == 0);
 
   g_string_printf (local_data->source_and_target,
                    first_of_cause ? "%u->%u" : ",%u->%u",
                    event->exposing_herd->index, event->exposed_herd->index);
   RPT_reporting_append_text1 (local_data->exposures, local_data->source_and_target->str,
-                              event->cause);
+                              cause);
                                 
   update.src_index = exposing_herd->index;
   update.src_status = (NAADSM_disease_state) exposing_herd->status;
@@ -236,7 +177,7 @@ handle_exposure_event (struct naadsm_model_t_ *self, EVT_exposure_event_t * even
         break;      
       default:
         /* If this condition occurs, someone forgot something. */
-        g_error( "An unrecognized exposure mechanism (%s) occurred in handle_exposure_event", event->cause );
+        g_error( "An unrecognized exposure mechanism (%s) occurred in handle_exposure_event", cause );
         update.exposure_method = 0;     
     }
 
@@ -251,25 +192,25 @@ handle_exposure_event (struct naadsm_model_t_ *self, EVT_exposure_event_t * even
 #endif  
 
 #if UNDEFINED
-  printf ("Herd at index %d exposed by method %s\n", event->exposed_herd->index, event->cause);
+  printf ("Herd at index %d exposed by method %s\n", event->exposed_herd->index, cause);
 #endif
 
   /* Update the counts of exposures. */
   RPT_reporting_add_integer  (local_data->num_units_exposed, 1, NULL);
-  RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 1, event->cause);
+  RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 1, cause);
   RPT_reporting_add_integer1 (local_data->num_units_exposed_by_prodtype, 1, exposed_herd->production_type_name);
   RPT_reporting_add_integer  (local_data->num_animals_exposed, exposed_herd->size, NULL);
-  RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, exposed_herd->size, event->cause);
+  RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, exposed_herd->size, cause);
   RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_prodtype, exposed_herd->size, exposed_herd->production_type_name);
   RPT_reporting_add_integer  (local_data->cumul_num_units_exposed, 1, NULL);
-  RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 1, event->cause);
+  RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 1, cause);
   RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_prodtype, 1, exposed_herd->production_type_name);
   RPT_reporting_add_integer  (local_data->cumul_num_animals_exposed, exposed_herd->size, NULL);
   RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_cause, exposed_herd->size,
-                              event->cause);
+                              cause);
   RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_prodtype, exposed_herd->size,
                               exposed_herd->production_type_name);
-  drill_down_list[0] = event->cause;
+  drill_down_list[0] = cause;
   drill_down_list[1] = exposed_herd->production_type_name;
   if (local_data->num_units_exposed_by_cause_and_prodtype->frequency != RPT_never)
     RPT_reporting_add_integer (local_data->num_units_exposed_by_cause_and_prodtype, 1, drill_down_list);
@@ -316,10 +257,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     {
     case EVT_NewDay:
       handle_new_day_event (self);
-      break;
-    case EVT_DeclarationOfExposureCauses:
-      handle_declaration_of_exposure_causes_event (self,
-                                                   &(event->u.declaration_of_exposure_causes));
       break;
     case EVT_Exposure:
       handle_exposure_event (self, &(event->u.exposure));
@@ -539,7 +476,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   RPT_frequency_t freq;
   gboolean success;
   gboolean broken_down;
-  unsigned int i;      /* loop counter */
+  unsigned int i, j;      /* loop counters */
   char *prodtype_name;
 
 #if DEBUG
@@ -702,7 +639,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
     }
   free (ee);
 
-  /* Initialize the output variables we already know about. */
+  /* Initialize the output variables. */
   local_data->production_types = herds->production_type_names;
   n = local_data->production_types->len;
   for (i = 0; i < n; i++)
@@ -712,6 +649,32 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
       RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_prodtype, 0, prodtype_name);
       RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_prodtype, 0, prodtype_name);
       RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_prodtype, 0, prodtype_name);
+    }
+  for (i = 0; i < NAADSM_NCONTACT_TYPES; i++)
+    {
+      const char *cause;
+      const char *drill_down_list[3] = { NULL, NULL, NULL };
+      if ((NAADSM_contact_type)i == NAADSM_UnspecifiedInfectionType
+          || (NAADSM_contact_type)i == NAADSM_InitiallyInfected)
+        continue;
+      cause = NAADSM_contact_type_abbrev[i];
+      RPT_reporting_append_text1 (local_data->exposures, "", cause);
+      RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_cause, 0, cause);
+      drill_down_list[0] = cause;
+      for (j = 0; j < n; j++)
+        {
+          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
+          RPT_reporting_add_integer (local_data->num_units_exposed_by_cause_and_prodtype, 0, drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_num_units_exposed_by_cause_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->num_animals_exposed_by_cause_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_num_animals_exposed_by_cause_and_prodtype, 0,
+                                     drill_down_list);
+        }
     }
 
   local_data->source_and_target = g_string_new (NULL);

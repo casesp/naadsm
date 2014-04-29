@@ -4,13 +4,13 @@ unit FormAboutExperimental;
 FormAboutExperimental.pas/dfm
 -----------------------------
 Begin: 2006/04/03
-Last revision: $Date: 2012-08-14 19:02:11 $ $Author: areeves $
-Version: $Revision: 1.2.8.3 $
+Last revision: $Date: 2013-06-27 19:11:24 $ $Author: areeves $
+Version: $Revision: 1.2.8.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2012 Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -121,7 +121,7 @@ implementation
           lblWebsite.Caption := tr( 'lblWebsite' );
           lblAppTitle.Caption := 'NAADSM-' + BRANCHNAME;
           lblLicenseBlurb.Caption := tr( longString );
-          lblCopyright.Caption := tr( 'Copyright © 2003 - 2012 Colorado State University and University of Guelph' );
+          lblCopyright.Caption := tr( 'Copyright © 2003 - 2013 NAADSM Development Team' );
         end
       ;
 
@@ -134,7 +134,7 @@ implementation
 
   procedure TFormAboutExperimental.translateUIManual();
     begin
-      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'Colorado State University and University of Guelph' );
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'NAADSM Development Team' );
       lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
       lblWebsite.Caption := WEBSITE;
     end

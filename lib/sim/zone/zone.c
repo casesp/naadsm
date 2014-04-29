@@ -836,6 +836,10 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ZON_zone_add_focus");
 #endif
 
+  /* Eliminate compiler warnings about uninitialized values */
+  nholes = INT_MIN;
+  fragment_containing_focus = NULL;
+
   /* If the zone is a "background" zone, simply return the one fragment. */
   if (zone->radius < EPSILON)
     {
@@ -1017,41 +1021,16 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
 
       /* End of case where a new contour is added. */
     }
-  else if (newpoly->num_contours == zone->poly->num_contours)
+  else /* newpoly->num_contours <= zone->poly->num_contours */
     {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "new circle overlapped or was enclosed by existing zone fragment");
-#endif
+      #if DEBUG
+        if (newpoly->num_contours == zone->poly->num_contours)
+          g_debug ("new circle overlapped or was enclosed by existing zone fragment");
+        else
+          g_debug ("new circle merged two or more existing zone fragments");
+      #endif
       /* Use a point-in-polygon test to figure out which contour joined or
        * enclosed the circle. */
-      for (i = 0; i < newpoly->num_contours; i++)
-        if (GIS_point_in_contour (&(newpoly->contour[i]), x, y))
-          break;
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "point (%g,%g) is inside contour with index %i", x, y, i);
-#endif
-      /* Now find the most recently-created fragment that maps to that
-       * contour. */
-      for (iter = zone->fragments->tail; iter != NULL; iter = g_list_previous (iter))
-        {
-          fragment = (ZON_zone_fragment_t *) (iter->data);
-          if (fragment->contour == i)
-            break;
-        }
-      fragment_containing_focus = fragment;
-
-      /* End of case where the number of contours stays the same. */
-    }
-  else
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "new circle merged two or more existing zone fragments");
-#endif
-      /* Use a point-in-polygon test to figure out which contour contains the
-       * focus. */
       for (i = 0; i < newpoly->num_contours; i++)
         if (GIS_point_in_contour (&(newpoly->contour[i]), x, y))
           break;
@@ -1062,7 +1041,14 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
       /* Take the "sample" point stored along with each fragment.  Use a
        * point-in-polygon test to figure out which new contour corresponds to
        * each existing fragment.  At the same time, watch for a fragment that
-       * maps to the contour containing the focus. */
+       * maps to the contour containing the focus.
+       *
+       * NB: This is done even if the number of contours has not changed,
+       * because sometimes GPC shuffles some of the contours around.  Is this
+       * overkill - would it work to simply scan to the left & right of the
+       * contour containing the new point, stopping upon encountering a contour
+       * that has not changed?
+       */
       for (iter = zone->fragments->head; iter != NULL; iter = g_list_next (iter))
         {
           fragment = (ZON_zone_fragment_t *) (iter->data);
@@ -1081,7 +1067,7 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
             fragment_containing_focus = fragment;
         }
 
-      /* End of case where the number of contours decreases. */
+      /* End of case where the number of contours stays the same or decreases. */
     }
 
   /* Discard the old polygon defining the zone and use the new one. */

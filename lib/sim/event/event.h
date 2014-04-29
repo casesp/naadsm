@@ -62,11 +62,6 @@ typedef enum
 {
   EVT_BeforeAnySimulations,
   EVT_BeforeEachSimulation,
-  EVT_DeclarationOfExposureCauses,
-  EVT_DeclarationOfInfectionCauses,
-  EVT_DeclarationOfDetectionMeans,
-  EVT_DeclarationOfExamReasons,
-  EVT_DeclarationOfTestReasons,
   EVT_DeclarationOfVaccinationReasons,
   EVT_DeclarationOfVaccineDelay,
   EVT_DeclarationOfDestructionReasons,
@@ -108,71 +103,6 @@ typedef struct
   int dummy; /**< to avoid a "struct has no members" warning */
 }
 EVT_before_each_simulation_event_t;
-
-
-
-/**
- * A "declaration of exposure causes" event.  Models that can cause exposures
- * use this event to communicate the causes(s) they will state for the
- * exposures, so that other models may initialize counters, etc.
- */
-typedef struct
-{
-  GPtrArray *causes; /**< array of pointers to ordinary C strings */
-}
-EVT_declaration_of_exposure_causes_event_t;
-
-
-
-/**
- * A "declaration of infection causes" event.  Models that can cause infections
- * use this event to communicate the causes(s) they will state for the
- * infections, so that other models may initialize counters, etc.
- */
-typedef struct
-{
-  GPtrArray *causes; /**< array of pointers to ordinary C strings */
-}
-EVT_declaration_of_infection_causes_event_t;
-
-
-
-/**
- * A "declaration of detection means" event.  Models that can cause detections
- * use this event to communicate the means they will state for the detections,
- * so that other models may initialize counters, etc.
- */
-typedef struct
-{
-  GPtrArray *means; /**< array of pointers to ordinary C strings */
-}
-EVT_declaration_of_detection_means_event_t;
-
-
-
-/**
- * A "declaration of exam reasons" event.  Modules that can request exams use
- * this event to communicate the reason(s) they will supply for the requests,
- * so that other modules may initialize counters, etc.
- */
-typedef struct
-{
-  GPtrArray *reasons; /**< array of pointers to ordinary C strings */
-}
-EVT_declaration_of_exam_reasons_event_t;
-
-
-
-/**
- * A "declaration of test reasons" event.  Modules that can request tests use
- * this event to communicate the reason(s) they will supply for the requests,
- * so that other modules may initialize counters, etc.
- */
-typedef struct
-{
-  GPtrArray *reasons; /**< array of pointers to ordinary C strings */
-}
-EVT_declaration_of_test_reasons_event_t;
 
 
 
@@ -248,7 +178,6 @@ typedef struct
   HRD_herd_t *exposed_herd;
   int day;       /**< day of the simulation */
   NAADSM_contact_type contact_type;
-  char *cause; /**< name of the model that created the event */
   gboolean traceable;
   gboolean traced;
   gboolean adequate;
@@ -265,7 +194,7 @@ typedef struct
   HRD_herd_t *infecting_herd;
   HRD_herd_t *infected_herd;
   int day; /**< day of the simulation */
-  char *cause; /**< name of the model that created the event */
+  NAADSM_contact_type contact_type;
   HRD_status_t override_initial_state; /**< when using an infection event to
     specify an in-progress infection, set this to the herd's state (Latent,
     InfectiousSubclinical, or InfectiousClinical). */
@@ -288,7 +217,7 @@ typedef struct
   HRD_herd_t *infecting_herd;
   HRD_herd_t *infected_herd;
   int day; /**< day of the simulation */
-  char *cause; /**< name of the model that created the event */
+  NAADSM_contact_type contact_type;
   HRD_status_t override_initial_state; /**< when using an infection event to
     specify an in-progress infection, set this to the herd's state (Latent,
     InfectiousSubclinical, or InfectiousClinical). */
@@ -310,7 +239,7 @@ typedef struct
 {
   HRD_herd_t *herd;
   int day; /**< day of the simulation */
-  char *means; /**< how the unit was detected */
+  NAADSM_detection_reason means; /**< how the unit was detected */
   NAADSM_test_result test_result; /**< If detection was by diagnostic testing, what was the test result? **/
 }
 EVT_detection_event_t;
@@ -331,7 +260,7 @@ typedef struct
 {
   HRD_herd_t *herd;
   int day;
-  char *reason;
+  NAADSM_control_reason reason;
   double detection_multiplier;
   gboolean test_if_no_signs;
 }
@@ -371,7 +300,7 @@ typedef struct
 {
   HRD_herd_t *herd;
   int day;
-  char *reason;
+  NAADSM_control_reason reason;
 }
 EVT_test_event_t;
 
@@ -384,7 +313,7 @@ typedef struct
   int day;
   gboolean positive;
   gboolean correct; /**< enables tracking true and false positives and negatives */
-  char *reason;
+  NAADSM_control_reason reason;
 }
 EVT_test_result_event_t;
 
@@ -545,11 +474,6 @@ typedef struct
   {
     EVT_before_any_simulations_event_t before_any_simulations;
     EVT_before_each_simulation_event_t before_each_simulation;
-    EVT_declaration_of_exposure_causes_event_t declaration_of_exposure_causes;
-    EVT_declaration_of_infection_causes_event_t declaration_of_infection_causes;
-    EVT_declaration_of_detection_means_event_t declaration_of_detection_means;
-    EVT_declaration_of_exam_reasons_event_t declaration_of_exam_reasons;
-    EVT_declaration_of_test_reasons_event_t declaration_of_test_reasons;
     EVT_declaration_of_vaccination_reasons_event_t declaration_of_vaccination_reasons;
     EVT_declaration_of_vaccine_delay_event_t declaration_of_vaccine_delay;
     EVT_declaration_of_destruction_reasons_event_t declaration_of_destruction_reasons;
@@ -595,11 +519,6 @@ typedef struct
 /* Prototypes. */
 EVT_event_t *EVT_new_before_any_simulations_event (void);
 EVT_event_t *EVT_new_before_each_simulation_event (void);
-EVT_event_t *EVT_new_declaration_of_exposure_causes_event (GPtrArray * causes);
-EVT_event_t *EVT_new_declaration_of_infection_causes_event (GPtrArray * causes);
-EVT_event_t *EVT_new_declaration_of_detection_means_event (GPtrArray * means);
-EVT_event_t *EVT_new_declaration_of_exam_reasons_event (GPtrArray * reasons);
-EVT_event_t *EVT_new_declaration_of_test_reasons_event (GPtrArray * reasons);
 EVT_event_t *EVT_new_declaration_of_vaccination_reasons_event (GPtrArray * reasons);
 EVT_event_t *EVT_new_declaration_of_vaccine_delay_event (HRD_production_type_t,
                                                          char * production_type_name,
@@ -610,22 +529,23 @@ EVT_event_t *EVT_new_new_day_event (int day);
 EVT_event_t *EVT_new_exposure_event (HRD_herd_t * exposing_herd,
                                      HRD_herd_t * exposed_herd,
                                      int day,
-                                     char *cause,
+                                     NAADSM_contact_type,
                                      gboolean traceable,
                                      gboolean adequate,
                                      int delay);
 EVT_event_t *EVT_new_attempt_to_infect_event (HRD_herd_t * infecting_herd,
                                               HRD_herd_t * infected_herd,
-                                              int day, char *cause);
+                                              int day, NAADSM_contact_type);
 EVT_event_t *EVT_new_infection_event (HRD_herd_t * infecting_herd,
                                       HRD_herd_t * infected_herd,
-                                      int day, char *cause);
+                                      int day, NAADSM_contact_type);
 EVT_event_t *EVT_new_detection_event (HRD_herd_t *, int day,
-                                      char *means, NAADSM_test_result test_result);
+                                      NAADSM_detection_reason,
+                                      NAADSM_test_result);
 EVT_event_t *EVT_new_public_announcement_event (int day);
 EVT_event_t *EVT_new_exam_event (HRD_herd_t *,
                                  int day,
-                                 char *reason,
+                                 NAADSM_control_reason,
                                  double detection_multiplier,
                                  gboolean test_if_no_signs);
 EVT_event_t *EVT_new_attempt_to_trace_event (HRD_herd_t *,
@@ -640,12 +560,12 @@ EVT_event_t *EVT_new_trace_result_event (HRD_herd_t * exposing_herd,
                                          int day, int initiated_day, gboolean traced);
 EVT_event_t *EVT_new_test_event (HRD_herd_t *,
                                  int day,
-                                 char *reason);
+                                 NAADSM_control_reason);
 EVT_event_t *EVT_new_test_result_event (HRD_herd_t *,
                                         int day,
                                         gboolean positive,
                                         gboolean correct,
-                                        char *reason);
+                                        NAADSM_control_reason);
 EVT_event_t *EVT_new_request_for_vaccination_event (HRD_herd_t *,
                                                     int day,
                                                     char *reason,

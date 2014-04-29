@@ -10,10 +10,11 @@
 #include <reporting.h>
 #include <glib.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define PROMPT "> "
 
-extern char *RPT_type_name[];
+
 
 /** @file reporting/test/shell.c
  * A simple shell to exercise libreporting.  It provides a way to create
@@ -76,6 +77,8 @@ extern char *RPT_type_name[];
 #define BUFFERSIZE 2048
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 RPT_reporting_t *current_variable = NULL;
@@ -198,7 +201,7 @@ set_command:
 #endif
 
       /* Set the variable, then free the argument list. */
-      RPT_reporting_set_integer (current_variable, $3, drill_down_list);
+      RPT_reporting_set_integer (current_variable, $3, (const char **) drill_down_list);
       g_slist_foreach ($5, g_free_as_GFunc, NULL);
       g_slist_free ($5);
       g_free (drill_down_list);
@@ -241,7 +244,7 @@ set_command:
 
       /* Create and set the variable, then free the argument list. */
       current_variable = RPT_new_reporting (tentative_name, RPT_group, tentative_freq);
-      RPT_reporting_set_text (current_variable, $3, drill_down_list);
+      RPT_reporting_set_text (current_variable, $3, (const char **) drill_down_list);
       g_slist_foreach ($5, g_free_as_GFunc, NULL);
       g_slist_free ($5);
       g_free (drill_down_list);
@@ -286,7 +289,7 @@ add_command:
       *p = NULL;
 
       /* Add the value to the variable, then free the argument list. */
-      RPT_reporting_add_integer (current_variable, $3, drill_down_list);
+      RPT_reporting_add_integer (current_variable, $3, (const char **) drill_down_list);
       g_slist_foreach ($5, g_free_as_GFunc, NULL);
       g_slist_free ($5);
       g_free (drill_down_list);
@@ -345,7 +348,7 @@ subtract_command:
       *p = NULL;
 
       /* Subtract the value from the variable, then free the argument list. */
-      RPT_reporting_sub_integer (current_variable, $3, drill_down_list);
+      RPT_reporting_sub_integer (current_variable, $3, (const char **) drill_down_list);
       g_slist_foreach ($5, g_free_as_GFunc, NULL);
       g_slist_free ($5);
       g_free (drill_down_list);
@@ -385,14 +388,17 @@ get_command :
       switch (RPT_reporting_get_type (current_variable))
 	{
 	case RPT_integer:
-	  printf ("%li", RPT_reporting_get_integer (current_variable, drill_down_list));
+	  printf ("%li", RPT_reporting_get_integer (current_variable, (const char **) drill_down_list));
 	  break;
 	case RPT_real:
-	  printf ("%g", RPT_reporting_get_real (current_variable, drill_down_list));
+	  printf ("%g", RPT_reporting_get_real (current_variable, (const char **) drill_down_list));
 	  break;
 	case RPT_text:
-	  printf ("%s", RPT_reporting_get_text (current_variable, drill_down_list));
+	  printf ("%s", RPT_reporting_get_text (current_variable, (const char **) drill_down_list));
 	  break;
+    case RPT_group:
+    case RPT_unknown_type:
+      g_assert_not_reached();
 	}
       printf ("\n%s", PROMPT);
       fflush (stdout);
@@ -431,11 +437,7 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-#ifdef USE_PLAIN_YACC
-yyerror (char *s)
-#else
-yyerror (char *s, int fatal)
-#endif
+yyerror (char const *s)
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;
@@ -479,6 +481,8 @@ main (int argc, char *argv[])
     yyin = stdin;
   while (!feof(yyin))
     yyparse();
+
+  return EXIT_SUCCESS;
 }
 
 /* end of file shell.y */

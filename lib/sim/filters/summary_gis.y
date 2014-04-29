@@ -73,7 +73,8 @@
 #define COPY_BUFFERSIZE 8192 /**< arbitrary chunk size for copying files */
 
 /* int yydebug = 1; must also compile with --debug to use this */
-
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 unsigned int nherds; /**< Number of herds. */
@@ -108,7 +109,7 @@ const char *arcview_shp_filename = NULL;
 
 
 void
-copy (char *src_filename, char *dest_filename)
+copy (const char *src_filename, const char *dest_filename)
 {
   FILE *src = NULL;
   FILE *dest = NULL;
@@ -496,7 +497,7 @@ end:
 
 
 void
-write_polys_with_stats (char *input_shp_filename, char *output_shp_filename)
+write_polys_with_stats (const char *input_shp_filename, const char *output_shp_filename)
 {
   char *input_base_filename; /**< Without the .shp ending. */
   char *output_base_filename; /**< Without the .shp ending. */
@@ -926,11 +927,10 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   fprintf (stderr, "Error in input (line %d): %s:\n%s\n", yylineno, s, linebuf);
   fprintf (stderr, "%*s\n", 1+tokenpos, "^");
-  if (fatal) exit (EXIT_FAILURE);
   return 0;
 }
 

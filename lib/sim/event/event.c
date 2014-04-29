@@ -39,10 +39,6 @@
 
 
 
-extern const char *HRD_status_name[];
-
-
-
 /**
  * Names for the events of interest, terminated with a NULL sentinel.
  *
@@ -51,11 +47,6 @@ extern const char *HRD_status_name[];
 const char *EVT_event_type_name[] = {
   "BeforeAnySimulations",
   "BeforeEachSimulation",
-  "DeclarationOfExposureCauses",
-  "DeclarationOfInfectionCauses",
-  "DeclarationOfDetectionMeans",
-  "DeclarationOfExamReasons",
-  "DeclarationOfTestReasons",
   "DeclarationOfVaccinationReasons",
   "DeclarationOfVaccineDelay",
   "DeclarationOfDestructionReasons",
@@ -129,250 +120,6 @@ char *
 EVT_before_each_simulation_event_to_string (void)
 {
   return g_strdup ("<Before each simulation event>");
-}
-
-
-
-/**
- * Creates a new "declaration of exposure causes" event.
- *
- * @param causes an array of ordinary C strings giving the causes of exposures
- *   a model may create.  The pointer to the array is copied so the strings and
- *   the array structure itself should not be freed after calling this function.
- * @return a pointer to a newly-created EVT_event_t structure.
- */
-EVT_event_t *
-EVT_new_declaration_of_exposure_causes_event (GPtrArray * causes)
-{
-  EVT_event_t *event;
-
-  event = g_new (EVT_event_t, 1);
-  event->type = EVT_DeclarationOfExposureCauses;
-  event->u.declaration_of_exposure_causes.causes = causes;
-  return event;
-}
-
-
-
-/**
- * Returns a text representation of a declaration of exposure causes event.
- *
- * @param event a declaration of exposure causes event.
- * @return a string.
- */
-char *
-EVT_declaration_of_exposure_causes_event_to_string (EVT_declaration_of_exposure_causes_event_t *
-                                                    event)
-{
-  GString *s;
-  char *chararray;
-  int i;
-
-  s = g_string_new ("<Declaration of exposure causes event\n  causes=");
-  for (i = 0; i < event->causes->len; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (event->causes, i));
-  g_string_append_c (s, '>');
-
-  /* don't return the wrapper object */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  return chararray;
-}
-
-
-
-/**
- * Creates a new "declaration of infection causes" event.
- *
- * @param causes an array of ordinary C strings giving the causes of infections
- *   a model may create.  The pointer to the array is copied so the strings and
- *   the array structure itself should not be freed after calling this function.
- * @return a pointer to a newly-created EVT_event_t structure.
- */
-EVT_event_t *
-EVT_new_declaration_of_infection_causes_event (GPtrArray * causes)
-{
-  EVT_event_t *event;
-
-  event = g_new (EVT_event_t, 1);
-  event->type = EVT_DeclarationOfInfectionCauses;
-  event->u.declaration_of_infection_causes.causes = causes;
-  return event;
-}
-
-
-
-/**
- * Returns a text representation of a declaration of infection causes event.
- *
- * @param event a declaration of infection causes event.
- * @return a string.
- */
-char *
-EVT_declaration_of_infection_causes_event_to_string (EVT_declaration_of_infection_causes_event_t *
-                                                     event)
-{
-  GString *s;
-  char *chararray;
-  int i;
-
-  s = g_string_new ("<Declaration of infection causes event\n  causes=");
-  for (i = 0; i < event->causes->len; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (event->causes, i));
-  g_string_append_c (s, '>');
-
-  /* don't return the wrapper object */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  return chararray;
-}
-
-
-
-/**
- * Creates a new "declaration of detection means" event.
- *
- * @param means an array of ordinary C strings giving the means of detections
- *   a model may create.  The pointer to the array is copied so the strings and
- *   the array structure itself should not be freed after calling this function.
- * @return a pointer to a newly-created EVT_event_t structure.
- */
-EVT_event_t *
-EVT_new_declaration_of_detection_means_event (GPtrArray * means)
-{
-  EVT_event_t *event;
-
-  event = g_new (EVT_event_t, 1);
-  event->type = EVT_DeclarationOfDetectionMeans;
-  event->u.declaration_of_detection_means.means = means;
-  return event;
-}
-
-
-
-/**
- * Returns a text representation of a declaration of detection means event.
- *
- * @param event a declaration of detection means event.
- * @return a string.
- */
-char *
-EVT_declaration_of_detection_means_event_to_string (EVT_declaration_of_detection_means_event_t *
-                                                    event)
-{
-  GString *s;
-  char *chararray;
-  int i;
-
-  s = g_string_new ("<Declaration of detection means event\n  means=");
-  for (i = 0; i < event->means->len; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (event->means, i));
-  g_string_append_c (s, '>');
-
-  /* don't return the wrapper object */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  return chararray;
-}
-
-
-
-/**
- * Creates a new "declaration of exam reasons" event.
- *
- * @param reasons an array of ordinary C strings giving the reasons for which
- *   a module may request exams.  The pointer to the array is copied so the
- *   strings and the array structure itself should not be freed after calling
- *   this function.
- * @return a pointer to a newly-created EVT_event_t structure.
- */
-EVT_event_t *
-EVT_new_declaration_of_exam_reasons_event (GPtrArray * reasons)
-{
-  EVT_event_t *event;
-
-  event = g_new (EVT_event_t, 1);
-  event->type = EVT_DeclarationOfExamReasons;
-  event->u.declaration_of_exam_reasons.reasons = reasons;
-  return event;
-}
-
-
-
-/**
- * Returns a text representation of a declaration of exam reasons event.
- *
- * @param event a declaration of exam reasons event.
- * @return a string.
- */
-char *
-EVT_declaration_of_exam_reasons_event_to_string (EVT_declaration_of_exam_reasons_event_t * event)
-{
-  GString *s;
-  char *chararray;
-  int i;
-
-  s = g_string_new ("<Declaration of exam reasons event\n  reasons=");
-  for (i = 0; i < event->reasons->len; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (event->reasons, i));
-  g_string_append_c (s, '>');
-
-  /* don't return the wrapper object */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  return chararray;
-}
-
-
-/**
- * Creates a new "declaration of test reasons" event.
- *
- * @param reasons an array of ordinary C strings giving the reasons for which
- *   a module may request tests.  The pointer to the array is copied so the
- *   strings and the array structure itself should not be freed after calling
- *   this function.
- * @return a pointer to a newly-created EVT_event_t structure.
- */
-EVT_event_t *
-EVT_new_declaration_of_test_reasons_event (GPtrArray * reasons)
-{
-  EVT_event_t *event;
-
-  event = g_new (EVT_event_t, 1);
-  event->type = EVT_DeclarationOfTestReasons;
-  event->u.declaration_of_test_reasons.reasons = reasons;
-  return event;
-}
-
-
-
-/**
- * Returns a text representation of a declaration of test reasons event.
- *
- * @param event a declaration of test reasons event.
- * @return a string.
- */
-char *
-EVT_declaration_of_test_reasons_event_to_string (EVT_declaration_of_test_reasons_event_t * event)
-{
-  GString *s;
-  char *chararray;
-  int i;
-
-  s = g_string_new ("<Declaration of test reasons event\n  reasons=");
-  for (i = 0; i < event->reasons->len; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (event->reasons, i));
-  g_string_append_c (s, '>');
-
-  /* don't return the wrapper object */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  return chararray;
 }
 
 
@@ -530,7 +277,7 @@ EVT_declaration_of_destruction_reasons_event_to_string
 /**
  * Creates a new "declaration of outputs" event.
  *
- * @param reasons an array of pointers to RPT_reporting_t objects.  The pointer
+ * @param outputs an array of pointers to RPT_reporting_t objects.  The pointer
  *   to the array is copied so the array structure should not be freed after
  *   calling this function.
  * @return a pointer to a newly-created EVT_event_t structure.
@@ -623,7 +370,7 @@ EVT_new_day_event_to_string (EVT_new_day_event_t * event)
  */
 EVT_event_t *
 EVT_new_exposure_event (HRD_herd_t * exposing_herd, HRD_herd_t * exposed_herd,
-                        int day, char *cause, gboolean traceable,
+                        int day, NAADSM_contact_type contact_type, gboolean traceable,
                         gboolean adequate, int delay)
 {
   EVT_event_t *event;
@@ -634,7 +381,7 @@ EVT_new_exposure_event (HRD_herd_t * exposing_herd, HRD_herd_t * exposed_herd,
   event->u.exposure.exposed_herd = exposed_herd;
   event->u.exposure.day = day;
 
-  event->u.exposure.cause = cause;
+  event->u.exposure.contact_type = contact_type;
   event->u.exposure.traceable = traceable;
   event->u.exposure.traced = FALSE;
   event->u.exposure.adequate = adequate;
@@ -677,7 +424,8 @@ EVT_exposure_event_to_string (EVT_exposure_event_t * event)
  */
 EVT_event_t *
 EVT_new_attempt_to_infect_event (HRD_herd_t * infecting_herd,
-                                 HRD_herd_t * infected_herd, int day, char *cause)
+                                 HRD_herd_t * infected_herd, int day,
+                                 NAADSM_contact_type contact_type)
 {
   EVT_event_t *event;
 
@@ -686,7 +434,7 @@ EVT_new_attempt_to_infect_event (HRD_herd_t * infecting_herd,
   event->u.attempt_to_infect.infecting_herd = infecting_herd;
   event->u.attempt_to_infect.infected_herd = infected_herd;
   event->u.attempt_to_infect.day = day;
-  event->u.attempt_to_infect.cause = cause;
+  event->u.attempt_to_infect.contact_type = contact_type;
   /* The following three items cause this to be a normal infection, one that
    * starts from the start rather than being added to the simulation in-
    * progress. */
@@ -741,7 +489,7 @@ EVT_attempt_to_infect_event_to_string (EVT_attempt_to_infect_event_t * event)
  */
 EVT_event_t *
 EVT_new_infection_event (HRD_herd_t * infecting_herd, HRD_herd_t * infected_herd,
-                         int day, char *cause)
+                         int day, NAADSM_contact_type contact_type)
 {
   EVT_event_t *event;
 
@@ -750,7 +498,7 @@ EVT_new_infection_event (HRD_herd_t * infecting_herd, HRD_herd_t * infected_herd
   event->u.infection.infecting_herd = infecting_herd;
   event->u.infection.infected_herd = infected_herd;
   event->u.infection.day = day;
-  event->u.infection.cause = cause;
+  event->u.infection.contact_type = contact_type;
 
   return event;
 }
@@ -798,7 +546,7 @@ EVT_infection_event_to_string (EVT_infection_event_t * event)
  * @return a pointer to a newly-created EVT_event_t structure.
  */
 EVT_event_t *
-EVT_new_detection_event (HRD_herd_t * herd, int day, char * means, NAADSM_test_result test_result)
+EVT_new_detection_event (HRD_herd_t * herd, int day, NAADSM_detection_reason means, NAADSM_test_result test_result)
 {
   EVT_event_t *event;
 
@@ -882,7 +630,7 @@ EVT_public_announcement_event_to_string (EVT_public_announcement_event_t * event
  * @return a pointer to a newly-created EVT_event_t structure.
  */
 EVT_event_t *
-EVT_new_exam_event (HRD_herd_t * herd, int day, char * reason,
+EVT_new_exam_event (HRD_herd_t * herd, int day, NAADSM_control_reason reason,
                     double detection_multiplier, gboolean test_if_no_signs)
 {
   EVT_event_t *event;
@@ -1041,7 +789,7 @@ EVT_trace_result_event_to_string (EVT_trace_result_event_t * event)
  * @return a pointer to a newly-created EVT_event_t structure.
  */
 EVT_event_t *
-EVT_new_test_event (HRD_herd_t * herd, int day, char * reason)
+EVT_new_test_event (HRD_herd_t * herd, int day, NAADSM_control_reason reason)
 {
   EVT_event_t *event;
 
@@ -1085,7 +833,8 @@ EVT_test_event_to_string (EVT_test_event_t * event)
  */
 EVT_event_t *
 EVT_new_test_result_event (HRD_herd_t * herd, int day,
-                           gboolean positive, gboolean correct, char *reason)
+                           gboolean positive, gboolean correct,
+                           NAADSM_control_reason reason)
 {
   EVT_event_t *event;
 
@@ -1697,31 +1446,6 @@ EVT_free_event (EVT_event_t * event)
     case EVT_Midnight:
       /* No dynamically-allocated parts to free. */
       break;
-    case EVT_DeclarationOfExposureCauses:
-      /* Note that we do not free the C strings in the array of exposure
-       * causes, because we assume they are static strings. */
-      g_ptr_array_free (event->u.declaration_of_exposure_causes.causes, TRUE);
-      break;
-    case EVT_DeclarationOfInfectionCauses:
-      /* Note that we do not free the C strings in the array of infection
-       * causes, because we assume they are static strings. */
-      g_ptr_array_free (event->u.declaration_of_infection_causes.causes, TRUE);
-      break;
-    case EVT_DeclarationOfDetectionMeans:
-      /* Note that we do not free the C strings in the array of detection means,
-       * because we assume they are static strings. */
-      g_ptr_array_free (event->u.declaration_of_detection_means.means, TRUE);
-      break;
-    case EVT_DeclarationOfExamReasons:
-      /* Note that we do not free the C strings in the array of exam reasons,
-       * because we assume they are static strings. */
-      g_ptr_array_free (event->u.declaration_of_exam_reasons.reasons, TRUE);
-      break;
-    case EVT_DeclarationOfTestReasons:
-      /* Note that we do not free the C strings in the array of test reasons,
-       * because we assume they are static strings. */
-      g_ptr_array_free (event->u.declaration_of_test_reasons.reasons, TRUE);
-      break;
     case EVT_DeclarationOfVaccinationReasons:
       /* Note that we do not free the C strings in the array of vaccination
        * reasons, because we assume they are static strings. */
@@ -1739,6 +1463,8 @@ EVT_free_event (EVT_event_t * event)
        * reporting variables is freed. */
       g_ptr_array_free (event->u.declaration_of_outputs.outputs, TRUE);
       break;
+    case EVT_NEVENT_TYPES:
+      g_assert_not_reached();
     }
   g_free (event);
 }
@@ -1766,8 +1492,7 @@ EVT_clone_event (EVT_event_t * event)
         EVT_exposure_event_t *e;
         e = &(event->u.exposure);
         clone = EVT_new_exposure_event (e->exposing_herd, e->exposed_herd,
-                                        e->day, e->cause, e->traceable, e->adequate, e->delay);
-        clone->u.exposure.contact_type = e->contact_type;
+                                        e->day, e->contact_type, e->traceable, e->adequate, e->delay);
         break;
       }
     case EVT_AttemptToInfect:
@@ -1775,7 +1500,7 @@ EVT_clone_event (EVT_event_t * event)
         EVT_attempt_to_infect_event_t *e;
         e = &(event->u.attempt_to_infect);
         clone = EVT_new_attempt_to_infect_event (e->infecting_herd,
-                                                 e->infected_herd, e->day, e->cause);
+                                                 e->infected_herd, e->day, e->contact_type);
         clone->u.attempt_to_infect.override_initial_state = e->override_initial_state;
         clone->u.attempt_to_infect.override_days_in_state = e->override_days_in_state;
         clone->u.attempt_to_infect.override_days_left_in_state = e->override_days_left_in_state;
@@ -1856,30 +1581,6 @@ EVT_event_to_string (EVT_event_t * event)
       break;
     case EVT_BeforeEachSimulation:
       s = EVT_before_each_simulation_event_to_string ();
-      break;
-    case EVT_DeclarationOfExposureCauses:
-      s =
-        EVT_declaration_of_exposure_causes_event_to_string (&
-                                                            (event->u.
-                                                             declaration_of_exposure_causes));
-      break;
-    case EVT_DeclarationOfInfectionCauses:
-      s =
-        EVT_declaration_of_infection_causes_event_to_string (&
-                                                             (event->u.
-                                                              declaration_of_infection_causes));
-      break;
-    case EVT_DeclarationOfDetectionMeans:
-      s =
-        EVT_declaration_of_detection_means_event_to_string (&(event->u.declaration_of_detection_means));
-      break;
-    case EVT_DeclarationOfExamReasons:
-      s =
-        EVT_declaration_of_exam_reasons_event_to_string (&(event->u.declaration_of_exam_reasons));
-      break;
-    case EVT_DeclarationOfTestReasons:
-      s =
-        EVT_declaration_of_test_reasons_event_to_string (&(event->u.declaration_of_test_reasons));
       break;
     case EVT_DeclarationOfVaccinationReasons:
       s =
@@ -2019,6 +1720,7 @@ EVT_new_event_queue (void)
  * empty.
  *
  * @param queue an event queue.
+ * @param rng a random number generator.
  * @return an event.
  */
 EVT_event_t *

@@ -590,7 +590,7 @@ is_singleton (void)
  * Adds a set of parameters to a ring vaccination model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   gboolean *from_production_type, *to_production_type;

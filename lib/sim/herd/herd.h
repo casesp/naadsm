@@ -85,6 +85,7 @@ typedef enum
   NaturallyImmune, VaccineImmune, Destroyed
 }
 HRD_status_t;
+extern const char *HRD_status_name[];
 
 
 typedef enum

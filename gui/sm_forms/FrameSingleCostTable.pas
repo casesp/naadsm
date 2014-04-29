@@ -4,13 +4,13 @@ unit FrameSingleCostTable;
 FrameSingleCostTable.pas/dfm
 ----------------------------
 Begin: 2006/01/20
-Last revision: $Date: 2009-08-17 18:58:29 $ $Author: areeves $
-Version: $Revision: 1.11 $
+Last revision: $Date: 2013-06-27 19:11:32 $ $Author: areeves $
+Version: $Revision: 1.11.4.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

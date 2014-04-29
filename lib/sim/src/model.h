@@ -51,24 +51,26 @@
  * for examples of how this looks.
  *
  * <small>Image copyright information:
- *  - disease image (virus) is "Bluetongue virus" by Flickr user AJC1.
+ * <ul>
+ *  <li>disease image (virus) is "Bluetongue virus" by Flickr user AJC1.
  *    Released under a Creative Commons Attribution-Noncommercial 2.0 Generic
- *    license.
- *  - airborne spread image (sky) is "Landscape Under a Stormy Sky" by Vincent
- *    Van Gogh.  Public domain image (copyright expired).
- *  - direct contact image (cow) is "When bovines attack" by Flickr user tricky.
+ *    license.</li>
+ *  <li>airborne spread image (sky) is "Landscape Under a Stormy Sky" by Vincent
+ *    Van Gogh.  Public domain image (copyright expired).</li>
+ *  <li>direct contact image (cow) is "When bovines attack" by Flickr user tricky.
  *    Released under a Creative Commons Attribution-Noncommercial-Share Alike
- *    2.0 Generic license.
- *  - indirect contact image (truck) is "truck" by Flickr user rickabbo.
- *    Released under a Creative Commons Attribution 2.0 Generic license.
- *  - detection image (Sherlock Holmes items) is by Wikimedia Commons user
- *    Alterego.  Released under the GNU Free Documentation License.
- *  - vaccination image (vials) is "Let me stabilize you" by Flickr user
+ *    2.0 Generic license.</li>
+ *  <li>indirect contact image (truck) is "truck" by Flickr user rickabbo.
+ *    Released under a Creative Commons Attribution 2.0 Generic license.</li>
+ *  <li>detection image (Sherlock Holmes items) is by Wikimedia Commons user
+ *    Alterego.  Released under the GNU Free Documentation License.</li>
+ *  <li>vaccination image (vials) is "Let me stabilize you" by Flickr user
  *    Pulpolux.  Released under a Creative Commons Attribution-Noncommercial
- *    2.0 Generic license.
- *  - destruction image (guillotine) is "Death Hangs in the Air" by Flickr user
+ *    2.0 Generic license.</li>
+ *  <li>destruction image (guillotine) is "Death Hangs in the Air" by Flickr user
  *    buck82.  Released under a Creative Commons Attribution-Noncommercial 2.0
- *    Generic license.
+ *    Generic license.</li>
+ * </ul>
  * </small>
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>

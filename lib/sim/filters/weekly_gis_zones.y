@@ -61,6 +61,8 @@
 #define COPY_BUFFERSIZE 8192
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
 
 unsigned int nzones;
@@ -71,7 +73,7 @@ unsigned int max_zone_name_length; /**< The length of the longest zone name.
 unsigned int last_day; /**< The most recent run number we have seen in the
   table. */
 GPtrArray *last_day_zones; /**< Each item is a pointer to a gpc_polygon. */
-char *arcview_shp_filename = NULL;
+const char *arcview_shp_filename = NULL;
 char *arcview_base_name;
 gboolean done;
 
@@ -550,11 +552,10 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   fprintf (stderr, "Error in output (line %d): %s:\n%s\n", yylineno, s, linebuf);
   fprintf (stderr, "%*s\n", 1+tokenpos, "^");
-  if (fatal) exit (EXIT_FAILURE);
   return 0;
 }
 

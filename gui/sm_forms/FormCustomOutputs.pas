@@ -4,13 +4,13 @@ unit FormCustomOutputs;
 FormCustomOutputs.pas/dfm
 -------------------------
 Begin: 2006/10/14
-Last revision: $Date: 2010-03-27 19:40:02 $ $Author: areeves $
-Version: $Revision: 1.12.6.1 $
+Last revision: $Date: 2013-06-27 19:11:25 $ $Author: areeves $
+Version: $Revision: 1.12.6.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

@@ -40,7 +40,7 @@
  *
  */
 gboolean *
-naadsm_read_prodtype_attribute (scew_element * params,
+naadsm_read_prodtype_attribute (const scew_element * params,
                                 char *attr_name, GPtrArray * production_type_names)
 {
   gboolean *flags;
@@ -114,7 +114,7 @@ naadsm_read_prodtype_attribute (scew_element * params,
  *
  */
 gboolean *
-naadsm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
+naadsm_read_zone_attribute (const scew_element * params, ZON_zone_list_t * zones)
 {
   gboolean *flags;
   unsigned int nzones;

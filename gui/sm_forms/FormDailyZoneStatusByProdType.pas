@@ -4,14 +4,14 @@ unit FormDailyZoneStatusByProdType;
 FormDailyZoneStatusByProdType.pas/dfm
 -------------------------------------
 Begin: 2005/06/28
-Last revision: $Date: 2010-11-09 19:12:59 $ $Author: areeves $
-Version: $Revision: 1.23.4.5 $
+Last revision: $Date: 2013-06-27 19:11:25 $ $Author: areeves $
+Version: $Revision: 1.23.4.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

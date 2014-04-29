@@ -4,14 +4,14 @@ unit ZonePerimeter;
 ZonePerimeter.pas
 -----------------
 Begin: 2007/01/11
-Last revision: $Date: 2010-06-03 20:13:14 $ $Author: areeves $
-Version: $Revision: 1.14.4.2 $
+Last revision: $Date: 2013-06-27 19:11:19 $ $Author: areeves $
+Version: $Revision: 1.14.4.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

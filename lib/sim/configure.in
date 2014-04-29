@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(naadsm, 3.2.18)
+AC_INIT(naadsm, 3.2.19)
 AC_CONFIG_SRCDIR(src/main.c)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
@@ -161,6 +161,5 @@ AC_OUTPUT(Makefile \
   sm3herds2xml/Makefile \
   xml2sm3herds/Makefile \
   filters/Makefile \
-  dll/Makefile \
   doc/Makefile \
   doc/diagrams/Makefile)

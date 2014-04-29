@@ -4,13 +4,13 @@ unit FormCostOptions;
 FormCostOptions.pas/dfm
 ----------------------
 Begin: 2007/04/17
-Last revision: $Date: 2010-09-09 14:29:36 $ $Author: rhupalo $
-Version: $Revision: 1.4.6.1 $
+Last revision: $Date: 2013-06-27 19:11:24 $ $Author: areeves $
+Version: $Revision: 1.4.6.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

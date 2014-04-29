@@ -34,7 +34,6 @@
 #define local_fprintf infection_monitor_fprintf
 #define local_free infection_monitor_free
 #define handle_new_day_event infection_monitor_handle_new_day_event
-#define handle_declaration_of_infection_causes_event infection_monitor_handle_declaration_of_infection_causes_event
 #define handle_infection_event infection_monitor_handle_infection_event
 #define handle_detection_event infection_monitor_handle_detection_event
 
@@ -75,14 +74,10 @@ double round (double x);
 
 
 
-#define NEVENTS_LISTENED_FOR 4
+#define NEVENTS_LISTENED_FOR 3
 EVT_event_type_t events_listened_for[] =
-  { EVT_NewDay, EVT_DeclarationOfInfectionCauses, EVT_Infection,
+  { EVT_NewDay, EVT_Infection,
     EVT_Detection };
-
-
-
-extern const char *RPT_frequency_name[];
 
 
 
@@ -227,62 +222,6 @@ handle_new_day_event (struct naadsm_model_t_ *self, EVT_new_day_event_t * event)
 
 
 /**
- * Responds to a declaration of infection causes by recording the potential
- * causes of infection.
- *
- * @param self the model.
- * @param event a declaration of infection causes event.
- */
-void
-handle_declaration_of_infection_causes_event (struct naadsm_model_t_ *self,
-                                              EVT_declaration_of_infection_causes_event_t * event)
-{
-  local_data_t *local_data;
-  unsigned int n, i, j;
-  char *cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
-
-#if DEBUG
-  g_debug ("----- ENTER handle_declaration_of_infection_causes_event (%s)", MODEL_NAME);
-#endif
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* If any potential cause is not already present in our reporting variables,
-   * add it, with an initial count of 0 infections. */
-  n = event->causes->len;
-  for (i = 0; i < n; i++)
-    {
-      cause = (char *) g_ptr_array_index (event->causes, i);
-      RPT_reporting_append_text1 (local_data->infections, "", cause);
-      RPT_reporting_add_integer1 (local_data->num_units_infected_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->num_animals_infected_by_cause, 0, cause);
-      RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_cause, 0, cause);
-
-      drill_down_list[0] = cause;
-      for (j = 0; j < local_data->production_types->len; j++)
-        {
-          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
-          RPT_reporting_add_integer (local_data->num_units_infected_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_num_units_infected_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->num_animals_infected_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-          RPT_reporting_add_integer (local_data->cumul_num_animals_infected_by_cause_and_prodtype, 0,
-                                     drill_down_list);
-        }
-    }
-
-#if DEBUG
-  g_debug ("----- EXIT handle_declaration_of_infection_causes_event (%s)", MODEL_NAME);
-#endif
-}
-
-
-
-/**
  * Responds to the first detection event by recording the day on which it
  * occurred.
  *
@@ -343,9 +282,10 @@ handle_infection_event (struct naadsm_model_t_ *self, EVT_infection_event_t * ev
 {
   local_data_t *local_data;
   HRD_herd_t *infecting_herd, *infected_herd;
+  const char *cause;
   char *peek;
   gboolean first_of_cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   unsigned int count;
   HRD_infect_t update;
 #if DEBUG
@@ -361,7 +301,8 @@ handle_infection_event (struct naadsm_model_t_ *self, EVT_infection_event_t * ev
   infected_herd = event->infected_herd;
 
   /* Update the text string that lists infected herd indices. */
-  peek = RPT_reporting_get_text1 (local_data->infections, event->cause);
+  cause = NAADSM_contact_type_abbrev[event->contact_type];
+  peek = RPT_reporting_get_text1 (local_data->infections, cause);
   first_of_cause = (peek == NULL) || (strlen (peek) == 0);
 
   if (infecting_herd == NULL)
@@ -373,24 +314,10 @@ handle_infection_event (struct naadsm_model_t_ *self, EVT_infection_event_t * ev
                      infecting_herd->index, infected_herd->index);
 
   RPT_reporting_append_text1 (local_data->infections, local_data->source_and_target->str,
-                              event->cause);
+                              cause);
 
   update.herd_index = infected_herd->index;
-  
-  if( 0 == strcmp( "Dir", event->cause ) ) 
-    update.infection_source_type = NAADSM_DirectContact;
-  else if( 0 == strcmp( "Ind", event->cause ) )
-    update.infection_source_type = NAADSM_IndirectContact;
-  else if( 0 == strcmp( "Air", event->cause ) )
-    update.infection_source_type = NAADSM_AirborneSpread;
-  else if( 0 == strcmp( "Ini", event->cause ) )
-    update.infection_source_type = NAADSM_InitiallyInfected;
-  else
-    {
-      /* If this condition occurs, someone forgot something. */
-      g_error( "An unrecognized infection mechanism (%s) occurred in handle_infection_event", event->cause );
-      update.infection_source_type = 0;
-    } 
+  update.infection_source_type = event->contact_type;
   
 #ifdef USE_SC_GUILIB
   sc_infect_herd( event->day, infected_herd, update );
@@ -401,14 +328,14 @@ handle_infection_event (struct naadsm_model_t_ *self, EVT_infection_event_t * ev
     }
 #endif
 #if UNDEFINED
-  printf ("Herd at index %d INFECTED by method %s\n", infected_herd->index, event->cause);
+  printf ("Herd at index %d INFECTED by method %s\n", infected_herd->index, cause);
 #endif
 
   /* Update the counts of infections.  Note that initially infected units are
    * not included in many of the counts.  They will not be part of infnUAll or
    * infnU broken down by production type.  They will be part of infnUIni and
    * infnUIni broken down by production type. */
-  if (strcmp (event->cause, "Ini") != 0)
+  if (event->contact_type != NAADSM_InitiallyInfected)
     {
       RPT_reporting_add_integer  (local_data->num_units_infected, 1, NULL);
       RPT_reporting_add_integer1 (local_data->num_units_infected_by_prodtype, 1, infected_herd->production_type_name);
@@ -419,11 +346,11 @@ handle_infection_event (struct naadsm_model_t_ *self, EVT_infection_event_t * ev
       RPT_reporting_add_integer  (local_data->cumul_num_animals_infected, infected_herd->size, NULL);
       RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_prodtype, infected_herd->size, infected_herd->production_type_name);
     }
-  RPT_reporting_add_integer1 (local_data->num_units_infected_by_cause, 1, event->cause);
-  RPT_reporting_add_integer1 (local_data->num_animals_infected_by_cause, infected_herd->size, event->cause);
-  RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_cause, 1, event->cause);
-  RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_cause, infected_herd->size, event->cause);
-  drill_down_list[0] = event->cause;
+  RPT_reporting_add_integer1 (local_data->num_units_infected_by_cause, 1, cause);
+  RPT_reporting_add_integer1 (local_data->num_animals_infected_by_cause, infected_herd->size, cause);
+  RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_cause, 1, cause);
+  RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_cause, infected_herd->size, cause);
+  drill_down_list[0] = cause;
   drill_down_list[1] = infected_herd->production_type_name;
   if (local_data->num_units_infected_by_cause_and_prodtype->frequency != RPT_never)
     RPT_reporting_add_integer (local_data->num_units_infected_by_cause_and_prodtype, 1, drill_down_list);
@@ -520,10 +447,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     {
     case EVT_NewDay:
       handle_new_day_event (self, &(event->u.new_day));
-      break;
-    case EVT_DeclarationOfInfectionCauses:
-      handle_declaration_of_infection_causes_event (self,
-                                                    &(event->u.declaration_of_infection_causes));
       break;
     case EVT_Infection:
       handle_infection_event (self, &(event->u.infection));
@@ -766,9 +689,8 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   RPT_frequency_t freq;
   gboolean success;
   gboolean broken_down;
-  unsigned int i;      /* loop counter */
+  unsigned int i, j;      /* loop counters */
   char *prodtype_name;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER new (%s)", MODEL_NAME);
@@ -957,14 +879,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
     }
   free (ee);
 
-  /* Initialize the output variables we already know about. */
+  /* Initialize the output variables. */
   local_data->production_types = herds->production_type_names;
   n = local_data->production_types->len;
-  drill_down_list[0] = "Ini";
-  RPT_reporting_add_integer1 (local_data->num_units_infected_by_cause, 0, drill_down_list[0]);
-  RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_cause, 0, drill_down_list[0]);
-  RPT_reporting_add_integer1 (local_data->num_animals_infected_by_cause, 0, drill_down_list[0]);
-  RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_cause, 0, drill_down_list[0]);
   for (i = 0; i < n; i++)
     {
       prodtype_name = (char *) g_ptr_array_index (local_data->production_types, i);
@@ -972,11 +889,28 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
       RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_prodtype, 0, prodtype_name);
       RPT_reporting_add_integer1 (local_data->num_animals_infected_by_prodtype, 0, prodtype_name);
       RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_prodtype, 0, prodtype_name);
-      drill_down_list[1] = prodtype_name;
-      RPT_reporting_add_integer (local_data->num_units_infected_by_cause_and_prodtype, 0, drill_down_list);
-      RPT_reporting_add_integer (local_data->cumul_num_units_infected_by_cause_and_prodtype, 0, drill_down_list);
-      RPT_reporting_add_integer (local_data->num_animals_infected_by_cause_and_prodtype, 0, drill_down_list);
-      RPT_reporting_add_integer (local_data->cumul_num_animals_infected_by_cause_and_prodtype, 0, drill_down_list);
+    }
+  for (i = 0; i < NAADSM_NCONTACT_TYPES; i++)
+    {
+      const char *cause;
+      const char *drill_down_list[3] = { NULL, NULL, NULL };
+      if ((NAADSM_contact_type)i == NAADSM_UnspecifiedInfectionType)
+        continue;
+      cause = NAADSM_contact_type_abbrev[i]; 
+      RPT_reporting_append_text1 (local_data->infections, "", cause);
+      RPT_reporting_add_integer1 (local_data->num_units_infected_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->cumul_num_units_infected_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->num_animals_infected_by_cause, 0, cause);
+      RPT_reporting_add_integer1 (local_data->cumul_num_animals_infected_by_cause, 0, cause);
+      drill_down_list[0] = cause;
+      for (j = 0; j < n; j++)
+        {
+          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
+          RPT_reporting_add_integer (local_data->num_units_infected_by_cause_and_prodtype, 0, drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_num_units_infected_by_cause_and_prodtype, 0, drill_down_list);
+          RPT_reporting_add_integer (local_data->num_animals_infected_by_cause_and_prodtype, 0, drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_num_animals_infected_by_cause_and_prodtype, 0, drill_down_list);
+        }
     }
 
   local_data->source_and_target = g_string_new (NULL);

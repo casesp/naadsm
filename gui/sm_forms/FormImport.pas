@@ -4,13 +4,13 @@ unit FormImport;
 FormImport.pas/dfm
 ------------------
 Begin: 2006/06/17
-Last revision: $Date: 2011-03-14 15:53:26 $ $Author: rhupalo $
-Version number: $Revision: 1.25.4.4 $
+Last revision: $Date: 2013-06-27 19:11:26 $ $Author: areeves $
+Version number: $Revision: 1.25.4.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

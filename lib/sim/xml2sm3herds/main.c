@@ -50,7 +50,7 @@ main (int argc, char *argv[])
         days_left = -1;
       g_print ("%s,%s,%u,%g,%g,%i,%i\n",
                herd->official_id, herd->production_type_name, herd->size,
-               herd->y, herd->x, herd->status, days_left);
+               herd->latitude, herd->longitude, herd->status, days_left);
     }
 
   HRD_free_herd_list (herds);

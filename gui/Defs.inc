@@ -2,13 +2,13 @@
 Defs.inc
 --------
 Begin: 2006/03/01
-Last revision: $Date: 2012-10-01 19:59:42 $ $Author: areeves $
-Version: $Revision: 1.92.4.24 $
+Last revision: $Date: 2013-06-27 19:11:18 $ $Author: areeves $
+Version: $Revision: 1.92.4.25 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2012 Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,8 +76,6 @@ Public License as published by the Free Software Foundation; either version 2 of
 // Define the following symbol to disable translation of the GUI to languages other than US English.
 {$DEFINE ENGLISHONLY}
 
-// This is a TEMPORARY symbol, designed to help debug a potential memory leak.
-//{$DEFINE TESTMEMLEAK}
 
 
 

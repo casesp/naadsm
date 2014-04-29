@@ -206,8 +206,7 @@
  * queues.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
- *   Department of Computing & Information Science, University of Guelph<br>
+ *   School of Computer Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
@@ -288,10 +287,6 @@ EVT_event_type_t events_listened_for[] =
 
 
 
-extern const char *RPT_frequency_name[];
-
-
-
 #define DESTROYED 0
 
 
@@ -343,7 +338,9 @@ typedef struct
   int destruction_reason_priority;
   GHashTable *destroyed_today; /**< Records the units destroyed today.  Useful
     for ignoring new requests for destruction or vaccination coming in from
-    other modules that don't know which units are being destroyed today. */
+    other modules that don't know which units are being destroyed today.  The
+    key is a herd pointer (HRD_herd_t *) and the value is unimportant (presence
+    or absence of a key is all we ever test). */
 
   /* Parameters concerning vaccination. */
   unsigned int nvaccination_reasons; /**< Number of distinct reasons for
@@ -353,7 +350,9 @@ typedef struct
     so far, so that they will not be double-counted. */
   unsigned int vaccination_program_threshold; /**< The number of diseased herds
     that must be detected before vaccination will begin. */
-  GHashTable *detected_herds; /**< The diseased herds detected so far. */
+  GHashTable *detected_herds; /**< The diseased herds detected so far.  Keys
+    are herds (HRD_herd_t *), values are unimportant (presence of a key is all
+    we ever test). */
   unsigned int ndetected_herds; /**< The number of diseased herds detected so
     far. */
   REL_chart_t *vaccination_capacity; /**< The maximum number of herds the
@@ -376,14 +375,6 @@ typedef struct
   GPtrArray *pending_vaccinations; /**< Prioritized lists of herds to be
     vaccinated.  Each item is a pointer to a GQueue, and each item in the
     GQueue is a RequestForVaccination event. */
-  GQueue *pre_threshold_requests; /**< A list of herds that were identified
-    for vaccination before the vaccination threshold was reached.  Each item in
-    the GQueue is a RequestForVaccination event.  This list is emptied at the
-    beginning of each day.  If the vaccination threshold is reached, these
-    herds are placed into the pending_vaccinations queues.  In this way,
-    vaccination will happen for herds affected by the detection that passed the
-    threshold *and* for herds affected by previous detections on the same day
-    the threshold was reached. */
   int *day_last_vaccinated; /**< Records the day when each herd
    was last vaccinated.  Also prevents double-counting units against the
    vaccination capacity. */
@@ -515,6 +506,9 @@ destroy_by_priority (struct naadsm_model_t_ *self, int day,
 #if DEBUG
   g_debug ("----- ENTER destroy_by_priority (%s)", MODEL_NAME);
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  oldest_request_day = INT_MAX;
 
   local_data = (local_data_t *) (self->model_data);
 
@@ -660,6 +654,7 @@ destroy_by_priority (struct naadsm_model_t_ *self, int day,
         }
     }                           /* end case where time waiting has 3rd priority. */
 
+
 #if DEBUG
   g_debug ("----- EXIT destroy_by_priority (%s)", MODEL_NAME);
 #endif
@@ -741,6 +736,9 @@ vaccinate_by_priority (struct naadsm_model_t_ *self, int day,
 #if DEBUG
   g_debug ("----- ENTER vaccinate_by_priority (%s)", MODEL_NAME);
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  oldest_request_day = INT_MAX;
 
   local_data = (local_data_t *) (self->model_data);
 
@@ -909,20 +907,41 @@ vaccinate_by_priority (struct naadsm_model_t_ *self, int day,
 
 
 
+static void
+clear_all_pending_vaccinations (local_data_t *local_data)
+{
+  guint npriorities, i;
+  GQueue *q;
+
+  npriorities = local_data->pending_vaccinations->len;
+  g_hash_table_remove_all (local_data->vaccination_status);
+  for (i = 0; i < npriorities; i++)
+    {
+      q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, i);
+      while (!g_queue_is_empty (q))
+        EVT_free_event (g_queue_pop_head (q));
+    }
+  return;
+}
+
+
+
 /**
  * Responds to a new day event by carrying out any queued destructions or
  * vaccinations.
  *
  * @param self the model.
  * @param event a new day event.
+ * @param herds a herd list.
  * @param queue for any new events the model creates.
  */
 void
 handle_new_day_event (struct naadsm_model_t_ *self,
-                      EVT_new_day_event_t * event, EVT_event_queue_t * queue)
+                      EVT_new_day_event_t * event,
+                      HRD_herd_list_t * herds,
+                      EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  GQueue *q;
 
 #if DEBUG
   g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
@@ -945,9 +964,11 @@ handle_new_day_event (struct naadsm_model_t_ *self,
       /* If we haven't passed the threshold for vaccination yet, remove any
        * requests for vaccination that happened as a result of detections
        * yesterday. */
-      q = local_data->pre_threshold_requests;
-      while (!g_queue_is_empty (q))
-        EVT_free_event ((EVT_event_t *) g_queue_pop_head (q));
+      #if DEBUG
+        g_debug ("# detections so far (%u) < vaccination threshold (%u), deleting yesterday's requests to vaccinate",
+                 local_data->ndetected_herds, local_data->vaccination_program_threshold);
+      #endif
+      clear_all_pending_vaccinations (local_data);
     }
   else
     {
@@ -1148,15 +1169,10 @@ handle_detection_event (struct naadsm_model_t_ *self,
 
   if (local_data->ndetected_herds == local_data->vaccination_program_threshold)
     {
-      GQueue *q;
 #if DEBUG
       g_debug ("%u detections, vaccination program begins", local_data->ndetected_herds);
 #endif
-      /* Any requests for vaccination that happened earlier today go back into
-       * the queue. */
-      q = local_data->pre_threshold_requests;
-      while (!g_queue_is_empty (q))
-        EVT_event_enqueue (queue, (EVT_event_t *) g_queue_pop_head (q));
+      ;
     }
 
   /* If the unit is awaiting vaccination, and the request(s) can be canceled by
@@ -1369,7 +1385,7 @@ handle_request_for_vaccination_event (struct naadsm_model_t_ *self,
                                       EVT_event_t * e, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  EVT_request_for_vaccination_event_t *event, *old_request;
+  EVT_request_for_vaccination_event_t *event;
   HRD_herd_t *herd;
   unsigned int i;
   GQueue *q;
@@ -1391,17 +1407,7 @@ handle_request_for_vaccination_event (struct naadsm_model_t_ *self,
       || g_hash_table_lookup (local_data->destroyed_today, herd) != NULL)
     goto end;
 
-  if (local_data->ndetected_herds < local_data->vaccination_program_threshold)
-    {
-      /* If we haven't passed the threshold for starting the vaccination
-       * program yet, hold onto this request until the end of the day. */
-#if DEBUG
-      g_debug ("# detections so far (%u) < vaccination threshold (%u), holding request until end of day",
-               local_data->ndetected_herds, local_data->vaccination_program_threshold);
-#endif
-      g_queue_push_tail (local_data->pre_threshold_requests, EVT_clone_event (e));
-    }
-  else
+  if (TRUE)
     {
       /* There may be more than one request to vaccinate the same unit.  We
        * keep all of them. */
@@ -1529,7 +1535,7 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
   switch (event->type)
     {
     case EVT_NewDay:
-      handle_new_day_event (self, &(event->u.new_day), queue);
+      handle_new_day_event (self, &(event->u.new_day), herds, queue);
       break;
     case EVT_DeclarationOfDestructionReasons:
       handle_declaration_of_destruction_reasons_event (self,
@@ -1606,20 +1612,9 @@ reset (struct naadsm_model_t_ *self)
   local_data->no_more_destructions = FALSE;
   g_hash_table_remove_all (local_data->destroyed_today);
 
-  /* Empty the pre-threshold vaccination requests list. */
-  q = local_data->pre_threshold_requests;
-  while (!g_queue_is_empty (q))
-    EVT_free_event ((EVT_event_t *) g_queue_pop_head (q));
   /* Empty the prioritized pending vaccinations lists. */
-  npriorities = local_data->pending_vaccinations->len;
-  g_hash_table_remove_all (local_data->vaccination_status);
+  clear_all_pending_vaccinations (local_data);
   local_data->nherds_vaccinated_today = 0;
-  for (i = 0; i < npriorities; i++)
-    {
-      q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, i);
-      while (!g_queue_is_empty (q))
-        EVT_free_event (g_queue_pop_head (q));
-    }
 
   for (i = 0; i < local_data->nherds; i++)
     {
@@ -1832,17 +1827,12 @@ local_free (struct naadsm_model_t_ *self)
   g_ptr_array_free (local_data->vaccination_reasons, TRUE);
 
   REL_free_chart (local_data->vaccination_capacity);
+  clear_all_pending_vaccinations (local_data);
   g_hash_table_destroy (local_data->vaccination_status);
-  q = local_data->pre_threshold_requests;
-  while (!g_queue_is_empty (q))
-    EVT_free_event ((EVT_event_t *) g_queue_pop_head (q));
-  g_queue_free (q);
   npriorities = local_data->pending_vaccinations->len;
   for (i = 0; i < npriorities; i++)
     {
       q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, i);
-      while (!g_queue_is_empty (q))
-        EVT_free_event (g_queue_pop_head (q));
       g_queue_free (q);
     }
   g_ptr_array_free (local_data->pending_vaccinations, TRUE);
@@ -2119,7 +2109,6 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   /* No herds have been vaccinated or slated for vaccination yet. */
   local_data->vaccination_status = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_queue_free_as_GDestroyNotify);
   local_data->nherds_vaccinated_today = 0;
-  local_data->pre_threshold_requests = g_queue_new ();
   local_data->pending_vaccinations = g_ptr_array_new ();
   local_data->day_last_vaccinated = g_new0 (int, local_data->nherds);
   local_data->min_next_vaccination_day = g_new0 (int, local_data->nherds);

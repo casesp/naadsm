@@ -4,13 +4,13 @@ unit VaccinationParams;
 Vaccination.pas
 ----------------
 Begin: 2005/01/06
-Last revision: $Date: 2010-06-03 19:12:29 $ $Author: areeves $
-Version number: $Revision: 1.53.4.2 $
+Last revision: $Date: 2013-06-27 19:11:36 $ $Author: areeves $
+Version number: $Revision: 1.53.4.3 $
 Project: NAADSM and related applications
 Website:
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

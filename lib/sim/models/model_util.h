@@ -28,8 +28,8 @@
 
 
 /* Prototypes. */
-gboolean *naadsm_read_prodtype_attribute (scew_element *, char *, GPtrArray *);
-gboolean *naadsm_read_zone_attribute (scew_element *, ZON_zone_list_t *);
+gboolean *naadsm_read_prodtype_attribute (const scew_element *, char *, GPtrArray *);
+gboolean *naadsm_read_zone_attribute (const scew_element *, ZON_zone_list_t *);
 void naadsm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index);
 void g_queue_free_as_GDestroyNotify (gpointer data);
 

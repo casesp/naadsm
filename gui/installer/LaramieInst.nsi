@@ -6,7 +6,7 @@
 # Project: NSIS installer script for NAADSM, experimental version "Laramie"
 # Website: http://www.naadsm.org
 # Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
-# Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
 # Copyright (C) 2008 - 2010 Animal Population Health Institute, Colorado State University
 # 

@@ -252,7 +252,12 @@ def main ():
 
 			paramFileName = getText (test.getElementsByTagName ("parameter-file")[0])
 			print ' * See the <a href="test-xml-%s-%s.html">parameters as XML</a>.' \
-			  % (category, paramFileName)
+			  % (category, paramFileName.replace('.','_8'))
+			# The replace above deals with an odd behavior of Doxygen: if you
+			# use the @page directive to create a documentation page, but there
+			# is a period in the page name (e.g., the test suite contains pages
+			# for parameter files with "radius_2.5" in their name), then
+			# Doxygen will use "_8" in place of the period.
 			print ' *'
 
 			herdFileName = getText (test.getElementsByTagName ("herd-file")[0])

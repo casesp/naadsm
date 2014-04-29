@@ -4,14 +4,14 @@ unit FormMap;
 FormMap.pas/dfm
 ---------------
 Begin: 2005/05/25
-Last revision: $Date: 2011-09-30 17:16:50 $ $Author: areeves $
-Version: $Revision: 1.58.4.12 $
+Last revision: $Date: 2013-06-27 19:11:27 $ $Author: areeves $
+Version: $Revision: 1.58.4.13 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
 ------------------------------------------------------
-Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

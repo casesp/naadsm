@@ -75,10 +75,6 @@ EVT_event_type_t events_listened_for[] = { EVT_Infection };
 
 
 
-extern const char *PDF_dist_type_name[];
-
-
-
 /* Specialized information for this model. */
 typedef struct
 {
@@ -677,6 +673,14 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   if (e != NULL)
     {
       local_data->prevalence = PAR_get_relationship_chart (e);
+      if (REL_chart_min (local_data->prevalence) < 0)
+        {
+          g_error ("Y-values <0 are not allowed in a prevalence chart");
+        }
+      if (REL_chart_max (local_data->prevalence) > 1)
+        {
+          g_error ("Y-values >1 are not allowed in a prevalence chart");
+        }
       /* Scale and translate so that the x-values go from 0 to 1. */
       REL_chart_set_domain (local_data->prevalence, 0, 1);
     }

@@ -4,13 +4,13 @@ unit RingVaccParams;
 RingVaccParams.pas
 -------------------
 Begin: 2005/06/03
-Last revision: $Date: 2010-07-13 19:32:47 $ $Author: rhupalo $
-Version number: $Revision: 1.27.4.5 $
+Last revision: $Date: 2013-06-27 19:11:35 $ $Author: areeves $
+Version number: $Revision: 1.27.4.6 $
 Project: NAADSM and related applications
 Website:
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

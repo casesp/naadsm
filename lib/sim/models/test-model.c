@@ -38,7 +38,6 @@
 #define local_printf test_model_printf
 #define local_fprintf test_model_fprintf
 #define local_free test_model_free
-#define handle_before_any_simulations_event test_model_handle_before_any_simulations_event
 #define handle_new_day_event test_model_handle_new_day_event
 #define handle_detection_event test_model_handle_detection_event
 #define handle_test_event test_model_handle_test_event
@@ -68,20 +67,14 @@
  * but they're #defined so AC_CHECK_FUNCS doesn't find them. */
 double round (double x);
 
-extern const char *HRD_status_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "test-model"
 
 
 
-#define NEVENTS_LISTENED_FOR 4
-EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_NewDay,
+#define NEVENTS_LISTENED_FOR 3
+EVT_event_type_t events_listened_for[] = { EVT_NewDay,
   EVT_Detection, EVT_Test };
-
-
-
-const char test_model_detection_means[] = "Test";
 
 
 
@@ -121,37 +114,6 @@ local_data_t;
 
 
 /**
- * Before any simulations, this module declares all the means by which it may
- * create a detection.
- *
- * @param queue for any new events the module creates.
- */
-void
-handle_before_any_simulations_event (EVT_event_queue_t * queue)
-{
-  GPtrArray *means;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-
-  means = g_ptr_array_sized_new (1);
-  g_ptr_array_add (means, test_model_detection_means);
-  EVT_event_enqueue (queue, EVT_new_declaration_of_detection_means_event (means));
-
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
-   * the declaration event after all interested modules have processed the
-   * event. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-  return;
-}
-
-
-
-/**
  * Used in handle_new_day_event below to remove any occurrences of
  * DETECTED_NO_TEST_ORDERED from the detection_status table.
  *
@@ -185,7 +147,6 @@ handle_new_day_event (struct naadsm_model_t_ *self,
   GQueue *q;
   EVT_event_t *result;
   gpointer p;
-  int detection_status;
   HRD_herd_t *herd, *last_herd;
 
 #if DEBUG
@@ -275,16 +236,6 @@ handle_detection_event (struct naadsm_model_t_ *self,
   HRD_herd_t *herd;
   gpointer p;
   int detection_status;
-  double r;
-  gboolean positive, correct;
-  EVT_event_t *result, *detection;
-  int delay;
-  int delay_index;
-  GQueue *q;
-  NAADSM_test_result test_result;
-#if DEBUG
-  GString *s;
-#endif
 
 #if DEBUG
   g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
@@ -326,6 +277,7 @@ end:
  *
  * @param self the model.
  * @param event a test event.
+ * @param rng a random number generator.
  * @param queue for any new events the model creates.
  */
 void
@@ -352,6 +304,10 @@ handle_test_event (struct naadsm_model_t_ *self,
 #if DEBUG
   g_debug ("----- ENTER handle_test_event (%s)", MODEL_NAME);
 #endif
+
+  /* Eliminate compiler warnings about uninitialized values */
+  positive = FALSE;
+  correct = FALSE;
 
   local_data = (local_data_t *) (self->model_data);
 
@@ -420,7 +376,7 @@ handle_test_event (struct naadsm_model_t_ *self,
 
   result = EVT_new_test_result_event (herd, event->day, positive, correct, event->reason);
   if (positive)
-    detection = EVT_new_detection_event (herd, event->day, test_model_detection_means, test_result);
+    detection = EVT_new_detection_event (herd, event->day, NAADSM_DetectionDiagnosticTest, test_result);
   else
     detection = NULL;
   delay = (int) round (PDF_random (local_data->delay, rng));
@@ -495,9 +451,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t *herds, ZON_zone_list_t *zone
 
   switch (event->type)
     {
-    case EVT_BeforeAnySimulations:
-      handle_before_any_simulations_event (queue);
-      break;
     case EVT_NewDay:
       handle_new_day_event (self, &(event->u.new_day), queue);
       break;

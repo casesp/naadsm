@@ -4,13 +4,13 @@ unit FrameTracing;
 FrameTracing.pas
 ----------------
 Begin: 2006/02/05
-Last revision: $Date: 2011-05-16 23:11:04 $ $Author: areeves $
-Version number: $Revision: 1.9.4.5 $
+Last revision: $Date: 2013-06-27 19:11:32 $ $Author: areeves $
+Version number: $Revision: 1.9.4.6 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

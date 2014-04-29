@@ -79,8 +79,6 @@
 #define local_printf detection_model_printf
 #define local_fprintf detection_model_fprintf
 #define local_free detection_model_free
-#define handle_before_any_simulations_event detection_model_handle_before_any_simulations_event
-#define handle_declaration_of_exam_reasons_event detection_model_handle_declaration_of_exam_reasons_event
 #define handle_new_day_event detection_model_handle_new_day_event
 #define handle_exam_event detection_model_handle_exam_event
 #define handle_public_announcement_event detection_model_handle_public_announcement_event
@@ -98,21 +96,14 @@
 
 #include "detection-model.h"
 
-extern const char *HRD_status_name[];
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "detection-model"
 
 
 
-#define NEVENTS_LISTENED_FOR 5
-EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations,
-  EVT_DeclarationOfExamReasons, EVT_NewDay, EVT_PublicAnnouncement, EVT_Exam };
-
-
-
-const char detection_model_detection_means[] = "Clin"; /* short for clinical signs */
+#define NEVENTS_LISTENED_FOR 3
+EVT_event_type_t events_listened_for[] = {
+  EVT_NewDay, EVT_PublicAnnouncement, EVT_Exam };
 
 
 
@@ -147,75 +138,6 @@ typedef struct
     outbreak is known. */
 }
 local_data_t;
-
-
-
-/**
- * Before any simulations, this module declares all the means by which it may
- * create a detection.
- *
- * @param queue for any new events the module creates.
- */
-void
-handle_before_any_simulations_event (EVT_event_queue_t * queue)
-{
-  GPtrArray *means;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-
-  means = g_ptr_array_sized_new (1);
-  g_ptr_array_add (means, detection_model_detection_means);
-  EVT_event_enqueue (queue, EVT_new_declaration_of_detection_means_event (means));
-
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
-   * the declaration event after all interested modules have processed the
-   * event. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
-#endif
-  return;
-}
-
-
-
-/**
- * Responds to a declaration of exam reasons by giving those same reasons as
- * reasons why *this* module may request a test.
- *
- * @param event a declaration of exam reasons event.
- * @param queue for any new events the module creates.
- */
-void
-handle_declaration_of_exam_reasons_event (EVT_declaration_of_exam_reasons_event_t * event,
-                                          EVT_event_queue_t * queue)
-{
-  GPtrArray *reasons;
-  unsigned int n, i;
-
-#if DEBUG
-  g_debug ("----- ENTER handle_declaration_of_exam_reasons_event (%s)", MODEL_NAME);
-#endif
-
-  /* Copy the potential reasons for exams. */
-  n = event->reasons->len;
-  reasons = g_ptr_array_sized_new (n);
-  for (i = 0; i < n; i++)
-    g_ptr_array_add (reasons, (char *) g_ptr_array_index (event->reasons, i));
-
-  /* Declare those same reasons as potential reasons for tests. */
-  EVT_event_enqueue (queue, EVT_new_declaration_of_test_reasons_event (reasons));
-
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
-   * the declaration event after all interested modules have processed the
-   * event. */
-
-#if DEBUG
-  g_debug ("----- EXIT handle_declaration_of_exam_reasons_event (%s)", MODEL_NAME);
-#endif
-}
 
 
 
@@ -341,7 +263,7 @@ handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
           /* There was no diagnostic test, so NAADSM_TestUnspecified is a legitimate value here. */
           EVT_event_enqueue (queue,
                              EVT_new_detection_event (herd, event->day,
-                                                      detection_model_detection_means,
+                                                      NAADSM_DetectionClinicalSigns,
                                                       NAADSM_TestUnspecified));
           local_data->detected[herd->index] = TRUE;
         }
@@ -430,7 +352,7 @@ handle_exam_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
           /* There was no diagnostic test, so NAADSM_TestUnspecified is a legitimate value here. */
           EVT_event_enqueue (queue,
                              EVT_new_detection_event (herd, event->day,
-                                                      detection_model_detection_means,
+                                                      NAADSM_DetectionClinicalSigns,
                                                       NAADSM_TestUnspecified));
           local_data->detected[herd->index] = TRUE;
         }
@@ -517,12 +439,6 @@ run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 
   switch (event->type)
     {
-    case EVT_BeforeAnySimulations:
-      handle_before_any_simulations_event (queue);
-      break;
-    case EVT_DeclarationOfExamReasons:
-      handle_declaration_of_exam_reasons_event (&(event->u.declaration_of_exam_reasons), queue);
-      break;
     case EVT_NewDay:
       handle_new_day_event (self, herds, zones, &(event->u.new_day), rng, queue);
       break;
@@ -791,7 +707,7 @@ is_singleton (void)
  * Adds a set of parameters to a detection model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   param_block_t t;

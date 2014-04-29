@@ -766,9 +766,6 @@ the functions defined will all be NULL).
                       G_LOG_LEVEL_ERROR | \
                       G_LOG_LEVEL_WARNING)
 
-extern const char *HRD_status_name[];
-extern const char *RPT_frequency_name[];
-
 extern gboolean use_fixed_poisson;
 extern double poisson_fix;
 
@@ -1003,14 +1000,14 @@ build_report (gpointer data, gpointer user_data)
 
 #ifdef USE_SC_GUILIB
 DLL_API void
-run_sim_main (char *herd_file,
-              char *parameter_file,
-              char *output_file, double fixed_rng_value, int verbosity, int seed, char *production_type_file)
+run_sim_main (const char *herd_file,
+              const char *parameter_file,
+              const char *output_file, double fixed_rng_value, int verbosity, int seed, char *production_type_file)
 #else
 DLL_API void
-run_sim_main (char *herd_file,
-              char *parameter_file,
-              char *output_file, double fixed_rng_value, int verbosity, int seed)
+run_sim_main (const char *herd_file,
+              const char *parameter_file,
+              const char *output_file, double fixed_rng_value, int verbosity, int seed)
 #endif
 {
   unsigned int ndays, nruns, day, run;
@@ -1037,7 +1034,7 @@ run_sim_main (char *herd_file,
   ZON_zone_list_t *zones;
   ZON_zone_t *zone;
   int i, j;                     /* loop counters */
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   gboolean active_infections_yesterday, active_infections_today,
     pending_actions, pending_infections, disease_end_recorded,
     stop_on_disease_end, early_exit;

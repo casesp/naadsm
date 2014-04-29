@@ -57,10 +57,6 @@ EVT_event_type_t events_listened_for[] =
 
 
 
-extern const char *RPT_frequency_name[];
-
-
-
 /** Specialized information for this model. */
 typedef struct
 {
@@ -159,8 +155,8 @@ handle_declaration_of_vaccination_reasons_event (struct naadsm_model_t_ *self,
 {
   local_data_t *local_data;
   unsigned int n, i, j;
-  char *reason;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *reason;
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   
 #if DEBUG
   g_debug ("----- ENTER handle_declaration_of_vaccination_reasons_event (%s)", MODEL_NAME);
@@ -227,7 +223,7 @@ handle_vaccination_event (struct naadsm_model_t_ *self, EVT_vaccination_event_t 
   HRD_herd_t *herd;
   char *peek;
   gboolean first_of_cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
   HRD_control_t update;
   
 #if DEBUG
@@ -584,7 +580,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   gboolean broken_down;
   unsigned int i;      /* loop counter */
   char *prodtype_name;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER new (%s)", MODEL_NAME);

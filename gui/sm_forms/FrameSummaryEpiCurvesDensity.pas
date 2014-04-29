@@ -4,13 +4,13 @@ unit FrameSummaryEpiCurvesDensity;
 FrameSummaryEpiCurvesDensity.pas/dfm
 -----------------------------
 Begin: 2008/01/15
-Last revision: $Date: 2008-03-12 21:19:15 $ $Author: areeves $
-Version number: $Revision: 1.2 $
+Last revision: $Date: 2013-06-27 19:11:32 $ $Author: areeves $
+Version number: $Revision: 1.2.16.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2008 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or

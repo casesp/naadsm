@@ -50,9 +50,9 @@
 #define COPY_BUFFERSIZE 8192
 
 /* int yydebug = 1; must also compile with --debug to use this */
+int yylex(void);
+int yyerror (char const *s);
 char errmsg[BUFFERSIZE];
-
-extern const char *HRD_status_name[];
 
 unsigned int nherds;
 unsigned int last_day; /**< The most recent run number we have seen in the
@@ -67,7 +67,7 @@ gboolean done;
 
 
 void
-copy (char *src_filename, char *dest_filename)
+copy (const char *src_filename, const char *dest_filename)
 {
   FILE *src, *dest;
   static char buffer [COPY_BUFFERSIZE];
@@ -231,11 +231,10 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
-yyerror (char *s, int fatal)
+yyerror (char const *s)
 {
   fprintf (stderr, "Error in output (line %d): %s:\n%s\n", yylineno, s, linebuf);
   fprintf (stderr, "%*s\n", 1+tokenpos, "^");
-  if (fatal) exit (EXIT_FAILURE);
   return 0;
 }
 

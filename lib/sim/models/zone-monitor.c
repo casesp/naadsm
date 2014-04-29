@@ -56,8 +56,6 @@
 
 #include "zone-monitor.h"
 
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "zone-monitor"
 
@@ -198,7 +196,7 @@ handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
   double perimeter;
   unsigned int nherds;
   HRD_herd_t *herd;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
@@ -356,7 +354,7 @@ handle_last_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
   double perimeter;
   unsigned int nherds;
   HRD_herd_t *herd;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER handle_last_day_event (%s)", MODEL_NAME);
@@ -718,7 +716,8 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 {
   naadsm_model_t *self;
   local_data_t *local_data;
-  scew_element const *e, **ee;
+  scew_element const *e;
+  scew_element **ee;
   unsigned int n;
   const XML_Char *variable_name;
   RPT_frequency_t freq;
@@ -727,7 +726,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   unsigned int nprod_types;
   int i, j;
   ZON_zone_t *zone;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
+  const char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
   g_debug ("----- ENTER new (%s)", MODEL_NAME);

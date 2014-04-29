@@ -130,16 +130,16 @@ object FrameTracingTesting: TFrameTracingTesting
     object lblSensitivity: TLabel
       Left = 16
       Top = 14
-      Width = 161
-      Height = 19
+      Width = 115
+      Height = 13
       Caption = 'Unit-level test sensitivity:'
       WordWrap = True
     end
     object lblSpecificity: TLabel
       Left = 16
       Top = 46
-      Width = 169
-      Height = 19
+      Width = 116
+      Height = 13
       Caption = 'Unit-level test specificity:'
       WordWrap = True
     end

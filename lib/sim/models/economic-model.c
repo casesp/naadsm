@@ -55,8 +55,6 @@
 
 #include "economic-model.h"
 
-extern const char *RPT_frequency_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "economic-model"
 
@@ -721,7 +719,7 @@ is_singleton (void)
  * Adds a set of parameters to a contact spread model.
  */
 void
-set_params (struct naadsm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data = (local_data_t *) (self->model_data);
   unsigned int nzones = ZON_zone_list_length (local_data->zones);
@@ -1094,7 +1092,6 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 {
   naadsm_model_t *m;
   local_data_t *local_data;
-  int i, j;                     /* loop counters */
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
