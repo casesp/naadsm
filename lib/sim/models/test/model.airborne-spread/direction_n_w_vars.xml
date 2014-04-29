@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>4</num-days>
@@ -50,11 +50,13 @@
 
     <infection-monitor>
       <output>
-        <variable-name>num-units-infected-by-cause</variable-name>
+        <variable-name>infnU</variable-name>
+        <broken-down>yes</broken-down>
         <frequency>daily</frequency>
       </output>
       <output>
-        <variable-name>cumulative-num-units-infected</variable-name>
+        <variable-name>infcU</variable-name>
+        <broken-down>no</broken-down>
         <frequency>daily</frequency>
       </output>
     </infection-monitor>
@@ -63,4 +65,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

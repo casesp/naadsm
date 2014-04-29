@@ -6,21 +6,21 @@
 #include <popt.h>
 #include "reporting.h"
 #include <stdio.h>
-#include <gsl/gsl_statistics_double.h>
-#include <gsl/gsl_sort.h>
 
 #if STDC_HEADERS
 #  include <stdlib.h>
 #endif
 
-#include <assert.h>
+#if HAVE_STRING_H
+#  include <string.h>
+#endif
 
 /** @file filters/full_table.c
  * A filter that turns SHARCSpread output into a table.
  *
  * Call it as
  *
- * <code>table_filter LOG-FILE</code>
+ * <code>table_filter < LOG-FILE</code>
  *
  * The table is written to standard output in comma-separated values format.
  *
@@ -32,7 +32,7 @@
  * @version 0.1
  * @date May 2004
  *
- * Copyright &copy; University of Guelph, 2004-2007
+ * Copyright &copy; University of Guelph, 2004-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -52,40 +52,45 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
 typedef struct
 {
-  unsigned int run;
-  unsigned int day;
+  gboolean is_null;
   double value;
   GString *svalue;
-} run_day_value_triple_t;
+} output_value_t;
 
 GPtrArray *output_names; /**< Names of output variables.  The names are
   GStrings. */
-GPtrArray *output_values; /**< The output variable values.  Each item in the
-  list is for one node.  The items are Keyed Data Lists that associate a
-  variable name with a GArray of run-day-value triples. */
-unsigned int current_node;
-GArray *current_run; /**< The most recent run number we have seen in the output from each node. */
-GArray *current_day; /**< The most recent day we have seen in the output from each node. */
-int pass;
+GData *output_values; /**< The output variable values.  It is a Keyed Data List
+  that associates a variable name with an output_value_t structure. */
+int current_node; /**< The most recent node number we have seen in the
+  simulator output. */
+int current_run; /**< The most recent run number we have seen in the output. */
+int current_day; /**< The most recent day we have seen in the output. */
+gboolean printed_header; /**< Whether we have printed the header line for the
+  table or not. */
 
 
 
 /**
- * Wraps GLib's g_array_free function so that it can be used as the
- * GDestroyNotify function in a Keyed Data List.
+ * Frees an output_value_t structure, defined above.  Typed as a GDestroyNotify
+ * so that it can be used as the destroy_func in a Keyed Data List.
  */
 void
-g_array_free_as_GDestroyNotify (gpointer data)
+free_output_value (gpointer data)
 {
-  g_array_free ((GArray *) data, TRUE);
+  output_value_t *output_value;
+  if (data != NULL)
+    {
+      output_value = (output_value_t *) data;
+      if (output_value->svalue != NULL)
+        g_string_free (output_value->svalue, TRUE);
+      g_free (output_value);
+    }
+  return;
 }
 
 
@@ -103,66 +108,52 @@ g_string_free_as_GFunc (gpointer data, gpointer user_data)
 
 
 /**
- * Wraps g_ascii_strcasecmp so that it can be used as a GCompareFunc to
- * sort a Pointer Array of GStrings.
- */
-gint
-g_ascii_strcasecmp_as_GCompareFunc (gconstpointer a, gconstpointer b)
-{
-  char *s1, *s2;
-
-  s1 = (*((GString **) a))->str;
-  s2 = (*((GString **) b))->str;
-  return g_ascii_strcasecmp (s1, s2);  
-}
-
-
-
-/**
- * Adds a pointer to the pointer array, but only if <i>data</i> does not
- * already exist in <i>array</i>.  The new data is compared to existing entries
- * using <i>compare_func</i> which should be a qsort()-style comparison
- * function (returns -1 for first arg is less than second arg, 0 for equal, 1
- * if first arg is greater than second arg).  The array will grow in size
- * automatically if necessary.
+ * Returns a copy of the given text, transformed into CamelCase.
  *
- * This function mimics g_ptr_array_add from the GLib library, except it
- * inserts the new data only if it doesn't already exist.
- *
- * @param array a GPtrArray.
- * @param compare_func a comparison function.
- * @param data the pointer to add.
+ * @param text the original text.
+ * @param capitalize_first if TRUE, the first character of the text will be
+ *   capitalized.
+ * @return a newly-allocated string.  If the "text" parameter is NULL, the
+ *   return value will also be NULL.
  */
-void
-g_ptr_array_add_unique (GPtrArray *array, gpointer data,
-                        GCompareFunc compare_func)
+char *
+camelcase (char *text, gboolean capitalize_first)
 {
-  unsigned int i, n;
-  gboolean done, found;
+  char *newtext; /* Address of the newly-allocated CamelCase string. */
+  char *newchar; /* Pointer to the current character of the new string, as we
+    are building it. */
+  gboolean last_was_space;
 
-  /* The list is assumed to be unsorted, so a linear search is needed.  Scan
-   * backwards from the end of the list.  The rationale for this is that if
-   * similar data appear together, you will probably find the match to the new
-   * data close to the end of the list. */
-  found = FALSE;
-  n = array->len;
-  for (i = n-1, done = (n == 0); !done; i--)
+  newtext = NULL;
+  if (text != NULL)
     {
-      done = (i == 0);
-      if (compare_func (&data, &g_ptr_array_index (array, i)) == 0)
-        found = done = TRUE;
+      newtext = g_new (char, strlen(text)+1); /* +1 to leave room for the '\0' at the end */
+      last_was_space = capitalize_first;
+      for (newchar = newtext; *text != '\0'; text++)
+        {
+          if (g_ascii_isspace (*text))
+            {
+              last_was_space = TRUE;
+              continue;
+            }
+          if (last_was_space && g_ascii_islower(*text))
+            *newchar++ = g_ascii_toupper (*text);
+          else
+            *newchar++ = *text;
+          last_was_space = FALSE;
+        }
+      /* End the new string with a null character. */
+      *newchar = '\0';
     }
-
-  if (!found)
-    g_ptr_array_add (array, data);
+  return newtext;
 }
 
 
 
 /**
- * Adds all the values stored in an RPT_reporting_t structure to the master
- * list of outputs.  This function is typed as a GDataForeachFunc so that
- * it can easily be called recursively on the sub-variables.
+ * Adds all the values stored in an RPT_reporting_t structure to the list of
+ * output values for today.  This function is typed as a GDataForeachFunc so
+ * that it can easily be called recursively on the sub-variables.
  *
  * @param key_id use 0.
  * @param data an output variable, cast to a gpointer.
@@ -175,14 +166,12 @@ add_values (GQuark key_id, gpointer data, gpointer user_data)
 {
   RPT_reporting_t *reporting;
   GString *name_so_far, *name;
-  GArray *values;
-  GData **node_output_values;
-  gboolean new_name = FALSE;
-  run_day_value_triple_t tmp;
-  unsigned int nnames;
+  char *camel;
+  output_value_t *tmp;
 #if DEBUG
+  unsigned int nnames, i;
+  char *output_name;
   GString *s;
-  unsigned int i;
 #endif
 
   reporting = (RPT_reporting_t *) data;
@@ -194,193 +183,138 @@ add_values (GQuark key_id, gpointer data, gpointer user_data)
   else
     {
       name = g_string_new (name_so_far->str);
-      g_string_append_printf (name, ":%s", reporting->name);
+      camel = camelcase (reporting->name, /* capitalize first = */ TRUE); 
+      g_string_append_printf (name, "%s", camel);
+      g_free (camel);
     }
 
   if (reporting->type == RPT_group)
     {
       g_datalist_foreach ((GData **) (&reporting->data), add_values, name);
-      goto end;
+      g_string_free (name, TRUE);
     }
-
-  switch (pass)
+  else
     {
-    case 1:
-      /* In the first pass, we're just gathering output variable names.  So if
-       * the list doesn't already contain this variable, add it. */
-      nnames = output_names->len;
-      g_ptr_array_add_unique (output_names, name, g_ascii_strcasecmp_as_GCompareFunc);
-      if (output_names->len > nnames)
-	new_name = TRUE;
-      break;
+      /* If we haven't printed the header yet (we're processing the very first
+       * line of input), record the output variable's name. */
+      if (!printed_header)
+        g_ptr_array_add (output_names, name);
 
-    case 2:
-      /* In the second pass, we're gathering output variable values. */
-      tmp.run = g_array_index (current_run, unsigned int, current_node);
-      tmp.day = g_array_index (current_day, unsigned int, current_node);
-      if (reporting->type == RPT_integer)
-	{
-	  tmp.value = (double)(*((long *)(reporting->data)));
-	  tmp.svalue = NULL;
-	}
-      else if (reporting->type == RPT_real)
-	{
-	  tmp.value = *((double *)(reporting->data));
-	  tmp.svalue = NULL;
-	}
-      else if (reporting->type == RPT_text)
-	{
-	  tmp.value = 0;
-	  tmp.svalue = g_string_new (((GString *)reporting->data)->str);
-	}
-
-      node_output_values = (GData **)(&g_ptr_array_index (output_values, current_node));
-      values = (GArray *) (g_datalist_get_data (node_output_values, name->str));
-
-      /* If no values have been recorded for this node and variable before,
-       * create a new list. */
-      if (values == NULL)
-	{
-	  values = g_array_new (FALSE, FALSE, sizeof (run_day_value_triple_t));
-	  g_datalist_set_data_full (node_output_values, name->str, values,
-				    g_array_free_as_GDestroyNotify);
-	  g_array_append_val (values, tmp);
-	}	  
-      /* If values have been recorded for this node and variable, check the
-       * most recent one.  If it is for the current day, add to it; otherwise,
-       * record the value as new. */
-      else
+      /* Record the output variable's value. */
+      tmp = g_new (output_value_t, 1);
+      if (reporting->is_null)
         {
-	  if (g_array_index (values, run_day_value_triple_t, values->len - 1).run == tmp.run
-	      && g_array_index (values, run_day_value_triple_t, values->len - 1).day == tmp.day)
-	    {
-	      if (tmp.svalue == NULL)
-		g_array_index (values, run_day_value_triple_t, values->len - 1).value += tmp.value;
-	      else
-		{
-		  g_string_append_printf (g_array_index (values, run_day_value_triple_t, values->len - 1).svalue, ",%s", tmp.svalue->str);
-		  g_string_free (tmp.svalue, TRUE);
-		}
-	    }
-	  else
-	    g_array_append_val (values, tmp);
+          tmp->is_null = TRUE;
+          tmp->svalue = NULL;
         }
-#if DEBUG
-      s = g_string_new (NULL);
-      g_string_printf (s, "values for \"%s\" now = [", name->str);
-      for (i = 0; i < values->len; i++)
-        g_string_append_printf (s, i == 0 ? "%g" : ",%g",
-		g_array_index (values, run_day_value_triple_t, i).value);
-      g_string_append_c (s, ']');
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
-      g_string_free (s, TRUE);
-#endif
-      break;
+      else if (reporting->type == RPT_integer)
+        {
+          tmp->is_null = FALSE;
+          tmp->value = (double)(*((long *)(reporting->data)));
+          tmp->svalue = NULL;
+        }
+      else if (reporting->type == RPT_real)
+        {
+          tmp->is_null = FALSE;
+          tmp->value = *((double *)(reporting->data));
+          tmp->svalue = NULL;
+        }
+      else if (reporting->type == RPT_text)
+        {
+          tmp->is_null = FALSE;
+          tmp->value = 0;
+          tmp->svalue = g_string_new (((GString *)reporting->data)->str);
+        }
+      /* We shouldn't see repeats of the same data item on the same day. */
+      if (g_datalist_get_data (&output_values, name->str) != NULL)
+        g_error ("should not be seeing \"%s\" twice", name->str);
 
-    default:
-      g_assert_not_reached();
+      g_datalist_set_data_full (&output_values, name->str, tmp, free_output_value);
+
+      #if DEBUG
+        /* Sanity check - make sure this variable is in the header. */
+        nnames = output_names->len;
+        for (i = 0; i < nnames; i++)
+          {
+            output_name = ((GString *) g_ptr_array_index (output_names, i))->str;
+            if (strcmp (name->str, output_name) == 0)
+              break;
+          }
+        if (i == nnames)
+          {
+            g_error ("name \"%s\" not in header", name->str);
+          }
+      #endif
+
+      #if DEBUG
+        s = g_string_new (NULL);
+        g_string_printf (s, "value for \"%s\" now = ", name->str);
+        if (tmp->is_null)
+          g_string_append_printf (s, "null");
+        else if (tmp->svalue != NULL)
+          g_string_append_printf (s, "'%s'", tmp->svalue->str);
+        else
+          g_string_append_printf (s, "%g", tmp->value);
+        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
+        g_string_free (s, TRUE);
+      #endif
+
+      if (printed_header)
+        g_string_free (name, TRUE);
     }
-
-end:
-  if (!new_name)
-    g_string_free (name, TRUE);
   return;
 }
 
 
 
 /**
- * Prints the stored output values for one node.
+ * Prints the stored output values.
  */
 void
-print_values (unsigned int node)
+print_values ()
 {
+  static int run = 0; /* A run identifier that increases each time we print one
+    complete Monte Carlo run.  This is distinct from the per-node run numbers
+    in the simulator output. */
   unsigned int nnames, i;
-  char *s;
-  GData **node_output_values;
-  GArray **columns;
-  GArray *column;
-  unsigned int *indexes;
-  unsigned int index;
-  run_day_value_triple_t *tmp;
-  unsigned int day;
-  gboolean done = FALSE;
-  static unsigned int run = 1; /* A run identifier than increases with each
-    call to this function.  This is distinct from the per-node run numbers
-    stored in the run-day-event triples. */
+  char *name;
+  output_value_t *value;
 
+  if (current_day == 1)
+    run++;
+
+  printf ("%u,%u", run, current_day);
+  /* Output the values in the order that the variables appeared in the table
+   * header line. */
   nnames = output_names->len;
-
-  /* For convenience during parsing, the output value lists are stored in a
-   * Keyed Data list, keyed by output variable name.  For printing, it would be
-   * more convenient to have the output value lists stored in an array, ordered
-   * by output variable name.  So we construct that array here. */
-  node_output_values = (GData **)(&g_ptr_array_index (output_values, node));
-  columns = g_new (GArray *, nnames);
   for (i = 0; i < nnames; i++)
     {
-      s = ((GString *) g_ptr_array_index (output_names, i))->str;
-      columns[i] = (GArray *) (g_datalist_get_data (node_output_values, s));
+      printf (",");
+      name = ((GString *) g_ptr_array_index (output_names, i))->str;
+      value = (output_value_t *) (g_datalist_get_data (&output_values, name));
+      /* Not every output variable is reported on every day, so sometimes the
+       * value will be NULL. */
+      if (value == NULL || value->is_null)
+        continue;
+      if (value->svalue == NULL)
+        printf ("%g", value->value);
+      else
+        printf ("\"%s\"", value->svalue->str);
     }
-
-  /* Create an array of indexes into the output value lists.  This is needed
-   * because not every output variable is reported on every day. */
-  indexes = g_new0 (unsigned int, nnames);
-  for (day = 1; !done; day++) /* outer loop = rows = days */
-    {
-      printf ("%u,%u", run, day);
-      done = TRUE;
-      for (i = 0; i < nnames; i++) /* inner loop = columns = variable names */
-	{
-	  column = columns[i];
-	  if (column == NULL)
-	    {
-	      printf (",");
-	      continue;
-	    }
-          index = indexes[i];
-          if (index >= column->len)
-	    {
-	      printf (",");
-	      continue;
-	    }
-	  tmp = &g_array_index (column, run_day_value_triple_t, index);
-	  if (tmp->day > day)
-	    {
-	      printf (",");
-	      done = FALSE;
-	      continue;
-	    }	  
-	  if (tmp->svalue == NULL)
-	    printf (",%g", tmp->value);
-	  else
-	    printf (",\"%s\"", tmp->svalue->str);
-	  if (++index < column->len)
-	    done = FALSE;
-	  indexes[i] = index;
-        }
-      printf ("\n");
-    }
-
-  run++;
-
-  /* Clean up. */
-  g_free (columns);
-  g_free (indexes);
+  printf ("\n");
+  
+  return;
 }
 
 
 
 /**
- * Clears the stored output values for one node.
+ * Clears the stored output values.
  */
 void
-clear_values (unsigned int node)
+clear_values ()
 {
-  GData **node_output_values;
-
-  node_output_values = (GData **)(&g_ptr_array_index (output_values, node));
-  g_datalist_clear (node_output_values);
+  g_datalist_clear (&output_values);
 }
 
 %}
@@ -411,56 +345,46 @@ output_lines :
 
 output_line:
     tracking_line NEWLINE data_line NEWLINE
-    { }
+    {
+      unsigned int i;
+
+      /* If this was the first line read, print the table header. */
+      if (!printed_header)
+        {
+          printf ("Run,Day");
+          for (i = 0; i < output_names->len; i++)
+            printf (",%s", ((GString *) g_ptr_array_index (output_names,i))->str);
+          printf ("\n");	      
+          fflush (stdout);
+          printed_header = TRUE;	
+        }
+      print_values();
+      clear_values();
+    }
   ;
 
 tracking_line:
     NODE INT RUN INT
     {
-      unsigned int node = $2;
-      unsigned int run = $4;
-      GData *new_list;
+      int node = $2;
+      int run = $4;
 
-      if (pass == 2)
-	{
-	  /* If we haven't seen output from this node before, we need to extend
-	   * the tracking lists for current run and current day, and create a
-	   * new Keyed Data List to hold output values for the new node. */
-	  if ((node + 1) > current_run->len)
-            {
-	      g_array_set_size (current_run, node + 1);
-
-	      g_array_set_size (current_day, node + 1);
-	      g_array_index (current_day, unsigned int, node) = 1;
-
-	      g_ptr_array_set_size (output_values, node + 1);
-	      /* Initialize the new entry to an empty Keyed Data List. */
-	      g_datalist_init (&new_list);
-	      g_ptr_array_index (output_values, node) = new_list;
-	    }
-	  else
-	    {
-	      /* Since output from a single node is sequential, when we see
-	       * that the run number has changed, we know the output from one
-	       * Monte Carlo trial is over.  So we print the values, clear the
-	       * data for that node, and reset the day for that node. */
-	      if (run != g_array_index (current_run, unsigned int, node))
-        	{
-		  print_values (node);
-		  clear_values (node);
-		  g_array_index (current_run, unsigned int, node) = run;
-		  g_array_index (current_day, unsigned int, node) = 1;
-		}
-	      else
-		g_array_index (current_day, unsigned int, node) ++;
-	    }
-	  current_node = node;
+      /* When we see that the node number or run number has changed, we know
+       * the output from one Monte Carlo trial is over, so we reset the day. */
+      if (node != current_node || run != current_run)
+        {
+          current_day = 1;
 #if DEBUG
-	  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-		 "node %u now on run %u, day %u\n",
-		 node, run, g_array_index (current_day, unsigned int, node));
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                 "now on day 1 (node %i, run %i)", node, run);
 #endif
-	}
+        }
+      else
+        {
+          current_day++;
+        }
+      current_node = node;
+      current_run = run;
     }
   ;
 
@@ -492,47 +416,42 @@ vars:
 var:
     VARNAME EQ value
     {
-      if ($3 != NULL)
-	{
-	  $3->name = $1;
+      $3->name = $1;
 
-	  /* At this point we have built, in a bottom-up fashion, one complete
-	   * output variable, stored in an RPT_reporting_t structure.  So we have a
-	   * tree-style represention of something like, for example,
-	   * 
-	   * num-units-in-each-state={'Susceptible':20,'Latent':10}
-	   *
-	   * What we want for the summary table is something like:
-	   *
-	   * num-units-in-each-state:Susceptible = 20, ...
-	   * num-units-in-each-state:Latent = 10, ...
-	   *
-	   * So we call a function that drills down into the RPT_reporting_t
-	   * structure and adds whatever sub-variables it finds, with their values,
-	   * to the master list of outputs.
-	   */
-	  add_values (0, $3, NULL);
-	  RPT_free_reporting ($3, TRUE);
-	}
-      else
-        g_free ($1);
+      /* At this point we have built, in a bottom-up fashion, one complete
+       * output variable, stored in an RPT_reporting_t structure.  So we have a
+       * tree-style represention of something like, for example,
+       * 
+       * num-units-in-each-state={'Susceptible':20,'Latent':10}
+       *
+       * What we want for the summary table is something like:
+       *
+       * num-units-in-each-state:Susceptible = 20, ...
+       * num-units-in-each-state:Latent = 10, ...
+       *
+       * So we call a function that drills down into the RPT_reporting_t
+       * structure and adds whatever sub-variables it finds, with their values,
+       * to the master list of outputs.
+       */
+      add_values (0, $3, NULL);
+      RPT_free_reporting ($3);
     }
   ;
 
 value:
     INT
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_integer, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_integer, RPT_never);
       RPT_reporting_set_integer ($$, $1, NULL);
     }
   | FLOAT
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_real, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_real, RPT_never);
       RPT_reporting_set_real ($$, $1, NULL);
     }
   | STRING
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_text, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_text, RPT_never);
       RPT_reporting_set_text ($$, $1, NULL);
       /* The string token's value is set with a g_strndup, so we need to free
        * it after copying it into the RPT_reporting structure. */
@@ -540,13 +459,13 @@ value:
     }
   | POLYGON LPAREN RPAREN
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_text, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_text, RPT_never);
       RPT_reporting_set_text ($$, "POLYGON()", NULL);
     }
   | POLYGON LPAREN contours RPAREN
     {
       char *s;
-      $$ = RPT_new_reporting (NULL, NULL, RPT_text, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_text, RPT_never);
       s = g_strdup_printf ("POLYGON(%s)", $3);
       g_free ($3);
       RPT_reporting_set_text ($$, s, NULL);
@@ -554,13 +473,14 @@ value:
     }
   | LBRACE RBRACE
     {
-      $$ = NULL;
+      $$ = RPT_new_reporting (NULL, RPT_integer, RPT_never);
+      RPT_reporting_set_null ($$, NULL);
     }
   | LBRACE subvars RBRACE
     {
       GSList *iter;
 
-      $$ = RPT_new_reporting (NULL, NULL, RPT_group, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_group, RPT_never);
       for (iter = $2; iter != NULL; iter = g_slist_next (iter))
 	RPT_reporting_splice ($$, (RPT_reporting_t *) (iter->data));
 
@@ -680,13 +600,10 @@ int
 main (int argc, char *argv[])
 {
   poptContext option;
-  const char *log_file = NULL;
   int verbosity = 0;
-  unsigned int nnodes, i;
   struct poptOption options[2];
 
-  /* Get the command-line options and arguments.  There should be one command-
-   * line argument, the name of the simulation output file. */
+  /* Get the command-line options and arguments. */
   options[0].longName = "verbosity";
   options[0].shortName = 'V';
   options[0].argInfo = POPT_ARG_INT;
@@ -705,76 +622,37 @@ main (int argc, char *argv[])
 
   option = poptGetContext (NULL, argc, (const char **)argv, options, 0);
   poptGetNextOpt (option);
-  log_file = poptGetArg (option);
   poptFreeContext (option);
 
-  if (log_file == NULL)
-    g_error ("Need the name of a simulation output file.");
-
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("reporting", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("reporting", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
 
-  /* First pass to find all the output variable names.  We need them to print
-   * the table header. */
   output_names = g_ptr_array_new ();
+  g_datalist_init (&output_values);
+  /* Initialize the current node to "-1" so that whatever node appears first in
+   * the simulator output will signal the parser that output from a new node is
+   * beginning, that the current day needs to be reset, etc. */
+  current_node = -1;
+  /* We have not yet printed the table header line. */
+  printed_header = FALSE;
 
-  yyin = fopen (log_file, "r");
-  pass = 1;
+  /* Call the parser. */
+  if (yyin == NULL)
+    yyin = stdin;
   while (!feof(yyin))
     yyparse();
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Done 1st pass");
-#endif
-
-  printf ("Run,Day");
-  for (i = 0; i < output_names->len; i++)
-    printf (",%s", ((GString *) g_ptr_array_index (output_names,i))->str);
-  printf ("\n");	      
-  fflush (stdout);
-
-  /* Second pass to find and print the output variable values. */
-  output_values = g_ptr_array_new ();
-  current_run = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-  current_day = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-
-  fseek (yyin, 0L, SEEK_SET);
-  yyrestart (yyin);
-  pass = 2;
-  while (!feof(yyin))
-    yyparse();
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Done 2nd pass");
-#endif
-
-  /* Some output values may have been printed during the parse.  Print out any
-   * remaining values. */
-  nnodes = current_run->len;
-  for (i = 0; i < nnodes; i++)
-    {
-      print_values (i);
-      clear_values (i);
-    }
 
   /* Clean up. */
-  g_array_free (current_run, TRUE);
-  g_array_free (current_day, TRUE);
   g_ptr_array_foreach (output_names, g_string_free_as_GFunc, NULL);
   g_ptr_array_free (output_names, TRUE);
-  g_ptr_array_free (output_values, TRUE);
+  g_datalist_clear (&output_values);
 
   return EXIT_SUCCESS;
 }

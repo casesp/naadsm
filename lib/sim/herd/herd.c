@@ -2,15 +2,19 @@
  * Functions for creating, destroying, printing, and manipulating herds.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
- * @date January 2003
  *
- * Copyright &copy; University of Guelph, 2003-2008
- * 
+  * @author Shaun Case <ShaunCase@colostate.edu><br>
+ *   Animal Population Health Institute<br>
+ *   College of Veterinary Medicine and Biomedical Sciences<br>
+ *   Colorado State University<br>
+ *   Fort Collins, CO 80523<br>
+ *   USA
+ *
+ * Copyright &copy; University of Guelph, 2003-2010
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -29,6 +33,8 @@
  * Libtool". */
 #define free_as_GFunc herd_LTX_free_as_GFunc
 
+#define G_LOG_DOMAIN "herd"
+
 #include <unistd.h>
 #include <stdio.h>
 #include "herd.h"
@@ -38,11 +44,6 @@
 #ifndef XML_STATUS_ERROR
 #  define XML_STATUS_ERROR 0
 #endif
-#include <sprng.h>
-#include "wml.h"
-#include "2dch.h"
-#include "gis.h"
-#include <gsl/gsl_math.h>
 
 #if STDC_HEADERS
 #  include <stdlib.h>
@@ -70,34 +71,56 @@ double trunc (double);
 
 #define EPSILON 0.001
 
-#ifndef _WIN32
+#include <naadsm.h>
+
+#ifdef USE_SC_GUILIB
+#  include <sc_naadsm_outputs.h>
+#endif
+
+
+
+#ifndef WIN_DLL
+#ifndef COGRID
 /* This line causes problems on Windows, but seems to be unnecessary. */
 extern FILE *stdin;
 #endif
+#endif
 
-/* 
-herd.c needs access to the functions defined in guilib.h,
-even when compiled as a *nix executable (in which case, 
-the functions defined will all be NULL). 
+
+/*
+herd.c needs access to the functions defined in naadsm.h,
+even when compiled as a *nix executable (in which case,
+the functions defined will all be NULL).
 */
-#include "guilib.h"
+#include "naadsm.h"
 
 /**
  * A table of all valid state transitions.
  *
  * @sa HRD_status_t
  */
-const gboolean HRD_valid_transition[][HRD_NSTATES] = {
-  {FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE}, /* Susceptible -> Latent, InfectiousSubclinical, InfectiousClinical, VaccineImmune or Destroyed */
-  {FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE},       /* Latent -> InfectiousSubclinical, InfectiousClinical or Destroyed */
-  {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE},      /* InfectiousSubclinical -> InfectiousClinical or Destroyed */
-  {FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE},      /* InfectiousClinical -> NaturallyImmune or Destroyed */
-  {TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE},      /* NaturallyImmune -> Susceptible or Destroyed */
-  {TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE},      /* VaccineImmune -> Susceptible or Destroyed */
-  {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE},    /* Destroyed -> <<emptyset>> */
-};
-
-
+#ifndef RIVERTON
+  const gboolean HRD_valid_transition[][HRD_NSTATES] = {
+    {FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE}, /* Susceptible -> Latent, InfectiousSubclinical, InfectiousClinical, VaccineImmune or Destroyed */
+    {FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE},       /* Latent -> InfectiousSubclinical, InfectiousClinical or Destroyed */
+    {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE},      /* InfectiousSubclinical -> InfectiousClinical or Destroyed */
+    {FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE},      /* InfectiousClinical -> NaturallyImmune or Destroyed */
+    {TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE},      /* NaturallyImmune -> Susceptible or Destroyed */
+    {TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE},      /* VaccineImmune -> Susceptible or Destroyed */
+    {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE},    /* Destroyed -> <<emptyset>> */
+  };
+#else
+  /* in RIVERTON, NaturallyImmune units cannot make any transitions */
+  const gboolean HRD_valid_transition[][HRD_NSTATES] = {
+    {FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE}, /* Susceptible -> Latent, InfectiousSubclinical, InfectiousClinical, VaccineImmune or Destroyed */
+    {FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, TRUE},       /* Latent -> InfectiousSubclinical, InfectiousClinical or Destroyed */
+    {FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE},      /* InfectiousSubclinical -> InfectiousClinical or Destroyed */
+    {FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE},      /* InfectiousClinical -> NaturallyImmune or Destroyed */
+    {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE},      /* NaturallyImmune -> <<emptyset>> */
+    {TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE},      /* VaccineImmune -> Susceptible or Destroyed */
+    {FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE},    /* Destroyed -> <<emptyset>> */
+  };
+#endif
 
 /**
  * Names for the possible states (with respect to a disease) for a herd,
@@ -106,8 +129,7 @@ const gboolean HRD_valid_transition[][HRD_NSTATES] = {
  * @sa HRD_status_t
  */
 const char *HRD_status_name[] = {
-  "Susceptible", "Latent", "Infectious Subclinical", "Infectious Clinical",
-  "Naturally Immune", "Vaccine Immune", "Destroyed", NULL
+  "Susc", "Lat", "Subc", "Clin", "NImm", "VImm", "Dest", NULL
 };
 
 
@@ -143,12 +165,14 @@ free_as_GFunc (gpointer data, gpointer user_data)
  *
  * @param herd a herd.
  * @param new_state the new state.
+ * @param infectious_herds a list of infectious herds, which may change as a
+ *   result of this operation.
  */
 void
-HRD_change_state (HRD_herd_t * herd, HRD_status_t new_state)
+HRD_change_state (HRD_herd_t * herd, HRD_status_t new_state,
+                  GHashTable *infectious_herds)
 {
   HRD_status_t state;
-  HRD_update_t update;
 
   state = herd->status;
   if (HRD_valid_transition[state][new_state])
@@ -156,27 +180,40 @@ HRD_change_state (HRD_herd_t * herd, HRD_status_t new_state)
       herd->status = new_state;
       herd->days_in_status = 0;
 
-      if (NULL != guilib_change_herd_state)
-        {
-          update.index = herd->index;
-          update.status = herd->status;
-          update.success = 2;   /* Unused */
-          guilib_change_herd_state (update);
+      switch( new_state )
+      {
+        case Susceptible:
+          HRD_remove_herd_from_infectious_list( herd, infectious_herds );
+        break;
 
-        }
+        case Latent:
+        case InfectiousSubclinical:
+        case InfectiousClinical:
+          HRD_add_herd_to_infectious_list( herd, infectious_herds );
+        break;
 
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "unit \"%s\" is now %s", herd->official_id,
-             HRD_status_name[herd->status]);
+        case NaturallyImmune:
+        case VaccineImmune:
+          HRD_remove_herd_from_infectious_list( herd, infectious_herds );
+        break;
+
+        case Destroyed:
+          /*  HRD_remove_herd_from_suscpetible_rtree( herd );  */
+          HRD_remove_herd_from_infectious_list( herd, infectious_herds );
+        break;
+      };
+
+#if DEBUG
+      g_debug ("unit \"%s\" is now %s", herd->official_id,
+               HRD_status_name[herd->status]);
 #endif
     }
   else
     {
       ;
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "%s->%s transition for unit \"%s\" was not possible",
-             HRD_status_name[state], HRD_status_name[new_state], herd->official_id);
+#if DEBUG
+      g_debug ("%s->%s transition for unit \"%s\" was not possible",
+               HRD_status_name[state], HRD_status_name[new_state], herd->official_id);
 #endif
     }
 }
@@ -196,11 +233,11 @@ HRD_change_state (HRD_herd_t * herd, HRD_status_t new_state)
  * @return a pointer to a newly-created HRD_change_request_t structure.
  */
 HRD_change_request_t *
-HRD_new_infect_change_request (unsigned short int latent_period,
-                               unsigned short int
-                               infectious_subclinical_period,
-                               unsigned short int infectious_clinical_period,
-                               unsigned short int immunity_period)
+HRD_new_infect_change_request (int latent_period,
+                               int infectious_subclinical_period,
+                               int infectious_clinical_period,
+                               int immunity_period,
+                               unsigned int day_in_disease_cycle)
 {
   HRD_change_request_t *request;
 
@@ -210,6 +247,7 @@ HRD_new_infect_change_request (unsigned short int latent_period,
   request->u.infect.infectious_subclinical_period = infectious_subclinical_period;
   request->u.infect.infectious_clinical_period = infectious_clinical_period;
   request->u.infect.immunity_period = immunity_period;
+  request->u.infect.day_in_disease_cycle = day_in_disease_cycle;
   return request;
 }
 
@@ -220,11 +258,16 @@ HRD_new_infect_change_request (unsigned short int latent_period,
  *
  * @param herd a herd.
  * @param request an infection change request.
+ * @param infectious_herds a list of infectious herds, which may change as a
+ *   result of this operation.
  */
 void
-HRD_apply_infect_change_request (HRD_herd_t * herd, HRD_infect_change_request_t * request)
+HRD_apply_infect_change_request (HRD_herd_t * herd,
+                                 HRD_infect_change_request_t * request,
+                                 GHashTable * infectious_herds)
 {
-  unsigned int delay;
+  int infectious_start_day, clinical_start_day,
+    immunity_start_day, immunity_end_day;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER HRD_apply_infect_change_request");
@@ -237,30 +280,83 @@ HRD_apply_infect_change_request (HRD_herd_t * herd, HRD_infect_change_request_t 
    * the progress of the vaccine. */
   herd->in_vaccine_cycle = FALSE;
 
-  HRD_change_state (herd, Latent);
+  herd->in_disease_cycle = TRUE;
+  herd->day_in_disease_cycle = request->day_in_disease_cycle;
 
-  delay = request->latent_period;
-  herd->infectious_start_countdown = delay;
-  if (delay == 0)
-    HRD_change_state (herd, InfectiousSubclinical);
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+         "requested disease progression = day %u in (%hu,%hu,%hu,%hu)",
+         request->day_in_disease_cycle,
+         request->latent_period, request->infectious_subclinical_period,
+         request->infectious_clinical_period, request->immunity_period);
+#endif
 
-  delay += request->infectious_subclinical_period;
-  herd->clinical_start_countdown = delay;
-  if (delay == 0)
-    HRD_change_state (herd, InfectiousClinical);
+  /* Compute the day for each state transition. */
+  infectious_start_day = request->latent_period;
+  clinical_start_day = infectious_start_day + request->infectious_subclinical_period;
+  immunity_start_day = clinical_start_day + request->infectious_clinical_period;
+  immunity_end_day = immunity_start_day + request->immunity_period;
 
-  delay += request->infectious_clinical_period;
-  herd->immunity_start_countdown = delay;
-  if (delay == 0)
-    HRD_change_state (herd, NaturallyImmune);
+  /* Advance the countdowns if the day_in_disease_cycle has been set. */
+  if (request->day_in_disease_cycle >= immunity_end_day)
+    {
+      herd->in_disease_cycle = FALSE;
+    }
+  else if (request->day_in_disease_cycle >= immunity_start_day)
+    {
+      HRD_change_state (herd, Latent, infectious_herds);
+      HRD_change_state (herd, InfectiousClinical, infectious_herds);
+      HRD_change_state (herd, NaturallyImmune, infectious_herds);
+      herd->days_in_status = request->day_in_disease_cycle - immunity_start_day;
+      herd->infectious_start_countdown = -1;
+      herd->clinical_start_countdown = -1;
+      herd->immunity_start_countdown = -1;
+      herd->immunity_end_countdown = immunity_end_day - request->day_in_disease_cycle;
+    }
+  else if (request->day_in_disease_cycle >= clinical_start_day)
+    {
+      HRD_change_state (herd, Latent, infectious_herds);
+      HRD_change_state (herd, InfectiousClinical, infectious_herds);
+      herd->days_in_status = request->day_in_disease_cycle - clinical_start_day;
+      herd->infectious_start_countdown = -1;
+      herd->clinical_start_countdown = -1;
+      herd->immunity_start_countdown = immunity_start_day - request->day_in_disease_cycle;
+      herd->immunity_end_countdown = immunity_end_day - request->day_in_disease_cycle;
+    }
+  else if (request->day_in_disease_cycle >= infectious_start_day)
+    {
+      HRD_change_state (herd, Latent, infectious_herds);
+      HRD_change_state (herd, InfectiousSubclinical, infectious_herds);
+      herd->days_in_status = request->day_in_disease_cycle - infectious_start_day;
+      herd->infectious_start_countdown = -1;
+      herd->clinical_start_countdown = clinical_start_day - request->day_in_disease_cycle;
+      herd->immunity_start_countdown = immunity_start_day - request->day_in_disease_cycle;
+      herd->immunity_end_countdown = immunity_end_day - request->day_in_disease_cycle;
+    }
+  else
+    {
+      HRD_change_state (herd, Latent, infectious_herds);
+      herd->days_in_status = request->day_in_disease_cycle;
+      herd->infectious_start_countdown = infectious_start_day - request->day_in_disease_cycle;
+      herd->clinical_start_countdown = clinical_start_day - request->day_in_disease_cycle;
+      herd->immunity_start_countdown = immunity_start_day - request->day_in_disease_cycle;
+      herd->immunity_end_countdown = immunity_end_day - request->day_in_disease_cycle;
+    }
 
-  delay += request->immunity_period;
-  herd->immunity_end_countdown = delay;
-  if (delay == 0)
-    HRD_change_state (herd, Susceptible);
-
-  herd->in_disease_cycle = (delay > 0);
-  herd->day_in_disease_cycle = 0;
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "infectious start countdown=%hu",
+         herd->infectious_start_countdown);
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "clinical start countdown=%hu",
+         herd->clinical_start_countdown);
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "immunity start countdown=%hu",
+         herd->immunity_start_countdown);
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "immunity end countdown=%hu",
+         herd->immunity_end_countdown);
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "in disease cycle=%s",
+         herd->in_disease_cycle ? "true" : "false");
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "day in disease cycle=%hu",
+         herd->day_in_disease_cycle);
+#endif
 
 end:
 #if DEBUG
@@ -279,7 +375,7 @@ end:
  * @return a pointer to a newly-created HRD_change_request_t structure.
  */
 HRD_change_request_t *
-HRD_new_vaccinate_change_request (unsigned short int delay, unsigned short int immunity_period)
+HRD_new_vaccinate_change_request (int delay, int immunity_period)
 {
   HRD_change_request_t *request;
 
@@ -297,9 +393,12 @@ HRD_new_vaccinate_change_request (unsigned short int delay, unsigned short int i
  *
  * @param herd a herd.
  * @param request a vaccination change request.
+ * @param infectious_herds a list of infectious herds.
  */
 void
-HRD_apply_vaccinate_change_request (HRD_herd_t * herd, HRD_vaccinate_change_request_t * request)
+HRD_apply_vaccinate_change_request (HRD_herd_t * herd,
+                                    HRD_vaccinate_change_request_t * request,
+                                    GHashTable * infectious_herds)
 {
   unsigned int delay;
 
@@ -313,15 +412,11 @@ HRD_apply_vaccinate_change_request (HRD_herd_t * herd, HRD_vaccinate_change_requ
     {
       delay = request->delay;
       herd->immunity_start_countdown = delay;
-      if (delay == 0)
-        HRD_change_state (herd, VaccineImmune);
 
       delay += request->immunity_period;
       herd->immunity_end_countdown = delay;
-      if (delay == 0)
-        HRD_change_state (herd, Susceptible);
 
-      herd->in_vaccine_cycle = (delay > 0);
+      herd->in_vaccine_cycle = TRUE;
     }
   /* If the herd is already Vaccine Immune, we re-set the time left for the
    * immunity according to the new parameter. */
@@ -329,10 +424,6 @@ HRD_apply_vaccinate_change_request (HRD_herd_t * herd, HRD_vaccinate_change_requ
     {
       delay = request->immunity_period;
       herd->immunity_end_countdown = delay;
-      if (delay == 0)
-        HRD_change_state (herd, Susceptible);
-
-      herd->in_vaccine_cycle = (delay > 0);
     }
 
 #if DEBUG
@@ -444,9 +535,13 @@ HRD_new_destroy_change_request (void)
  *
  * @param herd a herd.
  * @param request a destruction change request.
+ * @param infectious_herds a list of infectious herds, which may change as a
+ *   result of this operation.
  */
 void
-HRD_apply_destroy_change_request (HRD_herd_t * herd, HRD_destroy_change_request_t * request)
+HRD_apply_destroy_change_request (HRD_herd_t * herd,
+                                  HRD_destroy_change_request_t * request,
+                                  GHashTable *infectious_herds)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER HRD_apply_destroy_change_request");
@@ -455,7 +550,7 @@ HRD_apply_destroy_change_request (HRD_herd_t * herd, HRD_destroy_change_request_
   herd->in_vaccine_cycle = FALSE;
   herd->in_disease_cycle = FALSE;
 
-  HRD_change_state (herd, Destroyed);
+  HRD_change_state (herd, Destroyed, infectious_herds);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT HRD_apply_destroy_change_request");
@@ -469,17 +564,21 @@ HRD_apply_destroy_change_request (HRD_herd_t * herd, HRD_destroy_change_request_
  *
  * @param herd a herd.
  * @param request a change request.
+ * @param infectious_herds a list of infectious herds, which may change as a
+ *   result of this operation.
  */
 void
-HRD_apply_change_request (HRD_herd_t * herd, HRD_change_request_t * request)
+HRD_apply_change_request (HRD_herd_t * herd,
+                          HRD_change_request_t * request,
+                          GHashTable *infectious_herds)
 {
   switch (request->type)
     {
     case Infect:
-      HRD_apply_infect_change_request (herd, &(request->u.infect));
+      HRD_apply_infect_change_request (herd, &(request->u.infect), infectious_herds);
       break;
     case Vaccinate:
-      HRD_apply_vaccinate_change_request (herd, &(request->u.vaccinate));
+      HRD_apply_vaccinate_change_request (herd, &(request->u.vaccinate), infectious_herds);
       break;
     case Quarantine:
       HRD_apply_quarantine_change_request (herd, &(request->u.quarantine));
@@ -488,7 +587,7 @@ HRD_apply_change_request (HRD_herd_t * herd, HRD_change_request_t * request)
       HRD_apply_lift_quarantine_change_request (herd, &(request->u.lift_quarantine));
       break;
     case Destroy:
-      HRD_apply_destroy_change_request (herd, &(request->u.destroy));
+      HRD_apply_destroy_change_request (herd, &(request->u.destroy), infectious_herds);
       break;
     default:
       g_assert_not_reached ();
@@ -560,32 +659,32 @@ HRD_herd_clear_change_requests (HRD_herd_t * herd)
 
 
 void
-HRD_herd_set_latitude (HRD_herd_t * herd, float lat)
+HRD_herd_set_latitude (HRD_herd_t * herd, double lat)
 {
   if (lat < -90)
     {
       g_warning ("latitude %g is out of bounds, setting to -90", lat);
-      herd->lat = -90;
+      herd->latitude = -90;
     }
   else if (lat > 90)
     {
       g_warning ("latitude %g is out of bounds, setting to 90", lat);
-      herd->lat = 90;
+      herd->latitude = 90;
     }
   else
-    herd->lat = lat;
+    herd->latitude = lat;
 }
 
 
 
 void
-HRD_herd_set_longitude (HRD_herd_t * herd, float lon)
+HRD_herd_set_longitude (HRD_herd_t * herd, double lon)
 {
   while (lon < -180)
     lon += 360;
   while (lon > 180)
     lon -= 360;
-  herd->lon = lon;
+  herd->longitude = lon;
 }
 
 
@@ -596,15 +695,13 @@ HRD_herd_set_longitude (HRD_herd_t * herd, float lon)
  * @param production_type type of animals.
  * @param production_type_name type of animals.
  * @param size number of animals.
- * @param lat latitude component (degrees) of the herd's location.  -90 <=
- *   <i>lat</i> <= 90.
- * @param lon longitude component (degrees) of the herd's location.  -180 <=
- *   <i>lon</i> <= 180.
+ * @param x x-coordinate of the herd's location.
+ * @param y y-coordinate of the herd's location.
  * @return a pointer to a newly-created, initialized HRD_herd_t structure.
  */
 HRD_herd_t *
 HRD_new_herd (HRD_production_type_t production_type,
-              char *production_type_name, unsigned int size, float lat, float lon)
+              char *production_type_name, unsigned int size, double x, double y)
 {
   HRD_herd_t *herd;
 
@@ -614,11 +711,18 @@ HRD_new_herd (HRD_production_type_t production_type,
   herd->official_id = NULL;
   herd->production_type = production_type;
   herd->production_type_name = production_type_name;
-  herd->size = size;
-  HRD_herd_set_latitude (herd, lat);
-  HRD_herd_set_longitude (herd, lon);
+  if (size < 1)
+    {
+      g_warning ("unit cannot have zero size, setting to 1");
+      herd->size = 1;
+    }
+  else
+    herd->size = size;
+  herd->x = x;
+  herd->y = y;
   herd->status = herd->initial_status = Susceptible;
   herd->days_in_status = 0;
+  herd->days_in_initial_status = 0;
   herd->days_left_in_initial_status = 0;
   herd->quarantined = FALSE;
   herd->prevalence = 0;
@@ -627,8 +731,114 @@ HRD_new_herd (HRD_production_type_t production_type,
   herd->in_disease_cycle = FALSE;
   herd->prevalence_curve = NULL;
   herd->change_requests = NULL;
+  
+#ifdef USE_SC_GUILIB
+  herd->production_types = NULL;
+  herd->ever_infected = FALSE;
+  herd->day_first_infected = 0;
+  herd->zone = NULL;
+#endif
+
+#ifdef USE_SC_GUILIB
+  herd->production_types = NULL;
+  herd->ever_infected = FALSE;
+  herd->day_first_infected = 0;
+  herd->zone = NULL;
+  herd->cum_infected = 0;
+  herd->cum_detected = 0;
+  herd->cum_destroyed = 0;
+  herd->cum_vaccinated = 0;
+  herd->apparent_status = asUnknown;
+  herd->apparent_status_day = 0;
+#endif
+
+#ifdef USE_SC_GUILIB
+  herd->production_types = NULL;
+  herd->ever_infected = FALSE;
+  herd->day_first_infected = 0;
+  herd->zone = NULL;
+  herd->cum_infected = 0;
+  herd->cum_detected = 0;
+  herd->cum_destroyed = 0;
+  herd->cum_vaccinated = 0;
+  herd->apparent_status = asUnknown;
+  herd->apparent_status_day = 0;
+#endif
 
   return herd;
+}
+
+
+
+/**
+ * Converts latitude and longitude to x and y coordinates on a map.
+ *
+ * @param herd a herd.
+ * @param projection a map projection.  If NULL, the longitude will be copied
+ *   unchanged to x and the latitude to y.  Otherwise, x and y will be filled
+ *   in with projected coordinates.
+ */
+void
+HRD_herd_project (HRD_herd_t * herd, projPJ projection)
+{
+  projUV p;
+
+  if (projection == NULL)
+    {
+      herd->x = herd->longitude;
+      herd->y = herd->latitude;
+    }
+  else
+    {
+      p.u = herd->longitude * DEG_TO_RAD;
+      p.v = herd->latitude * DEG_TO_RAD;
+      p = pj_fwd (p, projection);
+      herd->x = p.u;
+      herd->y = p.v;
+    }
+#if DEBUG
+  g_debug ("unit \"%s\" lat,lon %.3f,%.3f -> x,y %.1f,%.1f",
+           herd->official_id, herd->latitude, herd->longitude,
+           herd->x, herd->y);
+#endif
+  return;
+}
+
+
+
+/**
+ * Converts x and y coordinates on a map to latitude and longitude.
+ *
+ * @param herd a herd.
+ * @param projection a map projection.  If NULL, the x-coordinate will be
+ *   copied to longitude (and will be restricted to the range -180 to 180
+ *   inclusive if necessary) and the y-coordinate will be copied to latitude
+ *   (all will be restricted to the range -90 to 90 if necessary).
+ */
+void
+HRD_herd_unproject (HRD_herd_t * herd, projPJ projection)
+{
+  projUV p;
+
+  if (projection == NULL)
+    {
+      HRD_herd_set_longitude (herd, herd->x);
+      HRD_herd_set_latitude (herd, herd->y);
+    }
+  else
+    {
+	  p.u = herd->x;
+	  p.v = herd->y;
+	  p = pj_inv (p, projection);
+      HRD_herd_set_longitude (herd, p.u * RAD_TO_DEG);
+      HRD_herd_set_latitude (herd, p.v * RAD_TO_DEG);
+    }
+#if DEBUG
+  g_debug ("unit \"%s\" x,y %.1f,%.1f -> lat,lon %.3f,%.3f",
+           herd->official_id, herd->x, herd->y,
+           herd->latitude, herd->longitude);
+#endif
+  return;
 }
 
 
@@ -644,6 +854,19 @@ typedef struct
   GString *s; /**< for gathering character data */
   char *filename; /**< for reporting the XML file's name in errors */
   XML_Parser parser; /**< for reporting the line number in errors */
+  gboolean list_has_latlon; /**< TRUE if we have found a unit in the file with
+    its location given as latitude and longitude. */
+  gboolean list_has_xy; /**< TRUE if we have found a unit in the file with its
+    location given as x and y coordinates.  list_has_latlon and list_has_xy
+    cannot both be true. */
+  gboolean unit_has_lat; /**< TRUE if we have found a latitude element in the
+    unit currently being read, FALSE otherwise. */
+  gboolean unit_has_lon; /**< TRUE if we have found a longitude element in the
+    unit currently being read, FALSE otherwise. */
+  gboolean unit_has_x; /**< TRUE if we have found an x-coordinate element in
+    the unit currently being read, FALSE otherwise. */
+  gboolean unit_has_y; /**< TRUE if we have found a y-coordinate element in the
+    unit currently being read, FALSE otherwise. */
 }
 HRD_partial_herd_list_t;
 
@@ -688,8 +911,17 @@ startElement (void *userData, const char *name, const char **atts)
 #endif
 
   partial = (HRD_partial_herd_list_t *) userData;
+  if (strcmp (name, "herds") == 0)
+    {
+      partial->list_has_latlon = partial->list_has_xy = FALSE;
+    }
   if (strcmp (name, "herd") == 0)
-    partial->herd = HRD_new_herd (0, NULL, 0, 0, 0);
+    {
+      partial->herd = HRD_new_herd (0, NULL, 1, 0, 0);
+      partial->unit_has_lat = partial->unit_has_lon = FALSE;
+      partial->unit_has_x = partial->unit_has_y = FALSE;
+    }
+  return;
 }
 
 
@@ -748,6 +980,9 @@ endElement (void *userData, const char *name)
   else if (strcmp (name, "production-type") == 0)
     {
       GPtrArray *production_type_names;
+#ifdef USE_SC_GUILIB
+      GPtrArray *production_type_ids;
+#endif
       char *tmp, *tmp2;
       int i;
 
@@ -762,6 +997,45 @@ endElement (void *userData, const char *name)
       g_assert (tmp2 != NULL);
       g_free (tmp);
       production_type_names = partial->herds->production_type_names;
+#ifdef USE_SC_GUILIB
+      production_type_ids = partial->herds->production_types;
+      /*  duplicate the production type names into the old production_type_names
+       *  list.  This will run only one time. */
+      if ( 0 >= production_type_names->len )
+      {
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+		   "Building production_type_names list\n");
+
+        for (i = 0; i < production_type_ids->len; i++)
+          {
+            g_ptr_array_add (production_type_names, g_strdup( ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i )) )->name));
+          };
+      }
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+			 "Finding production type name in production_type_ids list\n");
+
+      for (i = 0; i < production_type_ids->len; i++)
+        {
+          if (strcasecmp (tmp2, ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->name  ) == 0)
+	  {
+#ifdef DEBUG
+	    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+		   "Found production type: %s, production-type-id: %i, at index: %i\n", ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->name, ((HRD_production_type_data_t*)(g_ptr_array_index (production_type_ids, i)) )->id, i );
+#endif
+             break;
+	   };
+        }
+
+      if ( i >= production_type_ids->len )
+      {
+        /*  We have a problem, this production type was never defined ...
+         *  we don't have any of the details necessary to use the SRC_GUILIB
+         *  reporting */
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL,
+                 "  this productin type was never defined, can not proceed \"%s\"", tmp2);
+        g_assert( 0 == 1 );
+      }
+#else
       for (i = 0; i < production_type_names->len; i++)
         {
           if (strcasecmp (tmp2, g_ptr_array_index (production_type_names, i)) == 0)
@@ -777,9 +1051,15 @@ endElement (void *userData, const char *name)
                  "  adding new production type \"%s\"", tmp2);
 #endif
         }
+#endif
       else
         g_free (tmp2);
+
       partial->herd->production_type = i;
+
+#ifdef USE_SC_GUILIB
+      partial->herd->production_types = partial->herds->production_types;
+#endif
       partial->herd->production_type_name = g_ptr_array_index (production_type_names, i);
       g_string_truncate (partial->s, 0);
     }
@@ -801,27 +1081,27 @@ endElement (void *userData, const char *name)
       size = strtol (tmp, &endptr, 0);
       if (tmp[0] == '\0')
         {
-          g_warning ("size missing on line %d of %s, setting to 1",
-                     XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("size missing on line %lu of %s, setting to 1",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           size = 1;
         }
       else if (errno == ERANGE || errno == EINVAL)
         {
-          g_warning ("size is too large a number (\"%s\") on line %d of %s, setting to 1",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("size is too large a number (\"%s\") on line %lu of %s, setting to 1",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           size = 1;
           errno = 0;
         }
       else if (*endptr != '\0')
         {
-          g_warning ("size is not a number (\"%s\") on line %d of %s, setting to 1",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("size is not a number (\"%s\") on line %lu of %s, setting to 1",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           size = 1;
         }
-      else if (size < 0)
+      else if (size < 1)
         {
-          g_warning ("size cannot be negative (\"%s\") on line %d of %s, setting to 1",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("size cannot be less than 1 (\"%s\") on line %lu of %s, setting to 1",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           size = 1;
         }
       partial->herd->size = (unsigned int) size;
@@ -833,8 +1113,13 @@ endElement (void *userData, const char *name)
 
   else if (strcmp (name, "latitude") == 0)
     {
-      float lat;
+      double lat;
       char *tmp, *endptr;
+
+      if (partial->list_has_xy)
+        g_error ("cannot mix lat/lon and x/y locations on line %lu of %s",
+                 (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+      partial->list_has_latlon = TRUE;
 
       tmp = g_strdup (partial->s->str);
       g_strstrip (tmp);
@@ -842,27 +1127,31 @@ endElement (void *userData, const char *name)
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  accumulated string = \"%s\"", tmp);
 #endif
 
-      lat = (float) strtod (tmp, &endptr);
+      lat = strtod (tmp, &endptr);
       if (tmp[0] == '\0')
         {
-          g_warning ("latitude missing on line %d of %s, setting to 0",
-                     XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("latitude missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lat = 0;
         }
       else if (errno == ERANGE)
         {
-          g_warning ("latitude is too large a number (\"%s\") on line %d of %s, setting to 0",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("latitude is too large a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lat = 0;
           errno = 0;
         }
       else if (endptr == tmp)
         {
-          g_warning ("latitude is not a number (\"%s\") on line %d of %s, setting to 0",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("latitude is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lat = 0;
         }
       HRD_herd_set_latitude (partial->herd, lat);
+      partial->unit_has_lat = TRUE;
+      /* If we have latitude and longitude and a projection, fill in x and y. */
+      if (partial->unit_has_lat && partial->unit_has_lon && partial->herds->projection != NULL)
+        HRD_herd_project (partial->herd, partial->herds->projection);
       g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
@@ -871,8 +1160,13 @@ endElement (void *userData, const char *name)
 
   else if (strcmp (name, "longitude") == 0)
     {
-      float lon;
+      double lon;
       char *tmp, *endptr;
+
+      if (partial->list_has_xy)
+        g_error ("cannot mix lat/lon and x/y locations on line %lu of %s",
+                 (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+      partial->list_has_latlon = TRUE;
 
       tmp = g_strdup (partial->s->str);
       g_strstrip (tmp);
@@ -880,27 +1174,125 @@ endElement (void *userData, const char *name)
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  accumulated string = \"%s\"", tmp);
 #endif
 
-      lon = (float) strtod (tmp, &endptr);
+      lon = strtod (tmp, &endptr);
       if (tmp[0] == '\0')
         {
-          g_warning ("longitude missing on line %d of %s, setting to 0",
-                     XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("longitude missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lon = 0;
         }
       else if (errno == ERANGE)
         {
-          g_warning ("longitude is too large a number (\"%s\") on line %d of %s, setting to 0",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("longitude is too large a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lon = 0;
           errno = 0;
         }
       else if (endptr == tmp)
         {
-          g_warning ("longitude is not a number (\"%s\") on line %d of %s, setting to 0",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("longitude is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           lon = 0;
         }
       HRD_herd_set_longitude (partial->herd, lon);
+      partial->unit_has_lon = TRUE;
+      /* If we have latitude and longitude and a projection, fill in x and y. */
+      if (partial->unit_has_lat && partial->unit_has_lon && partial->herds->projection != NULL)
+        HRD_herd_project (partial->herd, partial->herds->projection);
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
+
+  /* x tag */
+
+  else if (strcmp (name, "x") == 0)
+    {
+      double x;
+      char *tmp, *endptr;
+
+      if (partial->list_has_latlon)
+        g_error ("cannot mix lat/lon and x/y locations on line %lu of %s",
+                 (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+      partial->list_has_xy = TRUE;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_debug ("  accumulated string = \"%s\"", tmp);
+#endif
+
+      x = strtod (tmp, &endptr);
+      if (tmp[0] == '\0')
+        {
+          g_warning ("x-coordinate missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          x = 0;
+        }
+      else if (errno == ERANGE)
+        {
+          g_warning ("x-coordinate is too large a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          x = 0;
+          errno = 0;
+        }
+      else if (endptr == tmp)
+        {
+          g_warning ("x-coordinate is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          x = 0;
+        }
+      partial->herd->x = x;
+      partial->unit_has_x = TRUE;
+      /* If we have x and y and a projection, fill in latitude and longitude. */
+      if (partial->unit_has_x && partial->unit_has_y && partial->herds->projection != NULL)
+        HRD_herd_unproject (partial->herd, partial->herds->projection);
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
+
+  /* y tag */
+
+  else if (strcmp (name, "y") == 0)
+    {
+      double y;
+      char *tmp, *endptr;
+
+      if (partial->list_has_latlon)
+        g_error ("cannot mix lat/lon and x/y locations on line %lu of %s",
+                 (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+      partial->list_has_xy = TRUE;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_debug ("  accumulated string = \"%s\"", tmp);
+#endif
+
+      y = strtod (tmp, &endptr);
+      if (tmp[0] == '\0')
+        {
+          g_warning ("y-coordinate missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          y = 0;
+        }
+      else if (errno == ERANGE)
+        {
+          g_warning ("y-coordinate is too large a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          y = 0;
+          errno = 0;
+        }
+      else if (endptr == tmp)
+        {
+          g_warning ("y-coordinate is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          y = 0;
+        }
+      partial->herd->y = y;
+      partial->unit_has_y = TRUE;
+      /* If we have x and y and a projection, fill in latitude and longitude. */
+      if (partial->unit_has_x && partial->unit_has_y && partial->herds->projection != NULL)
+        HRD_herd_unproject (partial->herd, partial->herds->projection);
       g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
@@ -922,8 +1314,8 @@ endElement (void *userData, const char *name)
 
       if (tmp[0] == '\0')
         {
-          g_warning ("status missing on line %d of %s, setting to Susceptible",
-                     XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("status missing on line %lu of %s, setting to Susceptible",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           status = Susceptible;
         }
       else if (isdigit (tmp[0]))
@@ -934,8 +1326,8 @@ endElement (void *userData, const char *name)
               || status >= HRD_NSTATES)
             {
               g_warning
-                ("\"%s\" is not a valid numeric status code on line %d of %s, setting to 0 (Susceptible)",
-                 tmp, XML_GetCurrentLineNumber (parser), filename);
+                ("\"%s\" is not a valid numeric status code on line %lu of %s, setting to 0 (Susceptible)",
+                 tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
               status = Susceptible;
             }
         }
@@ -966,12 +1358,68 @@ endElement (void *userData, const char *name)
         status = Destroyed;
       else
         {
-          g_warning ("\"%s\" is not a valid unit state on line %d of %s, setting to Susceptible",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("\"%s\" is not a valid unit state on line %lu of %s, setting to Susceptible",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           status = Susceptible;
         }
       partial->herd->status = partial->herd->initial_status = status;
+#ifdef USE_SC_GUILIB
+	  if ( status == Destroyed )
+		partial->herd->apparent_status = asDestroyed;
+	  else if ( status == VaccineImmune )
+		partial->herd->apparent_status = asVaccinated;
+	  else
+		partial->herd->apparent_status = asUnknown;
 
+	  partial->herd->apparent_status_day = 0;
+#endif
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
+
+  /* days-in-status tag */
+
+  else if (strcmp (name, "days-in-status") == 0)
+    {
+      long int days;
+      char *tmp, *endptr;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  accumulated string = \"%s\"", tmp);
+#endif
+
+      errno = 0;
+      days = strtol (tmp, &endptr, 0);
+      if (tmp[0] == '\0')
+        {
+          g_warning ("days-in-status missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          days = 0;
+        }
+      else if (errno == ERANGE || errno == EINVAL)
+        {
+          g_warning
+            ("days-in-status is too large a number (\"%s\") on line %lu of %s, setting to 0",
+             tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          days = 0;
+          errno = 0;
+        }
+      else if (*endptr != '\0')
+        {
+          g_warning ("days-in-status is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          days = 0;
+        }
+      else if (days < 0)
+        {
+          g_warning
+            ("days-in-status cannot be negative (\"%s\") on line %lu of %s, setting to 0", tmp,
+             (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          days = 0;
+        }
+      partial->herd->days_in_initial_status = (int) days;
       g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
@@ -993,32 +1441,32 @@ endElement (void *userData, const char *name)
       days = strtol (tmp, &endptr, 0);
       if (tmp[0] == '\0')
         {
-          g_warning ("days-left-in-status missing on line %d of %s, setting to 0",
-                     XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("days-left-in-status missing on line %lu of %s, setting to 0",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           days = 0;
         }
       else if (errno == ERANGE || errno == EINVAL)
         {
           g_warning
-            ("days-left-in-status is too large a number (\"%s\") on line %d of %s, setting to 0",
-             tmp, XML_GetCurrentLineNumber (parser), filename);
+            ("days-left-in-status is too large a number (\"%s\") on line %lu of %s, setting to 0",
+             tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           days = 0;
           errno = 0;
         }
       else if (*endptr != '\0')
         {
-          g_warning ("days-left-in-status is not a number (\"%s\") on line %d of %s, setting to 0",
-                     tmp, XML_GetCurrentLineNumber (parser), filename);
+          g_warning ("days-left-in-status is not a number (\"%s\") on line %lu of %s, setting to 0",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           days = 0;
         }
       else if (days < 0)
         {
           g_warning
-            ("days-left-in-status cannot be negative (\"%s\") on line %d of %s, setting to 0", tmp,
-             XML_GetCurrentLineNumber (parser), filename);
+            ("days-left-in-status cannot be negative (\"%s\") on line %lu of %s, setting to 0", tmp,
+             (unsigned long) XML_GetCurrentLineNumber (parser), filename);
           days = 0;
         }
-      partial->herd->days_left_in_initial_status = (unsigned short int) days;
+      partial->herd->days_left_in_initial_status = (int) days;
       g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
@@ -1038,6 +1486,36 @@ endElement (void *userData, const char *name)
       HRD_herd_list_append (partial->herds, partial->herd);
       HRD_free_herd (partial->herd, FALSE);
     }
+
+  /* PROJ4 tag */
+
+  else if (strcmp (name, "PROJ4") == 0)
+    {
+      projPJ projection;
+      char *tmp;
+#if DEBUG
+      char *s;
+#endif
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_debug ("  accumulated string = \"%s\"", tmp);
+#endif
+      projection = pj_init_plus (tmp);
+      if (!projection)
+        {
+          g_error ("could not create map projection object: %s", pj_strerrno(pj_errno));
+        }
+#if DEBUG
+      s = pj_get_def (projection, 0);
+      g_debug ("projection = %s", s);
+      free (s);
+#endif
+      partial->herds->projection = projection;
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
 }
 
 
@@ -1055,9 +1533,8 @@ HRD_herd_to_string (HRD_herd_t * herd)
   char *chararray;
 
   s = g_string_new (NULL);
-  g_string_sprintf (s, "<%s herd id=%s size=%u lat=%f lon=%f",
-                    herd->production_type_name, herd->official_id,
-                    herd->size, herd->lat, herd->lon);
+  g_string_sprintf (s, "<%s herd id=%s size=%u x=%g y=%g",
+                    herd->production_type_name, herd->official_id, herd->size, herd->x, herd->y);
 
   /* Print the status, plus days left if applicable. */
   g_string_append_printf (s, "\n %s", HRD_status_name[herd->status]);
@@ -1140,8 +1617,11 @@ HRD_new_herd_list (void)
 
   herds = g_new (HRD_herd_list_t, 1);
   herds->list = g_array_new (FALSE, FALSE, sizeof (HRD_herd_t));
+#ifdef USE_SC_GUILIB
+  herds->production_types = NULL;
+#endif
   herds->production_type_names = g_ptr_array_new ();
-  herds->spatial_index = RTreeNewIndex ();
+  herds->projection = NULL;
 
   return herds;
 }
@@ -1172,6 +1652,7 @@ HRD_free_herd_list (HRD_herd_list_t * herds)
   for (i = 0; i < nherds; i++)
     {
       herd = HRD_herd_list_get (herds, i);
+      g_free (herd->official_id);
       g_slist_foreach (herd->change_requests, HRD_free_change_request_as_GFunc, NULL);
     }
 
@@ -1180,11 +1661,12 @@ HRD_free_herd_list (HRD_herd_list_t * herds)
 
   /* Free the production type names. */
   for (i = 0; i < herds->production_type_names->len; i++)
-    free (g_ptr_array_index (herds->production_type_names, i));
+    g_free (g_ptr_array_index (herds->production_type_names, i));
   g_ptr_array_free (herds->production_type_names, TRUE);
 
-  /* Free the spatial index. */
-  RTreeDeleteIndex (herds->spatial_index);
+  /* Free the projection. */
+  if (herds->projection != NULL)
+    pj_free (herds->projection);
 
   /* Finally, free the herd list structure. */
   g_free (herds);
@@ -1199,215 +1681,51 @@ end:
 
 
 /**
- * Calculates a minimum-area oriented rectangle bounding the herds.
+ * Converts the latitude and longitude values to x and y coordinates on a map.
  *
  * @param herds a herd list.
+ * @param projection a map projection.  If NULL, the longitudes will be copied
+ *   unchanged to x-coordinates and the latitudes to y-coordinates.
  */
 void
-HRD_herd_list_compute_bounding_box (HRD_herd_list_t * herds)
+HRD_herd_list_project (HRD_herd_list_t * herds, projPJ projection)
 {
-  double *latlon = NULL, *p;
-  unsigned int nherds;
-  HRD_herd_t *herd;
-  gboolean all_x_same, all_y_same;
-  double **hull;
-  unsigned int hull_npoints = 0;
-  WML_Vector2 *hull2 = NULL;
-  WML_Box2 *minbox = NULL;
-  WML_Vector2 corner[4];
-  unsigned int i;               /* loop counter */
-#if DEBUG
-  GString *s;
-#endif
+  unsigned int nherds, i;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER HRD_herd_list_compute_bounding_box");
+  g_debug ("----- ENTER HRD_herd_list_project");
 #endif
 
   nherds = HRD_herd_list_length (herds);
-  if (nherds == 0)
-    goto end;
-
-  /* Deal with 2 special cases first. */
-  if (nherds == 1)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "only 1 unit: bounding box is a point");
-#endif
-      herd = HRD_herd_list_get (herds, 0);
-      for (i = 0; i < 4; i++)
-        {
-          herds->oriented_rect[2 * i] = herd->lat;
-          herds->oriented_rect[2 * i + 1] = herd->lon;
-        }
-      goto end;
-    }
-
-  if (nherds == 2)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "only 2 units: bounding box is a line");
-#endif
-      herd = HRD_herd_list_get (herds, 0);
-      for (i = 0; i < 2; i++)
-        {
-          herds->oriented_rect[2 * i] = herd->lat;
-          herds->oriented_rect[2 * i + 1] = herd->lon;
-        }
-      herd = HRD_herd_list_get (herds, 1);
-      for (i = 2; i < 4; i++)
-        {
-          herds->oriented_rect[2 * i] = herd->lat;
-          herds->oriented_rect[2 * i + 1] = herd->lon;
-        }
-      goto end;
-    }
-
-  /* Copy the positions of the herds into a temporary array. */
-  latlon = g_new (double, nherds * 2);
-  for (i = 0, p = latlon; i < nherds; i++)
-    {
-      herd = HRD_herd_list_get (herds, i);
-      *p++ = (double) herd->lat;
-      *p++ = (double) herd->lon;
-    }
-
-  /* Get the convex hull around the locations. */
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "getting convex hull around %u units", nherds);
-#endif
-  hull = g_new (double *, nherds + 1);
-  all_x_same = all_y_same = TRUE;
   for (i = 0; i < nherds; i++)
     {
-      hull[i] = latlon + 2 * i;
-      if (i > 0)
-        {
-          if (all_x_same && gsl_fcmp (hull[i][1], hull[i - 1][1], EPSILON) != 0)
-            all_x_same = FALSE;
-          if (all_y_same && gsl_fcmp (hull[i][0], hull[i - 1][0], EPSILON) != 0)
-            all_y_same = FALSE;
-        }
-    }
-  if (all_x_same && all_y_same)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "all %u units have the same location: bounding box is a point", nherds);
-#endif
-      herd = HRD_herd_list_get (herds, 0);
-      for (i = 0; i < 4; i++)
-        {
-          herds->oriented_rect[2 * i] = herd->lat;
-          herds->oriented_rect[2 * i + 1] = herd->lon;
-        }
-      goto end;
-    }
-  else if (all_x_same)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "all %u units have the same longitude: bounding box is a line", nherds);
-#endif
-      for (i = 0; i < 4; i++)
-        herds->oriented_rect[2 * i + 1] = herds->limits.boundary[1];
-      herds->oriented_rect[0] = herds->oriented_rect[2] = herds->limits.boundary[0];
-      herds->oriented_rect[4] = herds->oriented_rect[6] = herds->limits.boundary[2];
-      goto end;
-    }
-  else if (all_y_same)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "all %u units have the same latitude: bounding box is a line", nherds);
-#endif
-      for (i = 0; i < 4; i++)
-        herds->oriented_rect[2 * i] = herds->limits.boundary[0];
-      herds->oriented_rect[1] = herds->oriented_rect[3] = herds->limits.boundary[1];
-      herds->oriented_rect[5] = herds->oriented_rect[7] = herds->limits.boundary[3];
-      goto end;
+      HRD_herd_project (HRD_herd_list_get (herds, i), projection);
     }
 
-  hull_npoints = ch2d (hull, nherds);
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "convex hull has %u points", hull_npoints);
+  g_debug ("----- EXIT HRD_herd_list_project");
 #endif
 
-  /* Get the minimum-area oriented box around the hull.  First we copy the
-   * latlon array into an array of WML_Vector2 objects, since that's what the
-   * function expects. */
-  hull2 = g_new (WML_Vector2, hull_npoints);
-  for (i = 0; i < hull_npoints; i++)
-    {
-      hull2[i].X = hull[i][1];
-      hull2[i].Y = hull[i][0];
-    }
-  g_free (hull);
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "getting minimum-area box around hull");
-#endif
-  /* FIXME: replace with the O(n log n) algorithm once it's working. */
-  minbox = WML_MinBoxOrderNSqr (hull_npoints, hull2);
-  WML_Box2_ComputeVertices (minbox, corner);
-
-  /* Copy the corners into the herd list. */
-  for (i = 0; i < 4; i++)
-    {
-      herds->oriented_rect[2 * i] = corner[i].Y;
-      herds->oriented_rect[2 * i + 1] = corner[i].X;
-    }
-#if DEBUG
-  s = g_string_new ("minimum-area oriented rectangle (lat,lon): [");
-  for (i = 0; i < 4; i++)
-    {
-      if (i > 0)
-        g_string_append_c (s, ',');
-      g_string_append_printf (s, "(%g,%g)", corner[i].Y, corner[i].X);
-    }
-  g_string_append_c (s, ']');
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", s->str);
-  g_string_free (s, TRUE);
-#endif
-
-  /* Finally, compute the edge lengths for the bounding rectangle. */
-  herds->xaxis_length = (GIS_local_distance (corner[0].Y, corner[0].X,
-                                             corner[3].Y, corner[3].X) +
-                         GIS_local_distance (corner[1].Y, corner[1].X,
-                                             corner[2].Y, corner[2].X)) / 2.0;
-  herds->yaxis_length = (GIS_local_distance (corner[0].Y, corner[0].X,
-                                             corner[1].Y, corner[1].X) +
-                         GIS_local_distance (corner[2].Y, corner[2].X,
-                                             corner[3].Y, corner[3].X)) / 2.0;
-  herds->short_axis_length = MIN (herds->xaxis_length, herds->yaxis_length);
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "side lengths (km) = %g,%g",
-         herds->xaxis_length, herds->yaxis_length);
-#endif
-
-end:
-  /* Clean up. */
-  if (latlon != NULL)
-    g_free (latlon);
-  if (hull2 != NULL)
-    g_free (hull2);
-  if (minbox != NULL)
-    WML_free_Box2 (minbox);
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT HRD_herd_list_compute_bounding_box");
-#endif
   return;
 }
 
 
 
 /**
- * Loads a herd list from a file.
+ * Loads a herd list from a file.  Use HRD_herd_list_project() to convert the
+ * lats and lons to a flat map.  Also, a bounding rectangle has not been
+ * computed; use either HRD_herd_list_unoriented_bounding_box() or
+ * HRD_herd_list_oriented_bounding_box to fill that in.
  *
  * @param filename a file name.
  * @return a herd list.
  */
 HRD_herd_list_t *
+#ifdef USE_SC_GUILIB
+HRD_load_herd_list (const char *filename, GPtrArray *production_types)
+#else
 HRD_load_herd_list (const char *filename)
+#endif
 {
   FILE *fp;
   HRD_herd_list_t *herds;
@@ -1418,8 +1736,14 @@ HRD_load_herd_list (const char *filename)
 
   fp = fopen (filename, "r");
   if (fp == NULL)
-    g_error ("could not open file \"%s\": %s", filename, strerror (errno));
+    {
+      g_error ("could not open file \"%s\": %s", filename, strerror (errno));
+    }
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list_from_stream (fp, filename, production_types);
+#else
   herds = HRD_load_herd_list_from_stream (fp, filename);
+#endif
   fclose (fp);
 
 #if DEBUG
@@ -1440,7 +1764,11 @@ HRD_load_herd_list (const char *filename)
  * @return a herd list.
  */
 HRD_herd_list_t *
+#ifdef USE_SC_GUILIB
+HRD_load_herd_list_from_stream (FILE * stream, const char *filename, GPtrArray *production_types)
+#else
 HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
+#endif
 {
   HRD_herd_list_t *herds;
   HRD_partial_herd_list_t to_pass;
@@ -1461,6 +1789,10 @@ HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
 
   herds = HRD_new_herd_list ();
 
+#ifdef USE_SC_GUILIB
+  herds->production_types = production_types;
+#endif
+
   parser = XML_ParserCreate (NULL);
   if (parser == NULL)
     {
@@ -1471,7 +1803,7 @@ HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
   to_pass.herds = herds;
   to_pass.herd = NULL;
   to_pass.s = g_string_new (NULL);
-  to_pass.filename = filename;
+  to_pass.filename = (char *)filename;
   to_pass.parser = parser;
 
   XML_SetUserData (parser, &to_pass);
@@ -1485,19 +1817,21 @@ HRD_load_herd_list_from_stream (FILE * stream, const char *filename)
         {
           xmlerr = XML_Parse (parser, NULL, 0, 1);
           if (xmlerr == XML_STATUS_ERROR)
-            g_error ("%s at line %d in %s",
-                     XML_ErrorString (XML_GetErrorCode (parser)),
-                     XML_GetCurrentLineNumber (parser), filename);
+            {
+              g_error ("%s at line %lu in %s",
+                       XML_ErrorString (XML_GetErrorCode (parser)),
+                       (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+            }
           break;
         }
       xmlerr = XML_Parse (parser, linebuf, linelen, 0);
       if (xmlerr == XML_STATUS_ERROR)
-        g_error ("%s at line %d in %s",
-                 XML_ErrorString (XML_GetErrorCode (parser)),
-                 XML_GetCurrentLineNumber (parser), filename);
+        {
+          g_error ("%s at line %lu in %s",
+                   XML_ErrorString (XML_GetErrorCode (parser)),
+                   (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+        }
     }
-
-  HRD_herd_list_compute_bounding_box (herds);
 
   /* Clean up. */
   XML_ParserFree (parser);
@@ -1527,7 +1861,6 @@ HRD_herd_list_append (HRD_herd_list_t * herds, HRD_herd_t * herd)
 {
   GArray *list;
   unsigned int new_length;
-  struct Rect rect;
 
   list = herds->list;
   g_array_append_val (list, *herd);
@@ -1539,101 +1872,7 @@ HRD_herd_list_append (HRD_herd_list_t * herds, HRD_herd_t * herd)
   /* Set the list index number for the herd. */
   herd->index = new_length - 1;
 
-  /* Insert the herd into the spatial index. */
-  rect.boundary[0] = herd->lon;
-  rect.boundary[1] = herd->lat;
-  rect.boundary[2] = herd->lon;
-  rect.boundary[3] = herd->lat;
-  /* Notice the rectangle ID is the herd index +1, since rectangle IDs in the
-   * R-tree start from 1. */
-#if !defined(USE_RTREE) || USE_RTREE != 0
-  RTreeInsertRect (&rect, new_length, &(herds->spatial_index), 0);
-#endif
-
-  /* Keep track of the boundaries of the study area. */
-  if (new_length == 1)
-    {
-      herds->limits.boundary[0] = herd->lon;
-      herds->limits.boundary[1] = herd->lat;
-      herds->limits.boundary[2] = herd->lon;
-      herds->limits.boundary[3] = herd->lat;
-    }
-  else
-    {
-      if (herd->lon < herds->limits.boundary[0])
-        herds->limits.boundary[0] = herd->lon;
-      else if (herd->lon > herds->limits.boundary[2])
-        herds->limits.boundary[2] = herd->lon;
-
-      if (herd->lat < herds->limits.boundary[1])
-        herds->limits.boundary[1] = herd->lat;
-      else if (herd->lat > herds->limits.boundary[3])
-        herds->limits.boundary[3] = herd->lat;
-    }
-
   return new_length;
-}
-
-
-
-/**
- * Returns the herds with a given status.
- *
- * @param herds a herd list.
- * @param status the desired status.
- * @param list a location in which to store the address of a list of pointers
- *   to herds.
- * @return the number of herds with the given status.
- */
-unsigned int
-HRD_herd_list_get_by_status (HRD_herd_list_t * herds, HRD_status_t status, HRD_herd_t *** list)
-{
-  unsigned int nherds;
-  HRD_herd_t *herd;
-  unsigned int count = 0;
-  unsigned int i;
-
-  /* Count the herds with the given status. */
-  nherds = HRD_herd_list_length (herds);
-  for (i = 0; i < nherds; i++)
-    if (HRD_herd_list_get (herds, i)->status == status)
-      count++;
-
-  if (count == 0)
-    (*list) = NULL;
-  else
-    {
-      /* Allocate and fill the array. */
-      *list = g_new (HRD_herd_t *, count);
-      count = 0;
-      for (i = 0; i < nherds; i++)
-        {
-          herd = HRD_herd_list_get (herds, i);
-          if (herd->status == status)
-            (*list)[count++] = herd;
-        }
-    }
-  return count;
-}
-
-
-
-/**
- * Returns the minimum-area oriented rectangle bounding the herds.  Note that
- * this information will be available only if you used HRD_load_herd_list() to
- * create the herd list.
- *
- * @param herds a herd list.
- * @param corners a location in which to store the corners of the bounding
- *   rectangle.  They are stored in the format lat1,lon1,lat2,lon2,...
- */
-void
-HRD_herd_list_get_bounding_box (HRD_herd_list_t * herds, double *corners)
-{
-  unsigned int i;
-
-  for (i = 0; i < 8; i++)
-    corners[i] = herds->oriented_rect[i];
 }
 
 
@@ -1659,12 +1898,12 @@ HRD_herd_list_to_string (HRD_herd_list_t * herds)
     {
       substring = HRD_herd_to_string (HRD_herd_list_get (herds, 0));
       g_string_assign (s, substring);
-      free (substring);
+      g_free (substring);
       for (i = 1; i < nherds; i++)
         {
           substring = HRD_herd_to_string (HRD_herd_list_get (herds, i));
           g_string_append_printf (s, "\n%s", substring);
-          free (substring);
+          g_free (substring);
         }
     }
   /* don't return the wrapper object */
@@ -1747,7 +1986,7 @@ HRD_herd_list_prevalence_to_string (HRD_herd_list_t * herds, unsigned int day)
   unsigned int i;               /* loop counter */
   gboolean first_infected_found;
   int herd_status;
-  
+
   first_infected_found = FALSE;
   nherds = HRD_herd_list_length (herds);
   s = g_string_new (NULL);
@@ -1756,40 +1995,33 @@ HRD_herd_list_prevalence_to_string (HRD_herd_list_t * herds, unsigned int day)
   for (i = 0; i < nherds; i++)
     {
       herd_status = HRD_herd_list_get (herds, i)->status;
-       
-      if( (Latent == herd_status)
-          || (InfectiousSubclinical == herd_status) 
-          || (InfectiousClinical == herd_status) ) 
+
+      if ((Latent == herd_status)
+          || (InfectiousSubclinical == herd_status) || (InfectiousClinical == herd_status))
         {
-          if( FALSE == first_infected_found )
+          if (FALSE == first_infected_found)
             {
               first_infected_found = TRUE;
-              
-              g_string_sprintf (
-                s, "%i, %s, s%is, %f", /* The second and third "s"'s in the string look  
-                                            * funny, but they're there for a reason. */
-                day,
-                HRD_herd_list_get (herds, i)->official_id, 
-                herd_status,
-                HRD_herd_list_get (herds, i)->prevalence 
-              );  
+
+              g_string_sprintf (s, "%i, %s, s%is, %f",  /* The second and third "s"'s in the string look
+                                                         * funny, but they're there for a reason. */
+                                day,
+                                HRD_herd_list_get (herds, i)->official_id,
+                                herd_status, HRD_herd_list_get (herds, i)->prevalence);
             }
           else
             {
-              g_string_sprintfa (
-                s, "\r\n%i, %s, s%is, %f", /* The second and third "s"'s in the string look  
-                                            * funny, but they're there for a reason. */
-                day,
-                HRD_herd_list_get (herds, i)->official_id, 
-                herd_status,
-                HRD_herd_list_get (herds, i)->prevalence 
-              );
+              g_string_sprintfa (s, "\r\n%i, %s, s%is, %f",     /* The second and third "s"'s in the string look
+                                                                 * funny, but they're there for a reason. */
+                                 day,
+                                 HRD_herd_list_get (herds, i)->official_id,
+                                 herd_status, HRD_herd_list_get (herds, i)->prevalence);
             }
         }
     }
 
-  if( FALSE == first_infected_found )
-    g_string_sprintf( s, "%i, (No infected units)", day );  
+  if (FALSE == first_infected_found)
+    g_string_sprintf (s, "%i, (No infected units)", day);
 
   /* don't return the wrapper object */
   chararray = s->str;
@@ -1862,6 +2094,13 @@ HRD_reset (HRD_herd_t * herd)
   herd->quarantined = FALSE;
   herd->in_vaccine_cycle = FALSE;
   herd->in_disease_cycle = FALSE;
+#ifdef USE_SC_GUILIB
+  herd->ever_infected = FALSE;
+  herd->day_first_infected = 0;
+  herd->zone = NULL;
+  herd->apparent_status = asUnknown;
+  herd->apparent_status_day = 0;
+#endif
   HRD_herd_clear_change_requests (herd);
 }
 
@@ -1901,8 +2140,9 @@ HRD_reset (HRD_herd_t * herd)
  * @param herd a herd.
  */
 void
-HRD_step (HRD_herd_t * herd)
+HRD_step (HRD_herd_t * herd, GHashTable *infectious_herds)
 {
+  HRD_status_t old_state;
   GSList *iter;
   HRD_change_request_t *request;
 
@@ -1910,6 +2150,7 @@ HRD_step (HRD_herd_t * herd)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER HRD_step");
 #endif
 
+  old_state = herd->status;
   herd->days_in_status++;
 
   /* Apply requested changes in the order in which they occur. */
@@ -1917,7 +2158,7 @@ HRD_step (HRD_herd_t * herd)
   for (iter = herd->change_requests; iter != NULL; iter = g_slist_next (iter))
     {
       request = (HRD_change_request_t *) (iter->data);
-      HRD_apply_change_request (herd, request);
+      HRD_apply_change_request (herd, request, infectious_herds);
     }
   HRD_herd_clear_change_requests (herd);
 
@@ -1928,10 +2169,10 @@ HRD_step (HRD_herd_t * herd)
   if (herd->in_vaccine_cycle)
     {
       if (herd->immunity_start_countdown-- == 0)
-        HRD_change_state (herd, VaccineImmune);
+        HRD_change_state (herd, VaccineImmune, infectious_herds);
       if (herd->immunity_end_countdown-- == 0)
         {
-          HRD_change_state (herd, Susceptible);
+          HRD_change_state (herd, Susceptible, infectious_herds);
           herd->in_vaccine_cycle = FALSE;
         }
     }
@@ -1971,16 +2212,40 @@ HRD_step (HRD_herd_t * herd)
 
       herd->day_in_disease_cycle++;
       if (herd->infectious_start_countdown-- == 0)
-        HRD_change_state (herd, InfectiousSubclinical);
+        HRD_change_state (herd, InfectiousSubclinical, infectious_herds);
       if (herd->clinical_start_countdown-- == 0)
-        HRD_change_state (herd, InfectiousClinical);
+        HRD_change_state (herd, InfectiousClinical, infectious_herds);
       if (herd->immunity_start_countdown-- == 0)
-        HRD_change_state (herd, NaturallyImmune);
+        HRD_change_state (herd, NaturallyImmune, infectious_herds);
+      /* in Riverton, "natural immunity" (i.e., dead from disease) is permanent,
+       * so this countdown should not be used. */   
       if (herd->immunity_end_countdown-- == 0)
         {
-          HRD_change_state (herd, Susceptible);
-          herd->in_disease_cycle = FALSE;
+          #ifdef RIVERTON
+            /* Do not change the herd state. 
+             * Instead, prolong the length of the countdown.
+             * (In effect, this countdown will never end.) */
+            herd->immunity_end_countdown = herd->immunity_end_countdown + 365;
+          #else
+            HRD_change_state (herd, Susceptible, infectious_herds);
+            herd->in_disease_cycle = FALSE;
+          #endif
+        }   
+    }
+
+  if (herd->status != old_state)
+    {
+      HRD_update_t update;
+      update.herd_index = herd->index;
+      update.status = (NAADSM_disease_state) herd->status;
+#ifdef USE_SC_GUILIB
+      sc_change_herd_state ( herd, update );
+#else
+      if (NULL != naadsm_change_herd_state)
+        {
+          naadsm_change_herd_state (update);
         }
+#endif
     }
 
 #if DEBUG
@@ -2004,14 +2269,17 @@ HRD_step (HRD_herd_t * herd)
  */
 void
 HRD_infect (HRD_herd_t * herd,
-            unsigned short int latent_period,
-            unsigned short int infectious_subclinical_period,
-            unsigned short int infectious_clinical_period, unsigned short int immunity_period)
+            int latent_period,
+            int infectious_subclinical_period,
+            int infectious_clinical_period,
+            int immunity_period,
+            unsigned int day_in_disease_cycle)
 {
   HRD_herd_add_change_request (herd,
                                HRD_new_infect_change_request
                                (latent_period, infectious_subclinical_period,
-                                infectious_clinical_period, immunity_period));
+                                infectious_clinical_period, immunity_period,
+                                day_in_disease_cycle));
 }
 
 
@@ -2024,7 +2292,7 @@ HRD_infect (HRD_herd_t * herd,
  * @param immunity_period the number of days the immunity lasts.
  */
 void
-HRD_vaccinate (HRD_herd_t * herd, unsigned short int delay, unsigned short int immunity_period)
+HRD_vaccinate (HRD_herd_t * herd, int delay, int immunity_period)
 {
   HRD_herd_add_change_request (herd, HRD_new_vaccinate_change_request (delay, immunity_period));
 }
@@ -2066,6 +2334,121 @@ void
 HRD_destroy (HRD_herd_t * herd)
 {
   HRD_herd_add_change_request (herd, HRD_new_destroy_change_request ());
+}
+
+
+
+/**
+ * Removes a herd from the infectious list.
+ *
+ * @param herd the herd to be removed.
+ */
+void
+HRD_remove_herd_from_infectious_list( HRD_herd_t *herd,
+                                      GHashTable *infectious_herds )
+{
+  if ( ( herd != NULL ) && ( infectious_herds != NULL ) )
+    g_hash_table_remove( infectious_herds, GUINT_TO_POINTER(herd->index) );
+}
+
+
+
+/**
+ * Adds a herd to the infectious list.
+ *
+ * @param herd the herd to be added.
+ */
+void
+HRD_add_herd_to_infectious_list( HRD_herd_t *herd,
+                                 GHashTable *infectious_herds )
+{
+  if ( ( herd != NULL ) && ( infectious_herds != NULL ) )
+  {
+    if ( g_hash_table_lookup( infectious_herds, GUINT_TO_POINTER(herd->index) ) == NULL )
+      g_hash_table_insert( infectious_herds, GUINT_TO_POINTER(herd->index), (gpointer)herd );
+  };
+}
+
+
+/**
+ * Returns the herds with a given status.
+ *
+ * @param herds a herd list.
+ * @param status the desired status.
+ * @param list a location in which to store the address of a list of pointers
+ *   to herds.
+ * @return the number of herds with the given status.
+ */
+unsigned int
+HRD_herd_list_get_by_status (HRD_herd_list_t * herds, HRD_status_t status, HRD_herd_t *** list)
+{
+  unsigned int nherds;
+  HRD_herd_t *herd;
+  unsigned int count = 0;
+  unsigned int i;
+
+  /* Count the herds with the given status. */
+  nherds = HRD_herd_list_length (herds);
+  for (i = 0; i < nherds; i++)
+    if (HRD_herd_list_get (herds, i)->status == status)
+      count++;
+
+  if (count == 0)
+    (*list) = NULL;
+  else
+    {
+      /* Allocate and fill the array. */
+      *list = g_new (HRD_herd_t *, count);
+      count = 0;
+      for (i = 0; i < nherds; i++)
+        {
+          herd = HRD_herd_list_get (herds, i);
+          if (herd->status == status)
+            (*list)[count++] = herd;
+        }
+    }
+  return count;
+}
+
+
+/**
+ * Returns the herds with a given initial status.
+ *
+ * @param herds a herd list.
+ * @param status the desired status.
+ * @param list a location in which to store the address of a list of pointers
+ *   to herds.
+ * @return the number of herds with the given status.
+ */
+unsigned int
+HRD_herd_list_get_by_initial_status (HRD_herd_list_t * herds, HRD_status_t status, HRD_herd_t *** list)
+{
+  unsigned int nherds;
+  HRD_herd_t *herd;
+  unsigned int count = 0;
+  unsigned int i;
+
+  /* Count the herds with the given status. */
+  nherds = HRD_herd_list_length (herds);
+  for (i = 0; i < nherds; i++)
+    if (HRD_herd_list_get (herds, i)->initial_status == status)
+      count++;
+
+  if (count == 0)
+    (*list) = NULL;
+  else
+    {
+      /* Allocate and fill the array. */
+      *list = g_new (HRD_herd_t *, count);
+      count = 0;
+      for (i = 0; i < nherds; i++)
+        {
+          herd = HRD_herd_list_get (herds, i);
+          if (herd->initial_status == status)
+            (*list)[count++] = herd;
+        }
+    }
+  return count;
 }
 
 /* end of file herd.c */

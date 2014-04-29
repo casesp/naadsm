@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+    targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+    xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+    xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -15,8 +16,17 @@
       </documentation>
     </annotation>
     <sequence>
+    
       <!-- Model parameters. -->
-      <element name="prob-report-vs-time-clinical" type="ergadm:REL">
+      
+       <!-- rbhXML: Note on minOccurs="0"
+        The minOccurs="0" were necessary because contact-spread model parameters
+        originate from either the DetectionParams ssXML forms or the ZoneParams ssXML. 
+        This results in all the elements of detection-model never present
+        in either circumstance, validation fails for both sets of params without
+        the minOccurs="0". Is there a better way to handle this??
+      -->
+      <element name="prob-report-vs-time-clinical" type="naadsm:REL" minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -26,12 +36,12 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:probability</y-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:probability</y-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="prob-report-vs-time-since-outbreak" type="ergadm:REL">
+      <element name="prob-report-vs-time-since-outbreak" type="naadsm:REL" minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -41,15 +51,30 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:probability</y-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:probability</y-axis-type>
           </appinfo>
         </annotation>
       </element>
+      
+      <!-- only for Zones -->
+      <element name="zone-prob-multiplier" type="decimal" minOccurs="0" >
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Detection is expected to be enhanced iz ones due to the
+              increased level of survelance, so typically this value
+              is greater than 1.0.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>      
     </sequence>
 
     <attribute name="version" type="string" fixed="0.1" />
-    <attribute name="production-type" type="string" />
+    <attribute name="production-type" type="string" use="optional" />
+    <attribute name="production-type-id" type="integer" use="optional"  />
+    <attribute name="zone" type="string" use="optional" />  
   </complexType>
 
 </schema>

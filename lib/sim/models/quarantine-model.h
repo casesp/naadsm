@@ -20,8 +20,7 @@
 #ifndef QUARANTINE_MODEL_H
 #define QUARANTINE_MODEL_H
 
-char *quarantine_model_interface_version (void);
-ergadm_model_t *quarantine_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                      ZON_zone_list_t * zones);
+naadsm_model_t *quarantine_model_new (scew_element * params, HRD_herd_list_t *,
+                                      projPJ, ZON_zone_list_t *);
 
 #endif

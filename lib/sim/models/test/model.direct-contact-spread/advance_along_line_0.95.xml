@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Advance or stop, p advance = 0.95</description>
   <num-days>32767</num-days>
@@ -119,4 +119,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

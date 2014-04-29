@@ -1,31 +1,31 @@
-# Project: sssim
+# Project: naadsm
 # Makefile created by Dev-C++ 4.9.9.2
 
 CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
-RES  = sssim_private.res
-OBJ  = ../event/event.o ../gis/gis.o ../herd/2dch.o ../herd/herd.o ../models/airborne-spread-model.o ../models/basic-destruction-model.o ../models/conflict-resolver.o ../models/contact-spread-model.o ../models/destruction-list-monitor.o ../models/destruction-monitor.o ../models/detection-model.o ../models/detection-monitor.o ../models/detection-on-given-day-model.o ../models/disease-model.o ../models/economic-model.o ../models/exposure-monitor.o ../models/infection-monitor.o ../models/model_util.o ../models/quarantine-model.o ../models/resources-and-implementation-of-controls-model.o ../models/ring-destruction-model.o ../models/ring-vaccination-model.o ../models/trace-back-destruction-model.o ../models/vaccination-list-monitor.o ../models/vaccination-monitor.o ../models/vaccine-model.o ../prob_dist/prob_dist.o ../rel_chart/rel_chart.o ../replace/strnlen.o ../replace/g_strsplit_regexp.o ../replace/getline.o ../replace/getstr.o ../replace/memchr.o ../reporting/reporting.o ../src/event_manager.o ../src/main.o ../src/model_loader.o ../src/parameter.o ../wml/WmlVector2.o ../wml/WmlBox2.o ../wml/WmlContMinBox2.o ../wml/WmlContPointInPolygon2.o ../wml/WmlConvexHull2.o ../src/guilib.o ../rng/rng.o ../zone/zone.o ../src/herd_zone_updater.o ../models/basic-zone-focus-model.o ../models/zone-model.o ../models/airborne-spread-exponential-model.o ../models/trace-back-zone-focus-model.o ../models/zone-monitor.o $(RES)
-LINKOBJ  = ../event/event.o ../gis/gis.o ../herd/2dch.o ../herd/herd.o ../models/airborne-spread-model.o ../models/basic-destruction-model.o ../models/conflict-resolver.o ../models/contact-spread-model.o ../models/destruction-list-monitor.o ../models/destruction-monitor.o ../models/detection-model.o ../models/detection-monitor.o ../models/detection-on-given-day-model.o ../models/disease-model.o ../models/economic-model.o ../models/exposure-monitor.o ../models/infection-monitor.o ../models/model_util.o ../models/quarantine-model.o ../models/resources-and-implementation-of-controls-model.o ../models/ring-destruction-model.o ../models/ring-vaccination-model.o ../models/trace-back-destruction-model.o ../models/vaccination-list-monitor.o ../models/vaccination-monitor.o ../models/vaccine-model.o ../prob_dist/prob_dist.o ../rel_chart/rel_chart.o ../replace/strnlen.o ../replace/g_strsplit_regexp.o ../replace/getline.o ../replace/getstr.o ../replace/memchr.o ../reporting/reporting.o ../src/event_manager.o ../src/main.o ../src/model_loader.o ../src/parameter.o ../wml/WmlVector2.o ../wml/WmlBox2.o ../wml/WmlContMinBox2.o ../wml/WmlContPointInPolygon2.o ../wml/WmlConvexHull2.o ../src/guilib.o ../rng/rng.o ../zone/zone.o ../src/herd_zone_updater.o ../models/basic-zone-focus-model.o ../models/zone-model.o ../models/airborne-spread-exponential-model.o ../models/trace-back-zone-focus-model.o ../models/zone-monitor.o $(RES)
-LIBS =  C:/libs/c/glib-2.4.7/lib/glib-2.0.lib C:/libs/c/popt-1.8.1/lib/libpopt.lib C:/libs/c/gsl-1.6/lib/libgsl.a C:/libs/c/gsl-1.6/lib/libgslcblas.a C:/libs/c/sprng-2.0a_naadsm/lib/libsprng.lib C:/libs/c/rtree/lib/librtree.a C:/libs/c/gpc-2.32/lib/libgpcl.a C:/libs/c/regex-0.12/lib/libregex.a C:/libs/c/expat-1.95.8/lib/libexpat.a C:/libs/c/scew-0.4.0/lib/libscew.a  
-INCS =  -I"."  -I"../src"  -I"C:/MinGW/include"  -I"C:/libs/c/glib-2.4.7/include"  -I"C:/libs/c/gpc-2.32/include"  -I"C:/libs/c/gsl-1.6/include"  -I"C:/libs/c/popt-1.8.1/include"  -I"C:/libs/c/rtree/include"  -I"C:/libs/c/scew-0.4.0/include"  -I"C:/libs/c/sprng-2.0a_naadsm/include"  -I"C:/libs/c/expat-1.95.8/include"  -I"C:/libs/c/regex-0.12/include"  -I"../herd"  -I"../gis"  -I"../wml"  -I"../event"  -I"../zone"  -I"../prob_dist"  -I"../rel_chart"  -I"../reporting"  -I"../models"  -I"../rng" 
-CXXINCS =  -I"."  -I"../src"  -I"C:/MinGW/include"  -I"C:/libs/c/glib-2.4.7/include"  -I"C:/libs/c/gpc-2.32/include"  -I"C:/libs/c/gsl-1.6/include"  -I"C:/libs/c/popt-1.8.1/include"  -I"C:/libs/c/rtree/include"  -I"C:/libs/c/scew-0.4.0/include"  -I"C:/libs/c/sprng-2.0a_naadsm/include"  -I"C:/libs/c/expat-1.95.8/include"  -I"C:/libs/c/regex-0.12/include"  -I"../herd"  -I"../gis"  -I"../wml"  -I"../event"  -I"../zone"  -I"../prob_dist"  -I"../rel_chart"  -I"../reporting"  -I"../models"  -I"../rng" 
-BIN  = sssim.dll
+RES  = naadsm_private.res
+OBJ  = ../event/event.o ../gis/gis.o ../herd/herd.o ../models/airborne-spread-model.o ../models/basic-destruction-model.o ../models/conflict-resolver.o ../models/contact-spread-model.o ../models/destruction-list-monitor.o ../models/destruction-monitor.o ../models/detection-model.o ../models/detection-monitor.o ../models/disease-model.o ../models/economic-model.o ../models/exposure-monitor.o ../models/infection-monitor.o ../models/model_util.o ../models/quarantine-model.o ../models/resources-and-implementation-of-controls-model.o ../models/ring-destruction-model.o ../models/ring-vaccination-model.o ../models/trace-back-destruction-model.o ../models/vaccination-list-monitor.o ../models/vaccination-monitor.o ../models/vaccine-model.o ../prob_dist/prob_dist.o ../rel_chart/rel_chart.o ../reporting/reporting.o ../src/event_manager.o ../src/main.o ../src/model_loader.o ../src/parameter.o ../rng/rng.o ../zone/zone.o ../src/herd_zone_updater.o ../models/basic-zone-focus-model.o ../models/zone-model.o ../models/airborne-spread-exponential-model.o ../models/trace-back-zone-focus-model.o ../models/zone-monitor.o ../general/general.o ../wml/wml.o ../replace/replace.o ../models/contact-recorder-model.o ../models/test-model.o ../models/trace-back-monitor.o ../models/trace-quarantine-model.o ../models/trace-model.o ../models/trace-destruction-model.o ../models/exam-monitor.o ../models/test-monitor.o ../models/trace-exam-model.o ../models/trace-monitor.o ../models/trace-zone-focus-model.o ../src/naadsm.o ../spatial_search/spatial_search.o ../spatial_search/ch2d.o ../herd/herd-randomizer.o $(RES)
+LINKOBJ  = ../event/event.o ../gis/gis.o ../herd/herd.o ../models/airborne-spread-model.o ../models/basic-destruction-model.o ../models/conflict-resolver.o ../models/contact-spread-model.o ../models/destruction-list-monitor.o ../models/destruction-monitor.o ../models/detection-model.o ../models/detection-monitor.o ../models/disease-model.o ../models/economic-model.o ../models/exposure-monitor.o ../models/infection-monitor.o ../models/model_util.o ../models/quarantine-model.o ../models/resources-and-implementation-of-controls-model.o ../models/ring-destruction-model.o ../models/ring-vaccination-model.o ../models/trace-back-destruction-model.o ../models/vaccination-list-monitor.o ../models/vaccination-monitor.o ../models/vaccine-model.o ../prob_dist/prob_dist.o ../rel_chart/rel_chart.o ../reporting/reporting.o ../src/event_manager.o ../src/main.o ../src/model_loader.o ../src/parameter.o ../rng/rng.o ../zone/zone.o ../src/herd_zone_updater.o ../models/basic-zone-focus-model.o ../models/zone-model.o ../models/airborne-spread-exponential-model.o ../models/trace-back-zone-focus-model.o ../models/zone-monitor.o ../general/general.o ../wml/wml.o ../replace/replace.o ../models/contact-recorder-model.o ../models/test-model.o ../models/trace-back-monitor.o ../models/trace-quarantine-model.o ../models/trace-model.o ../models/trace-destruction-model.o ../models/exam-monitor.o ../models/test-monitor.o ../models/trace-exam-model.o ../models/trace-monitor.o ../models/trace-zone-focus-model.o ../src/naadsm.o ../spatial_search/spatial_search.o ../spatial_search/ch2d.o ../herd/herd-randomizer.o $(RES)
+LIBS =  C:/libs/C_libs/glib-2.22.2/lib/glib-2.0.lib C:/libs/C_libs/popt-1.8.1/lib/libpopt.lib C:/libs/C_libs/gsl-1.8/lib/libgsl.a C:/libs/C_libs/gsl-1.8/lib/libgslcblas.a C:/libs/C_libs/sprng-2.0a_naadsm/lib/libsprng.lib C:/libs/C_libs/rtree/lib/librtree.a C:/libs/C_libs/gpc-2.32/lib/libgpcl.a C:/libs/C_libs/regex-0.12/lib/libregex.a C:/libs/C_libs/expat-1.95.8/lib/libexpat.a C:/libs/C_libs/scew-0.4.0/lib/libscew.a ../../../../../../../libs/C_libs/proj-4.6.1/lib/proj.lib  
+INCS =  -I"."  -I"../src"  -I"C:/MinGW/include"  -I"C:/libs/C_libs/glib-2.22.2/include/glib-2.0"  -I"C:/libs/C_libs/gpc-2.32/include"  -I"C:/libs/C_libs/gsl-1.8/include"  -I"C:/libs/C_libs/popt-1.8.1/include"  -I"C:/libs/C_libs/rtree/include"  -I"C:/libs/C_libs/scew-0.4.0/include"  -I"C:/libs/C_libs/sprng-2.0a_naadsm/include"  -I"C:/libs/C_libs/expat-1.95.8/include"  -I"C:/libs/C_libs/proj-4.6.1/include"  -I"../herd"  -I"../gis"  -I"../wml"  -I"../event"  -I"../zone"  -I"../prob_dist"  -I"../rel_chart"  -I"../reporting"  -I"../models"  -I"../rng"  -I"../general"  -I"../spatial_search" 
+CXXINCS =  -I"."  -I"../src"  -I"C:/MinGW/include"  -I"C:/libs/C_libs/glib-2.22.2/include/glib-2.0"  -I"C:/libs/C_libs/gpc-2.32/include"  -I"C:/libs/C_libs/gsl-1.8/include"  -I"C:/libs/C_libs/popt-1.8.1/include"  -I"C:/libs/C_libs/rtree/include"  -I"C:/libs/C_libs/scew-0.4.0/include"  -I"C:/libs/C_libs/sprng-2.0a_naadsm/include"  -I"C:/libs/C_libs/expat-1.95.8/include"  -I"C:/libs/C_libs/proj-4.6.1/include"  -I"../herd"  -I"../gis"  -I"../wml"  -I"../event"  -I"../zone"  -I"../prob_dist"  -I"../rel_chart"  -I"../reporting"  -I"../models"  -I"../rng"  -I"../general"  -I"../spatial_search" 
+BIN  = naadsm.dll
 CXXFLAGS = $(CXXINCS)  
-CFLAGS = $(INCS) -DHAVE_CONFIG_H -DNO_MODEL_LIBS -DDLL_EXPORTS -DWIN_DLL   
+CFLAGS = $(INCS) -DHAVE_CONFIG_H -DDLL_EXPORTS -DWIN_DLL   
 RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before sssim.dll all-after
+all: all-before naadsm.dll all-after
 
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 DLLWRAP=dllwrap.exe
-DEFFILE=libsssim.def
-STATICLIB=libsssim.a
+DEFFILE=libnaadsm.def
+STATICLIB=libnaadsm.a
 
 $(BIN): $(LINKOBJ)
 	$(DLLWRAP) --output-def $(DEFFILE) --implib $(STATICLIB) $(LINKOBJ) $(LIBS) -o $(BIN)
@@ -35,9 +35,6 @@ $(BIN): $(LINKOBJ)
 
 ../gis/gis.o: ../gis/gis.c
 	$(CC) -c ../gis/gis.c -o ../gis/gis.o $(CFLAGS)
-
-../herd/2dch.o: ../herd/2dch.c
-	$(CC) -c ../herd/2dch.c -o ../herd/2dch.o $(CFLAGS)
 
 ../herd/herd.o: ../herd/herd.c
 	$(CC) -c ../herd/herd.c -o ../herd/herd.o $(CFLAGS)
@@ -65,9 +62,6 @@ $(BIN): $(LINKOBJ)
 
 ../models/detection-monitor.o: ../models/detection-monitor.c
 	$(CC) -c ../models/detection-monitor.c -o ../models/detection-monitor.o $(CFLAGS)
-
-../models/detection-on-given-day-model.o: ../models/detection-on-given-day-model.c
-	$(CC) -c ../models/detection-on-given-day-model.c -o ../models/detection-on-given-day-model.o $(CFLAGS)
 
 ../models/disease-model.o: ../models/disease-model.c
 	$(CC) -c ../models/disease-model.c -o ../models/disease-model.o $(CFLAGS)
@@ -114,21 +108,6 @@ $(BIN): $(LINKOBJ)
 ../rel_chart/rel_chart.o: ../rel_chart/rel_chart.c
 	$(CC) -c ../rel_chart/rel_chart.c -o ../rel_chart/rel_chart.o $(CFLAGS)
 
-../replace/strnlen.o: ../replace/strnlen.c
-	$(CC) -c ../replace/strnlen.c -o ../replace/strnlen.o $(CFLAGS)
-
-../replace/g_strsplit_regexp.o: ../replace/g_strsplit_regexp.c
-	$(CC) -c ../replace/g_strsplit_regexp.c -o ../replace/g_strsplit_regexp.o $(CFLAGS)
-
-../replace/getline.o: ../replace/getline.c
-	$(CC) -c ../replace/getline.c -o ../replace/getline.o $(CFLAGS)
-
-../replace/getstr.o: ../replace/getstr.c
-	$(CC) -c ../replace/getstr.c -o ../replace/getstr.o $(CFLAGS)
-
-../replace/memchr.o: ../replace/memchr.c
-	$(CC) -c ../replace/memchr.c -o ../replace/memchr.o $(CFLAGS)
-
 ../reporting/reporting.o: ../reporting/reporting.c
 	$(CC) -c ../reporting/reporting.c -o ../reporting/reporting.o $(CFLAGS)
 
@@ -143,24 +122,6 @@ $(BIN): $(LINKOBJ)
 
 ../src/parameter.o: ../src/parameter.c
 	$(CC) -c ../src/parameter.c -o ../src/parameter.o $(CFLAGS)
-
-../wml/WmlVector2.o: ../wml/WmlVector2.c
-	$(CC) -c ../wml/WmlVector2.c -o ../wml/WmlVector2.o $(CFLAGS)
-
-../wml/WmlBox2.o: ../wml/WmlBox2.c
-	$(CC) -c ../wml/WmlBox2.c -o ../wml/WmlBox2.o $(CFLAGS)
-
-../wml/WmlContMinBox2.o: ../wml/WmlContMinBox2.c
-	$(CC) -c ../wml/WmlContMinBox2.c -o ../wml/WmlContMinBox2.o $(CFLAGS)
-
-../wml/WmlContPointInPolygon2.o: ../wml/WmlContPointInPolygon2.c
-	$(CC) -c ../wml/WmlContPointInPolygon2.c -o ../wml/WmlContPointInPolygon2.o $(CFLAGS)
-
-../wml/WmlConvexHull2.o: ../wml/WmlConvexHull2.c
-	$(CC) -c ../wml/WmlConvexHull2.c -o ../wml/WmlConvexHull2.o $(CFLAGS)
-
-../src/guilib.o: ../src/guilib.c
-	$(CC) -c ../src/guilib.c -o ../src/guilib.o $(CFLAGS)
 
 ../rng/rng.o: ../rng/rng.c
 	$(CC) -c ../rng/rng.c -o ../rng/rng.o $(CFLAGS)
@@ -186,5 +147,59 @@ $(BIN): $(LINKOBJ)
 ../models/zone-monitor.o: ../models/zone-monitor.c
 	$(CC) -c ../models/zone-monitor.c -o ../models/zone-monitor.o $(CFLAGS)
 
-sssim_private.res: sssim_private.rc 
-	$(WINDRES) -i sssim_private.rc --input-format=rc -o sssim_private.res -O coff 
+../general/general.o: ../general/general.c
+	$(CC) -c ../general/general.c -o ../general/general.o $(CFLAGS)
+
+../wml/wml.o: ../wml/wml.c
+	$(CC) -c ../wml/wml.c -o ../wml/wml.o $(CFLAGS)
+
+../replace/replace.o: ../replace/replace.c
+	$(CC) -c ../replace/replace.c -o ../replace/replace.o $(CFLAGS)
+
+../models/contact-recorder-model.o: ../models/contact-recorder-model.c
+	$(CC) -c ../models/contact-recorder-model.c -o ../models/contact-recorder-model.o $(CFLAGS)
+
+../models/test-model.o: ../models/test-model.c
+	$(CC) -c ../models/test-model.c -o ../models/test-model.o $(CFLAGS)
+
+../models/trace-back-monitor.o: ../models/trace-back-monitor.c
+	$(CC) -c ../models/trace-back-monitor.c -o ../models/trace-back-monitor.o $(CFLAGS)
+
+../models/trace-quarantine-model.o: ../models/trace-quarantine-model.c
+	$(CC) -c ../models/trace-quarantine-model.c -o ../models/trace-quarantine-model.o $(CFLAGS)
+
+../models/trace-model.o: ../models/trace-model.c
+	$(CC) -c ../models/trace-model.c -o ../models/trace-model.o $(CFLAGS)
+
+../models/trace-destruction-model.o: ../models/trace-destruction-model.c
+	$(CC) -c ../models/trace-destruction-model.c -o ../models/trace-destruction-model.o $(CFLAGS)
+
+../models/exam-monitor.o: ../models/exam-monitor.c
+	$(CC) -c ../models/exam-monitor.c -o ../models/exam-monitor.o $(CFLAGS)
+
+../models/test-monitor.o: ../models/test-monitor.c
+	$(CC) -c ../models/test-monitor.c -o ../models/test-monitor.o $(CFLAGS)
+
+../models/trace-exam-model.o: ../models/trace-exam-model.c
+	$(CC) -c ../models/trace-exam-model.c -o ../models/trace-exam-model.o $(CFLAGS)
+
+../models/trace-monitor.o: ../models/trace-monitor.c
+	$(CC) -c ../models/trace-monitor.c -o ../models/trace-monitor.o $(CFLAGS)
+
+../models/trace-zone-focus-model.o: ../models/trace-zone-focus-model.c
+	$(CC) -c ../models/trace-zone-focus-model.c -o ../models/trace-zone-focus-model.o $(CFLAGS)
+
+../src/naadsm.o: ../src/naadsm.c
+	$(CC) -c ../src/naadsm.c -o ../src/naadsm.o $(CFLAGS)
+
+../spatial_search/spatial_search.o: ../spatial_search/spatial_search.c
+	$(CC) -c ../spatial_search/spatial_search.c -o ../spatial_search/spatial_search.o $(CFLAGS)
+
+../spatial_search/ch2d.o: ../spatial_search/ch2d.c
+	$(CC) -c ../spatial_search/ch2d.c -o ../spatial_search/ch2d.o $(CFLAGS)
+
+../herd/herd-randomizer.o: ../herd/herd-randomizer.c
+	$(CC) -c ../herd/herd-randomizer.c -o ../herd/herd-randomizer.o $(CFLAGS)
+
+naadsm_private.res: naadsm_private.rc 
+	$(WINDRES) -i naadsm_private.rc --input-format=rc -o naadsm_private.res -O coff 

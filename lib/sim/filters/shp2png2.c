@@ -385,7 +385,9 @@ convert (const char *shape_file_name, const char *attribute_name,
             }
         }
       if (!numeric_field_found)
-        g_error ("could not find any numeric fields to colour the plot by");
+        {
+          g_error ("could not find any numeric fields to colour the plot by");
+        }
       g_warning ("will use numeric field \"%s\" to colour the plot", field_name);
     }
 
@@ -631,13 +633,9 @@ main (int argc, char *argv[])
   poptGetNextOpt (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
   if (verbosity < 1)
     {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
+      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
@@ -645,7 +643,9 @@ main (int argc, char *argv[])
 
   arcview_file_name = poptGetArg (option);
   if (arcview_file_name == NULL)
-    g_error ("Need the name of an ArcView shapefile.");
+    {
+      g_error ("Need the name of an ArcView shapefile.");
+    }
 
   poptGetNextOpt (option);
   attribute_name = poptGetArg (option);

@@ -49,9 +49,6 @@
 #define BUFFERSIZE 2048
 #define COPY_BUFFERSIZE 8192
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
@@ -286,19 +283,16 @@ main (int argc, char *argv[])
   arcview_shp_filename = poptGetArg (option);
   if (arcview_shp_filename == NULL
       || !g_str_has_suffix (arcview_shp_filename, ".shp"))
-    g_error ("Need the name of an ArcView shape (.shp) file.");
+    {
+      g_error ("Need the name of an ArcView shape (.shp) file.");
+    }
   poptFreeContext (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);

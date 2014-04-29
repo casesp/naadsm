@@ -29,22 +29,22 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version zone_model_LTX_interface_version
-#define new zone_model_LTX_new
-#define run zone_model_LTX_run
-#define reset zone_model_LTX_reset
-#define events_listened_for zone_model_LTX_events_listened_for
-#define is_listening_for zone_model_LTX_is_listening_for
-#define has_pending_actions zone_model_LTX_has_pending_actions
-#define has_pending_infections zone_model_LTX_has_pending_infections
-#define to_string zone_model_LTX_to_string
-#define local_printf zone_model_LTX_printf
-#define local_fprintf zone_model_LTX_fprintf
-#define local_free zone_model_LTX_free
-#define handle_new_day_event zone_model_LTX_handle_new_day_event
+/* To avoid name clashes when multiple modules have the same interface. */
+#define is_singleton zone_model_is_singleton
+#define new zone_model_new
+#define set_params zone_model_set_params
+#define run zone_model_run
+#define reset zone_model_reset
+#define events_listened_for zone_model_events_listened_for
+#define is_listening_for zone_model_is_listening_for
+#define has_pending_actions zone_model_has_pending_actions
+#define has_pending_infections zone_model_has_pending_infections
+#define to_string zone_model_to_string
+#define local_printf zone_model_printf
+#define local_fprintf zone_model_fprintf
+#define local_free zone_model_free
+#define handle_midnight_event zone_model_handle_midnight_event
+#define handle_new_day_event zone_model_handle_new_day_event
 
 #include "model.h"
 #include "gis.h"
@@ -61,8 +61,6 @@
 #  include <strings.h>
 #endif
 
-#include "guilib.h"
-
 #include "zone-model.h"
 
 extern const char *RPT_frequency_name[];
@@ -70,22 +68,13 @@ extern const char *RPT_frequency_name[];
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "zone-model"
 
-#define MODEL_DESCRIPTION "\
-A component to describe a zone.\n\
-\n\
-Neil Harvey <neilharvey@canada.com>\n\
-v0.1 October 2004\
-"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
-
-#define NEVENTS_CREATED 0
-EVT_event_type_t events_created[] = { 0 };
-
-#define NEVENTS_LISTENED_FOR 1
-EVT_event_type_t events_listened_for[] = { EVT_NewDay };
+#define NEVENTS_LISTENED_FOR 2
+EVT_event_type_t events_listened_for[] = {
+  EVT_Midnight,
+  EVT_NewDay
+};
 
 
 
@@ -97,7 +86,489 @@ typedef struct
   RPT_reporting_t *num_holes_filled;
   RPT_reporting_t *cumul_num_holes_filled;
 }
+param_block_t;
+
+
+
+typedef struct
+{
+  HRD_herd_list_t * herds;
+  ZON_zone_list_t * zones;
+
+  GPtrArray * param_blocks;
+}
 local_data_t;
+
+
+
+#define EPSILON 0.01 /* 10 m */
+
+
+
+/**
+ * Gets the minimum and maximum x- and y- coordinates of a polygon contour.
+ *
+ * @param contour a contour.
+ * @param coord a location in which to store the minimum x, minimum y, maximum
+ *   x, and maximum y coordinates, in that order.
+ */
+static void
+gpc_contour_get_boundary (gpc_vertex_list * contour, double *coord)
+{
+  double minx, maxx, miny, maxy;
+  gpc_vertex *vertex;
+  int i;
+
+  vertex = contour->vertex;
+  minx = maxx = vertex->x;
+  miny = maxy = vertex->y;
+  vertex++;
+
+  for (i = 1; i < contour->num_vertices; i++, vertex++)
+    {
+      if (vertex->x < minx)
+        minx = vertex->x;
+      else if (vertex->x > maxx)
+        maxx = vertex->x;
+      if (vertex->y < miny)
+        miny = vertex->y;
+      else if (vertex->y > maxy)
+        maxy = vertex->y;
+    }
+
+  coord[0] = minx;
+  coord[1] = miny;
+  coord[2] = maxx;
+  coord[3] = maxy;
+}
+
+
+
+/**
+ * Special structure for use with the callback functions below.
+ */
+typedef struct
+{
+  double x, y;
+  HRD_herd_list_t *herds;
+  HRD_herd_t *herd;
+  ZON_zone_list_t *zones;
+  ZON_zone_fragment_t **fragment_containing_focus;
+  gpc_vertex_list *hole;
+  ZON_zone_fragment_t *hole_fragment;
+#if DEBUG
+  int *n_search_hits;
+  int zone_index;
+#endif
+} callback_t;
+
+
+
+/**
+ * Check whether the herd's distance to the focus is within the radius
+ * assigned to each zone.  If so, update the herd-to-zone assignment.
+ */
+static void
+check_circle_and_rezone (int id, gpointer arg)
+{
+  callback_t *callback_data;
+  HRD_herd_t *herd;
+  double distance_sq;
+  ZON_zone_list_t *zones;
+  unsigned int nzones;
+  ZON_zone_t *zone;
+  ZON_zone_fragment_t *current_fragment;
+  int current_level;
+  int i;
+  HRD_zone_t zone_update;
+#if DEBUG
+  gboolean update_zones = TRUE;
+  GString *s;
+#endif
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_circle_and_rezone");
+#endif
+
+  callback_data = (callback_t *) arg;
+  herd = HRD_herd_list_get (callback_data->herds, id);
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking unit \"%s\"", herd->official_id);
+#endif
+
+  distance_sq = GIS_distance_sq (herd->x, herd->y,
+                                 callback_data->x, callback_data->y);
+  /* Check if the distance is within the radius of any of the zone rings,
+   * starting with the smallest ring.  Skip the last zone in the list because
+   * it will be the "background" zone. */
+  zones = callback_data->zones;
+  nzones = ZON_zone_list_length (zones);
+  for (i = 0; i < nzones - 1; i++)
+    {
+      zone = ZON_zone_list_get (zones, i);
+      if (distance_sq - zone->radius_sq <= zone->epsilon_sq)
+        {
+          /* The herd is inside this zone ring. */
+#if DEBUG
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                 "unit \"%s\" is inside the radius (%.2g km) for zone \"%s\" (level %i)",
+                 herd->official_id, zone->radius, zone->name, zone->level);
+
+          callback_data->n_search_hits[i]++;
+#endif
+          /* update_zones is ignored, unless testing and debugging are being conducted. */
+#if DEBUG
+          if( TRUE == update_zones )
+            {
+#endif
+              /* Find out the surveillance level of the zone the herd is currently
+               * in.  If the herd is currently in a lower-priority level (the level
+               * number is higher), update the herd's zone membership. */
+              current_fragment = zones->membership[herd->index];
+              current_level = current_fragment->parent->level;
+              if (current_level > zone->level)
+                {
+#if DEBUG
+                  s = g_string_new (NULL);
+                  g_string_printf (s, "unit \"%s\" was in zone \"%s\" (level %i)",
+                                   herd->official_id, current_fragment->parent->name, current_level);
+#endif
+                  zones->membership[herd->index] = callback_data->fragment_containing_focus[i];
+
+                  zone_update.herd_index = herd->index;
+                  zone_update.zone_level = zone->level;
+				  
+#ifdef USE_SC_GUILIB
+                  sc_record_zone_change( herd, zone );
+#else				  
+                  if( NULL != naadsm_record_zone_change )
+                    {
+                      naadsm_record_zone_change( zone_update );
+                    };
+#endif				  
+#if DEBUG
+                  g_string_append_printf (s, ", now in zone \"%s\" (level %i)",
+                                          zone->name, zone->level);
+                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", s->str);
+                  g_string_free (s, TRUE);
+#endif
+                }
+              else
+                {
+#if DEBUG
+                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                         "unit \"%s\" remains in zone \"%s\" (level %i)",
+                         herd->official_id, current_fragment->parent->name, current_level);
+#endif
+                }
+#if DEBUG
+            }
+#endif
+          break;
+        }
+    }
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_circle_and_rezone");
+#endif
+
+  return;
+}
+
+
+
+/**
+ * Check whether the herd's location is inside the given polygon.  If so,
+ * update the herd-to-zone assignment.
+ */
+static void
+check_poly_and_rezone (int id, gpointer arg)
+{
+  callback_t *callback_data;
+  HRD_herd_t *herd;
+  gpc_vertex_list *poly;
+  ZON_zone_fragment_t *current_fragment;
+  ZON_zone_t *zone;
+  ZON_zone_list_t *zones;
+  int current_level;
+  HRD_zone_t zone_update;
+#if DEBUG
+  gboolean update_zones = TRUE;
+  GString *s;
+#endif
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_poly_and_rezone");
+#endif
+
+  callback_data = (callback_t *) arg;
+  herd = HRD_herd_list_get (callback_data->herds, id);
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "checking unit \"%s\"", herd->official_id);
+#endif
+
+  poly = callback_data->hole;
+
+  /* Check if the herd's location is inside the polygon. */
+  if (GIS_point_in_contour (poly, herd->x, herd->y))
+    {
+      zone = callback_data->hole_fragment->parent;
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+             "unit \"%s\" is inside the hole in zone \"%s\" (level %i)",
+             herd->official_id, zone->name, zone->level);
+
+      callback_data->n_search_hits[callback_data->zone_index]++;
+#endif
+
+      /* update_zones is ignored, unless testing and debugging are being conducted. */
+#if DEBUG
+      if( TRUE == update_zones )
+        {
+#endif
+          /* Find out the surveillance level of the zone the herd is currently in.
+           * If the herd is currently in a lower-priority level (the level number
+           * number is higher), update the herd's zone membership. */
+          zones = callback_data->zones;
+          current_fragment = zones->membership[herd->index];
+          current_level = current_fragment->parent->level;
+          if (current_level > zone->level)
+            {
+#if DEBUG
+              s = g_string_new (NULL);
+              g_string_printf (s, "unit \"%s\" was in zone \"%s\" (level %i)",
+                               herd->official_id, current_fragment->parent->name, current_level);
+#endif
+              zones->membership[herd->index] = callback_data->hole_fragment;
+
+              zone_update.herd_index = herd->index;
+              zone_update.zone_level = zone->level;
+			  
+#ifdef USE_SC_GUILIB
+			  sc_record_zone_change( herd, zone );
+#else			  
+			  if( NULL != naadsm_record_zone_change )
+                {
+                  naadsm_record_zone_change( zone_update );
+                };
+#endif			  
+
+#if DEBUG
+              g_string_append_printf (s, ", now in zone \"%s\" (level %i)", zone->name, zone->level);
+              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", s->str);
+              g_string_free (s, TRUE);
+#endif
+            }
+#if DEBUG
+        }
+#endif
+    }
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_poly_and_rezone");
+#endif
+
+  return;
+}
+
+
+
+/**
+ * Responds to a midnight event by updating the zone shapes and herd-to-zone
+ * assignments.
+ *
+ * @param self the model.
+ * @param herds a herd list.
+ * @param zones a zone list.
+ * @param event a midnight event.
+ */
+void
+handle_midnight_event (struct naadsm_model_t_ *self,
+                       HRD_herd_list_t * herds,
+                       ZON_zone_list_t * zones,
+                       EVT_midnight_event_t * event)
+{
+  unsigned int nzones;
+  double x, y;
+  ZON_pending_focus_t *pending_focus;
+  callback_t callback_data;
+  ZON_zone_t *zone;
+  double distance;
+  gpc_polygon **holes;
+  int nholes;
+  gpc_vertex_list *hole;
+  double boundary[4];
+  double hole_size;
+  int i, j;
+
+#if DEBUG
+  int report_array_size;
+  int *nHitsCircle;
+  int *nHitsPoly;
+#endif
+
+  
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_midnight_event (%s)", MODEL_NAME);
+#endif
+
+  /* If there is just a "background" zone, we have nothing to do. */
+  nzones = ZON_zone_list_length (zones);
+  if (nzones == 1)
+    {
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "there is only a background zone, nothing to do");
+#endif
+      goto end;
+    }
+
+#if DEBUG
+  /* For debugging purposes, these arrays can be used to count the number of 
+   * search hits produced by each mechanism. */
+  report_array_size = nzones - 1;
+  nHitsCircle = g_new0( int, report_array_size );
+  nHitsPoly = g_new0( int, report_array_size );
+#endif
+
+  while (!g_queue_is_empty (zones->pending_foci))
+    {
+      pending_focus = (ZON_pending_focus_t *) g_queue_pop_head (zones->pending_foci);
+      x = pending_focus->x;
+      y = pending_focus->y;
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "focus to add at x=%g, y=%g", x, y);
+#endif
+      g_free (pending_focus);
+
+      /* Update the shape of each zone, and get pointers to the zone fragments
+       * in which the focus lies. */
+      callback_data.fragment_containing_focus = g_new (ZON_zone_fragment_t *, nzones);
+      holes = g_new0 (gpc_polygon *, nzones);
+      for (i = 0; i < nzones-1; i++)
+        {
+          zone = ZON_zone_list_get (zones, i);
+#if DEBUG
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                 "adding focus to zone \"%s\" (level %i)", zone->name, zone->level);
+#endif
+          callback_data.fragment_containing_focus[i] =
+            ZON_zone_add_focus (zone, x, y, &holes[i]);
+        }
+      for (i = 0; i < nzones-2; i++)
+        {
+          callback_data.fragment_containing_focus[i]->nests_in =
+            callback_data.fragment_containing_focus[i+1];
+        }
+
+      /* Update the assignments of herds to zone fragments. */
+      /* First, draw the circles around the focus. */
+      callback_data.x = x;
+      callback_data.y = y;
+      callback_data.herds = herds;
+      callback_data.zones = zones;
+      
+      /* Find the distances to other units. */
+      /* The search area should be the radius of the largest zone.  Remember
+       * that the largest zone is the next-to-last item in the zone list. */
+      distance = ZON_zone_list_get (zones, nzones - 2)->radius + EPSILON;
+#if DEBUG
+      callback_data.n_search_hits = nHitsCircle;
+#endif
+      spatial_search_circle_by_xy (herds->spatial_index, x, y, distance,
+                                   check_circle_and_rezone, &callback_data);
+
+      /* Next, fill in any "holes", starting with the zone with the highest
+       * priority. */
+      for (i = 0; i < nzones; i++)
+        {
+          if (holes[i] == NULL)
+            continue;
+          zone = ZON_zone_list_get (zones, i);
+          nholes = holes[i]->num_contours;
+#if DEBUG
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                 "filling in %i hole(s) in zone \"%s\" (level %i)",
+                 nholes, zone->name, zone->level);
+
+          callback_data.zone_index = i;
+#endif
+
+          for (j = 0; j < nholes; j++)
+            {
+              hole = &(holes[i]->contour[j]);
+              gpc_contour_get_boundary (hole, boundary);
+              hole_size = MIN (boundary[2] - boundary[0], boundary[3] - boundary[1]);
+              callback_data.hole = hole;
+              callback_data.hole_fragment = callback_data.fragment_containing_focus[i];
+
+#if DEBUG
+              callback_data.n_search_hits = nHitsPoly;
+#endif
+              spatial_search_rectangle (herds->spatial_index,
+                                        boundary[0] - EPSILON, boundary[1] - EPSILON,
+                                        boundary[2] + EPSILON, boundary[3] + EPSILON,
+                                        check_poly_and_rezone, &callback_data);
+            }                   /* end of loop over holes */
+        }                       /* end of loop over zones */
+
+      /* Clean up. */
+      g_free (callback_data.fragment_containing_focus);
+      for (i = 0; i < nzones; i++)
+        {
+          if (holes[i] == NULL)
+            continue;
+          else if (holes[i]->num_contours == 0)
+            /* gpc_free_polygon doesn't like polygons with zero contours! */
+            free (holes[i]);
+          else
+            gpc_free_polygon (holes[i]);
+        }
+      g_free (holes);
+    }                           /* end of loop over pending foci */
+
+#if DEBUG
+  if( NULL != naadsm_report_search_hits )
+    {
+      for( i = 0; i < report_array_size; ++i )
+        naadsm_report_search_hits( ZON_zone_list_get( zones, i )->level,
+                                    nHitsCircle[i], nHitsCircle[i],
+                                    nHitsPoly[i], nHitsPoly[i] );
+    }
+
+  g_free( nHitsCircle );
+  g_free( nHitsPoly );
+#endif
+
+end:
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_midnight_event (%s)", MODEL_NAME);
+#endif
+
+  return;
+}
+
+
+
+/**
+ */
+static void param_block_reporting (gpointer data, gpointer user_data)
+{
+  param_block_t *param_block = (param_block_t *) data;
+  ZON_zone_t *zone = param_block->zone;
+
+  if (param_block->num_fragments->frequency != RPT_never)
+    RPT_reporting_set_integer1 (param_block->num_fragments,
+                                g_queue_get_length (zone->fragments),
+                                zone->name);
+  if (param_block->num_holes_filled->frequency != RPT_never)
+    RPT_reporting_set_integer1 (param_block->num_holes_filled,
+                                zone->nholes_filled, zone->name);
+  if (param_block->cumul_num_holes_filled->frequency != RPT_never)
+    RPT_reporting_add_integer1 (param_block->cumul_num_holes_filled,
+                                zone->nholes_filled, zone->name);
+}
 
 
 
@@ -108,26 +579,19 @@ local_data_t;
  * @param event a new day event.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self, EVT_new_day_event_t * event)
+handle_new_day_event (struct naadsm_model_t_ *self, EVT_new_day_event_t * event)
 {
   local_data_t *local_data;
-  ZON_zone_t *zone;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
-  zone = local_data->zone;
 
-  if (local_data->num_fragments->frequency != RPT_never)
-    RPT_reporting_set_integer1 (local_data->num_fragments,
-                                g_queue_get_length (zone->fragments), zone->name);
-  if (local_data->num_holes_filled->frequency != RPT_never)
-    RPT_reporting_set_integer1 (local_data->num_holes_filled, zone->nholes_filled, zone->name);
-  if (local_data->cumul_num_holes_filled->frequency != RPT_never)
-    RPT_reporting_add_integer1 (local_data->cumul_num_holes_filled,
-                                zone->nholes_filled, zone->name);
+  g_ptr_array_foreach (local_data->param_blocks,
+                       param_block_reporting,
+                       NULL);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s)", MODEL_NAME);
@@ -147,22 +611,20 @@ handle_new_day_event (struct ergadm_model_t_ *self, EVT_new_day_event_t * event)
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
      ZON_zone_list_t * zones, EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
     case EVT_NewDay:
       handle_new_day_event (self, &(event->u.new_day));
+      break;
+    case EVT_Midnight:
+      handle_midnight_event(self, herds, zones, &(event->u.midnight));
       break;
     default:
       g_error
@@ -173,11 +635,18 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
+}
+
+
+
+/**
+ */
+static void param_block_reset_reporting (gpointer data, gpointer user_data)
+{
+  param_block_t *param_block = (param_block_t *) data;
+
+  RPT_reporting_zero (param_block->num_fragments);
+  RPT_reporting_zero (param_block->cumul_num_holes_filled);
 }
 
 
@@ -188,7 +657,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
@@ -197,9 +666,10 @@ reset (struct ergadm_model_t_ *self)
 #endif
 
   local_data = (local_data_t *) (self->model_data);
-  RPT_reporting_zero (local_data->num_fragments);
-  RPT_reporting_zero (local_data->num_holes_filled);
-  RPT_reporting_zero (local_data->cumul_num_holes_filled);
+
+  g_ptr_array_foreach (local_data->param_blocks,
+                       param_block_reset_reporting,
+                       NULL);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
@@ -216,7 +686,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -235,7 +705,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -249,9 +719,28 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
+}
+
+
+
+/**
+ */
+static void param_block_to_string (gpointer data, gpointer user_data)
+{
+  param_block_t *param_block = (param_block_t *) data;
+  ZON_zone_t *zone = param_block->zone;
+  GString *s = (GString *) user_data;
+
+  zone = param_block->zone;
+
+  g_string_append_printf (s,
+                          "<\"%s\" level=%i radius=%.2f >\n",
+                          zone->name,
+                          zone->level,
+                          zone->radius);
 }
 
 
@@ -263,18 +752,18 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *chararray;
   local_data_t *local_data;
-  ZON_zone_t *zone;
 
   local_data = (local_data_t *) (self->model_data);
   s = g_string_new (NULL);
-  zone = local_data->zone;
-  g_string_sprintf (s, "<%s \"%s\" level=%i radius=%.2f >", MODEL_NAME,
-                    zone->name, zone->level, zone->radius);
+
+  g_string_printf(s, "<%s\n", MODEL_NAME);
+  g_ptr_array_foreach (local_data->param_blocks, param_block_to_string, s);
+  g_string_printf(s, ">");
 
   /* don't return the wrapper object */
   chararray = s->str;
@@ -292,7 +781,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -312,7 +801,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -325,93 +814,82 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
-  RPT_free_reporting (local_data->num_fragments, TRUE);
-  RPT_free_reporting (local_data->num_holes_filled, TRUE);
-  RPT_free_reporting (local_data->cumul_num_holes_filled, TRUE);
+#if 0
+  RPT_free_reporting (local_data->num_fragments);
+  RPT_free_reporting (local_data->num_holes_filled);
+  RPT_free_reporting (local_data->cumul_num_holes_filled);
+#endif
+  g_ptr_array_free (local_data->param_blocks, TRUE);
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
 }
 
 
 
 /**
- * Returns the version of the interface this model conforms to.
+ * Returns whether this model is a singleton or not.
  */
-char *
-interface_version (void)
+gboolean
+is_singleton (void)
 {
-  return MODEL_INTERFACE_VERSION;
+  return TRUE;
 }
 
 
 
 /**
- * Returns a new zone model.
+ * Adds a set of parameters to a zone model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+void
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
-  ergadm_model_t *m;
-  local_data_t *local_data;
-  scew_element const *e, **ee;
+  local_data_t *local_data = NULL;
+  param_block_t *param_block = NULL;
+  scew_element const *e;
+  scew_element **ee;
   unsigned int noutputs;
   RPT_reporting_t *output;
   const XML_Char *variable_name;
   gboolean success;
   int i, j;
-  char *name;
+  char *tmp, *name;
   int level;
   double radius;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER set_params (%s)", MODEL_NAME);
 #endif
-
-  m = g_new (ergadm_model_t, 1);
-  local_data = g_new (local_data_t, 1);
-
-  m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
-  m->events_listened_for = events_listened_for;
-  m->nevents_listened_for = NEVENTS_LISTENED_FOR;
-  m->outputs = g_ptr_array_sized_new (3);
-  m->model_data = local_data;
-  m->run = run;
-  m->reset = reset;
-  m->is_listening_for = is_listening_for;
-  m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
-  m->to_string = to_string;
-  m->printf = local_printf;
-  m->fprintf = local_fprintf;
-  m->free = local_free;
 
   /* Make sure the right XML subtree was sent. */
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
+
+  local_data = (local_data_t *) (self->model_data);
+
+  param_block = g_new0 (param_block_t, 1);
 
   e = scew_element_by_name (params, "name");
   if (e != NULL)
     {
       /* Expat stores the text as UTF-8.  Convert to ISO-8859-1. */
-      name = g_convert_with_fallback (PAR_get_text (e), -1, "ISO-8859-1", "UTF-8", "?", NULL, NULL, NULL);
+      tmp = PAR_get_text (e);
+      name = g_convert_with_fallback (tmp, -1, "ISO-8859-1", "UTF-8", "?", NULL, NULL, NULL);
       g_assert (name != NULL);
+      g_free (tmp);
     }
   else
     name = g_strdup ("unnamed zone");
@@ -452,35 +930,52 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
       radius = 0;
     }
 
-  local_data->zone = ZON_new_zone (name, level, radius);
-  free (name);
+  param_block->zone = ZON_new_zone (name, level, radius);
 
-  local_data->num_fragments = RPT_new_reporting ("num-fragments", NULL, RPT_group, RPT_never, TRUE);
-  local_data->num_holes_filled =
-    RPT_new_reporting ("num-holes-filled", NULL, RPT_group, RPT_never, FALSE);
-  local_data->cumul_num_holes_filled =
-    RPT_new_reporting ("cumulative-num-holes-filled", NULL, RPT_group, RPT_never, TRUE);
-  g_ptr_array_add (m->outputs, local_data->num_fragments);
-  g_ptr_array_add (m->outputs, local_data->num_holes_filled);
-  g_ptr_array_add (m->outputs, local_data->cumul_num_holes_filled);
+  {
+    GString * s = g_string_new (NULL);
+
+    g_string_printf (s, "%s-num-fragments", name);
+    param_block->num_fragments =
+      RPT_new_reporting (s->str, RPT_group, RPT_never);
+
+    g_string_printf (s, "%s-num-holes-filled", name);
+    param_block->num_holes_filled =
+      RPT_new_reporting (s->str, RPT_group, RPT_never);
+
+    g_string_printf (s, "%s-cumulative-num-holes-filled", name);
+    param_block->cumul_num_holes_filled =
+      RPT_new_reporting (s->str, RPT_group, RPT_never);
+
+    g_string_free(s, TRUE);
+  }
+  g_free (name);
+
+  g_ptr_array_add (self->outputs, param_block->num_fragments);
+  g_ptr_array_add (self->outputs, param_block->num_holes_filled);
+  g_ptr_array_add (self->outputs, param_block->cumul_num_holes_filled);
 
   /* Set the reporting frequency for the output variables. */
   ee = scew_element_list (params, "output", &noutputs);
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i output variables", noutputs);
+#if DEBUG
+  g_debug ("%i output variables", noutputs);
 #endif
   for (i = 0; i < noutputs; i++)
     {
+      GString * long_variable_name = g_string_new (NULL);
+
       e = ee[i];
       variable_name = scew_element_contents (scew_element_by_name (e, "variable-name"));
+      g_string_printf (long_variable_name, "%s-%s", name, variable_name);
       /* Do the outputs include a variable with this name? */
-      for (j = 0; j < m->outputs->len; j++)
+      for (j = 0; j < self->outputs->len; j++)
         {
-          output = (RPT_reporting_t *) g_ptr_array_index (m->outputs, j);
-          if (strcmp (output->name, variable_name) == 0)
+          output = (RPT_reporting_t *) g_ptr_array_index (self->outputs, j);
+          if ((strcmp (output->name, variable_name) == 0) ||
+              (strcmp (output->name, long_variable_name->str) == 0))
             break;
         }
-      if (j == m->outputs->len)
+      if (j == self->outputs->len)
         g_warning ("no output variable named \"%s\", ignoring", variable_name);
       else
         {
@@ -489,49 +984,76 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
                                                                 (scew_element_by_name
                                                                  (e, "frequency"))));
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "report \"%s\" %s", variable_name,
-                 RPT_frequency_name[output->frequency]);
+          g_debug ("report \"%s\" %s", variable_name, RPT_frequency_name[output->frequency]);
 #endif
         }
+
+      g_string_free(long_variable_name, TRUE);
     }
   free (ee);
 
-  /* Use the following heuristic to decide whether to use the R-tree index in
-   * searches: if the ratio of the diameter of the zone to the short axis of
-   * the oriented bounding rectangle around the herds is <= 0.25, use the
-   * R-tree. */
+  /* Add the zone object to the zone list. */
+  ZON_zone_list_append (local_data->zones, param_block->zone);
 
-  /* For debugging purposes, you can #define USE_RTREE to 0 to never use the
-   * spatial index, or 1 to always use it. */
-#if defined(USE_RTREE)
-  local_data->zone->use_rtree_index = USE_RTREE;
-#else
-  if (herds->short_axis_length > 0)
-    local_data->zone->use_rtree_index = 0.25 / 2 * herds->short_axis_length;
-  else
-    local_data->zone->use_rtree_index = 0;
+  /* Add the param_block to the list (for the singleton model). */
+  g_ptr_array_add (local_data->param_blocks, param_block);
+
+#if DEBUG
+  g_debug ("----- EXIT set_params (%s)", MODEL_NAME);
 #endif
 
-  /* Add the zone object to the zone list. */
-  ZON_zone_list_append (zones, local_data->zone);
+  return;
+}
+
+
+
+/**
+ * Returns a new zone model.
+ */
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
+{
+  naadsm_model_t *self;
+  local_data_t *local_data;
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+#endif
+
+  self = g_new (naadsm_model_t, 1);
+  local_data = g_new (local_data_t, 1);
+
+  self->name = MODEL_NAME;
+  self->events_listened_for = events_listened_for;
+  self->nevents_listened_for = NEVENTS_LISTENED_FOR;
+  self->outputs = g_ptr_array_sized_new (3);
+  self->model_data = local_data;
+  self->set_params = set_params;
+  self->run = run;
+  self->reset = reset;
+  self->is_listening_for = is_listening_for;
+  self->has_pending_actions = has_pending_actions;
+  self->has_pending_infections = has_pending_infections;
+  self->to_string = to_string;
+  self->printf = local_printf;
+  self->fprintf = local_fprintf;
+  self->free = local_free;
+
+  local_data->herds = herds;
+  local_data->zones = zones;
+
+  local_data->param_blocks = g_ptr_array_new();
+
+  /* Send the XML subtree to the init function to read the production type
+   * combination specific parameters. */
+  self->set_params (self, params);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
 #endif
 
-  return m;
-}
-
-char *
-zone_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-zone_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
+  return self;
 }
 
 /* end of file zone-model.c */

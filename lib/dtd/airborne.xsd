@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
-
+  
   <complexType name="airborne-spread-model-type">
     <annotation>
       <documentation xml:lang="en">
@@ -16,8 +17,8 @@
       </documentation>
     </annotation>
     <sequence>
-      <!-- Model parameters. -->
-      <element name="prob-spread-1km" type="ergadm:probability">
+      <!-- Model parameters. -->      
+      <element name="prob-spread-1km" type="naadsm:probability">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -26,7 +27,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="wind-direction-start" type="ergadm:angle">
+      <element name="wind-direction-start" type="naadsm:angle">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -41,7 +42,7 @@
           </appinfo>
         </annotation>
       </element>
-      <element name="wind-direction-end" type="ergadm:angle">
+      <element name="wind-direction-end" type="naadsm:angle">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -55,7 +56,9 @@
           </documentation>
         </annotation>
       </element>
-      <element name="max-spread" type="ergadm:length">
+      <!--  minOccurs is zero in case a max distance is not desired and because 
+            this is not a parameter in the derived exponential airborne model type. -->
+      <element name="max-spread" type="naadsm:length" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -66,7 +69,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="delay" type="ergadm:PDF">
+      <element name="delay" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -75,7 +78,7 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
@@ -84,5 +87,26 @@
     <attribute name="from-production-type" type="string" use="required" />
     <attribute name="to-production-type" type="string" use="required" />
   </complexType>
-
+  
+   <!-- rbh: derived type based on "airborne-spread-model-type" -->
+  <complexType name="airborne-spread-exponential-model-type">
+    <complexContent>
+      <extension base="naadsm:airborne-spread-model-type">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              These parameters describe airborne spread of the disease.
+              Probability of infection falls off exponentially with distance.
+              This model type is derived from the airborne linear model, 
+              and will inherit any parameter changes.
+            ]]>
+          </documentation>
+        </annotation>
+        <sequence>
+           <!-- Model parameters specific to expotential spread -->       
+        </sequence>
+       </extension>  
+     </complexContent>    
+  </complexType>
+    
 </schema>

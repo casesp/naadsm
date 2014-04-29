@@ -1,5 +1,5 @@
 /** @file model_loader.c
- * Functions for discovering and dynamically loading sub-models.
+ * Functions for instantiating sub-models.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
  *   Grid Computing Research Group<br>
@@ -9,7 +9,7 @@
  * @version 0.93
  * @date March 2003
  *
- * Copyright &copy; University of Guelph, 2003-2007
+ * Copyright &copy; University of Guelph, 2003-2009
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -39,101 +39,98 @@
 #  include <errno.h>
 #endif
 
-#ifdef NO_MODEL_LIBS
-#  include "airborne-spread-model.h"
-#  include "airborne-spread-exponential-model.h"
-#  include "basic-destruction-model.h"
-#  include "basic-zone-focus-model.h"
-#  include "conflict-resolver.h"
-#  include "contact-spread-model.h"
-#  include "destruction-monitor.h"
-#  include "detection-model.h"
-#  include "detection-monitor.h"
-#  include "detection-on-given-day-model.h"
-#  include "disease-model.h"
-#  include "economic-model.h"
-#  include "exposure-monitor.h"
-#  include "infection-monitor.h"
-#  include "quarantine-model.h"
-#  include "resources-and-implementation-of-controls-model.h"
-#  include "ring-destruction-model.h"
-#  include "ring-vaccination-model.h"
-#  include "trace-back-destruction-model.h"
-#  include "trace-back-zone-focus-model.h"
-#  include "vaccination-monitor.h"
-#  include "vaccine-model.h"
-#  include "zone-model.h"
-#  include "zone-monitor.h"
-#endif
+#include "airborne-spread-model.h"
+#include "airborne-spread-exponential-model.h"
+#include "basic-destruction-model.h"
+#include "basic-zone-focus-model.h"
+#include "conflict-resolver.h"
+#include "contact-recorder-model.h"
+#include "contact-spread-model.h"
+#include "destruction-monitor.h"
+#include "destruction-list-monitor.h"
+#include "detection-model.h"
+#include "detection-monitor.h"
+#include "disease-model.h"
+#include "economic-model.h"
+#include "exam-monitor.h"
+#include "exposure-monitor.h"
+#include "infection-monitor.h"
+#include "quarantine-model.h"
+#include "resources-and-implementation-of-controls-model.h"
+#include "ring-destruction-model.h"
+#include "ring-vaccination-model.h"
+#include "test-model.h"
+#include "test-monitor.h"
+#include "trace-back-destruction-model.h"
+#include "trace-back-monitor.h"
+#include "trace-back-zone-focus-model.h"
+#include "trace-destruction-model.h"
+#include "trace-exam-model.h"
+#include "trace-model.h"
+#include "trace-monitor.h"
+#include "trace-quarantine-model.h"
+#include "trace-zone-focus-model.h"
+#include "vaccination-monitor.h"
+#include "vaccination-list-monitor.h"
+#include "vaccine-model.h"
+#include "zone-model.h"
+#include "zone-monitor.h"
 
-#include "guilib.h"
+#include "naadsm.h"
 
-#define DEFAULT_MODEL_DIR "models"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
 extern const char *RPT_frequency_name[];
 
-#ifdef NO_MODEL_LIBS
 struct model_load_info_t
 {
   const char *model_name;
-  ergadm_model_interface_version_t model_version_fn;
-  ergadm_model_new_t model_instantiation_fn;
-  ergadm_model_is_singleton_t model_singleton_fn;
+  naadsm_model_new_t model_instantiation_fn;
+  naadsm_model_is_singleton_t model_singleton_fn;
 };
 
 
 struct model_load_info_t model_list[] = {
-  {"airborne-spread-model", &airborne_spread_model_interface_version,
-    (void*)&airborne_spread_model_new, airborne_spread_model_is_singleton},
-  {"airborne-spread-exponential-model", &airborne_spread_exponential_model_interface_version,
-    (void*)&airborne_spread_exponential_model_new, airborne_spread_exponential_model_is_singleton},
-  {"basic-destruction-model", &basic_destruction_model_interface_version,
-    (void*)&basic_destruction_model_new, NULL},
-  {"basic-zone-focus-model", &basic_zone_focus_model_interface_version,
-    (void*)&basic_zone_focus_model_new, NULL},     
-  {"conflict-resolver", &conflict_resolver_interface_version, 
-    (void*)&conflict_resolver_new, NULL},
-  {"contact-spread-model", &contact_spread_model_interface_version, 
-    (void*)&contact_spread_model_new, contact_spread_model_is_singleton},
-  {"destruction-monitor", &destruction_monitor_interface_version, 
-    (void*)&destruction_monitor_new, NULL},
-  {"detection-model", &detection_model_interface_version, 
-    (void*)&detection_model_new, detection_model_is_singleton},
-  {"detection-monitor", &detection_monitor_interface_version, 
-    (void*)&detection_monitor_new, NULL},
-  {"detection-on-given-day-model", &detection_on_given_day_model_interface_version,
-    (void*)&detection_on_given_day_model_new, NULL},
-  {"disease-model", &disease_model_interface_version, 
-    (void*)&disease_model_new, NULL},
-  {"economic-model", &economic_model_interface_version, 
-    (void*)&economic_model_new, NULL},
-  {"exposure-monitor", &exposure_monitor_interface_version, 
-    (void*)&exposure_monitor_new, NULL},
-  {"infection-monitor", &infection_monitor_interface_version, 
-    (void*)&infection_monitor_new, NULL},
-  {"quarantine-model", &quarantine_model_interface_version, 
-    (void*)&quarantine_model_new, NULL},
-  {"resources-and-implementation-of-controls-model", &resources_and_implementation_of_controls_model_interface_version,
+  {"airborne-spread-model", (void*)&airborne_spread_model_new,
+    airborne_spread_model_is_singleton},
+  {"airborne-spread-exponential-model", (void*)&airborne_spread_exponential_model_new,
+    airborne_spread_exponential_model_is_singleton},
+  {"basic-destruction-model", (void*)&basic_destruction_model_new, NULL},
+  {"basic-zone-focus-model", (void*)&basic_zone_focus_model_new, NULL},     
+  {"conflict-resolver", (void*)&conflict_resolver_new, NULL},
+  {"contact-recorder-model", (void*)&contact_recorder_model_new,
+    contact_recorder_model_is_singleton},
+  {"contact-spread-model", (void*)&contact_spread_model_new, contact_spread_model_is_singleton},
+  {"destruction-list-monitor", (void*)&destruction_list_monitor_new, NULL},
+  {"destruction-monitor", (void*)&destruction_monitor_new, NULL},
+  {"detection-model", (void*)&detection_model_new, detection_model_is_singleton},
+  {"detection-monitor", (void*)&detection_monitor_new, NULL},
+  {"disease-model", (void*)&disease_model_new, NULL},
+  {"economic-model", (void*)&economic_model_new, economic_model_is_singleton},
+  {"exam-monitor", (void*)&exam_monitor_new, NULL},
+  {"exposure-monitor", (void*)&exposure_monitor_new, NULL},
+  {"infection-monitor", (void*)&infection_monitor_new, NULL},
+  {"quarantine-model", (void*)&quarantine_model_new, NULL},
+  {"resources-and-implementation-of-controls-model",
     (void*)&resources_and_implementation_of_controls_model_new, NULL},
-  {"ring-destruction-model", &ring_destruction_model_interface_version, 
-    (void*)&ring_destruction_model_new, NULL},
-  {"ring-vaccination-model", &ring_vaccination_model_interface_version, 
-    (void*)&ring_vaccination_model_new, NULL},
-  {"trace-back-destruction-model", &trace_back_destruction_model_interface_version,
-   &trace_back_destruction_model_new, NULL},
-  {"trace-back-zone-focus-model", &trace_back_zone_focus_model_interface_version,
-    (void*)&trace_back_zone_focus_model_new, NULL},
-  {"vaccination-monitor", &vaccination_monitor_interface_version, 
-    (void*)&vaccination_monitor_new, NULL},
-  {"vaccine-model", &vaccine_model_interface_version, 
-    (void*)&vaccine_model_new, NULL},
-  {"zone-model", &zone_model_interface_version, 
-    (void*)&zone_model_new, NULL},
-  {"zone-monitor", &zone_monitor_interface_version, 
-    (void*)&zone_monitor_new, NULL}    
+  {"ring-destruction-model", (void*)&ring_destruction_model_new, NULL},
+  {"ring-vaccination-model", (void*)&ring_vaccination_model_new, ring_vaccination_model_is_singleton},
+  {"test-model", (void*)&test_model_new, NULL},
+  {"test-monitor", (void*)&test_monitor_new, NULL},
+  {"trace-back-destruction-model", (void*)&trace_back_destruction_model_new, NULL},
+  {"trace-back-monitor", (void*)&trace_back_monitor_new, NULL},
+  {"trace-back-zone-focus-model", (void*)&trace_back_zone_focus_model_new, NULL},
+  {"trace-destruction-model", (void*)&trace_destruction_model_new, NULL},
+  {"trace-exam-model", (void*)&trace_exam_model_new, NULL},
+  {"trace-model", (void*)&trace_model_new, NULL},
+  {"trace-monitor", (void*)&trace_monitor_new, NULL},
+  {"trace-quarantine-model", (void*)&trace_quarantine_model_new, NULL},
+  {"trace-zone-focus-model", (void*)&trace_zone_focus_model_new, NULL},
+  {"vaccination-list-monitor", (void*)&vaccination_list_monitor_new, NULL},
+  {"vaccination-monitor", (void*)&vaccination_monitor_new, NULL},
+  {"vaccine-model", (void*)&vaccine_model_new, NULL},
+  {"zone-model", (void*)&zone_model_new, zone_model_is_singleton},
+  {"zone-monitor", (void*)&zone_monitor_new, NULL}    
 };
 
 int model_list_count = (sizeof (model_list) / sizeof (struct model_load_info_t));
@@ -154,9 +151,30 @@ find_model (const char *name)
   return bsearch (&target, model_list, model_list_count, sizeof (struct model_load_info_t), model_name_cmp      /*AR  "warning: passing arg 5 of `bsearch' from incompatible pointer type" */
     );
 }
-#endif /* NO_MODEL_LIBS */
 
 
+/**
+ * Extracts the premature exit condition for the simulation.
+ *
+ * @param e a "exit-condition" element from the simulation parameters.
+ * @return exit condition.
+ */
+unsigned int
+get_exit_condition (scew_element * e)
+{
+  unsigned int ret_val = STOP_NORMAL;
+  
+  if ( e != NULL )
+  {
+    if ( scew_element_by_name ( e, "disease-end") != NULL )
+	  ret_val = ret_val | STOP_ON_DISEASE_END;
+	
+	if ( scew_element_by_name ( e, "first-detection") != NULL )
+	  ret_val = ret_val | STOP_ON_FIRST_DETECTION;	
+  };
+  
+  return ret_val;
+}
 
 /**
  * Extracts the number of days the simulation is to last.
@@ -199,6 +217,8 @@ get_num_runs (scew_element * e)
  *
  * @param parameter_file name of the parameter file.
  * @param herds a list of herds.
+ * @param projection the map projection used to convert the herds from latitude
+ *   and longitude and x and y.
  * @param zones a list of zones.  This can be empty at first, as it may be
  *   populated while reading the parameters.
  * @param model_dir absolute or relative path to the model object files.  If
@@ -214,10 +234,10 @@ get_num_runs (scew_element * e)
  * @return the number of models loaded.
  */
 int
-ergadm_load_models (char *parameter_file,
-                    HRD_herd_list_t * herds, ZON_zone_list_t * zones,
-                    char *model_dir, unsigned int *ndays, unsigned int *nruns,
-                    ergadm_model_t *** models, GPtrArray * outputs)
+naadsm_load_models (char *parameter_file, HRD_herd_list_t * herds,
+                    projPJ projection, ZON_zone_list_t * zones,
+                    unsigned int *ndays, unsigned int *nruns,
+                    naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions )
 {
   scew_parser *parser;          /* to read the parameter file */
   scew_error err;               /* parser error code */
@@ -226,25 +246,15 @@ ergadm_load_models (char *parameter_file,
   scew_element **ee;            /* a list of subtrees */
   scew_element *model_spec;     /* a subtree for a model */
   const char *model_name;       /* name of a model */
-  const char *model_version;    /* interface version of a model */
-
-#ifdef NO_MODEL_LIBS
   struct model_load_info_t *model_load_info;
-#else
-  lt_dlhandle handle;
-  int dl_error;                 /* error code from dynamic loader */
-  const char *dl_error_text;    /* error description from dynamic loader */
-#endif
-
-  ergadm_model_interface_version_t model_version_fn;
-  ergadm_model_is_singleton_t model_is_singleton_fn;
+  naadsm_model_is_singleton_t model_is_singleton_fn;
   gboolean singleton;
   GHashTable *singletons;       /* stores the "singleton" modules (for which
                                    there can be only one instance).  Keys are
                                    model names (char *) and data are pointers
                                    to models. */
-  ergadm_model_new_t model_instantiation_fn;
-  ergadm_model_t *model;
+  naadsm_model_new_t model_instantiation_fn;
+  naadsm_model_t *model;
   int nmodels;
   int nloaded = 0;
   int i, j;                     /* loop counters */
@@ -252,32 +262,24 @@ ergadm_load_models (char *parameter_file,
   RPT_reporting_t *output;
   const XML_Char *variable_name;
   unsigned int nzones;
-  char guilog[1024];
 #if DEBUG
   char *s;
 #endif
 
-  if (NULL != guilib_debug)
-    guilib_debug ("----- ENTER ergadm_load_models");
-
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_load_models");
+  g_debug ("----- ENTER naadsm_load_models");
 #endif
 
   parser = scew_parser_create ();
   if (parser == NULL)
     return 0;
 
-  if (NULL != guilib_debug)
-    {
-      sprintf (guilog, "Loading SCEW parser with param file %s.", parameter_file);
-      guilib_debug (guilog);
-    }
-
   /* This test isn't foolproof because the file could be deleted in the split-
    * second before scew_parser_load_file tries to open it. */
   if (g_file_test (parameter_file, G_FILE_TEST_EXISTS) == FALSE)
-    g_error ("parameter file \"%s\" not found", parameter_file);
+    {
+      g_error ("parameter file \"%s\" not found", parameter_file);
+    }
 
   if (scew_parser_load_file (parser, parameter_file) != 1)
     {
@@ -290,9 +292,6 @@ ergadm_load_models (char *parameter_file,
         g_error ("parameter file \"%s\" could not be parsed: %s", parameter_file,
                  scew_error_string (err));
     }
-
-  if (NULL != guilib_debug)
-    guilib_debug ("SCEW parser loaded.");
 
   params = scew_tree_root (scew_parser_tree (parser));
 
@@ -309,122 +308,52 @@ ergadm_load_models (char *parameter_file,
   *ndays = get_num_days (scew_element_by_name (params, "num-days"));
   g_assert (scew_element_by_name (params, "num-runs") != NULL);
   *nruns = get_num_runs (scew_element_by_name (params, "num-runs"));
-
-  /* Set the directory from which sub-models will be loaded. */
-  if (model_dir == NULL)
-    model_dir = DEFAULT_MODEL_DIR;
-
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "models in directory \"%s\"", model_dir);
-#endif
-
-#ifndef NO_MODEL_LIBS
-  LTDL_SET_PRELOADED_SYMBOLS ();
-  dl_error = lt_dlinit ();
-  if (dl_error)
-    g_error ("%s", lt_dlerror ());
-  dl_error = lt_dlsetsearchpath (model_dir);
-  if (dl_error)
-    g_error ("%s", lt_dlerror ());
-#endif
+  
+  /*  This isn't a mandatory parameter.  If this element is NULL, the function
+      will return "0" for "no premature exit" */
+  *_exit_conditions = get_exit_condition( scew_element_by_name ( params, "exit-condition" ) );
 
   /* Get the number of sub-models that will run in the simulation. */
   e = scew_element_by_name (params, "models");
   nmodels = (int) scew_element_count (e);
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i sub-models in parameters", nmodels);
+#if DEBUG
+  g_debug ("%i sub-models in parameters", nmodels);
 #endif
 
   singletons = g_hash_table_new (g_str_hash, g_str_equal);
 
-  /* Load and instantiate each model. */
-#ifdef NO_MODEL_LIBS
+  /* Instantiate each model. */
+
   /*AR Just in case the order of model_list should get screwed up by a
    *  forgetful programmer (not that I know anyone like that)...  */
   qsort (model_list, model_list_count, sizeof (struct model_load_info_t), model_name_cmp);
-  if (NULL != guilib_debug)
-    guilib_debug ("Model list sorted.");
-#endif
-  *models = g_new (ergadm_model_t *, nmodels);
+
+  *models = g_new (naadsm_model_t *, nmodels);
   for (i = 0; i < nmodels; i++)
     {
       model_spec = scew_element_by_index (e, (unsigned int) i);
       model_name = scew_element_name (model_spec);
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "loading model %i, \"%s\"", i + 1, model_name);
+#if DEBUG
+      g_debug ("loading model %i, \"%s\"", i + 1, model_name);
 #endif
 
-#ifdef NO_MODEL_LIBS
       /* Find the model in the array */
       model_load_info = find_model (model_name);
-
-      sprintf (guilog, "Loading model %s\n", model_name);
-      if (NULL != guilib_debug)
-        {
-          guilib_debug (guilog);
-        }
 
       if (NULL == model_load_info)
         {
           g_warning ("Model %s not found in model list.", model_name);
           continue;
         }
-#  if DEBUG
+#if DEBUG
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "Model = <%p>", model_load_info);
-#  endif
-#else
-      /* Use the dynamic loader */
-      handle = lt_dlopenext (model_name);
-      if (handle == NULL)
-        {
-          g_warning ("could not load %s because %s", model_name, lt_dlerror ());
-          continue;
-        }
-#  if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "handle = <%p>", handle);
-#  endif
 #endif
-
-      /* Check that the module conforms to the expected model interface
-       * version. */
-      model_version_fn = NULL;
-#ifdef NO_MODEL_LIBS
-      /* Use the model version function from the appropriate array element */
-      if (NULL != guilib_debug)
-        guilib_debug ("Loading model version function.");
-      model_version_fn = model_load_info->model_version_fn;
-#else
-      /* Find the model's "interface_version" function using the dynamic loader */
-      model_version_fn = (ergadm_model_interface_version_t) lt_dlsym (handle, "interface_version");
-      if (model_version_fn == NULL)
-        {
-          g_warning ("could not find the interface version: not loading model %s", model_name);
-          lt_dlclose (handle);
-          continue;
-        }
-#endif
-      model_version = model_version_fn ();
-      if (strcmp (MODEL_INTERFACE_VERSION, model_version) != 0)
-        {
-          g_warning
-            ("the interface version (%s) is different than expected (%s): not loading model %s",
-             model_version, MODEL_INTERFACE_VERSION, model_name);
-#ifndef NO_MODEL_LIBS
-          lt_dlclose (handle);
-#endif
-          continue;
-        }
 
       /* If this is a "singleton" module (only one instance of it can exist),
        * check whether there is already an instance.  If so, pass the
        * parameters to the existing instance.  If not, create a new instance. */
-#ifdef NO_MODEL_LIBS
       model_is_singleton_fn = model_load_info->model_singleton_fn;
-#else
-      model_is_singleton_fn = (ergadm_model_is_singleton_t) lt_dlsym (handle, "is_singleton");
-#endif
-
       singleton = (model_is_singleton_fn != NULL && model_is_singleton_fn () == TRUE);
 
 
@@ -433,7 +362,7 @@ ergadm_load_models (char *parameter_file,
 #endif
       model = NULL;
       if (singleton)
-        model = (ergadm_model_t *) g_hash_table_lookup (singletons, model_name);
+        model = (naadsm_model_t *) g_hash_table_lookup (singletons, model_name);
 
       if (model != NULL)
         {
@@ -447,62 +376,30 @@ ergadm_load_models (char *parameter_file,
       else
         {
           /* Get the module's "new" function (to instantiate a model object). */
-#ifdef NO_MODEL_LIBS
-          /* Use the model's "new" function from the appropriate array element */
-          if (NULL != guilib_debug)
-            guilib_debug ("Setting the model's 'new' function");
           model_instantiation_fn = model_load_info->model_instantiation_fn;
-#else
-          /* Find the model's "new" function using the dynamic loader  */
-          model_instantiation_fn = NULL;
-          model_instantiation_fn = (ergadm_model_new_t) lt_dlsym (handle, "new");
-          /* The Autotools book says that comparing the returned function pointer
-           * to NULL is a bad test and recommends comparing the string returned by
-           * lt_dlerror to NULL instead.  But I get the string "unknown error"
-           * from lt_dlerror when the symbol lookup *works*.  ?? */
-          if (model_instantiation_fn == NULL)
-            {
-              g_warning ("could not instantiate model because %s", lt_dlerror ());
-              lt_dlclose (handle);
-              continue;
-            }
-#endif
 
 #if DEBUG
           g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "\"new\" function = <%p>",
                  model_instantiation_fn);
 #endif
 
-          if (NULL != guilib_debug)
-            guilib_debug ("Calling the model's 'new' function");
-          model = model_instantiation_fn (model_spec, herds, zones);
-
-          if (NULL != guilib_debug)
-            guilib_debug ("'New' function has returned");
+          model = model_instantiation_fn (model_spec, herds, projection, zones);
 
           /* Add the model's output variables to the list of reporting variables. */
           for (j = 0; j < model->outputs->len; j++)
             g_ptr_array_add (outputs, g_ptr_array_index (model->outputs, j));
-
-#ifdef NO_MODEL_LIBS
-          /*AR Do nothing */
-#else
-          /* Store a copy of the loaded module's handle in the object: we will need
-           * to dlclose it later. */
-          model->handle = handle;
-#endif
 
           (*models)[nloaded++] = model;
 
           if (singleton)
             g_hash_table_insert (singletons, model_name, model);
 
-        }                       /* end of case where a new model instance is created */
+        } /* end of case where a new model instance is created */
 
 #if DEBUG
       s = model->to_string (model);
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s);
-      free (s);
+      g_free (s);
 #endif
     }                           /* end of loop over models */
 
@@ -513,13 +410,23 @@ ergadm_load_models (char *parameter_file,
 
   /* Set the reporting frequency for the output variables. */
   ee = scew_element_list (params, "output", &noutputs);
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i output variables", noutputs);
+#if DEBUG
+  g_debug ("%i output variables", noutputs);
 #endif
   for (i = 0; i < noutputs; i++)
     {
       e = ee[i];
       variable_name = scew_element_contents (scew_element_by_name (e, "variable-name"));
+      /* Starting at version 3.2 we accept either the old, verbose output
+       * variable names or the shorter ones used in NAADSM/PC.  These lines are
+       * a kludge to re-map some of the old names. */
+      if (strcmp (variable_name, "num-units-in-each-state") == 0)
+        variable_name = "tsdU";
+      else if (strcmp (variable_name, "num-animals-in-each-state") == 0)
+        variable_name = "tsdA";
+      else if (strcmp (variable_name, "time-to-end-of-outbreak") == 0)
+        variable_name = "outbreakDuration";
+
       /* Do the outputs include a variable with this name? */
       for (j = 0; j < outputs->len; j++)
         {
@@ -536,8 +443,7 @@ ergadm_load_models (char *parameter_file,
                                                                 (scew_element_by_name
                                                                  (e, "frequency"))));
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "report \"%s\" %s", variable_name,
-                 RPT_frequency_name[output->frequency]);
+          g_debug ("report \"%s\" %s", variable_name, RPT_frequency_name[output->frequency]);
 #endif
         }
     }
@@ -562,7 +468,7 @@ ergadm_load_models (char *parameter_file,
   scew_parser_free (parser);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_load_models");
+  g_debug ("----- EXIT naadsm_load_models");
 #endif
 
   return nloaded;
@@ -577,32 +483,25 @@ ergadm_load_models (char *parameter_file,
  * @param models an array of models.
  */
 void
-ergadm_unload_models (int nmodels, ergadm_model_t ** models)
+naadsm_unload_models (int nmodels, naadsm_model_t ** models)
 {
-#ifdef NO_MODEL_LIBS
-  /*AR Do nothing */
-#else
-  ergadm_model_t *model;
+  naadsm_model_t *model;
   int i;                        /* loop counter */
-  void *handle;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_unload_models");
+  g_debug ("----- ENTER naadsm_unload_models");
 #endif
 
-  /* Free each model and close its associated dynamically-loaded module. */
+  /* Free each model. */
   for (i = 0; i < nmodels; i++)
     {
       model = models[i];
-      handle = model->handle;
       model->free (model);
-      lt_dlclose (handle);
     }
-  lt_dlexit ();
+  g_free (models);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_unload_models");
-#endif
+  g_debug ("----- EXIT naadsm_unload_models");
 #endif
 }
 

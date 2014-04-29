@@ -6,15 +6,13 @@
  * all units within a given radius of the diseased unit.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
  * @date September 2003
  *
- * Copyright &copy; University of Guelph, 2003-2007
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -25,30 +23,29 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version ring_vaccination_model_LTX_interface_version
-#define new ring_vaccination_model_LTX_new
-#define run ring_vaccination_model_LTX_run
-#define reset ring_vaccination_model_LTX_reset
-#define events_listened_for ring_vaccination_model_LTX_events_listened_for
-#define is_listening_for ring_vaccination_model_LTX_is_listening_for
-#define has_pending_actions ring_vaccination_model_LTX_has_pending_actions
-#define has_pending_infections ring_vaccination_model_LTX_has_pending_infections
-#define to_string ring_vaccination_model_LTX_to_string
-#define local_printf ring_vaccination_model_LTX_printf
-#define local_fprintf ring_vaccination_model_LTX_fprintf
-#define local_free ring_vaccination_model_LTX_free
-#define handle_request_for_vaccination_reasons_event ring_vaccination_model_LTX_handle_request_for_vaccination_reasons_event
-#define handle_detection_event ring_vaccination_model_LTX_handle_detection_event
-#define callback ring_vaccination_model_LTX_callback
-#define check_and_choose ring_vaccination_model_LTX_check_and_choose
-#define events_created ring_vaccination_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define is_singleton ring_vaccination_model_is_singleton
+#define new ring_vaccination_model_new
+#define set_params ring_vaccination_model_set_params
+#define run ring_vaccination_model_run
+#define reset ring_vaccination_model_reset
+#define events_listened_for ring_vaccination_model_events_listened_for
+#define is_listening_for ring_vaccination_model_is_listening_for
+#define has_pending_actions ring_vaccination_model_has_pending_actions
+#define has_pending_infections ring_vaccination_model_has_pending_infections
+#define to_string ring_vaccination_model_to_string
+#define local_printf ring_vaccination_model_printf
+#define local_fprintf ring_vaccination_model_fprintf
+#define local_free ring_vaccination_model_free
+#define handle_before_any_simulations_event ring_vaccination_model_handle_before_any_simulations_event
+#define handle_new_day_event ring_vaccination_model_handle_new_day_event
+#define handle_detection_event ring_vaccination_model_handle_detection_event
+#define check_and_choose ring_vaccination_model_check_and_choose
 
 #include "model.h"
 #include "model_util.h"
 #include "gis.h"
+#include "spatial_search.h"
 
 #if STDC_HEADERS
 #  include <string.h>
@@ -61,8 +58,6 @@
 #if HAVE_MATH_H
 #  include <math.h>
 #endif
-
-#include "guilib.h"
 
 #include "ring-vaccination-model.h"
 
@@ -77,68 +72,72 @@ double round (double x);
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "ring-vaccination-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of vaccinating herds within a given distance\n\
-of a diseased herd.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 September 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
+
+#define NEVENTS_LISTENED_FOR 3
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_NewDay, EVT_Detection };
 
 
 
-#define NEVENTS_CREATED 2
-EVT_event_type_t events_created[] =
-  { EVT_DeclarationOfVaccinationReasons, EVT_RequestForVaccination };
-
-#define NEVENTS_LISTENED_FOR 2
-EVT_event_type_t events_listened_for[] = { EVT_RequestForVaccinationReasons, EVT_Detection };
-
-
-
-#define EPSILON 0.01
+#define EPSILON 0.01 /* 10 m */
 
 
 
 /** Specialized information for this model. */
 typedef struct
 {
-  gboolean *from_production_type, *to_production_type;
-  GPtrArray *production_types;
-  unsigned short int priority;
+  int priority;
   unsigned int min_time_between_vaccinations; /**< The minimum number of days
     until a herd may be revaccinated. */
   double radius;
-  double radius_sq;
-  double radius_as_degrees;
-  gboolean use_rtree_index;
+  gboolean vaccinate_detected_units_defined; /**< Whether the parameters
+    explicitly define vaccinate-detected-units.  Needed for backwards
+    compatibility. */
+  gboolean vaccinate_detected_units;
+}
+param_block_t;
+
+
+
+typedef struct
+{
+  GPtrArray *production_types;
+  param_block_t ***param_block; /**< Blocks of parameters.
+    Use an expression of the form
+    param_block[from_production_type][to_production_type]
+    to get a pointer to a particular param_block. */
+  double *max_radius; /**< One value for each production type, giving the
+    largest vaccination ring that can be triggered by a unit of that production
+    type. */
+  GHashTable *detected_units; /**< A list of detected units.  The pointer to
+    the HRD_herd_t structure is the key. */
+  GHashTable *requested_today; /**< A list of units for which this module made
+    requests for vaccination today.  A unit can be in queue for vaccination
+    more than once at a given time, but two requests for the same unit, for the
+    same reason, on the same day will have identical priority and would be
+    redundant. */      
 }
 local_data_t;
 
 
 
 /**
- * Responds to a request for vaccination reasons by declaring all the reasons
- * for which this model may request a vaccination.
+ * Before any simulations, this module declares all the reasons for which it
+ * may request a vaccination.
  *
- * @param self the model.
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_vaccination_reasons_event (struct ergadm_model_t_ *self,
-                                              EVT_event_queue_t * queue)
+handle_before_any_simulations_event (EVT_event_queue_t * queue)
 {
   GPtrArray *reasons;
-
+  
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_vaccination_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
 
   reasons = g_ptr_array_sized_new (1);
-  g_ptr_array_add (reasons, "ring vaccination");
+  g_ptr_array_add (reasons, "Ring");
   EVT_event_enqueue (queue, EVT_new_declaration_of_vaccination_reasons_event (reasons));
 
   /* Note that we don't clean up the GPtrArray.  It will be freed along with
@@ -146,9 +145,36 @@ handle_request_for_vaccination_reasons_event (struct ergadm_model_t_ *self,
    * event. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_vaccination_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
+
+  return;
+}
+
+
+
+/**
+ * On each new day, this module clears its list of units for which it has
+ * requested vaccinations.
+ *
+ * @param self this module.
+ */
+void
+handle_new_day_event (struct naadsm_model_t_ *self)
+{
+  local_data_t *local_data;
+  
+#if DEBUG
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+#endif
+    
+  local_data = (local_data_t *) (self->model_data);
+  g_hash_table_remove_all (local_data->requested_today);
+
+#if DEBUG
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+#endif
+
   return;
 }
 
@@ -159,134 +185,119 @@ handle_request_for_vaccination_reasons_event (struct ergadm_model_t_ *self,
  */
 typedef struct
 {
-  struct ergadm_model_t_ *self;
+  local_data_t *local_data;
   HRD_herd_list_t *herds;
   HRD_herd_t *herd1;
-  unsigned short int day;
+  int day;
   EVT_event_queue_t *queue;
 } callback_t;
 
 
 
 /**
- * Check whether herd 2 is within the given distance of herd 1.
+ * Check whether herd 2 should be part of the vaccination ring.
  */
 void
-check_and_choose (callback_t * callback_data, HRD_herd_t * herd2)
+check_and_choose (int id, gpointer arg)
 {
+  callback_t *callback_data;
+  HRD_herd_t *herd2;
   HRD_herd_t *herd1;
   local_data_t *local_data;
-  double distance_sq;
+  param_block_t *param_block;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_and_choose (%s)", MODEL_NAME);
+  g_debug ("----- ENTER check_and_choose (%s)", MODEL_NAME);
 #endif
+
+  callback_data = (callback_t *) arg;
+  herd2 = HRD_herd_list_get (callback_data->herds, id);
+
+  /* Is herd 2 already destroyed?
+   *
+   * In the experimental version 'Riverton', "naturally immune" units have
+   * died out and no longer exist, so they don't need to be vaccinated. */
+  if (
+      herd2->status == Destroyed
+      #ifdef RIVERTON
+      || herd2->status == NaturallyImmune
+      #endif
+   )
+    goto end;
+
+  local_data = callback_data->local_data;
+  herd1 = callback_data->herd1;
+
+  /* Is herd 2 a production type we're interested in? */
+  param_block = local_data->param_block[herd1->production_type][herd2->production_type];
+  if (param_block == NULL)
+    goto end;
 
   /* Are herd 1 and herd 2 the same? */
-  herd1 = callback_data->herd1;
-  if (herd1 == herd2)
+  if (herd1 == herd2 && param_block->vaccinate_detected_units_defined == FALSE)
     goto end;
 
-  local_data = (local_data_t *) (callback_data->self->model_data);
-
-  /* Is herd 2 the production type we're interested in? */
-  if (local_data->to_production_type[herd2->production_type] == FALSE)
-    goto end;
-
-  distance_sq = GIS_local_distance_sq (herd1->lat, herd1->lon, herd2->lat, herd2->lon);
-  if (distance_sq - local_data->radius_sq <= EPSILON)
+  /* Do we want to exclude units that are known to be infected? */
+  if (param_block->vaccinate_detected_units == FALSE)
     {
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "unit %s within radius, ordering unit vaccinated", herd2->official_id);
-#endif
-      EVT_event_enqueue (callback_data->queue,
-                         EVT_new_request_for_vaccination_event (herd2,
-                                                                callback_data->day,
-                                                                "ring vaccination",
-                                                                local_data->priority,
-                                                                local_data->
-                                                                min_time_between_vaccinations));
+      /* We know herd2 is infected if it's the one that triggered this
+       * vaccination ring, or if it has been detected. */
+      if (herd1 == herd2
+          || g_hash_table_lookup (local_data->detected_units, herd2) != NULL)
+        goto end;
     }
+
+  /* Avoid making the same request twice on a single day. */
+  if (g_hash_table_lookup (local_data->requested_today, herd2) != NULL)
+    goto end;
+
+#if DEBUG
+  g_debug ("unit %s within radius, ordering unit vaccinated", herd2->official_id);
+#endif
+  EVT_event_enqueue (callback_data->queue,
+                     EVT_new_request_for_vaccination_event (herd2,
+                                                            callback_data->day,
+                                                            "Ring",
+                                                            param_block->priority,
+                                                            param_block->vaccinate_detected_units_defined && !(param_block->vaccinate_detected_units),
+                                                            param_block->min_time_between_vaccinations));
+  g_hash_table_insert (local_data->requested_today, herd2, herd2);
 
 end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_choose (%s)", MODEL_NAME);
+  g_debug ("----- EXIT check_and_choose (%s)", MODEL_NAME);
 #endif
   return;
 }
 
 
 
-int
-callback (int id, void *arg)
-{
-  callback_t *callback_data;
-  HRD_herd_t *herd2;
-
-  callback_data = (callback_t *) arg;
-  /* Because herd indices start at 0, and R-Tree rectangle IDs start at 1. */
-  herd2 = HRD_herd_list_get (callback_data->herds, id - 1);
-  check_and_choose (callback_data, herd2);
-
-  /* A return value of 0 would mean that the spatial search should stop early
-   * (before all herds in the search rectangle were visited).  We don't want
-   * that, so return 1. */
-  return 1;
-}
-
-
-
 void
-ring_vaccinate (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, HRD_herd_t * herd,
-                unsigned short int day, EVT_event_queue_t * queue)
+ring_vaccinate (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, HRD_herd_t * herd,
+                int day, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  unsigned int nherds, herd2_index;
-  double distance;              /* between two herds being considered */
-  struct Rect search_rect;      /* for narrowing down radius searches using the
-                                   R-tree (spatial index) */
-  double mult;                  /* to account for latitude */
   callback_t callback_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ring_vaccinate (%s)", MODEL_NAME);
+  g_debug ("----- ENTER ring_vaccinate (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  callback_data.self = self;
+  callback_data.local_data = local_data;
   callback_data.herds = herds;
   callback_data.herd1 = herd;
   callback_data.day = day;
   callback_data.queue = queue;
 
   /* Find the distances to other herds. */
-  if (
-#if defined(USE_RTREE) && USE_RTREE == 1
-       /* For debugging purposes, you can #define USE_RTREE to 0 to never use
-        * the spatial index, or 1 to always use it. */
-       TRUE ||
-#endif
-       local_data->use_rtree_index)
-    {
-      distance = local_data->radius_as_degrees;
-      mult = 1.0 / MIN (cos (DEG2RAD * (herd->lat + distance)), cos(DEG2RAD * (herd->lat - distance))); 
-      search_rect.boundary[0] = herd->lon - (distance * mult) - EPSILON;
-      search_rect.boundary[1] = herd->lat - distance - EPSILON;
-      search_rect.boundary[2] = herd->lon + (distance * mult) + EPSILON;
-      search_rect.boundary[3] = herd->lat + distance + EPSILON;
-      RTreeSearch (herds->spatial_index, &search_rect, callback, &callback_data);
-    }
-  else
-    {
-      nherds = HRD_herd_list_length (herds);
-      for (herd2_index = 0; herd2_index < nherds; herd2_index++)
-        check_and_choose (&callback_data, HRD_herd_list_get (herds, herd2_index));
-    }
+  spatial_search_circle_by_id (herds->spatial_index, herd->index,
+                               local_data->max_radius[herd->production_type] + EPSILON,
+                               check_and_choose, &callback_data);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ring_vaccinate (%s)", MODEL_NAME);
+  g_debug ("----- EXIT ring_vaccinate (%s)", MODEL_NAME);
 #endif
 }
 
@@ -301,24 +312,25 @@ ring_vaccinate (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, HRD_herd_
  * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                         EVT_detection_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
-
+  
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
-
+    
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
+  g_hash_table_insert (local_data->detected_units, (gpointer)herd, (gpointer)herd);
 
-  if (local_data->from_production_type[herd->production_type] == TRUE)
+  if (local_data->param_block[herd->production_type] != NULL)
     ring_vaccinate (self, herds, herd, event->day, queue);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -335,22 +347,20 @@ handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
-    case EVT_RequestForVaccinationReasons:
-      handle_request_for_vaccination_reasons_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (queue);
+      break;
+    case EVT_NewDay:
+      handle_new_day_event (self);
       break;
     case EVT_Detection:
       handle_detection_event (self, herds, &(event->u.detection), queue);
@@ -362,13 +372,8 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -379,16 +384,19 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
+  local_data_t *local_data;
+
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
-  /* Nothing to do. */
+  local_data = (local_data_t *) (self->model_data);
+  g_hash_table_remove_all (local_data->detected_units);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -402,7 +410,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -421,7 +429,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -435,7 +443,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -449,36 +457,36 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
-  gboolean already_names;
-  unsigned int i;
-  char *chararray;
   local_data_t *local_data;
+  unsigned int nprod_types, i, j;
+  param_block_t *param_block;
+  char *chararray;
 
   local_data = (local_data_t *) (self->model_data);
   s = g_string_new (NULL);
-  g_string_printf (s, "<%s for ", MODEL_NAME);
-  already_names = FALSE;
-  for (i = 0; i < local_data->production_types->len; i++)
-    if (local_data->to_production_type[i] == TRUE)
-      {
-        if (already_names)
-          g_string_append_printf (s, ",%s",
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
-        else
-          {
-            g_string_append_printf (s, "%s",
-                                    (char *) g_ptr_array_index (local_data->production_types, i));
-            already_names = TRUE;
-          }
-      }
+  g_string_printf (s, "<%s", MODEL_NAME);
 
-  g_string_append_printf (s, "\n  priority=%hu\n", local_data->priority);
-  g_string_append_printf (s, "  radius=%g\n", local_data->radius);
-  g_string_append_printf (s, "  min-time-between-vaccinations=%hu>",
-                          local_data->min_time_between_vaccinations);
+  /* Add the parameter block for each to-from combination of production
+   * types. */
+  nprod_types = local_data->production_types->len;
+  for (i = 0; i < nprod_types; i++)
+    if (local_data->param_block[i] != NULL)
+      for (j = 0; j < nprod_types; j++)
+        if (local_data->param_block[i][j] != NULL)
+          {
+            param_block = local_data->param_block[i][j];
+            g_string_append_printf (s, "\n  for %s -> %s",
+                                    (char *) g_ptr_array_index (local_data->production_types, i),
+                                    (char *) g_ptr_array_index (local_data->production_types, j));
+            g_string_append_printf (s, "\n    priority=%hu", param_block->priority);
+            g_string_append_printf (s, "\n    radius=%g", param_block->radius);
+            g_string_append_printf (s, "\n    min-time-between-vaccinations=%hu",
+                                    param_block->min_time_between_vaccinations);
+          }
+  g_string_append_c (s, '>');
 
   /* don't return the wrapper object */
   chararray = s->str;
@@ -496,7 +504,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -516,7 +524,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -529,36 +537,214 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
+  unsigned int nprod_types, i, j;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
-  /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
-  g_free (local_data->from_production_type);
-  g_free (local_data->to_production_type);
+
+  /* Free each of the parameter blocks. */
+  nprod_types = local_data->production_types->len;
+  for (i = 0; i < nprod_types; i++)
+    if (local_data->param_block[i] != NULL)
+      {
+        for (j = 0; j < nprod_types; j++)
+          g_free (local_data->param_block[i][j]);
+        /* Free this row of the 2D array. */
+        g_free (local_data->param_block[i]);
+      }
+  /* Free the array of pointers to rows. */
+  g_free (local_data->param_block);
+
+  g_free (local_data->max_radius);
+  g_hash_table_destroy (local_data->detected_units);
+  g_hash_table_destroy (local_data->requested_today);
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
 }
 
 
 
 /**
- * Returns the version of the interface this model conforms to.
+ * Returns whether this model is a singleton or not.
  */
-char *
-interface_version (void)
+gboolean
+is_singleton (void)
 {
-  return MODEL_INTERFACE_VERSION;
+  return TRUE;
+}
+
+
+
+/**
+ * Adds a set of parameters to a ring vaccination model.
+ */
+void
+set_params (struct naadsm_model_t_ *self, scew_element * params)
+{
+  local_data_t *local_data;
+  gboolean *from_production_type, *to_production_type;
+  unsigned int nprod_types, i, j;
+  param_block_t *param_block;
+  scew_element const *e;
+  scew_attribute *attr;
+  gboolean success;
+
+#if DEBUG
+  g_debug ("----- ENTER set_params (%s)", MODEL_NAME);
+#endif
+
+  /* Make sure the right XML subtree was sent. */
+  g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
+
+  local_data = (local_data_t *) (self->model_data);
+
+  /* Find out which to-from production type combinations these parameters apply
+   * to. */
+  from_production_type =
+    naadsm_read_prodtype_attribute (params, "from-production-type", local_data->production_types);
+  /* Temporary support for older parameter files that only had a
+   * "production-type" attribute and implied "from-any" functionality. */
+  attr = scew_attribute_by_name (params, "production-type");
+  if (attr != NULL)
+    to_production_type =
+      naadsm_read_prodtype_attribute (params, "production-type", local_data->production_types);
+  else
+    to_production_type =
+      naadsm_read_prodtype_attribute (params, "to-production-type", local_data->production_types);
+
+  nprod_types = local_data->production_types->len;
+  for (i = 0; i < nprod_types; i++)
+    if (from_production_type[i] == TRUE)
+      for (j = 0; j < nprod_types; j++)
+        if (to_production_type[j] == TRUE)
+          {
+            /* If necessary, create a row in the 2D array for this from-
+             * production type. */
+            if (local_data->param_block[i] == NULL)
+              local_data->param_block[i] = g_new0 (param_block_t *, nprod_types);
+
+            /* Create a parameter block for this to-from production type
+             * combination, or overwrite the existing one. */
+            param_block = local_data->param_block[i][j];
+            if (param_block == NULL)
+              {
+                param_block = g_new (param_block_t, 1);
+                local_data->param_block[i][j] = param_block;
+#if DEBUG
+                g_debug ("setting parameters for %s -> %s",
+                         (char *) g_ptr_array_index (local_data->production_types, i),
+                         (char *) g_ptr_array_index (local_data->production_types, j));
+#endif
+              }
+            else
+              {
+                g_warning ("overwriting previous parameters for %s -> %s",
+                           (char *) g_ptr_array_index (local_data->production_types, i),
+                           (char *) g_ptr_array_index (local_data->production_types, j));
+              }
+
+            e = scew_element_by_name (params, "priority");
+            if (e != NULL)
+              {
+                param_block->priority = (int) round (PAR_get_unitless (e, &success));
+                if (success == FALSE)
+                  {
+                    g_warning ("%s: setting priority to 1", MODEL_NAME);
+                    param_block->priority = 1;
+                  }
+                if (param_block->priority < 1)
+                  {
+                    g_warning ("%s: priority cannot be less than 1, setting to 1", MODEL_NAME);
+                    param_block->priority = 1;
+                  }
+              }
+            else
+              {
+                g_warning ("%s: priority missing, setting to 1", MODEL_NAME);
+                param_block->priority = 1;
+              }
+
+		    e = scew_element_by_name (params, "radius");
+		    if (e != NULL)
+		      {
+		        param_block->radius = PAR_get_length (e, &success);
+		        if (success == FALSE)
+		          {
+		            g_warning ("%s: setting radius to 0", MODEL_NAME);
+		            param_block->radius = 0;
+		          }
+		        /* Radius must be positive. */
+		        if (param_block->radius < 0)
+		          {
+		            g_warning ("%s: radius cannot be negative, setting to 0", MODEL_NAME);
+		            param_block->radius = 0;
+		          }
+		      }
+		    else
+		      {
+		        g_warning ("%s: radius missing, setting to 0", MODEL_NAME);
+		        param_block->radius = 0;
+		      }
+
+		    e = scew_element_by_name (params, "min-time-between-vaccinations");
+		    if (e != NULL)
+		      {
+		        param_block->min_time_between_vaccinations = (int) (PAR_get_time (e, &success));
+		        if (success == FALSE)
+		          {
+		            g_warning ("%s: setting minimum time between vaccinations to 31 days", MODEL_NAME);
+		            param_block->min_time_between_vaccinations = 31;
+		          }
+		      }
+		    else
+		      {
+		        g_warning ("%s: minimum time between vaccinations parameter missing, setting to 31 days",
+		                   MODEL_NAME);
+		        param_block->min_time_between_vaccinations = 31;
+		      }
+
+		    e = scew_element_by_name (params, "vaccinate-detected-units");
+		    if (e != NULL)
+		      {
+		        param_block->vaccinate_detected_units_defined = TRUE;
+		        param_block->vaccinate_detected_units = PAR_get_boolean (e, &success);
+		        if (success == FALSE)
+		          {
+		            param_block->vaccinate_detected_units = TRUE; /* default */
+		          }
+		      }
+		    else
+		      {
+		        param_block->vaccinate_detected_units_defined = FALSE;
+		        param_block->vaccinate_detected_units = TRUE; /* default */
+		      }
+
+            /* Keep track of the maximum distance of spread from each
+             * production type.  This determines whether we will use the R-tree
+             * index when looking for herds to spread infection to. */
+            if (param_block->radius > local_data->max_radius[i])
+              local_data->max_radius[i] = param_block->radius;
+          }
+
+  g_free (from_production_type);
+  g_free (to_production_type);
+
+#if DEBUG
+  g_debug ("----- EXIT set_params (%s)", MODEL_NAME);
+#endif
+
+  return;
 }
 
 
@@ -566,162 +752,65 @@ interface_version (void)
 /**
  * Returns a new ring vaccination model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *self;
   local_data_t *local_data;
-  scew_element *e;
-  scew_attribute *attr;
-  gboolean success;
+  unsigned int nprod_types;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  self = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
-  m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
-  m->events_listened_for = events_listened_for;
-  m->nevents_listened_for = NEVENTS_LISTENED_FOR;
-  m->outputs = g_ptr_array_new ();
-  m->model_data = local_data;
-  m->run = run;
-  m->reset = reset;
-  m->is_listening_for = is_listening_for;
-  m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
-  m->to_string = to_string;
-  m->printf = local_printf;
-  m->fprintf = local_fprintf;
-  m->free = local_free;
+  self->name = MODEL_NAME;
+  self->events_listened_for = events_listened_for;
+  self->nevents_listened_for = NEVENTS_LISTENED_FOR;
+  self->outputs = g_ptr_array_new ();
+  self->model_data = local_data;
+  self->set_params = set_params;
+  self->run = run;
+  self->reset = reset;
+  self->is_listening_for = is_listening_for;
+  self->has_pending_actions = has_pending_actions;
+  self->has_pending_infections = has_pending_infections;
+  self->to_string = to_string;
+  self->printf = local_printf;
+  self->fprintf = local_fprintf;
+  self->free = local_free;
 
-  /* Make sure the right XML subtree was sent. */
-  g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting \"from\" production types");
-#endif
+  /* local_data->param_block is a 2D array of parameter blocks, each block
+   * holding the parameters for one to-from combination of production types.
+   * Initially, all row pointers are NULL.  Rows will be created as needed in
+   * the set_params function. */
   local_data->production_types = herds->production_type_names;
-  local_data->from_production_type =
-    ergadm_read_prodtype_attribute (params, "from-production-type", herds->production_type_names);
+  nprod_types = local_data->production_types->len;
+  local_data->param_block = g_new0 (param_block_t **, nprod_types);
+
+  /* Initialize a list of detected units. */
+  local_data->detected_units = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+  /* Initialize a list of units for avoiding making two requests for the same
+   * unit on the same day. */
+  local_data->requested_today = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+  /* Initialize an array to hold the radius of the largest vaccination ring
+   * that can be triggered around each production type. */
+  local_data->max_radius = g_new0 (double, nprod_types);
+
+  /* Send the XML subtree to the init function to read the production type
+   * combination specific parameters. */
+  self->set_params (self, params);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting \"to\" production types");
-#endif
-  /* Temporary support for older parameter files that only had a
-   * "production-type" attribute and implied "from-any" functionality. */
-  attr = scew_attribute_by_name (params, "production-type");
-  if (attr != NULL)
-    local_data->to_production_type =
-      ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
-  else
-    local_data->to_production_type =
-      ergadm_read_prodtype_attribute (params, "to-production-type", herds->production_type_names);
-
-  e = scew_element_by_name (params, "priority");
-  if (e != NULL)
-    {
-      local_data->priority = (unsigned short int) round (PAR_get_unitless (e, &success));
-      if (success == FALSE)
-        {
-          g_warning ("%s: setting priority to 1", MODEL_NAME);
-          local_data->priority = 1;
-        }
-      if (local_data->priority < 1)
-        {
-          g_warning ("%s: priority cannot be less than 1, setting to 1", MODEL_NAME);
-          local_data->priority = 1;
-        }
-    }
-  else
-    {
-      g_warning ("%s: priority missing, setting to 1", MODEL_NAME);
-      local_data->priority = 1;
-    }
-
-  e = scew_element_by_name (params, "radius");
-  if (e != NULL)
-    {
-      local_data->radius = PAR_get_length (e, &success);
-      if (success == FALSE)
-        {
-          g_warning ("%s: setting radius to 0", MODEL_NAME);
-          local_data->radius = 0;
-        }
-      /* Radius must be positive. */
-      if (local_data->radius < 0)
-        {
-          g_warning ("%s: radius cannot be negative, setting to 0", MODEL_NAME);
-          local_data->radius = 0;
-        }
-    }
-  else
-    {
-      g_warning ("%s: radius missing, setting to 0", MODEL_NAME);
-      local_data->radius = 0;
-    }
-  local_data->radius_as_degrees = local_data->radius / GIS_DEGREE_DISTANCE;
-  local_data->radius_sq = local_data->radius * local_data->radius;
-
-  e = scew_element_by_name (params, "min-time-between-vaccinations");
-  if (e != NULL)
-    {
-      local_data->min_time_between_vaccinations = (unsigned short int) (PAR_get_time (e, &success));
-      if (success == FALSE)
-        {
-          g_warning ("%s: setting minimum time between vaccinations to 31 days", MODEL_NAME);
-          local_data->min_time_between_vaccinations = 31;
-        }
-    }
-  else
-    {
-      g_warning ("%s: minimum time between vaccinations parameter missing, setting to 31 days",
-                 MODEL_NAME);
-      local_data->min_time_between_vaccinations = 31;
-    }
-
-  /* Use the following heuristic to decide whether to use the R-tree index in
-   * searches: if the ratio of the diameter of circle of maximum spread to the
-   * short axis of the oriented bounding rectangle around the herds is <= 0.25,
-   * use the R-tree. */
-  if (herds->short_axis_length > 0)
-    {
-      local_data->use_rtree_index =
-        (local_data->radius * 2 / herds->short_axis_length) <= 0.25;
-    }
-  else
-    {
-      local_data->use_rtree_index = FALSE;
-    }
-
-#if defined(USE_RTREE) && USE_RTREE == 0
-  /* For debugging purposes, you can #define USE_RTREE to 0 to never use the
-   * spatial index, or 1 to always use it. */
-  local_data->use_rtree_index = FALSE;
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
-#endif
-
-  return m;
-}
-
-char *
-ring_vaccination_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-ring_vaccination_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
+  return self;
 }
 
 /* end of file ring-vaccination-model.c */

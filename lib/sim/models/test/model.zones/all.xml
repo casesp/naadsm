@@ -1,3 +1,6 @@
+<!-- Caution: this file is in UTF-8 (no BOM) format and contains Unicode
+  characters.  Some text editors do not properly handle Unicode, so use
+  caution in editing this file. -->
 <deterministic-test>
   <category>zones</category>
   <short-name>no zones</short-name>
@@ -39,10 +42,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td></tr>
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -91,14 +94,13 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-units-detected</td>
-      <td>num-units-in-zone:Background</td>
+      <td>detnUAll</td>
+      <td>unitsInZoneBackground</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>1</td></tr>
   </output>
 </variable-test>
 
@@ -150,16 +152,15 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
   </output>
 </variable-test>
 
@@ -211,15 +212,14 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:Low risk</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>1</td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -271,10 +271,10 @@
   <diagram>1_zone_2_foci</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td></tr>
+    <tr><td>C</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -330,14 +330,13 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>2</td></tr>
-    <tr><td>0</td> <td>2</td> <td>0</td></tr>
-    <tr><td>0</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -390,14 +389,13 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>2</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>1</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -452,15 +450,14 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:Low risk</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>2</td></tr>
-    <tr><td>0</td> <td>2</td> <td>2</td> <td>0</td></tr>
-    <tr><td>0</td> <td>2</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>2</td></tr>
+    <tr><td>2</td> <td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>2</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -519,15 +516,14 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:Low risk</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>2</td></tr>
-    <tr><td>0</td> <td>1</td> <td>2</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>2</td></tr>
+    <tr><td>1</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>2</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -585,15 +581,14 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:Low risk</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>2</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>2</td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -654,11 +649,11 @@
   <diagram>3_foci_merge</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>S</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -723,16 +718,15 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>2</td> <td>0</td></tr>
-    <tr><td>0</td> <td>2</td> <td>1</td> <td>2</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>1</td> <td>2</td></tr>
+    <tr><td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -792,12 +786,12 @@
   <diagram>1_zone_13_foci</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
-    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>L</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td></tr>
+    <tr><td>C</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td></tr>
+    <tr><td>C</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td> <td>L</td></tr>
+    <tr><td>D</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td></tr>
+    <tr><td>D</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td> <td>C</td></tr>
+    <tr><td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td> <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -861,17 +855,16 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>1</td> <td>12</td> <td>0</td></tr>
-    <tr><td>0</td> <td>13</td> <td>0</td> <td>12</td></tr>
-    <tr><td>0</td> <td>13</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>1</td> <td>12</td> <td>0</td></tr>
+    <tr><td>13</td> <td>0</td> <td>12</td></tr>
+    <tr><td>13</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -934,17 +927,16 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>1</td> <td>12</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>12</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>1</td> <td>12</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>12</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1010,10 +1002,10 @@
   <diagram>zones_trace_both</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>L</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1080,10 +1072,10 @@
   <diagram>zones_trace_both</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1138,7 +1130,7 @@
 
     There is no vaccination.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 (sheep) will be Latent.  Unit 0 will ship to the cattle
        unit 10 km north (unit 1) and the pig unit 20 km north (unit 2) but will
        fail to infect them.
@@ -1156,21 +1148,35 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>2</td>  <td>1</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>2</td></tr>
-    <tr><td>0</td>  <td>2</td>  <td>1</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>2</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1225,7 +1231,7 @@
 
     There is no vaccination.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 (sheep) will be Latent.  Unit 0 will ship to the cattle
        unit 10 km north (unit 1) and the pig unit 20 km north (unit 2) but will
        fail to infect them.
@@ -1242,21 +1248,35 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>2</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1311,7 +1331,7 @@
 
     There is no vaccination.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 (sheep) will be Latent.  Unit 0 will ship to the cattle
        unit 10 km north (unit 1) and the pig unit 20 km north (unit 2) but will
        fail to infect them.
@@ -1328,21 +1348,35 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>2</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1397,7 +1431,7 @@
 
     There is no vaccination.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 (sheep) will be Latent.  Unit 0 will ship to the cattle
        unit 10 km north (unit 1) and the pig unit 20 km north (unit 2) but will
        fail to infect them.
@@ -1415,21 +1449,316 @@
 
   <output>
     <tr>
-      <td>num-separate-areas:Background</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-detected</td>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>2</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>2</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>zones</category>
+  <short-name>trace, infect (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, infect" above but uses the new (fall 2007)
+    tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_0_nm</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, infect" above.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>L</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>zones</category>
+  <short-name>trace, no infect (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, no infect" above but uses the new (fall 2007)
+    tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_1_nm</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, no infect" above.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>trace, no infect, check reporting variables (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, no infect, check reporting variables" above
+    but uses the new (fall 2007) tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_1_nm_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, no infect, check reporting variables" above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
+    </tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>2</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>trace, no infect, zone around cattle only, check reporting variables (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, no infect, zone around cattle only, check
+    reporting variables" above but uses the new (fall 2007) tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_cattle_nm_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, no infect, zone around cattle only, check reporting
+    variables" above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
+    </tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>trace, no infect, zone around pigs only, check reporting variables (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, no infect, zone around pigs only, check
+    reporting variables" above but uses the new (fall 2007) tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_pigs_nm_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, no infect, zone around pigs only, check reporting
+    variables" above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
+    </tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>2</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>trace, no infect, merging, check reporting variables (new trace modules)</short-name>
+
+  <description>
+    This is identical to "trace, no infect, merging, check reporting variables"
+    above but uses the new (fall 2007) tracing modules.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 Aug 2007</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>trace_1_merge_nm_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: see "trace, no infect, merging, check reporting variables"
+    above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-separate-areasHighRisk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnUDirFwd</td>
+      <td>desnUPigs</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUSheep</td>
+      <td>desnUIniPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniSheep</td>
+      <td>desnUDetPigs</td>
+      <td>desnUDetBeefCattle</td>
+      <td>desnUDetSheep</td>
+      <td>desnUDirFwdPigs</td>
+      <td>desnUDirFwdBeefCattle</td>
+      <td>desnUDirFwdSheep</td>
+    </tr>
+    <!-- Areas     | Units in zone          |                                    | Destroyed                                                                           Initially/  Initially/  Initially/   Detected/   Detected/   Detected/    Traced/     Traced/     Traced/   -->
+    <!-- High risk | Background  High risk  |  Exposed     Infected    Detected  |   Total     Initially    Detected     Traced       Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep        Pigs       Cattle      Sheep     -->
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>3</td>  <td>0</td>   <td>2</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>3</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>   <td>1</td>  <td>2</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1496,13 +1825,13 @@
   </parameter-description>
 
   <output>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Latent</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>InfectiousSubclinical</td></tr>
-    <tr><td>Latent</td>              <td>Latent</td>              <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>D</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>D</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1578,13 +1907,13 @@
   </parameter-description>
 
   <output>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Latent</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>InfectiousSubclinical</td></tr>
-    <tr><td>Latent</td>              <td>Latent</td>              <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Destroyed</td>           <td>Destroyed</td></tr>
-    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>D</td></tr>
+    <tr><td>C</td>  <td>D</td>  <td>D</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1644,11 +1973,11 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Latent</td>       <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>B</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>L</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1720,11 +2049,11 @@
   <diagram>2foci_separate</diagram>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>B</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1795,11 +2124,11 @@
   <diagram>2foci_joined</diagram>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Latent</td>       <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>B</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>L</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -1882,15 +2211,71 @@
   <diagram>3foci</diagram>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>Destroyed</td>              <td>NaturallyImmune</td>     <td>Destroyed</td>           <td>Latent</td>       <td>Destroyed</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>B</td>  <td>L</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>D</td>  <td>N</td>  <td>D</td>  <td>L</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>contact between foci joined after being established, check area and perimeter</short-name>
+
+  <description>
+    Test the reporting of zone area and perimeter, and the days on which the
+    maximum values are reached.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>7 July 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>5herds</herd-file>
+
+  <parameter-file>shipping_joined_areas_2_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "contact between foci joined after being
+    established" above.
+
+    What should happen:
+     - On day 4, foci of the "High risk" zone will be in effect around units 0
+       and 4.  The foci will not overlap.  Their total area will be 9.82 sq km
+       and their total perimeter will be 15.71 km.
+     - On day 6 a focus of the zone will be in effect around unit 2.  The total
+       area of the "High risk" zone will be 14.05 sq km and its perimeter will
+       be 17.99 km.  (See "zone area, 1 zone, 2 foci, merging" and "zone
+       perimeter, 1 zone, 2 foci, merging" for examples of how the area and
+       perimeter of overlapping zones is calculated.)
+  </parameter-description>
+
+  <diagram>3foci</diagram>
+
+  <output>
+    <tr>
+      <td>zoneAreaHighRisk</td>
+      <td>maxZoneAreaHighRisk</td>
+      <td>maxZoneAreaDayHighRisk</td>
+      <td>finalZoneAreaHighRisk</td>
+      <td>zonePerimeterHighRisk</td>
+      <td>maxZonePerimeterHighRisk</td>
+      <td>maxZonePerimeterDayHighRisk</td>
+      <td>finalZonePerimeterHighRisk</td>
+    </tr>
+    <!--    Area (sq km)                                           |    Perimeter (km)                                          -->
+    <tr>    <td>0</td>      <td>0</td>   <td></td>       <td></td>      <td>0</td>      <td>0</td>   <td></td>       <td></td></tr>
+    <tr>    <td>0</td>      <td>0</td>   <td></td>       <td></td>      <td>0</td>      <td>0</td>   <td></td>       <td></td></tr>
+    <tr>    <td>0</td>      <td>0</td>   <td></td>       <td></td>      <td>0</td>      <td>0</td>   <td></td>       <td></td></tr>
+    <tr> <td>9.82</td>   <td>9.82</td>  <td>4</td>       <td></td>  <td>15.71</td>  <td>15.71</td>  <td>4</td>       <td></td></tr>
+    <tr> <td>9.82</td>   <td>9.82</td>  <td>4</td>       <td></td>  <td>15.71</td>  <td>15.71</td>  <td>4</td>       <td></td></tr>
+    <tr><td>14.05</td>  <td>14.05</td>  <td>6</td>       <td></td>  <td>17.99</td>  <td>17.99</td>  <td>6</td>       <td></td></tr>
+    <tr><td>14.05</td>  <td>14.05</td>  <td>6</td>  <td>14.05</td>  <td>17.99</td>  <td>17.99</td>  <td>6</td>  <td>17.99</td></tr>
+  </output>
+</variable-test>
 
 <deterministic-test>
   <category>zones</category>
@@ -1947,11 +2332,11 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>B</td>  <td>B</td>  <td>B</td>  <td>B</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td>  <td>D</td>  <td>C</td>  <td>L</td></tr>
   </output>
 </deterministic-test>
 
@@ -2021,11 +2406,11 @@
   <diagram>donut_0</diagram>
   
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>B</td>  <td>B</td>  <td>B</td>  <td>B</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td>  <td>D</td>  <td>C</td>  <td>L</td></tr>
   </output>
 </deterministic-test>
 
@@ -2095,11 +2480,11 @@
   <diagram>donut_1</diagram>
 
   <output>
-    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>B</td>  <td>B</td>  <td>B</td>  <td>B</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>C</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>D</td>  <td>D</td>  <td>C</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -2159,12 +2544,12 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>                 <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>        <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>B</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>L</td></tr>
   </output>
 </deterministic-test>
 
@@ -2235,12 +2620,12 @@
   <diagram>2_zone_levels</diagram>
 
   <output>
-    <tr><td>Latent</td>                 <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousSubclinical</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>     <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>        <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>Destroyed</td>              <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>B</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>S</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -2302,14 +2687,14 @@
   </parameter-description>
 
   <output>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>D</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -2381,11 +2766,11 @@
   </parameter-description>
 
   <output>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>S</td>  <td>D</td></tr>
   </output>
 </deterministic-test>
 
@@ -2450,20 +2835,20 @@
 
   <!-- Cattle unit 0 becomes infected (50/50 chance) -->
   <output probability="0.5">
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Latent</td>       <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>L</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
   </output>
 
   <!-- Cattle unit 2 becomes infected (50/50 chance) -->
   <output probability="0.5">
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Latent</td>       <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>C</td>  <td>L</td>  <td>D</td></tr>
   </output>
 </stochastic-test>
 
@@ -2534,11 +2919,11 @@
 
   <!-- Cattle unit 0 becomes infected (100% of the time) -->
   <output probability="1">
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
-    <tr><td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>Latent</td>       <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>B</td></tr>
+    <tr><td>S</td>  <td>L</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>S</td>  <td>C</td>  <td>S</td>  <td>C</td></tr>
+    <tr><td>L</td>  <td>C</td>  <td>S</td>  <td>D</td></tr>
   </output>
 </stochastic-test>
 
@@ -2600,19 +2985,18 @@
 
   <output>
     <tr>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-separate-areas:Disease free</td>
+      <td>expnUAll</td>
+      <td>num-separate-areasHighRisk</td>
     </tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>1</td> <td>0</td></tr>
-    <tr><td>2</td> <td>1</td> <td>0</td></tr>
-    <tr><td>2</td> <td>1</td> <td>0</td></tr>
-    <tr><td>2</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>1</td></tr>
+    <tr><td>2</td> <td>1</td></tr>
+    <tr><td>2</td> <td>1</td></tr>
+    <tr><td>2</td> <td>1</td></tr>
+    <tr><td>0</td> <td>1</td></tr>
   </output>
 </variable-test>
 
@@ -2673,19 +3057,18 @@
 
   <output>
     <tr>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-separate-areas:High risk</td>
-      <td>num-separate-areas:Disease free</td>
+      <td>expnUAll</td>
+      <td>num-separate-areasHighRisk</td>
     </tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td></tr>
+    <tr><td>1</td> <td>1</td></tr>
+    <tr><td>1</td> <td>1</td></tr>
+    <tr><td>1</td> <td>1</td></tr>
+    <tr><td>0</td> <td>1</td></tr>
   </output>
 </variable-test>
 
@@ -2745,10 +3128,10 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Background</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>animalDaysInZoneBackground</td>
+      <td>animalDaysInZoneHighRisk</td>
     </tr>
     <tr><td>16</td>  <td>0</td>   <td>400</td>    <td>0</td></tr>
     <tr><td>16</td>  <td>0</td>   <td>800</td>    <td>0</td></tr>
@@ -2803,7 +3186,7 @@
        another 4 will be in the "Low risk" zone, and 7 will be outside (see
        diagram below).
        The number of animal-days in the "Background" zone should be
-       800+7*25=975, the number in the "Low risk" zone should be 4*25=105, and
+       800+7*25=975, the number in the "Low risk" zone should be 4*25=100, and
        the number in the "High risk" zone should be 5*25=125.       
      - On day 4 the number of animal-days in the "Background" zone should
        increase by 7*25 to 1150.  The number in the "Low risk" zone should
@@ -2820,12 +3203,12 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:Low risk</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Background</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Low risk</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneLowRisk</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>animalDaysInZoneBackground</td>
+      <td>animalDaysInZoneLowRisk</td>
+      <td>animalDaysInZoneHighRisk</td>
     </tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>400</td>    <td>0</td>    <td>0</td></tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>800</td>    <td>0</td>    <td>0</td></tr>
@@ -2891,11 +3274,11 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-destroyed</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Background</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>desnUAll</td>
+      <td>animalDaysInZoneBackground</td>
+      <td>animalDaysInZoneHighRisk</td>
     </tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>400</td>    <td>0</td></tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>800</td>    <td>0</td></tr>
@@ -2964,11 +3347,11 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-destroyed</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Background</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>desnUAll</td>
+      <td>animalDaysInZoneBackground</td>
+      <td>animalDaysInZoneHighRisk</td>
     </tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>400</td>    <td>0</td></tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>   <td>800</td>    <td>0</td></tr>
@@ -3041,13 +3424,13 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:Low risk</td>
-      <td>num-units-in-zone:High risk</td>
-      <td>num-units-destroyed</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Background</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Low risk</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneLowRisk</td>
+      <td>unitsInZoneHighRisk</td>
+      <td>desnUAll</td>
+      <td>animalDaysInZoneBackground</td>
+      <td>animalDaysInZoneLowRisk</td>
+      <td>animalDaysInZoneHighRisk</td>
     </tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>400</td>    <td>0</td>    <td>0</td></tr>
     <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>800</td>    <td>0</td>    <td>0</td></tr>
@@ -3101,8 +3484,8 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
     </tr>
     <tr><td>51</td>   <td>0</td></tr>
     <tr><td>51</td>   <td>0</td></tr>
@@ -3156,8 +3539,8 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Background</td>
-      <td>num-units-in-zone:High risk</td>
+      <td>unitsInZoneBackground</td>
+      <td>unitsInZoneHighRisk</td>
     </tr>
     <tr><td>51</td>   <td>0</td></tr>
     <tr><td>51</td>   <td>0</td></tr>
@@ -3171,7 +3554,7 @@
   <short-name>zone area, equator</short-name>
 
   <description>
-    This is one of a set of 3 scenarios to check that zone area is calculated
+    This is one of a set of 5 scenarios to check that zone area is calculated
     correctly.  In this scenario, the zone circle is 1 km in radius and is
     placed at the equator.
 
@@ -3212,13 +3595,12 @@
 
   <output>
     <tr>
-      <td>zone-area:Background</td>
-      <td>zone-area:High risk</td>
+      <td>zoneAreaHighRisk</td>
     </tr>
-    <tr><td>0</td>     <td>0</td></tr>
-    <tr><td>0</td>     <td>0</td></tr>
-    <tr><td>0</td>  <td>3.14</td></tr>
-    <tr><td>0</td>  <td>3.14</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>3.14</td></tr>
+    <tr><td>3.14</td></tr>
   </output>
 </variable-test>
 
@@ -3227,7 +3609,7 @@
   <short-name>zone area, lat 45</short-name>
 
   <description>
-    This is one of a set of 3 scenarios to check that zone area is calculated
+    This is one of a set of 5 scenarios to check that zone area is calculated
     correctly.  In this scenario, the zone circle is 1 km in radius and is
     placed at the 45th parallel.  This will check whether zone circles are
     distorted at higher latitudes.
@@ -3269,13 +3651,68 @@
 
   <output>
     <tr>
-      <td>zone-area:Background</td>
-      <td>zone-area:High risk</td>
+      <td>zoneAreaHighRisk</td>
     </tr>
-    <tr><td>0</td>     <td>0</td></tr>
-    <tr><td>0</td>     <td>0</td></tr>
-    <tr><td>0</td>  <td>3.14</td></tr>
-    <tr><td>0</td>  <td>3.14</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>3.14</td></tr>
+    <tr><td>3.14</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone area, lat -45</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone area is calculated
+    correctly.  In this scenario, the zone circle is 1 km in radius and is
+    placed at the -45th parallel (southern hemisphere).  This will check
+    whether zone circles are distorted at lower latitudes.
+
+    NB: Since polygons are used to approximate zone circles, the area
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 May 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>no_rtree_lat-45</herd-file>
+
+  <parameter-file>zone_area_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, a "High risk" zone 1 km in radius is
+    established around it.
+
+    There is no spread, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.  There are no zones
+       yet.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.
+       There will still be just the "Background" zone.
+     - On day 3 a 1 km radius "High risk" zone will be in effect around unit 0.
+       The area will be pi*1*1=3.14.
+     - On day 4 unit 0 will be Immune.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>zoneAreaHighRisk</td>
+    </tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>3.14</td></tr>
+    <tr><td>3.14</td></tr>
   </output>
 </variable-test>
 
@@ -3284,7 +3721,7 @@
   <short-name>zone area, 2 zones</short-name>
 
   <description>
-    This is one of a set of 3 scenarios to check that zone area is calculated
+    This is one of a set of 5 scenarios to check that zone area is calculated
     correctly.  In this scenario, two zone circles are created, one 0.5 km in
     radius and the other 1 km in radius.
 
@@ -3327,14 +3764,342 @@
 
   <output>
     <tr>
-      <td>zone-area:Background</td>
-      <td>zone-area:Low risk</td>
-      <td>zone-area:High risk</td>
+      <td>zoneAreaLowRisk</td>
+      <td>zoneAreaHighRisk</td>
     </tr>
-    <tr><td>0</td>     <td>0</td>      <td>0</td></tr>
-    <tr><td>0</td>     <td>0</td>      <td>0</td></tr>
-    <tr><td>0</td>  <td>2.36</td>  <td>0.785</td></tr>
-    <tr><td>0</td>  <td>2.36</td>  <td>0.785</td></tr>
+    <tr>   <td>0</td>      <td>0</td></tr>
+    <tr>   <td>0</td>      <td>0</td></tr>
+    <tr><td>2.36</td>  <td>0.785</td></tr>
+    <tr><td>2.36</td>  <td>0.785</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone area, 1 zone, 2 foci, merging</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone area is calculated
+    correctly.  In this scenario, two zone circles are created, and they
+    overlap.
+
+    NB: Since polygons are used to approximate zone circles, the area
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>7 Oct 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>zone_area_3</parameter-file>
+
+  <parameter-description>
+    Parameters: see "1 zone, 2 foci, merging, check reporting variables" above.
+
+    The area of the zone will be the sum of the areas of the two circles, minus
+    the overlap area:
+
+    theta = arccos(5/5.5)
+    
+    area = 2 * (pi*5.5&lt;sup&gt;2&lt;/sup&gt;*(360-2*theta)/360 + 5*5.5*sin(theta))
+    = 186.98 square km.
+
+    Note that maxZoneAreaDay should have no value until a zone is established,
+    and finalZoneArea should have no value until the end of the simulation.
+  </parameter-description>
+
+  <diagram>1_zone_2_foci_merge_w_triangle</diagram>
+
+  <output>
+    <tr>
+      <td>zoneAreaHighRisk</td>
+      <td>maxZoneAreaHighRisk</td>
+      <td>maxZoneAreaDayHighRisk</td>
+      <td>finalZoneAreaHighRisk</td>
+    </tr>
+    <tr>     <td>0</td>       <td>0</td>   <td></td>        <td></td></tr>
+    <tr>     <td>0</td>       <td>0</td>   <td></td>        <td></td></tr>
+    <tr><td>186.98</td>  <td>186.98</td>  <td>3</td>        <td></td></tr>
+    <tr><td>186.98</td>  <td>186.98</td>  <td>3</td>  <td>186.98</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone perimeter, equator</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone perimeter is
+    calculated correctly.  In this scenario, the zone circle is 1 km in radius
+    and is placed at the equator.
+
+    NB: Since polygons are used to approximate zone circles, the perimeter
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 Oct 2008</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>no_rtree_lat0</herd-file>
+
+  <parameter-file>zone_perimeter_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, a "High risk" zone 1 km in radius is
+    established around it.
+
+    There is no spread, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.  There are no zones
+       yet.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.
+       There will still be just the "Background" zone.
+     - On day 3 a 1 km radius "High risk" zone will be in effect around unit 0.
+       The perimeter will be pi*2=6.28.
+     - On day 4 unit 0 will be Immune.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>zonePerimeterHighRisk</td>
+    </tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>6.28</td></tr>
+    <tr><td>6.28</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone perimeter, lat 45</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone perimeter is
+    calculated correctly.  In this scenario, the zone circle is 1 km in radius
+    and is placed at the 45th parallel.  This will check whether zone circles
+    are distorted at higher latitudes.
+
+    NB: Since polygons are used to approximate zone circles, the perimeter
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 Oct 2008</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>no_rtree_lat45</herd-file>
+
+  <parameter-file>zone_perimeter_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, a "High risk" zone 1 km in radius is
+    established around it.
+
+    There is no spread, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.  There are no zones
+       yet.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.
+       There will still be just the "Background" zone.
+     - On day 3 a 1 km radius "High risk" zone will be in effect around unit 0.
+       The perimeter will be pi*2=6.28.
+     - On day 4 unit 0 will be Immune.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>zonePerimeterHighRisk</td>
+    </tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>6.28</td></tr>
+    <tr><td>6.28</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone perimeter, lat -45</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone perimeter is
+    calculated correctly.  In this scenario, the zone circle is 1 km in radius
+    and is placed at the -45th parallel (southern hemisphere).  This will check
+    whether zone circles are distorted at lower latitudes.
+
+    NB: Since polygons are used to approximate zone circles, the perimeter
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 Oct 2008</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>no_rtree_lat-45</herd-file>
+
+  <parameter-file>zone_perimeter_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, a "High risk" zone 1 km in radius is
+    established around it.
+
+    There is no spread, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.  There are no zones
+       yet.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.
+       There will still be just the "Background" zone.
+     - On day 3 a 1 km radius "High risk" zone will be in effect around unit 0.
+       The perimeter will be pi*2=6.28.
+     - On day 4 unit 0 will be Immune.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>zonePerimeterHighRisk</td>
+    </tr>
+    <tr>   <td>0</td></tr>
+    <tr>   <td>0</td></tr>
+    <tr><td>6.28</td></tr>
+    <tr><td>6.28</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone perimeter, 2 zones</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone perimeter is
+    calculated correctly.  In this scenario, two zone circles are created, one
+    0.5 km in radius and the other 1 km in radius.
+
+    NB: Since polygons are used to approximate zone circles, the perimeter
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 Oct 2008</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>no_rtree_lat0</herd-file>
+
+  <parameter-file>zone_perimeter_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, a "High risk" zone 0.5 km in radius and a
+    "Low risk" zone 1 km in radius are established around it.
+
+    There is no spread, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.  There are no zones
+       yet.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.
+       There will still be just the "Background" zone.
+     - On day 3 a 0.5 km radius "High risk" zone and a 1 km radius "Low risk"
+       zone will be in effect around unit 0.  The perimeter of the "High risk"
+       zone will be pi*1=3.14.  The perimeter of the "Low risk" zone will be
+       pi*2=6.28.
+     - On day 4 unit 0 will be Immune.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>zonePerimeterLowRisk</td>
+      <td>zonePerimeterHighRisk</td>
+    </tr>
+    <tr>   <td>0</td>     <td>0</td></tr>
+    <tr>   <td>0</td>     <td>0</td></tr>
+    <tr><td>6.28</td>  <td>3.14</td></tr>
+    <tr><td>6.28</td>  <td>3.14</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone perimeter, 1 zone, 2 foci, merging</short-name>
+
+  <description>
+    This is one of a set of 5 scenarios to check that zone perimeter is
+    calculated correctly.  In this scenario, two zone circles are created, and
+    they overlap.
+
+    NB: Since polygons are used to approximate zone circles, the perimeter
+    calculation will not be exact.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 Oct 2008</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>zone_perimeter_3</parameter-file>
+
+  <parameter-description>
+    Parameters: see "1 zone, 2 foci, merging, check reporting variables" above.
+
+    The perimeter of the zone will be the sum of the perimeters of the two
+    circles, minus the two short arcs in the overlap area:
+
+    theta = arccos(5/5.5)
+    
+    perimeter = 2 * pi*5.5*2 * (360-2*theta)/360 = 59.66 km.
+
+    Note that maxZonePerimeterDay should have no value until a zone is
+    established, and finalZonePerimeter should have no value until the end of
+    the simulation.
+  </parameter-description>
+
+  <diagram>1_zone_2_foci_merge_w_triangle</diagram>
+
+  <output>
+    <tr>
+      <td>zonePerimeterHighRisk</td>
+      <td>maxZonePerimeterHighRisk</td>
+      <td>maxZonePerimeterDayHighRisk</td>
+      <td>finalZonePerimeterHighRisk</td>
+    </tr>
+    <tr>    <td>0</td>      <td>0</td>   <td></td>       <td></td></tr>
+    <tr>    <td>0</td>      <td>0</td>   <td></td>       <td></td></tr>
+    <tr><td>59.66</td>  <td>59.66</td>  <td>3</td>       <td></td></tr>
+    <tr><td>59.66</td>  <td>59.66</td>  <td>3</td>  <td>59.66</td></tr>
   </output>
 </variable-test>
 
@@ -3364,18 +4129,420 @@
 
   <output>
     <tr>
-      <td>num-units-in-zone:Bäckgroünd</td>
-      <td>num-units-in-zone:Löw rïsk</td>
-      <td>num-units-in-zone:Hïgh rïsk</td>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:ring destruction</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Bäckgroünd</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Löw rïsk</td>
-      <td>num-animal-days-in-zone-by-production-type:Beef Cattle:Hïgh rïsk</td>
+      <td>unitsInZoneBäckgroünd</td>
+      <td>unitsInZoneLöwRïsk</td>
+      <td>unitsInZoneHïghRïsk</td>
+      <td>desnUAll</td>
+      <td>animalDaysInZoneBäckgroünd</td>
+      <td>animalDaysInZoneLöwRïsk</td>
+      <td>animalDaysInZoneHïghRïsk</td>
     </tr>
-    <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>0</td>   <td>400</td>    <td>0</td>    <td>0</td></tr>
-    <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>0</td>   <td>800</td>    <td>0</td>    <td>0</td></tr>
-    <tr> <td>7</td>  <td>4</td>  <td>5</td>  <td>1</td> <td>4</td>   <td>975</td>  <td>100</td>  <td>125</td></tr>
-    <tr> <td>7</td>  <td>4</td>  <td>5</td>  <td>0</td> <td>0</td>  <td>1150</td>  <td>200</td>  <td>125</td></tr>
+    <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>400</td>    <td>0</td>    <td>0</td></tr>
+    <tr><td>16</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>800</td>    <td>0</td>    <td>0</td></tr>
+    <tr> <td>7</td>  <td>4</td>  <td>5</td>  <td>5</td>   <td>975</td>  <td>100</td>  <td>125</td></tr>
+    <tr> <td>7</td>  <td>4</td>  <td>5</td>  <td>0</td>  <td>1150</td>  <td>200</td>  <td>125</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>2 donut holes removed</short-name>
+
+  <description>
+    Test that multiple donut holes created by the same zone focus are removed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>11 December 2009</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>9herds_hexagon</herd-file>
+
+  <parameter-file>donut_holes_removed_2</parameter-file>
+
+  <parameter-description>
+    For units of production type “A” and “C”, the latent period lasts 1 day,
+    the infectious clinical period lasts 10 days, and the immune period lasts 5
+    days.  Production type “B” is similar, but adds a 1 day infectious
+    subclinical period.
+
+    The rate of shipments from units of type “C” to other units of type “C” os
+    fixed at 1 per day.  The distance is fixed at 2 km.  The probability of
+    infection transfer is 0.
+
+    Units of production type “A” and “B” will be detected and reported on the
+    first day they show clinical signs.  When a detection occurs, a “High risk”
+    zone with radius 0.75 km will be established around the unit.
+
+    There is no vaccination or destruction.
+
+    What should happen:
+     - On each day, there will be 1 exposure, a shipment from unit 7 will to
+       unit 8.
+     - On day 1, all of the units except unit 8 will be latent.
+     - On day 2, units 0-5 will be infectious clinical.  They will be detected.
+     - On day 3 the zones around units 0-5 will be established.  The high risk
+       zone will be in 2 separate parts.\n\n
+       Also on day 3, unit 6 will be infectious clinical.  It will be detected.
+     - On day 4 the zone around unit 6 will be established.  It will join the
+       two previously established parts of the high risk zone, creating one
+       large zone with 2 holes in it, as shown in the diagram below.\n\n
+       If the 2 holes were left as holes, one might expect the exposures from
+       unit 7 to unit 8 to stop, since those units would now be cut off from
+       each other.  But the one exposure each day should continue.
+       The scenario is deliberately ended at 6 days.
+  </parameter-description>
+
+  <diagram>9herds_2_zone_holes</diagram>
+
+  <output>
+    <tr>
+      <td>expnUAll</td>
+      <td>detnUAll</td>
+      <td>num-separate-areasHighRisk</td>
+    </tr>
+    <tr><td>1</td> <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td> <td>6</td>  <td>0</td></tr>
+    <tr><td>1</td> <td>1</td>  <td>2</td></tr>
+    <tr><td>1</td> <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td> <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td> <td>0</td>  <td>1</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone nesting, 2 zones, lower-level zones not merged</short-name>
+
+  <description>
+    Test that the lower-to-higher contact rule (Figure A4-3 in the model
+    specification) applies only when the higher-level zone is nested within the
+    lower-level zone.
+    
+    In this scenario, the higher-level zone is not nested within the
+    lower-level zone.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>4 January 2010</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>4herds_line_5_xy</herd-file>
+
+  <parameter-file>zone_nesting_1</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinial period lasts 3 days, and immunity lasts 5 days.
+
+    The contact rate from units of production type “B” to other units of type
+    “B” is fixed at 1 shipment each day, and the distance is fixed at 3 km.
+    There are no contacts for other combinations of production types.
+
+    Units of production type “A” will be detected and reported on the first day
+    they show clinical signs.  When a detection occurs, a “High risk” zone with
+    radius 1.5 km and a “Low risk” zone with radius 2.5 km will be established
+    around the unit.  There is no detection for units of type “B”.
+
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day, as long as movement restrictions allow it, there will be an
+       exposure from unit 2 to unit 1.
+     - On day 1 three of the units will be Latent.
+     - On day 2 three of the units will be Infectious Clinical.  Units 0 and 3
+       will be detected.
+     - On day 3 zones will be in effect around units 0 and 3.  The “High risk”
+       and “Low risk” zones will each be in two pieces.  Exposures from unit 2
+       to unit 1 will stop because unit 1 is in a higher-level zone that is not
+       inside the lower-level zone in which unit 2 resides.
+     - On day 5 the diseased units will be Immune.
+  </parameter-description>
+
+  <diagram>4herds_line_5_zones_not_merged</diagram>
+
+  <output>
+    <tr>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>expnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone nesting, 2 zones, lower-level zones merged</short-name>
+
+  <description>
+    Test that the lower-to-higher contact rule (Figure A4-3 in the model
+    specification) applies only when the higher-level zone is nested within the
+    lower-level zone.
+    
+    In this scenario, the higher-level zone is nested within the lower-level
+    zone.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>4 January 2010</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>4herds_line_5_xy</herd-file>
+
+  <parameter-file>zone_nesting_2</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinial period lasts 3 days, and immunity lasts 5 days.
+
+    The contact rate from units of production type “B” to other units of type
+    “B” is fixed at 1 shipment each day, and the distance is fixed at 3 km.
+    There are no contacts for other combinations of production types.
+
+    Units of production type “A” will be detected and reported on the first day
+    they show clinical signs.  When a detection occurs, a “High risk” zone with
+    radius 1.5 km and a “Low risk” zone with radius 3.5 km will be established
+    around the unit.  There is no detection for units of type “B”.
+
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day, as long as movement restrictions allow it, there will be an
+       exposure from unit 2 to unit 1.
+     - On day 1 three of the units will be Latent.
+     - On day 2 three of the units will be Infectious Clinical.  Units 0 and 3
+       will be detected.
+     - On day 3 zones will be in effect around units 0 and 3.  The “High risk”
+       zone will be in two pieces, but the “Low risk” zone will be one merged
+       piece.  Exposures from unit 2 to unit 1 will continue because unit 1 is
+       in a higher-level zone inside the lower-level zone in which unit 2
+       resides.
+     - On day 5 the diseased units will be Immune and exposures will stop.
+  </parameter-description>
+
+  <diagram>4herds_line_5_zones_merged</diagram>
+
+  <output>
+    <tr>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>expnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone nesting, 3 zones, attempted contact level 3 to level 1, lowest level zones not merged</short-name>
+
+  <description>
+    Test that the lower-to-higher contact rule (Figure A4-3 in the model
+    specification) applies only when the higher-level zone is nested within the
+    lower-level zone and adjacent to the lower-level zone.
+    
+    In this scenario, the higher-level zone is not nested within the
+    lower-level zone.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>4 January 2010</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>4herds_line_5_xy</herd-file>
+
+  <parameter-file>zone_nesting_3</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinial period lasts 3 days, and immunity lasts 5 days.
+
+    The contact rate from units of production type “B” to other units of type
+    “B” is fixed at 1 shipment each day, and the distance is fixed at 3 km.
+    There are no contacts for other combinations of production types.
+
+    Units of production type “A” will be detected and reported on the first day
+    they show clinical signs.  When a detection occurs, a “High risk” zone with
+    radius 1.25 km, a “Medium risk” zone with radius 1.75 km, and a “Low risk”
+    zone with radius 2.5 km will be established around the unit.  There is no
+    detection for units of type “B”.
+
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day, as long as movement restrictions allow it, there will be an
+       exposure from unit 2 to unit 1.
+     - On day 1 three of the units will be Latent.
+     - On day 2 three of the units will be Infectious Clinical.  Units 0 and 3
+       will be detected.
+     - On day 3 zones will be in effect around units 0 and 3.  The “High risk”,
+       “Medium risk”, and “Low risk” zones will each be in two pieces.
+       Exposures from unit 2 to unit 1 will stop because unit 1 is in a
+       higher-level zone that is not inside the lower-level zone in which unit
+       2 resides.
+     - On day 5 the diseased units will be Immune.
+  </parameter-description>
+
+  <diagram>4herds_line_5_zones_not_merged_2</diagram>
+
+  <output>
+    <tr>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasMediumRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>expnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone nesting, 3 zones, attempted contact level 3 to level 1, lowest level zones merged</short-name>
+
+  <description>
+    Test that the lower-to-higher contact rule (Figure A4-3 in the model
+    specification) applies only when the higher-level zone is nested within the
+    lower-level zone and adjacent to the lower-level zone.
+    
+    In this scenario, the higher-level zone is nested within the lower-level
+    zone, but is not adjacent (contact would involve traversing 2 zone levels).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>4 January 2010</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>4herds_line_5_xy</herd-file>
+
+  <parameter-file>zone_nesting_4</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinial period lasts 3 days, and immunity lasts 5 days.
+
+    The contact rate from units of production type “B” to other units of type
+    “B” is fixed at 1 shipment each day, and the distance is fixed at 3 km.
+    There are no contacts for other combinations of production types.
+
+    Units of production type “A” will be detected and reported on the first day
+    they show clinical signs.  When a detection occurs, a “High risk” zone with
+    radius 1.25 km, a “Medium risk” zone with radius 1.75 km, and a “Low risk”
+    zone with radius 3.5 km will be established around the unit.  There is no
+    detection for units of type “B”.
+
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day, as long as movement restrictions allow it, there will be an
+       exposure from unit 2 to unit 1.
+     - On day 1 three of the units will be Latent.
+     - On day 2 three of the units will be Infectious Clinical.  Units 0 and 3
+       will be detected.
+     - On day 3 zones will be in effect around units 0 and 3.  The “High risk”
+       and “Medium risk” zones will each be in two pieces, but the “Low risk”
+       zone will be one merged piece.  Exposures from unit 2 to unit 1 will
+       stop because, while unit 1 is in a higher-level zone that is inside the
+       lower-level zone in which unit 2 resides, it is not in an “adjacent”
+       zone level (contact would involve traversing 2 zone levels).
+     - On day 5 the diseased units will be Immune.
+  </parameter-description>
+
+  <diagram>4herds_line_5_zones_merged_2</diagram>
+
+  <output>
+    <tr>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasMediumRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>expnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>zones</category>
+  <short-name>zone nesting, 3 zones, attempted contact level 3 to level 2, lowest level zones merged</short-name>
+
+  <description>
+    Test that the lower-to-higher contact rule (Figure A4-3 in the model
+    specification) applies only when the higher-level zone is nested within the
+    lower-level zone and adjacent to the lower-level zone.
+    
+    In this scenario, the higher-level zone is nested within the lower-level
+    zone, and is adjacent (contact would involve traversing 1 zone level).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>4 January 2010</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>4herds_line_5_xy</herd-file>
+
+  <parameter-file>zone_nesting_5</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinial period lasts 3 days, and immunity lasts 5 days.
+
+    The contact rate from units of production type “B” to other units of type
+    “B” is fixed at 1 shipment each day, and the distance is fixed at 3 km.
+    There are no contacts for other combinations of production types.
+
+    Units of production type “A” will be detected and reported on the first day
+    they show clinical signs.  When a detection occurs, a “High risk” zone with
+    radius 0.5 km, a “Medium risk” zone with radius 1.5 km, and a “Low risk”
+    zone with radius 3.5 km will be established around the unit.  There is no
+    detection for units of type “B”.
+
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day, as long as movement restrictions allow it, there will be an
+       exposure from unit 2 to unit 1.
+     - On day 1 three of the units will be Latent.
+     - On day 2 three of the units will be Infectious Clinical.  Units 0 and 3
+       will be detected.
+     - On day 3 zones will be in effect around units 0 and 3.  The “High risk”
+       and “Medium risk” zones will each be in two pieces, but the “Low risk”
+       zone will be one merged piece.  Exposures from unit 2 to unit 1 will
+       continue because unit 1 is in a higher-level zone inside the lower-level
+       zone in which unit 2 resides, and it is an “adjacent” zone level
+       (contact would involve traversing 1 zone levels).
+     - On day 5 the diseased units will be Immune.
+  </parameter-description>
+
+  <diagram>4herds_line_5_zones_merged_3</diagram>
+
+  <output>
+    <tr>
+      <td>num-separate-areasLowRisk</td>
+      <td>num-separate-areasMediumRisk</td>
+      <td>num-separate-areasHighRisk</td>
+      <td>expnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>2</td>  <td>2</td>  <td>0</td></tr>
   </output>
 </variable-test>

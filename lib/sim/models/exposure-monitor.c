@@ -2,14 +2,13 @@
  * Tracks the cause of exposures.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
- *   Department of Computing & Information Science, University of Guelph<br>
+ *   School of Computer Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date August 2004
  *
- * Copyright &copy; University of Guelph, 2004-2008
+ * Copyright &copy; University of Guelph, 2004-2012
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,25 +20,21 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version exposure_monitor_LTX_interface_version
-#define new exposure_monitor_LTX_new
-#define run exposure_monitor_LTX_run
-#define reset exposure_monitor_LTX_reset
-#define events_listened_for exposure_monitor_LTX_events_listened_for
-#define is_listening_for exposure_monitor_LTX_is_listening_for
-#define has_pending_actions exposure_monitor_LTX_has_pending_actions
-#define has_pending_infections exposure_monitor_LTX_has_pending_infections
-#define to_string exposure_monitor_LTX_to_string
-#define local_printf exposure_monitor_LTX_printf
-#define local_fprintf exposure_monitor_LTX_fprintf
-#define local_free exposure_monitor_LTX_free
-#define handle_new_day_event exposure_monitor_LTX_handle_new_day_event
-#define handle_declaration_of_exposure_causes_event exposure_monitor_LTX_handle_declaration_of_exposure_causes_event
-#define handle_exposure_event exposure_monitor_LTX_handle_exposure_event
-#define events_created exposure_monitor_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new exposure_monitor_new
+#define run exposure_monitor_run
+#define reset exposure_monitor_reset
+#define events_listened_for exposure_monitor_events_listened_for
+#define is_listening_for exposure_monitor_is_listening_for
+#define has_pending_actions exposure_monitor_has_pending_actions
+#define has_pending_infections exposure_monitor_has_pending_infections
+#define to_string exposure_monitor_to_string
+#define local_printf exposure_monitor_printf
+#define local_fprintf exposure_monitor_fprintf
+#define local_free exposure_monitor_free
+#define handle_new_day_event exposure_monitor_handle_new_day_event
+#define handle_declaration_of_exposure_causes_event exposure_monitor_handle_declaration_of_exposure_causes_event
+#define handle_exposure_event exposure_monitor_handle_exposure_event
 
 #include "model.h"
 
@@ -49,24 +44,12 @@
 
 #include "exposure-monitor.h"
 
-#include "guilib.h"
+#include "naadsm.h"
 
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "exposure-monitor"
 
-#define MODEL_DESCRIPTION "\
-A module to track the cause of exposures.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 August 2004\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 1
-EVT_event_type_t events_created[] = { EVT_RequestForExposureCauses };
 
 #define NEVENTS_LISTENED_FOR 3
 EVT_event_type_t events_listened_for[] =
@@ -99,7 +82,8 @@ typedef struct
   RPT_reporting_t *cumul_num_animals_exposed_by_cause;
   RPT_reporting_t *cumul_num_animals_exposed_by_prodtype;
   RPT_reporting_t *cumul_num_animals_exposed_by_cause_and_prodtype;
-  GPtrArray *causes;
+  RPT_reporting_t *num_adequate_exposures;
+  RPT_reporting_t *cumul_num_adequate_exposures;
   GString *source_and_target;
 }
 local_data_t;
@@ -107,39 +91,35 @@ local_data_t;
 
 
 /**
- * On the first day of the first simulation, this model requests that any
- * sub-models capable of causing exposures declare the causes they may state
- * for the exposures.  This is done so that this model can initialize counters
- * to 0.
+ * On each new day, zero the daily counts of exposures.
  *
  * @param self the model.
- * @param event a new day event.
- * @param queue for any new events the model creates.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self,
-                      EVT_new_day_event_t * event, EVT_event_queue_t * queue)
+handle_new_day_event (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  if (event->day == 1 && local_data->causes == NULL)
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "requesting potential causes of exposure from other sub-models");
-#endif
-      local_data->causes = g_ptr_array_new ();
-      EVT_event_enqueue (queue, EVT_new_request_for_exposure_causes_event ());
-    }
+  /* Zero the daily counts. */
+  RPT_reporting_zero (local_data->exposures);
+  RPT_reporting_zero (local_data->num_units_exposed);
+  RPT_reporting_zero (local_data->num_units_exposed_by_cause);
+  RPT_reporting_zero (local_data->num_units_exposed_by_prodtype);
+  RPT_reporting_zero (local_data->num_units_exposed_by_cause_and_prodtype);
+  RPT_reporting_zero (local_data->num_animals_exposed);
+  RPT_reporting_zero (local_data->num_animals_exposed_by_cause);
+  RPT_reporting_zero (local_data->num_animals_exposed_by_prodtype);
+  RPT_reporting_zero (local_data->num_animals_exposed_by_cause_and_prodtype);
+  RPT_reporting_zero (local_data->num_adequate_exposures);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -153,33 +133,27 @@ handle_new_day_event (struct ergadm_model_t_ *self,
  * @param event a declaration of exposure causes event.
  */
 void
-handle_declaration_of_exposure_causes_event (struct ergadm_model_t_ *self,
+handle_declaration_of_exposure_causes_event (struct naadsm_model_t_ *self,
                                              EVT_declaration_of_exposure_causes_event_t * event)
 {
   local_data_t *local_data;
   unsigned int n, i, j;
   char *cause;
   char *drill_down_list[3] = { NULL, NULL, NULL };
-#if DEBUG
-  GString *s;
-#endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  /* Copy the list of potential causes of exposure.  (Note that we just copy
-   * the pointers to the C strings, assuming that they are static strings.)  If
-   * any potential cause is not already present in our reporting variables, add
-   * it, with an initial count of 0 exposures. */
+  /* If any potential cause is not already present in our reporting variables,
+   * add it, with an initial count of 0 exposures. */
   n = event->causes->len;
   for (i = 0; i < n; i++)
     {
       cause = (char *) g_ptr_array_index (event->causes, i);
-      g_ptr_array_add (local_data->causes, cause);
+      RPT_reporting_append_text1 (local_data->exposures, "", cause);
       RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 0, cause);
       RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 0, cause);
       RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, 0, cause);
@@ -198,20 +172,9 @@ handle_declaration_of_exposure_causes_event (struct ergadm_model_t_ *self,
                                      drill_down_list);
         }
     }
-#if DEBUG
-  s = g_string_new ("list of causes now={");
-  n = local_data->causes->len;
-  for (i = 0; i < n; i++)
-    g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
-                            (char *) g_ptr_array_index (local_data->causes, i));
-  g_string_append_c (s, '}');
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
-  g_string_free (s, TRUE);
-#endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_declaration_of_exposure_causes_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -224,17 +187,17 @@ handle_declaration_of_exposure_causes_event (struct ergadm_model_t_ *self,
  * @param event an exposure event.
  */
 void
-handle_exposure_event (struct ergadm_model_t_ *self, EVT_exposure_event_t * event)
+handle_exposure_event (struct naadsm_model_t_ *self, EVT_exposure_event_t * event)
 {
   local_data_t *local_data;
   HRD_herd_t *exposing_herd, *exposed_herd;
   char *peek;
   gboolean first_of_cause;
   char *drill_down_list[3] = { NULL, NULL, NULL };
-  HRD_update_t update;
-
+  HRD_expose_t update;
+  
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_exposure_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_exposure_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
@@ -250,14 +213,42 @@ handle_exposure_event (struct ergadm_model_t_ *self, EVT_exposure_event_t * even
                    event->exposing_herd->index, event->exposed_herd->index);
   RPT_reporting_append_text1 (local_data->exposures, local_data->source_and_target->str,
                               event->cause);
-
-  if (NULL != guilib_expose_herd)
+                                
+  update.src_index = exposing_herd->index;
+  update.src_status = (NAADSM_disease_state) exposing_herd->status;
+  update.dest_index = exposed_herd->index;
+  update.dest_status = (NAADSM_disease_state) exposed_herd->status;
+  
+  update.initiated_day = (int) event->initiated_day;
+  update.finalized_day = (int) event->initiated_day + event->delay;
+  
+  if( TRUE == event->adequate )
+    update.is_adequate = NAADSM_SuccessTrue;
+  else
+    update.is_adequate = NAADSM_SuccessFalse;
+  
+  switch (event->contact_type)
     {
-      update.index = event->exposed_herd->index;
-      update.success = 2;       /* Unused */
-      update.msg = event->cause;
-      guilib_expose_herd (update);
+      case NAADSM_DirectContact:
+      case NAADSM_IndirectContact:
+      case NAADSM_AirborneSpread:
+        update.exposure_method = event->contact_type;
+        break;      
+      default:
+        /* If this condition occurs, someone forgot something. */
+        g_error( "An unrecognized exposure mechanism (%s) occurred in handle_exposure_event", event->cause );
+        update.exposure_method = 0;     
     }
+
+      
+#ifdef USE_SC_GUILIB
+  sc_expose_herd( exposed_herd, update );
+#else	  
+  if (NULL != naadsm_expose_herd)
+    {
+      naadsm_expose_herd (update);
+    }
+#endif  
 
 #if UNDEFINED
   printf ("Herd at index %d exposed by method %s\n", event->exposed_herd->index, event->cause);
@@ -290,9 +281,14 @@ handle_exposure_event (struct ergadm_model_t_ *self, EVT_exposure_event_t * even
   if (local_data->cumul_num_animals_exposed_by_cause_and_prodtype->frequency != RPT_never)
     RPT_reporting_add_integer (local_data->cumul_num_animals_exposed_by_cause_and_prodtype,
                                exposed_herd->size, drill_down_list);
+  if (event->adequate)
+    {
+      RPT_reporting_add_integer (local_data->num_adequate_exposures, 1, NULL);
+      RPT_reporting_add_integer (local_data->cumul_num_adequate_exposures, 1, NULL);
+    }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_exposure_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_exposure_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -309,17 +305,17 @@ handle_exposure_event (struct ergadm_model_t_ *self, EVT_exposure_event_t * even
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
 
   switch (event->type)
     {
     case EVT_NewDay:
-      handle_new_day_event (self, &(event->u.new_day), queue);
+      handle_new_day_event (self);
       break;
     case EVT_DeclarationOfExposureCauses:
       handle_declaration_of_exposure_causes_event (self,
@@ -335,7 +331,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
 }
 
@@ -347,84 +343,27 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  unsigned int n, i, j;
-  char *prodtype_name;
-  char *cause;
-  char *drill_down_list[3] = { NULL, NULL, NULL };
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
-  RPT_reporting_reset (local_data->exposures);
-  RPT_reporting_reset (local_data->num_units_exposed);
-  RPT_reporting_reset (local_data->num_units_exposed_by_cause);
-  RPT_reporting_reset (local_data->num_units_exposed_by_prodtype);
-  RPT_reporting_reset (local_data->num_units_exposed_by_cause_and_prodtype);
-  RPT_reporting_reset (local_data->cumul_num_units_exposed);
-  RPT_reporting_reset (local_data->cumul_num_units_exposed_by_cause);
-  RPT_reporting_reset (local_data->cumul_num_units_exposed_by_prodtype);
-  RPT_reporting_reset (local_data->cumul_num_units_exposed_by_cause_and_prodtype);
-  RPT_reporting_reset (local_data->num_animals_exposed);
-  RPT_reporting_reset (local_data->num_animals_exposed_by_cause);
-  RPT_reporting_reset (local_data->num_animals_exposed_by_prodtype);
-  RPT_reporting_reset (local_data->num_animals_exposed_by_cause_and_prodtype);
-  RPT_reporting_reset (local_data->cumul_num_animals_exposed);
-  RPT_reporting_reset (local_data->cumul_num_animals_exposed_by_cause);
-  RPT_reporting_reset (local_data->cumul_num_animals_exposed_by_prodtype);
-  RPT_reporting_reset (local_data->cumul_num_animals_exposed_by_cause_and_prodtype);
-
-  /* Initialize counts to 0. */
-
-  /* These are the counts broken down by production type. */
-  n = local_data->production_types->len;
-  for (i = 0; i < n; i++)
-    {
-      prodtype_name = (char *) g_ptr_array_index (local_data->production_types, i);
-      RPT_reporting_add_integer1 (local_data->num_units_exposed_by_prodtype, 0, prodtype_name);
-      RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_prodtype, 0, prodtype_name);
-      RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_prodtype, 0, prodtype_name);
-      RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_prodtype, 0, prodtype_name);
-    }
-
-  if (local_data->causes != NULL)
-    {
-      n = local_data->causes->len;
-      for (i = 0; i < n; i++)
-        {
-          /* These are the counts broken down by cause of exposure. */
-          cause = (char *) g_ptr_array_index (local_data->causes, i);
-          RPT_reporting_add_integer1 (local_data->num_units_exposed_by_cause, 0, cause);
-          RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_cause, 0, cause);
-          RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_cause, 0, cause);
-          RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_cause, 0, cause);
-
-          /* These are the counts broken down by cause and production type. */
-          drill_down_list[0] = cause;
-          for (j = 0; j < local_data->production_types->len; j++)
-            {
-              drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
-              RPT_reporting_add_integer (local_data->num_units_exposed_by_cause_and_prodtype, 0,
-                                         drill_down_list);
-              RPT_reporting_add_integer (local_data->cumul_num_units_exposed_by_cause_and_prodtype, 0,
-                                         drill_down_list);
-              RPT_reporting_add_integer (local_data->num_animals_exposed_by_cause_and_prodtype, 0,
-                                         drill_down_list);
-              RPT_reporting_add_integer (local_data->cumul_num_animals_exposed_by_cause_and_prodtype, 0,
-                                         drill_down_list);
-            }
-        }
-    }
-
-  /* Note that we don't reset the list of possible causes of exposure between
-   * iterations. */
+  RPT_reporting_zero (local_data->cumul_num_units_exposed);
+  RPT_reporting_zero (local_data->cumul_num_units_exposed_by_cause);
+  RPT_reporting_zero (local_data->cumul_num_units_exposed_by_prodtype);
+  RPT_reporting_zero (local_data->cumul_num_units_exposed_by_cause_and_prodtype);
+  RPT_reporting_zero (local_data->cumul_num_animals_exposed);
+  RPT_reporting_zero (local_data->cumul_num_animals_exposed_by_cause);
+  RPT_reporting_zero (local_data->cumul_num_animals_exposed_by_prodtype);
+  RPT_reporting_zero (local_data->cumul_num_animals_exposed_by_cause_and_prodtype);
+  RPT_reporting_zero (local_data->cumul_num_adequate_exposures);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -438,7 +377,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -457,7 +396,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -471,7 +410,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -485,7 +424,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *chararray;
@@ -509,7 +448,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -529,7 +468,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -542,38 +481,35 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
-  RPT_free_reporting (local_data->exposures, TRUE);
-  RPT_free_reporting (local_data->num_units_exposed, TRUE);
-  RPT_free_reporting (local_data->num_units_exposed_by_cause, TRUE);
-  RPT_free_reporting (local_data->num_units_exposed_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->num_units_exposed_by_cause_and_prodtype, TRUE);
-  RPT_free_reporting (local_data->cumul_num_units_exposed, TRUE);
-  RPT_free_reporting (local_data->cumul_num_units_exposed_by_cause, TRUE);
-  RPT_free_reporting (local_data->cumul_num_units_exposed_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->cumul_num_units_exposed_by_cause_and_prodtype, TRUE);
-  RPT_free_reporting (local_data->num_animals_exposed, TRUE);
-  RPT_free_reporting (local_data->num_animals_exposed_by_cause, TRUE);
-  RPT_free_reporting (local_data->num_animals_exposed_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->num_animals_exposed_by_cause_and_prodtype, TRUE);
-  RPT_free_reporting (local_data->cumul_num_animals_exposed, TRUE);
-  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_cause, TRUE);
-  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_cause_and_prodtype, TRUE);
-
-  /* Note that we don't attempt to free the C strings in the exposure causes
-   * list, because they're assumed to be static strings. */
-  if (local_data->causes != NULL)
-    g_ptr_array_free (local_data->causes, TRUE);
+  RPT_free_reporting (local_data->exposures);
+  RPT_free_reporting (local_data->num_units_exposed);
+  RPT_free_reporting (local_data->num_units_exposed_by_cause);
+  RPT_free_reporting (local_data->num_units_exposed_by_prodtype);
+  RPT_free_reporting (local_data->num_units_exposed_by_cause_and_prodtype);
+  RPT_free_reporting (local_data->cumul_num_units_exposed);
+  RPT_free_reporting (local_data->cumul_num_units_exposed_by_cause);
+  RPT_free_reporting (local_data->cumul_num_units_exposed_by_prodtype);
+  RPT_free_reporting (local_data->cumul_num_units_exposed_by_cause_and_prodtype);
+  RPT_free_reporting (local_data->num_animals_exposed);
+  RPT_free_reporting (local_data->num_animals_exposed_by_cause);
+  RPT_free_reporting (local_data->num_animals_exposed_by_prodtype);
+  RPT_free_reporting (local_data->num_animals_exposed_by_cause_and_prodtype);
+  RPT_free_reporting (local_data->cumul_num_animals_exposed);
+  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_cause);
+  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_prodtype);
+  RPT_free_reporting (local_data->cumul_num_animals_exposed_by_cause_and_prodtype);
+  RPT_free_reporting (local_data->num_adequate_exposures);
+  RPT_free_reporting (local_data->cumul_num_adequate_exposures);
 
   g_string_free (local_data->source_and_target, TRUE);
 
@@ -582,19 +518,8 @@ local_free (struct ergadm_model_t_ *self)
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -602,31 +527,32 @@ interface_version (void)
 /**
  * Returns a new exposure monitor.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element *e, **ee;
-  unsigned int noutputs;
-  RPT_reporting_t *output;
+  unsigned int n;
   const XML_Char *variable_name;
-  unsigned short int i, j;      /* loop counters */
+  RPT_frequency_t freq;
+  gboolean success;
+  gboolean broken_down;
+  unsigned int i;      /* loop counter */
+  char *prodtype_name;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
-  m->outputs = g_ptr_array_sized_new (17);
+  m->outputs = g_ptr_array_new ();
   m->model_data = local_data;
   m->run = run;
   m->reset = reset;
@@ -641,45 +567,43 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   /* Make sure the right XML subtree was sent. */
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
 
-  local_data->exposures = RPT_new_reporting ("exposures", NULL, RPT_group, RPT_never, FALSE);
+  local_data->exposures = RPT_new_reporting ("exposures", RPT_group, RPT_never);
   local_data->num_units_exposed =
-    RPT_new_reporting ("num-units-exposed", NULL, RPT_integer, RPT_never, FALSE);
+    RPT_new_reporting ("expnUAll", RPT_integer, RPT_never);
   local_data->num_units_exposed_by_cause =
-    RPT_new_reporting ("num-units-exposed-by-cause", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnU", RPT_group, RPT_never);
   local_data->num_units_exposed_by_prodtype =
-    RPT_new_reporting ("num-units-exposed-by-production-type", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnU", RPT_group, RPT_never);
   local_data->num_units_exposed_by_cause_and_prodtype =
-    RPT_new_reporting ("num-units-exposed-by-cause-and-production-type", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnU", RPT_group, RPT_never);
   local_data->cumul_num_units_exposed =
-    RPT_new_reporting ("cumulative-num-units-exposed", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("expcUAll", RPT_integer, RPT_never);
   local_data->cumul_num_units_exposed_by_cause =
-    RPT_new_reporting ("cumulative-num-units-exposed-by-cause", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcU", RPT_group, RPT_never);
   local_data->cumul_num_units_exposed_by_prodtype =
-    RPT_new_reporting ("cumulative-num-units-exposed-by-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcU", RPT_group, RPT_never);
   local_data->cumul_num_units_exposed_by_cause_and_prodtype =
-    RPT_new_reporting ("cumulative-num-units-exposed-by-cause-and-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcU", RPT_group, RPT_never);
   local_data->num_animals_exposed =
-    RPT_new_reporting ("num-animals-exposed", NULL, RPT_integer, RPT_never, FALSE);
+    RPT_new_reporting ("expnAAll", RPT_integer, RPT_never);
   local_data->num_animals_exposed_by_cause =
-    RPT_new_reporting ("num-animals-exposed-by-cause", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnA", RPT_group, RPT_never);
   local_data->num_animals_exposed_by_prodtype =
-    RPT_new_reporting ("num-animals-exposed-by-production-type", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnA", RPT_group, RPT_never);
   local_data->num_animals_exposed_by_cause_and_prodtype =
-    RPT_new_reporting ("num-animals-exposed-by-cause-and-production-type", NULL, RPT_group, RPT_never, FALSE);
+    RPT_new_reporting ("expnA", RPT_group, RPT_never);
   local_data->cumul_num_animals_exposed =
-    RPT_new_reporting ("cumulative-num-animals-exposed", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("expcAAll", RPT_integer, RPT_never);
   local_data->cumul_num_animals_exposed_by_cause =
-    RPT_new_reporting ("cumulative-num-animals-exposed-by-cause", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcA", RPT_group, RPT_never);
   local_data->cumul_num_animals_exposed_by_prodtype =
-    RPT_new_reporting ("cumulative-num-animals-exposed-by-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcA", RPT_group, RPT_never);
   local_data->cumul_num_animals_exposed_by_cause_and_prodtype =
-    RPT_new_reporting ("cumulative-num-animals-exposed-by-cause-and-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("expcA", RPT_group, RPT_never);
+  local_data->num_adequate_exposures =
+    RPT_new_reporting ("adqnUAll", RPT_integer, RPT_never);
+  local_data->cumul_num_adequate_exposures =
+    RPT_new_reporting ("adqcUAll", RPT_integer, RPT_never);
   g_ptr_array_add (m->outputs, local_data->exposures);
   g_ptr_array_add (m->outputs, local_data->num_units_exposed);
   g_ptr_array_add (m->outputs, local_data->num_units_exposed_by_cause);
@@ -697,64 +621,106 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_ptr_array_add (m->outputs, local_data->cumul_num_animals_exposed_by_cause);
   g_ptr_array_add (m->outputs, local_data->cumul_num_animals_exposed_by_prodtype);
   g_ptr_array_add (m->outputs, local_data->cumul_num_animals_exposed_by_cause_and_prodtype);
+  g_ptr_array_add (m->outputs, local_data->num_adequate_exposures);
+  g_ptr_array_add (m->outputs, local_data->cumul_num_adequate_exposures);
 
   /* Set the reporting frequency for the output variables. */
-  ee = scew_element_list (params, "output", &noutputs);
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i output variables", noutputs);
+  ee = scew_element_list (params, "output", &n);
+#if DEBUG
+  g_debug ("%u output variables", n);
 #endif
-  for (i = 0; i < noutputs; i++)
+  for (i = 0; i < n; i++)
     {
       e = ee[i];
       variable_name = scew_element_contents (scew_element_by_name (e, "variable-name"));
-      /* Do the outputs include a variable with this name? */
-      for (j = 0; j < m->outputs->len; j++)
+      freq = RPT_string_to_frequency (scew_element_contents
+                                      (scew_element_by_name (e, "frequency")));
+      broken_down = PAR_get_boolean (scew_element_by_name (e, "broken-down"), &success);
+      if (!success)
+      	broken_down = FALSE;
+      broken_down = broken_down || (g_strstr_len (variable_name, -1, "-by-") != NULL); 
+      /* Starting at version 3.2 we accept either the old, verbose output
+       * variable names or the shorter ones used in NAADSM/PC. */
+      if (strcmp (variable_name, "exposures") == 0)
         {
-          output = (RPT_reporting_t *) g_ptr_array_index (m->outputs, j);
-          if (strcmp (output->name, variable_name) == 0)
-            break;
+          RPT_reporting_set_frequency (local_data->exposures, freq);
         }
-      if (j == m->outputs->len)
-        g_warning ("no output variable named \"%s\", ignoring", variable_name);
+      else if (strcmp (variable_name, "expnU") == 0
+               || strncmp (variable_name, "num-units-exposed", 17) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->num_units_exposed, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->num_units_exposed_by_cause, freq);
+              RPT_reporting_set_frequency (local_data->num_units_exposed_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->num_units_exposed_by_cause_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "expcU") == 0
+               || strncmp (variable_name, "cumulative-num-units-exposed", 28) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->cumul_num_units_exposed, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->cumul_num_units_exposed_by_cause, freq);
+              RPT_reporting_set_frequency (local_data->cumul_num_units_exposed_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->cumul_num_units_exposed_by_cause_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "expnA") == 0
+               || strncmp (variable_name, "num-animals-exposed", 19) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->num_animals_exposed, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->num_animals_exposed_by_cause, freq);
+              RPT_reporting_set_frequency (local_data->num_animals_exposed_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->num_animals_exposed_by_cause_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "expcA") == 0
+               || strncmp (variable_name, "cumulative-num-animals-exposed", 30) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->cumul_num_animals_exposed, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->cumul_num_animals_exposed_by_cause, freq);
+              RPT_reporting_set_frequency (local_data->cumul_num_animals_exposed_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->cumul_num_animals_exposed_by_cause_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "adqnU") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->num_adequate_exposures, freq);
+        }
+      else if (strcmp (variable_name, "adqcU") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->cumul_num_adequate_exposures, freq);
+        }
       else
-        {
-          RPT_reporting_set_frequency (output,
-                                       RPT_string_to_frequency (scew_element_contents
-                                                                (scew_element_by_name
-                                                                 (e, "frequency"))));
-#if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "report \"%s\" %s", variable_name,
-                 RPT_frequency_name[output->frequency]);
-#endif
-        }
+        g_warning ("no output variable named \"%s\", ignoring", variable_name);        
     }
   free (ee);
 
-  /* A list to hold possible causes of exposure.  Will be initialized to a
-   * GPtrArray when other sub-models declare causes of exposure. */
-  local_data->causes = NULL;
-
+  /* Initialize the output variables we already know about. */
   local_data->production_types = herds->production_type_names;
+  n = local_data->production_types->len;
+  for (i = 0; i < n; i++)
+    {
+      prodtype_name = (char *) g_ptr_array_index (local_data->production_types, i);
+      RPT_reporting_add_integer1 (local_data->num_units_exposed_by_prodtype, 0, prodtype_name);
+      RPT_reporting_add_integer1 (local_data->cumul_num_units_exposed_by_prodtype, 0, prodtype_name);
+      RPT_reporting_add_integer1 (local_data->num_animals_exposed_by_prodtype, 0, prodtype_name);
+      RPT_reporting_add_integer1 (local_data->cumul_num_animals_exposed_by_prodtype, 0, prodtype_name);
+    }
+
   local_data->source_and_target = g_string_new (NULL);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-char *
-exposure_monitor_interface_version (void)
-{
-  return interface_version ();
-}
-
-
-ergadm_model_t *
-exposure_monitor_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file exposure-monitor.c */

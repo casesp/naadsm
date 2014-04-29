@@ -60,8 +60,8 @@
     <status>Susceptible</status>
   </herd>
   <herd>
-    <id>6</id>
-    <production-type>A</production-type>
+    <id>6*</id>
+    <production-type>B</production-type>
     <size>25</size>
     <location>
       <latitude>0</latitude>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>2</num-days>
@@ -30,10 +30,10 @@
     <!-- The parameters below will give 1 shipment per day, to a unit 15 km
       away. -->
     <contact-spread-model from-production-type="Beef Cattle" to-production-type="Beef Cattle" contact-type="direct">
-      <movement-rate>
-        <value>0.694</value>
+      <fixed-movement-rate>
+        <value>1</value>
         <units><xdf:unit power="-1">day</xdf:unit></units>
-      </movement-rate>
+      </fixed-movement-rate>
       <distance>
         <point>15</point>
         <units><xdf:unit>km</xdf:unit></units>
@@ -64,4 +64,4 @@
     <frequency>daily</frequency>
   </output>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

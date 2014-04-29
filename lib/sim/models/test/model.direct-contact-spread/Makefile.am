@@ -23,6 +23,7 @@ EXTRA_DIST = spread_1.xml spread_2.xml spread_2_poisson.xml spread_3.xml \
   spread_same_loc_2.xml spread_same_loc_3.xml no_quarantine.xml \
   quarantine_fast.xml quarantine_slow.xml \
   spread_delay_1.xml  spread_delay_2.xml spread_delay_3.xml \
+  spread_delay_1_then_2.xml \
   mult_exposure_1.xml mult_exposure_2.xml mult_exposure_2b.xml \
   fixed_rate_1.xml fixed_rate_2.xml fixed_rate_0.xml \
   fixed_rate_0.5.xml fixed_rate_0.33.xml \

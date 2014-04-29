@@ -1066,9 +1066,8 @@
     lasts 3 days, clinical signs accompany infectiousness immediately, and
     natural immunity lasts 5 days.
 
-    The mean movement rate from sheep units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    The movement rate from sheep units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The movement rate
     multiplier is 0 until the public is aware of the outbreak, then it
     immediately goes to 1.  (This is the opposite of what one might expect from
     movement controls; its purpose here is to make sure any contact we see
@@ -1158,9 +1157,8 @@
     lasts 3 days, clinical signs accompany infectiousness immediately, and
     natural immunity lasts 5 days.
 
-    The mean movement rate from sheep units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    The movement rate from sheep units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The movement rate
     multiplier is 0 until the public is aware of the outbreak, then it
     immediately goes to 1.  (This is the opposite of what one might expect from
     movement controls; its purpose here is to make sure any contact we see
@@ -1224,12 +1222,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are two units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and unit 1 is marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy unit 1 immediately, b) there are no resources to destroy unit 1
-    at first, but resources eventually come on-line, or c) there are never
-    resources to destroy unit 1.
+    In early exit tests 1-3, there are two units.  Unit 0 is infected.  On day
+    1 unit 0 is detected and unit 1 is marked for destruction.  Different
+    effects can be observed when a) there are resources to destroy unit 1
+    immediately, b) there are no resources to destroy unit 1 at first, but
+    resources eventually come on-line, or c) there are never resources to
+    destroy unit 1.
 
     In this scenario, there are resources to destroy unit 1 immediately.
   </description>
@@ -1257,7 +1255,7 @@
     authorities will destroy units within 10 km of a detected unit.  The
     authorities can destroy an unlimited/very large number of units each day.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 1 will be Infectious Clinical.  It will be detected, and
        unit 1 will be marked for destruction because it is within 10 km of a
@@ -1286,12 +1284,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are two units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and unit 1 is marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy unit 1 immediately, b) there are no resources to destroy unit 1
-    at first, but resources eventually come on-line, or c) there are never
-    resources to destroy unit 1.
+    In early exit tests 1-3, there are two units.  Unit 0 is infected.  On day
+    1 unit 0 is detected and unit 1 is marked for destruction.  Different
+    effects can be observed when a) there are resources to destroy unit 1
+    immediately, b) there are no resources to destroy unit 1 at first, but
+    resources eventually come on-line, or c) there are never resources to
+    destroy unit 1.
 
     In this scenario, there are no resources to destroy unit 1 at first, but
     resources eventually come on-line.
@@ -1322,7 +1320,7 @@
     be zero.  The next day and forward, the destruction capacity is 1 unit per
     day.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 1 will be Infectious Clinical.  It will be detected, and
        unit 1 will be marked for destruction because it is within 10 km of a
@@ -1352,6 +1350,61 @@
   </output>
 </deterministic-test>
 
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>early exit 2, check end of disease and outbreak</short-name>
+
+  <description>
+    Test that the end of active disease and the end of the outbreak (which
+    includes all control actions) are properly reported.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>early_exit_2_disease_outbreak_end</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "early exit 2" above.
+
+    What should happen:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 1 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for destruction because it is within 10 km of a
+       detected unit.
+     - Day 3 is the first day that destructions could happen, but there will be
+       no destruction capacity for 4 days.
+     - On day 4 there will be no destruction capacity for another 3 days.
+     - On day 5 unit 0 will no longer be infectious.  The end of the active
+       disease phase will be filled in as day 4.  The simulation will keep
+       going because there are still destruction tasks to be done.  There will
+       be no destruction capacity for another 2 days.
+     - On day 6 there will be no destruction capacity for another 1 day.
+     - On day 7 unit 1 will be destroyed.
+     - On day 8 unit 1's state will show as Destroyed.  Because there are no
+       infectious units left and nothing left to do, the simulation can end.
+       The end of the outbreak will be filled in as day 7.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>diseaseDuration</td>
+      <td>outbreakDuration</td>
+    </tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr><td>4</td>  <td></td></tr>
+    <tr><td>4</td>  <td></td></tr>
+    <tr><td>4</td>  <td></td></tr>
+    <tr><td>4</td> <td>7</td></tr>
+  </output>
+</variable-test>
+
 <deterministic-test>
   <category>ring-destruction</category>
   <short-name>early exit 3</short-name>
@@ -1360,12 +1413,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are two units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and unit 1 is marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy unit 1 immediately, b) there are no resources to destroy unit 1
-    at first, but resources eventually come on-line, or c) there are never
-    resources to destroy unit 1.
+    In early exit tests 1-3, there are two units.  Unit 0 is infected.  On day
+    1 unit 0 is detected and unit 1 is marked for destruction.  Different
+    effects can be observed when a) there are resources to destroy unit 1
+    immediately, b) there are no resources to destroy unit 1 at first, but
+    resources eventually come on-line, or c) there are never resources to
+    destroy unit 1.
 
     In this scenario, there are never resources to destroy unit 1.
   </description>
@@ -1393,7 +1446,7 @@
     authorities will destroy units within 10 km of a detected unit.  The
     authorities can destroy zero units each day.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 1 will be Infectious Clinical.  It will be detected, and
        unit 1 will be marked for destruction because it is within 10 km of a
@@ -1414,6 +1467,53 @@
   </output>
 </deterministic-test>
 
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>early exit 3, check end of disease and outbreak</short-name>
+
+  <description>
+    Test that the end of active disease and the end of the outbreak (which
+    includes all control actions) are properly reported.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>early_exit_3_disease_outbreak_end</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "early exit 3" above.
+
+    What should happen:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 1 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for destruction because it is within 10 km of a
+       detected unit.
+     - On day 3 nothing new will happen.
+     - On day 4 nothing new will happen.
+     - On day 5 unit 0 will no longer be infectious.  The end of the active
+       disease phase will be filled in as day 4.  There are units awaiting
+       destruction, but there will never be resources to destroy them, so the
+       end of the outbreak will be filled in as day 4, and the simulation can
+       end.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>diseaseDuration</td>
+      <td>outbreakDuration</td>
+    </tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td></tr>
+    <tr><td>4</td> <td>4</td></tr>
+  </output>
+</variable-test>
+
 <deterministic-test>
   <category>ring-destruction</category>
   <short-name>early exit 4</short-name>
@@ -1422,12 +1522,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are three units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and units 1 and 2 are marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy both units, b) there are resources to destroy one unit, then
-    later there are resources to destroy the other, or c) there are resources
-    to destroy one unit, but never resources to destroy the other.
+    In early exit tests 4-6, there are three units.  Unit 0 is infected.  On
+    day 1 unit 0 is detected and units 1 and 2 are marked for destruction.
+    Different effects can be observed when a) there are resources to destroy
+    both units, b) there are resources to destroy one unit, then later there
+    are resources to destroy the other, or c) there are resources to destroy
+    one unit, but never resources to destroy the other.
 
     In this scenario, there are resources to destroy both units.
   </description>
@@ -1458,7 +1558,7 @@
     be zero.  The next day and forward, the destruction capacity is 2 units per
     day.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
        units 1 and 2 will be marked for destruction because they are within 20
@@ -1496,12 +1596,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are three units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and units 1 and 2 are marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy both units, b) there are resources to destroy one unit, then
-    later there are resources to destroy the other, or c) there are resources
-    to destroy one unit, but never resources to destroy the other.
+    In early exit tests 4-6, there are three units.  Unit 0 is infected.  On
+    day 1 unit 0 is detected and units 1 and 2 are marked for destruction.
+    Different effects can be observed when a) there are resources to destroy
+    both units, b) there are resources to destroy one unit, then later there
+    are resources to destroy the other, or c) there are resources to destroy
+    one unit, but never resources to destroy the other.
 
     In this scenario, there are resources to destroy one unit, then later there
     are resources to destroy the other.
@@ -1534,7 +1634,7 @@
     zero capacity follows, then on the next day and forward the destruction
     capacity is 1 unit per day.  Cattle have priority over pigs.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
        units 1 and 2 will be marked for destruction because they are within 20
@@ -1578,12 +1678,12 @@
     Test that the simulation's early-exit rules are followed with respect to
     units waiting for destruction.
     
-    In this test and the following two, there are three units.  Unit 0 is
-    infected.  On day 1 unit 0 is detected and units 1 and 2 are marked for
-    destruction.  Different effects can be observed when a) there are resources
-    to destroy both units, b) there are resources to destroy one unit, then
-    later there are resources to destroy the other, or c) there are resources
-    to destroy one unit, but never resources to destroy the other.
+    In early exit tests 4-6, there are three units.  Unit 0 is infected.  On
+    day 1 unit 0 is detected and units 1 and 2 are marked for destruction.
+    Different effects can be observed when a) there are resources to destroy
+    both units, b) there are resources to destroy one unit, then later there
+    are resources to destroy the other, or c) there are resources to destroy
+    one unit, but never resources to destroy the other.
 
     In this scenario, there are resources to destroy one unit, but never
     resources to destroy the other.
@@ -1615,7 +1715,7 @@
     be zero.  The next day, the destruction capacity is 1 unit.  All subsequent
     days have zero capacity.  Cattle have priority over pigs.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will be latent.
      - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
        units 1 and 2 will be marked for destruction because they are within 20
@@ -1651,7 +1751,7 @@
   <short-name>ring at equator</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the equator and the R-tree is not used.
   </description>
@@ -1687,13 +1787,20 @@
 
   <output>
     <tr>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:ring destruction</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
     </tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>1</td>  <td>46</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1702,7 +1809,7 @@
   <short-name>ring at lat 45</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the 45th parallel and the R-tree is not used.
   </description>
@@ -1738,13 +1845,79 @@
 
   <output>
     <tr>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:ring destruction</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
     </tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>1</td>  <td>46</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>ring at lat -45</short-name>
+
+  <description>
+    This is one of a set of 6 scenarios to check that the ring is drawn
+    correctly at all latitudes, and with and without the R-tree index.  In this
+    scenario, the ring is at the -45th parallel (southern hemisphere) and the
+    R-tree is not used.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 May 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>no_rtree_lat-45</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit and all units within 1 km will
+    be destroyed.  The authorities can begin a destruction program immediately,
+    and they can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  Unit
+       0 and the 46 units around it will be marked for destruction.
+     - On day 3 those units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
+    </tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1753,7 +1926,7 @@
   <short-name>ring at equator, using R-tree</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the equator and the R-tree is used.
   </description>
@@ -1789,13 +1962,20 @@
 
   <output>
     <tr>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:ring destruction</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
     </tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>1</td>  <td>46</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -1804,7 +1984,7 @@
   <short-name>ring at lat 45, using R-tree</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the 45th parallel and the R-tree is used.
   </description>
@@ -1840,12 +2020,308 @@
 
   <output>
     <tr>
-      <td>num-units-destroyed-by-reason:reported diseased</td>
-      <td>num-units-destroyed-by-reason:ring destruction</td>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
     </tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
-    <tr><td>1</td>  <td>46</td></tr>
-    <tr><td>0</td>   <td>0</td></tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>ring at lat -45, using R-tree</short-name>
+
+  <description>
+    This is one of a set of 6 scenarios to check that the ring is drawn
+    correctly at all latitudes, and with and without the R-tree index.  In this
+    scenario, the ring is at the -45th parallel (southern hemisphere) and the
+    R-tree is used.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 May 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>rtree_lat-45</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit and all units within 1 km will
+    be destroyed.  The authorities can begin a destruction program immediately,
+    and they can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  Unit
+       0 and the 46 units around it will be marked for destruction.
+     - On day 3 those units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
+    </tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>ring at lat 45, units' locations in projected coordinates</short-name>
+
+  <description>
+    This test is identical to "ring at lat 45" above, but the units' locations
+    are in projected coordinates instead of latitude and longitude.  The units
+    are away from the equator so the Albers Equal Area conic can be used
+    (instead of the cylindrical projection it turns into when the units are all
+    near the equator).  The herd file also demonstrates the use of a "latitude
+    of false origin" to set at which latitude "y" = 0.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>no_rtree_lat45_xy</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit and all units within 1 km will
+    be destroyed.  The authorities can begin a destruction program immediately,
+    and they can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  Unit
+       0 and the 46 units around it will be marked for destruction.
+     - On day 3 those units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
+    </tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>ring at lat 45, using R-tree, units' locations in projected coordinates</short-name>
+
+  <description>
+    This test is identical to "ring at lat 45, using R-tree" above, but the
+    units' locations are in projected coordinates instead of latitude and
+    longitude.  The units are away from the equator so the Albers Equal Area
+    conic can be used (instead of the cylindrical projection it turns into when
+    the units are all near the equator).  The herd file also demonstrates the
+    use of a "latitude of false origin" to set at which latitude "y" = 0.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>rtree_lat45_xy</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit and all units within 1 km will
+    be destroyed.  The authorities can begin a destruction program immediately,
+    and they can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  Unit
+       0 and the 46 units around it will be marked for destruction.
+     - On day 3 those units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUDet</td>
+      <td>desnURing</td>
+      <td>desnUA</td>
+      <td>desnUIniA</td>
+      <td>desnUDetA</td>
+      <td>desnURingA</td>
+    </tr>
+    <!--   Total     Initially    Detected       Ring      Prodtype A  Initially/A  Detected/A     Ring/A    -->
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>47</td>  <td>0</td>  <td>1</td>  <td>46</td>  <td>47</td>   <td>0</td>  <td>1</td>  <td>46</td></tr>
+    <tr> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>initially destroyed unit is not first destruction</short-name>
+
+  <description>
+    This scenario tests whether an initially destroyed unit is counted as the
+    first destruction in a simulation (it should not be).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>9 Sep 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds_1_start_destroyed</herd-file>
+
+  <parameter-file>initially_destroyed</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, it will be destroyed.  The authorities
+    can begin a destruction program immediately, and they can destroy an
+    unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 unit 0 will be Latent.  Unit 1 will already be Destroyed, and
+       we will count 1 destroyed unit (initially destroyed units are counted
+       and reported) but we will not count it as the first destruction during
+       the simulation.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 3 unit 0 will be destroyed, and that will count as the first
+       destruction during the simulation.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>firstDestruction</td>
+    </tr>
+    <tr><td>0</td>   <td></td></tr>
+    <tr><td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>3</td></tr>
+    <tr><td>0</td>  <td>3</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-destruction</category>
+  <short-name>initially destroyed unit does not count toward average wait time</short-name>
+
+  <description>
+    This scenario tests whether an initially destroyed unit counts toward the
+    average wait time calculation (it should not).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_1_start_destroyed</herd-file>
+
+  <parameter-file>initially_destroyed_avg_wait</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 1 day,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    The authorities will destroy units within 10 km of a detected unit.  The
+    authorities can destroy 1 unit each day, starting 2 days after the 1st
+    detection.
+
+    There is no spread or vaccination.
+
+    What should happen:
+     - On day 1 unit 2 will be Latent.  Unit 0 will already be vaccine immune.
+     - On day 2 unit 2 will be Infectious Clinical.  It will be detected and
+       unit 1 will be marked for destruction because it is within 10 km.
+     - On day 4 unit 1 will be destroyed, and the average wait time should be 2
+       (1 unit committed to destroy on day 2, destroyed on day 4).  The
+       initially destroyed unit, which did not wait at all, should not lower
+       that number.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>firstDestruction</td>
+      <td>deswUTimeAvg</td>
+    </tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td>4</td>  <td>2</td></tr>
+    <tr><td>4</td>  <td>2</td></tr>
   </output>
 </variable-test>

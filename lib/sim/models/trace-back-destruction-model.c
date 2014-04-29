@@ -1,7 +1,11 @@
 /** @file trace-back-destruction-model.c
  * Module that simulates a policy of destroying units that have had contact
- * with a diseased unit.
+ * with a diseased unit. DEPRECATED: maintained ONLY for backward compatibility!
  *
+ * NOTE: This module is DEPRECATED, and is included only for purposes of backward
+ * compatibility with parameter files from NAADSM 3.0 - 3.1.x.  Any new 
+ * development should be done elsewhere: see trace-model and contact-recorder.
+ * 
  * This module has two responsibilities, detailed in the sections below.
  *
  * <b>Collecting trace back information</b>
@@ -17,15 +21,14 @@
  * destruction of each of those contact units.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date September 2003
  *
- * Copyright &copy; University of Guelph, 2003-2008
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -39,25 +42,22 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version trace_back_destruction_model_LTX_interface_version
-#define new trace_back_destruction_model_LTX_new
-#define run trace_back_destruction_model_LTX_run
-#define reset trace_back_destruction_model_LTX_reset
-#define events_listened_for trace_back_destruction_model_LTX_events_listened_for
-#define is_listening_for trace_back_destruction_model_LTX_is_listening_for
-#define has_pending_actions trace_back_destruction_model_LTX_has_pending_actions
-#define has_pending_infections trace_back_destruction_model_LTX_has_pending_infections
-#define to_string trace_back_destruction_model_LTX_to_string
-#define local_printf trace_back_destruction_model_LTX_printf
-#define local_fprintf trace_back_destruction_model_LTX_fprintf
-#define local_free trace_back_destruction_model_LTX_free
-#define handle_request_for_destruction_reasons_event trace_back_destruction_model_LTX_handle_request_for_destruction_reasons_event
-#define handle_exposure_event trace_back_destruction_model_LTX_handle_exposure_event
-#define handle_detection_event trace_back_destruction_model_LTX_handle_detection_event
-#define events_created trace_back_destruction_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new trace_back_destruction_model_new
+#define run trace_back_destruction_model_run
+#define reset trace_back_destruction_model_reset
+#define events_listened_for trace_back_destruction_model_events_listened_for
+#define is_listening_for trace_back_destruction_model_is_listening_for
+#define has_pending_actions trace_back_destruction_model_has_pending_actions
+#define has_pending_infections trace_back_destruction_model_has_pending_infections
+#define to_string trace_back_destruction_model_to_string
+#define local_printf trace_back_destruction_model_printf
+#define local_fprintf trace_back_destruction_model_fprintf
+#define local_free trace_back_destruction_model_free
+#define handle_before_any_simulations_event trace_back_destruction_model_handle_before_any_simulations_event
+#define handle_new_day_event trace_back_destruction_model_handle_new_day_event
+#define handle_exposure_event trace_back_destruction_model_handle_exposure_event
+#define handle_detection_event trace_back_destruction_model_handle_detection_event
 
 #include "model.h"
 #include "model_util.h"
@@ -84,51 +84,35 @@
  * but they're #defined so AC_CHECK_FUNCS doesn't find them. */
 double round (double x);
 
-#include "guilib.h"
+#include "naadsm.h"
 
 extern const char *RPT_frequency_name[];
-extern const char *EVT_contact_type_name[];
 
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "trace-back-destruction-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of destroying units that have had contact with\n\
-a diseased unit.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 September 2003\
-"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
-
-#define NEVENTS_CREATED 4
-EVT_event_type_t events_created[] =
-  { EVT_DeclarationOfDestructionReasons, EVT_RequestForDestruction,
-  EVT_AttemptToTrace, EVT_TraceResult
-};
-
-#define NEVENTS_LISTENED_FOR 3
+#define NEVENTS_LISTENED_FOR 4
 EVT_event_type_t events_listened_for[] =
-  { EVT_RequestForDestructionReasons, EVT_Exposure, EVT_Detection };
+  { EVT_BeforeAnySimulations, EVT_NewDay, EVT_Exposure, EVT_Detection };
 
 
 
 /** Specialized information for this model. */
 typedef struct
 {
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   const char *contact_type_name;
   gboolean *production_type;
   GPtrArray *production_types;
-  unsigned short int priority;
+  int priority;
   unsigned int nherds;          /* Number of units.  Stored here because it is also the length of the trace_out and trace_in lists. */
   double trace_success;         /* Probability of tracing a contact. */
   int trace_period;             /* Number of days back we are interesting in tracing back. */
   gboolean quarantine_only;
   GSList **trace_out;           /* Lists of exposures originating <i>from</i> each unit. */
+  GHashTable *detections_today;
 }
 local_data_t;
 
@@ -149,30 +133,29 @@ EVT_free_event_as_GFunc (gpointer data, gpointer user_data)
 
 
 /**
- * Responds to a request for destruction reasons by declaring all the reasons
- * for which this model may request a destruction.
+ * Before any simulations, this module declares all the reasons for which it
+ * may request a destruction.
  *
- * @param self the model.
+ * @param self this module.
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
-                                              EVT_event_queue_t * queue)
+handle_before_any_simulations_event (struct naadsm_model_t_ * self,
+                                     EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   GPtrArray *reasons;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   reasons = g_ptr_array_sized_new (1);
-  if (local_data->contact_type == DirectContact)
-    g_ptr_array_add (reasons, "trace out-direct contact");
-  else
-    g_ptr_array_add (reasons, "trace out-indirect contact");
+  if (local_data->contact_type == NAADSM_DirectContact)
+    g_ptr_array_add (reasons, "DirFwd");
+  else if (local_data->contact_type == NAADSM_IndirectContact)
+    g_ptr_array_add (reasons, "IndFwd");
   EVT_event_enqueue (queue, EVT_new_declaration_of_destruction_reasons_event (reasons));
 
   /* Note that we don't clean up the GPtrArray.  It will be freed along with
@@ -180,9 +163,113 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
    * event. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
+  return;
+}
+
+
+
+/**
+ * At the beginning of each new day, this module clears out its record of
+ * yesterday's detections.
+ *
+ * @param self this module.
+ */
+void
+handle_new_day_event (struct naadsm_model_t_ *self)
+{
+  local_data_t *local_data;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+#endif
+
+  local_data = (local_data_t *) (self->model_data);
+  g_hash_table_remove_all (local_data->detections_today);
+
+#if DEBUG
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+#endif
+  return;
+}
+
+
+
+/**
+ * Decides whether a record of one exposure is successfully traced or not.
+ * Creates a TraceResult event either way.
+ */
+static void
+handle_record (EVT_event_t *exposure_record,
+               int day,
+               local_data_t *local_data,
+               RAN_gen_t *rng,
+               EVT_event_queue_t *queue)
+{
+  EVT_exposure_event_t *trace;
+  double r;
+  
+  trace = &(exposure_record->u.exposure);
+  /* Is the trace successful?  Queue a trace result event either way, but set
+   * the "traced" flag differently. */
+  r = RAN_num (rng);
+  EVT_event_enqueue (queue,
+                     EVT_new_trace_result_event (trace->exposing_herd,
+                                                 trace->exposed_herd,
+                                                 trace->contact_type,
+                                                 NAADSM_TraceForwardOrOut,
+                                                 day, day, (r < local_data->trace_success)));
+  if (r >= local_data->trace_success)
+    {
+#if DEBUG
+      g_debug ("r (%.2f) >= P (%.2f) : unsuccessful trace", r, local_data->trace_success);
+#endif
+      ;
+    }
+  else
+    {
+#if DEBUG
+      g_debug ("r (%.2f) < P (%.2f) : successful trace", r, local_data->trace_success);
+#endif
+      /* In the experimental version 'Riverton', "naturally immune" units have
+       * died out and no longer exist, so they don't need to be destroyed. */
+      if (
+          trace->exposed_herd->status != Destroyed
+          #ifdef RIVERTON
+          && trace->exposed_herd->status != NaturallyImmune
+          #endif
+      )
+        {
+          if (local_data->quarantine_only)
+            {
+              HRD_quarantine (trace->exposed_herd);
+            }
+          else
+            {
+              EVT_event_t *destr_event;
+              if (local_data->contact_type == NAADSM_DirectContact)
+                {
+                  destr_event = EVT_new_request_for_destruction_event
+                    (trace->exposed_herd, day, "DirFwd", local_data->priority);
+                }
+              else if (local_data->contact_type == NAADSM_IndirectContact)
+                {
+                  destr_event = EVT_new_request_for_destruction_event
+                    (trace->exposed_herd, day, "IndFwd", local_data->priority);
+                }
+              else
+                {
+                  g_error
+                    ("An unrecognized contact type has occurred in %s.  This should never happen.  Please contact the developer.",
+                     MODEL_NAME);
+                }
+
+              EVT_event_enqueue (queue, destr_event);
+            } /* end of case where destruction (not just quarantine) is requested */
+        } /* end of case where traced herd is not destroyed/dead */
+    } /* end of case where trace is successful */
+
   return;
 }
 
@@ -197,7 +284,8 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
  * @param e an exposure event.
  */
 void
-handle_exposure_event (struct ergadm_model_t_ *self, EVT_event_t * e)
+handle_exposure_event (struct naadsm_model_t_ *self, EVT_event_t * e,
+                       RAN_gen_t *rng, EVT_event_queue_t *queue)
 {
   local_data_t *local_data;
   EVT_exposure_event_t *event;
@@ -205,62 +293,74 @@ handle_exposure_event (struct ergadm_model_t_ *self, EVT_event_t * e)
   unsigned int exposing_herd_index;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_exposure_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_exposure_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
   event = &(e->u.exposure);
-  if (event->contact_type == local_data->contact_type
-      && local_data->production_type[event->exposed_herd->production_type] == TRUE)
+  
+  if (NAADSM_AirborneSpread != event->contact_type)
     {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "recording exposure from unit \"%s\" -> unit \"%s\" on day %hu",
-             event->exposing_herd->official_id, event->exposed_herd->official_id, event->day);
-#endif
-      event_copy = EVT_clone_event (e);
-
-      exposing_herd_index = event->exposing_herd->index;
-      local_data->trace_out[exposing_herd_index] =
-        g_slist_prepend (local_data->trace_out[exposing_herd_index], event_copy);
+      if (NAADSM_UnspecifiedInfectionType  == event->contact_type)
+        g_error( "Contact type is unspecified in trace-back-destruction-model.handle_exposure_event" );
+      else if (event->contact_type == local_data->contact_type
+          && local_data->production_type[event->exposed_herd->production_type] == TRUE)
+        {
+    #if DEBUG
+          g_debug ("recording exposure from unit \"%s\" -> unit \"%s\" on day %hu",
+                   event->exposing_herd->official_id, event->exposed_herd->official_id, event->day);
+    #endif
+          event_copy = EVT_clone_event (e);
+    
+          exposing_herd_index = event->exposing_herd->index;
+          local_data->trace_out[exposing_herd_index] =
+            g_slist_prepend (local_data->trace_out[exposing_herd_index], event_copy);
+          if (g_hash_table_lookup (local_data->detections_today, event->exposing_herd) != NULL)
+            handle_record (e, event->day, local_data, rng, queue);
+        }
+      else
+        {
+          #if DEBUG
+            g_debug ("wrong contact type (%i, this sub-model concerned with %i)",
+                   event->contact_type, local_data->contact_type);
+          #endif
+        }
     }
-  else
-    {
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "wrong contact type (%i, this sub-model concerned with %i)",
-             event->contact_type, local_data->contact_type);
-#endif
-      ;
-    }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_exposure_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_exposure_event (%s)", MODEL_NAME);
 #endif
 }
 
 
 
-void
-trace_back (struct ergadm_model_t_ *self, HRD_herd_t * herd,
-            unsigned short int day, HRD_herd_list_t * herds,
-            RAN_gen_t * rng, EVT_event_queue_t * queue)
+/**
+ * Searches for outgoing exposures from the given herd.  This function also
+ * cleans up exposure records that are older than what we need to store.
+ */ 
+static void
+search_records (struct naadsm_model_t_ *self, HRD_herd_t * herd,
+                int day, HRD_herd_list_t * herds,
+                RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   GSList *iter;
   EVT_exposure_event_t *trace;
   int days_ago;
-  HRD_update_t update;
-  EVT_event_t *destr_event;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER trace_back (%s)", MODEL_NAME);
+  g_debug ("----- ENTER trace_back (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  EVT_event_enqueue (queue, EVT_new_attempt_to_trace_event (herd, day));
+  EVT_event_enqueue (queue,
+                     EVT_new_attempt_to_trace_event (herd, day,
+                                                     local_data->contact_type,
+                                                     NAADSM_TraceForwardOrOut,
+                                                     local_data->trace_period));
+  g_hash_table_insert (local_data->detections_today, herd, GINT_TO_POINTER(1));
 
   /* Trace out (find units that have received animals from this one).  Note
    * that this process may issue multiple TraceResults for the same pair of
@@ -278,8 +378,7 @@ trace_back (struct ergadm_model_t_ *self, HRD_herd_t * herd,
       /**************************************************
       if (days_ago == 0)
         {
-         if( NULL != guilib_printf ) guilib_printf( "Days_ago = 0: leaving loop." ); 
-	       continue;
+         continue;
         }
       **************************************************/
 
@@ -296,84 +395,16 @@ trace_back (struct ergadm_model_t_ *self, HRD_herd_t * herd,
           break;
         }
 
-      if (RAN_num (rng) > local_data->trace_success)
-        {
-          if (NULL != guilib_attempt_trace_herd)
-            {
-              update.index = trace->exposed_herd->index;
-              update.success = 0;
-              update.msg = (char *) local_data->contact_type_name;
-
-              guilib_attempt_trace_herd (update);
-            }
-          EVT_event_enqueue (queue,
-                             EVT_new_trace_result_event (trace->exposing_herd,
-                                                         trace->exposed_herd,
-                                                         trace->contact_type, day, FALSE));
-          continue;
-        }
-      else
-        {
-          if (NULL != guilib_attempt_trace_herd)
-            {
-              update.index = trace->exposed_herd->index;
-              update.success = -1;
-              update.msg = (char *) local_data->contact_type_name;
-
-              guilib_attempt_trace_herd (update);
-            }
-        }
-
-      EVT_event_enqueue (queue,
-                         EVT_new_trace_result_event (trace->exposing_herd,
-                                                     trace->exposed_herd,
-                                                     trace->contact_type, day, TRUE));
-
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "trace out shows contact with unit \"%s\" on day %hu (%i days ago)",
-             trace->exposed_herd->official_id, trace->day, days_ago);
+#if DEBUG
+      g_debug ("record of contact with unit \"%s\" on day %hu (%i days ago)",
+               trace->exposed_herd->official_id, trace->day, days_ago);
 #endif
 
-      /*
-         (areeves 7/4/05)
-         In the original implementation, destructions for direct and indirect traces 
-         cannot be distinguished from one another.  The following statement makes it 
-         possible to tell the difference.
-
-         It looks like the only destruction event handler that actually cares about the
-         reason for destruction is in the destruction monitor.  Further comments may be
-         found there.
-       */
-      if (local_data->quarantine_only)
-        {
-          HRD_quarantine (trace->exposed_herd);
-        }
-      else
-        {
-          if (local_data->contact_type == DirectContact)
-            {
-              destr_event = EVT_new_request_for_destruction_event
-                (trace->exposed_herd, day, "trace out-direct contact", local_data->priority);
-            }
-          else if (local_data->contact_type == IndirectContact)
-            {
-              destr_event = EVT_new_request_for_destruction_event
-                (trace->exposed_herd, day, "trace out-indirect contact", local_data->priority);
-            }
-          else
-            {
-              g_error
-                ("An unrecognized contact type has occurred in %s.  This should never happen.  Please contact the developer.",
-                 MODEL_NAME);
-            }
-
-          EVT_event_enqueue (queue, destr_event);
-        }
-    }
+      handle_record ((EVT_event_t *) (iter->data), day, local_data, rng, queue);
+    } /* end of loop over trace records */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT trace_back (%s)", MODEL_NAME);
+  g_debug ("----- EXIT trace_back (%s)", MODEL_NAME);
 #endif
 }
 
@@ -389,17 +420,17 @@ trace_back (struct ergadm_model_t_ *self, HRD_herd_t * herd,
  * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                         EVT_detection_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
 
-  trace_back (self, event->herd, event->day, herds, rng, queue);
+  search_records (self, event->herd, event->day, herds, rng, queue);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -416,25 +447,23 @@ handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
-    case EVT_RequestForDestructionReasons:
-      handle_request_for_destruction_reasons_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (self, queue);
+      break;
+    case EVT_NewDay:
+      handle_new_day_event (self);
       break;
     case EVT_Exposure:
-      handle_exposure_event (self, event);
+      handle_exposure_event (self, event, rng, queue);
       break;
     case EVT_Detection:
       handle_detection_event (self, herds, &(event->u.detection), rng, queue);
@@ -446,13 +475,8 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -463,13 +487,13 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int i;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
@@ -482,7 +506,7 @@ reset (struct ergadm_model_t_ *self)
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -496,7 +520,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -515,7 +539,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -529,7 +553,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -543,7 +567,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   gboolean already_names;
@@ -589,7 +613,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -609,7 +633,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -623,13 +647,13 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int i;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
@@ -648,19 +672,8 @@ local_free (struct ergadm_model_t_ *self)
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -668,10 +681,11 @@ interface_version (void)
 /**
  * Returns a new trace-back destruction model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element const *e;
   scew_attribute *attr;
@@ -679,16 +693,13 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   gboolean success;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -707,30 +718,30 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting contact type");
+  g_debug ("setting contact type");
 #endif
   attr = scew_attribute_by_name (params, "contact-type");
   g_assert (attr != NULL);
   attr_text = scew_attribute_value (attr);
   if (strcmp (attr_text, "direct") == 0)
-    local_data->contact_type = DirectContact;
+    local_data->contact_type = NAADSM_DirectContact;
   else if (strcmp (attr_text, "indirect") == 0)
-    local_data->contact_type = IndirectContact;
+    local_data->contact_type = NAADSM_IndirectContact;
   else
     g_assert_not_reached ();
-  local_data->contact_type_name = EVT_contact_type_name[local_data->contact_type];
+  local_data->contact_type_name = NAADSM_contact_type_abbrev[local_data->contact_type];
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting production types");
+  g_debug ("setting production types");
 #endif
   local_data->production_types = herds->production_type_names;
   local_data->production_type =
-    ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
+    naadsm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
 
   e = scew_element_by_name (params, "priority");
   if (e != NULL)
     {
-      local_data->priority = (unsigned short int) round (PAR_get_unitless (e, &success));
+      local_data->priority = (int) round (PAR_get_unitless (e, &success));
       if (success == FALSE)
         {
           g_warning ("%s: setting priority to 1", MODEL_NAME);
@@ -799,24 +810,13 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   /* No exposures have been tracked yet. */
   local_data->trace_out = g_new0 (GSList *, local_data->nherds);
 
+  local_data->detections_today = g_hash_table_new (g_direct_hash, g_int_equal);
+
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-char *
-trace_back_destruction_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-
-ergadm_model_t *
-trace_back_destruction_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file trace-back-destruction-model.c */

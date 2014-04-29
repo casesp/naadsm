@@ -9,7 +9,7 @@
  * @version 0.1
  * @date April 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
+ * Copyright &copy; University of Guelph, 2003-2011
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -23,7 +23,7 @@
 
 #include "event_manager.h"
 
-#include "guilib.h"
+#include "naadsm.h"
 
 
 /**
@@ -34,10 +34,10 @@
  * @param models an array of sub-models.
  */
 void
-build_listener_list (GSList ** list, ergadm_model_t ** models, int nmodels)
+build_listener_list (GSList ** list, naadsm_model_t ** models, int nmodels)
 {
   GSList *model_list;
-  ergadm_model_t *model;
+  naadsm_model_t *model;
   EVT_event_type_t event_type;
   int i;                        /* loop counter */
 #if DEBUG
@@ -85,7 +85,7 @@ build_listener_list (GSList ** list, ergadm_model_t ** models, int nmodels)
       else
         for (; model_list != NULL; model_list = g_slist_next (model_list))
           {
-            model = (ergadm_model_t *) (model_list->data);
+            model = (naadsm_model_t *) (model_list->data);
             g_string_sprintfa (s, " %s", model->name);
           }
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", s->str);
@@ -105,18 +105,18 @@ build_listener_list (GSList ** list, ergadm_model_t ** models, int nmodels)
  *
  * @param models a list of sub-models.
  * @param nmodels the number of sub-models.
- * @return a pointer to a newly-created ergadm_event_manager_t structure.
+ * @return a pointer to a newly-created naadsm_event_manager_t structure.
  */
-ergadm_event_manager_t *
-ergadm_new_event_manager (ergadm_model_t ** models, int nmodels)
+naadsm_event_manager_t *
+naadsm_new_event_manager (naadsm_model_t ** models, int nmodels)
 {
-  ergadm_event_manager_t *manager;
+  naadsm_event_manager_t *manager;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_new_event_manager");
+  g_debug ("----- ENTER naadsm_new_event_manager");
 #endif
 
-  manager = g_new (ergadm_event_manager_t, 1);
+  manager = g_new (naadsm_event_manager_t, 1);
   manager->nmodels = nmodels;
   manager->models = models;
   manager->queue = EVT_new_event_queue ();
@@ -124,7 +124,7 @@ ergadm_new_event_manager (ergadm_model_t ** models, int nmodels)
   build_listener_list (manager->listeners, models, nmodels);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_new_event_manager");
+  g_debug ("----- EXIT naadsm_new_event_manager");
 #endif
 
   return manager;
@@ -136,12 +136,12 @@ ergadm_new_event_manager (ergadm_model_t ** models, int nmodels)
  * Deletes an event manager from memory.  Does not delete the sub-models.
  */
 void
-ergadm_free_event_manager (ergadm_event_manager_t * manager)
+naadsm_free_event_manager (naadsm_event_manager_t * manager)
 {
   EVT_event_type_t event_type;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_free_event_manager");
+  g_debug ("----- ENTER naadsm_free_event_manager");
 #endif
 
   if (manager == NULL)
@@ -153,7 +153,7 @@ ergadm_free_event_manager (ergadm_event_manager_t * manager)
   g_free (manager);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_free_event_manager");
+  g_debug ("----- EXIT naadsm_free_event_manager");
 #endif
 }
 
@@ -166,7 +166,6 @@ ergadm_free_event_manager (ergadm_event_manager_t * manager)
  *   \a new_event will be freed after it is processed.
  *
  * @image html events_flowchart.png
- * @image latex events_flowchart.eps "" width=4in
  *
  * @param manager an event manager.
  * @param new_event an event.
@@ -177,18 +176,18 @@ ergadm_free_event_manager (ergadm_event_manager_t * manager)
  * @todo Keep "request" events in the queue if no sub-model claims them.
  */
 void
-ergadm_create_event (ergadm_event_manager_t * manager, EVT_event_t * new_event,
+naadsm_create_event (naadsm_event_manager_t * manager, EVT_event_t * new_event,
                      HRD_herd_list_t * herds, ZON_zone_list_t * zones, RAN_gen_t * rng)
 {
   EVT_event_t *event;
   GSList *iter;
-  ergadm_model_t *model;
-#if INFO || DEBUG
+  naadsm_model_t *model;
+#if DEBUG
   char *s;
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_create_event");
+  g_debug ("----- ENTER naadsm_create_event");
 #endif
 
   EVT_event_enqueue (manager->queue, new_event);
@@ -202,33 +201,32 @@ ergadm_create_event (ergadm_event_manager_t * manager, EVT_event_t * new_event,
 #endif
 
   while (!EVT_event_queue_is_empty (manager->queue))
-    {
-      event = EVT_event_dequeue (manager->queue);
+    { 
+      event = EVT_event_dequeue (manager->queue, rng);
 
-#ifdef FIX_ME
-#if INFO
+#if DEBUG
       s = EVT_event_to_string (event);
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "now handling %s", s);
-      free (s);
-#endif
+      g_debug ("now handling %s", s);
+      /* naadsm_printf( s ); */
+      g_free (s);
 #endif
 
       for (iter = manager->listeners[event->type]; iter != NULL; iter = g_slist_next (iter))
         {
           /* Does the GUI user want to stop a simulation in progress? */
-          if (NULL != guilib_simulation_stop)
+          if (NULL != naadsm_simulation_stop)
             {
               /* This check may break the day loop.
-               * If necessary, Another check (see above) will break the iteration loop.*/
-              if (0 != guilib_simulation_stop ())
+               * If necessary, another check (see above) will break the iteration loop.*/
+              if (0 != naadsm_simulation_stop ())
                 break;
             }
 
-          model = (ergadm_model_t *) (iter->data);
-#if INFO
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "running %s", model->name);
-#endif
-          model->run (model, herds, zones, event, rng, manager->queue);
+          model = (naadsm_model_t *) (iter->data);
+#if DEBUG
+          g_debug ("running %s", model->name);
+#endif 
+          model->run (model, herds, zones, event, rng, manager->queue);         
         }
 
 #ifdef FIX_ME
@@ -236,14 +234,13 @@ ergadm_create_event (ergadm_event_manager_t * manager, EVT_event_t * new_event,
       s = EVT_event_queue_to_string (manager->queue);
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "all models listening for %s run, queue now = %s",
              EVT_event_type_name[event->type], s);
-      free (s);
+      g_free (s);
 #endif
 #endif
       EVT_free_event (event);
     }
-
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_create_event");
+  g_debug ("----- EXIT naadsm_create_event");
 #endif
 }
 

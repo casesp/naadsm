@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>25</num-days>
@@ -183,23 +183,27 @@
 
     <vaccination-monitor>
       <output>
-	<variable-name>num-units-vaccinated-by-production-type</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacnU</variable-name>
+        <broken-down>yes</broken-down>
+        <frequency>daily</frequency>
       </output>
       <output>
-	<variable-name>num-animals-vaccinated-by-production-type</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacnA</variable-name>
+        <broken-down>yes</broken-down>
+        <frequency>daily</frequency>
       </output>
     </vaccination-monitor>
 
     <vaccination-list-monitor>
       <output>
-	<variable-name>num-units-awaiting-vaccination-by-production-type</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacwU</variable-name>
+        <broken-down>yes</broken-down>
+        <frequency>daily</frequency>
       </output>
       <output>
-	<variable-name>num-animals-awaiting-vaccination-by-production-type</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacwA</variable-name>
+        <broken-down>yes</broken-down>
+        <frequency>daily</frequency>
       </output>
     </vaccination-list-monitor>
 
@@ -207,4 +211,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

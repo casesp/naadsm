@@ -8,7 +8,7 @@
  * @version 0.1
  * @date June 2005
  *
- * Copyright &copy; APHI and Colorado State University, 2005
+ * Copyright &copy; APHI and Colorado State University, 2005 - 2011
  *
  * This file has been modified by hand for Windows/MinGW
  * versions (exe and dll) of the North American Animal Disease Spread Model.
@@ -26,19 +26,11 @@
  * any later version.
  */
 
-#ifndef WIN_DLL
-  /* Define to 1 to provide an option for debug output. */
-#define DEBUG 1
-
-  /* Define to 1 to provide an option for informational output. */
-#define INFO 1
-#else
-  /* Define to 1 to provide an option for debug output. */
+/* Define to 1 to provide an option for debug output. */
 #define DEBUG 0
 
-  /* Define to 1 to provide an option for informational output. */
+/* Define to 1 to provide an option for informational output. */
 #define INFO 0
-#endif
 
 /* Define to 1 if you have the `atan2' function. */
 #define HAVE_ATAN2 1
@@ -52,8 +44,8 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #define HAVE_ERRNO_H 1
 
-/* Define to 1 if you have the `getline' function. */
-#define HAVE_GETLINE 1
+/* Define if you have the `getline' function. */
+#undef HAVE_GETLINE
 
 /* Define to 1 if you have the `getstr' function. */
 /* #undef HAVE_GETSTR */
@@ -79,11 +71,8 @@
 /* Define to 1 if you have the `rtree' library (-lrtree). */
 #define HAVE_LIBRTREE 1
 
-/* Define to 0 to never use the `rtree' library. 
- * Define to 1 to always use the `rtree' library.
- * Leave the symbol undefined to let the program choose. 
-*/
-//#define USE_RTREE 1
+/* Define to 1 if you have <limits.h>. */
+#define HAVE_LIMITS_H 1
 
 /* Define to 1 if you have the <ltdl.h> header file. */
 #define HAVE_LTDL_H 0
@@ -146,22 +135,32 @@
 #define HAVE_UNISTD_H 1
 
 /* Name of package */
-#define PACKAGE "sim"
+#define PACKAGE "NAADSM"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "sim"
+#define PACKAGE_NAME "naadsm"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "sim 0.1"
+/* ================== */
+/* !!!! IMPORTANT !!! */
+/* ================== */
+/* DON'T FORGET: When updating this version number, also update the version 
+   number in the file config.in for the Linux version */ 
+#define PACKAGE_STRING "NAADSM 3.2.18"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "sim"
+#define PACKAGE_TARNAME "NAADSM"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.1"
+/* ================== */
+/* !!!! IMPORTANT !!! */
+/* ================== */
+/* DON'T FORGET: When updating this version number, also update the version 
+   number in the file config.in for the Linux version */ 
+#define PACKAGE_VERSION "3.2.18"
 
 /* Define to use the simple SPRNG interface. */
 #define SIMPLE_SPRNG 1
@@ -173,7 +172,12 @@
 #define USE_GMP 1
 
 /* Version number of package */
-#define VERSION "0.1"
+/* ================== */
+/* !!!! IMPORTANT !!! */
+/* ================== */
+/* DON'T FORGET: When updating this version number, also update the version 
+   number in the file config.in for the Linux version */ 
+#define VERSION "3.2.18"
 
 /* Define this if the link test failed. */
 /* #undef WITHOUT_SPRNG */

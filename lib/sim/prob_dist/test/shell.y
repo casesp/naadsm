@@ -7,6 +7,7 @@
 #include <glib.h>
 #include <math.h>
 #include <sprng.h>
+#include <gsl/gsl_statistics.h>
 
 #define PROMPT "> "
 
@@ -48,6 +49,11 @@
  *
  *     Creates a <a href="structPDF__gaussian__dist__t.html">Gaussian (normal)
  *     distribution</a>.
+ *   <li>
+ *     <code>inverse-gaussian (mu,lambda)</code>
+ *
+ *     Creates a <a href="structPDF__inverse__gaussian__dist__t.html">inverse
+ *     Gaussian distribution</a>.
  *   <li>
  *     <code>poisson (mu)</code>
  *
@@ -91,6 +97,31 @@
  *     Creates an <a href="structPDF__lognormal__dist__t.html">lognormal
  *     distribution</a>.
  *   <li>
+ *     <code>negbinomial (s, p)</code>
+ *
+ *     Creates an <a href="structPDF__negbinomial__dist__t.html">negative
+ *     binomial distribution</a>.
+ *   <li>
+ *     <code>pareto (theta, a)</code>
+ *
+ *     Creates an <a href="structPDF__pareto__dist__t.html">Pareto
+ *     distribution</a>.
+ *   <li>
+ *     <code>binomial (n, p)</code>
+ *
+ *     Creates an <a href="structPDF__binomial__dist__t.html">binomial
+ *     distribution</a>.
+ *   <li>
+ *     <code>discrete-uniform (min, max)</code>
+ *
+ *     Creates an <a href="structPDF__discrete__uniform__dist__t.html">discrete
+ *     uniform distribution</a>.
+ *   <li>
+ *     <code>hypergeometric (n1, n2, t)</code>
+ *
+ *     Creates an <a href="structPDF__hypergeometric__dist__t.html">hypergeometric
+ *     distribution</a>.
+ *   <li>
  *     <code>pdf (x)</code>
  *
  *     Returns the value of the probability distribution function at \a x for
@@ -108,6 +139,45 @@
  *     \a area (<i>x</i> such that the area under the probability distribution
  *     curve to the left of <i>x</i> = <i>area</i>) for the most recently
  *     created distribution.
+ *   <li>
+ *     <code>min ()</code>
+ *
+ *     Returns the minimum of the range for the most recently created
+ *     distribution.
+ *   <li>
+ *     <code>max ()</code>
+ *
+ *     Returns the maximum of the range for the most recently created
+ *     distribution.
+ *   <li>
+ *     <code>mean ()</code>
+ *
+ *     Returns the mean for the most recently created distribution.
+ *   <li>
+ *     <code>variance ()</code>
+ *
+ *     Returns the variance for the most recently created
+ *     distribution.
+ *   <li>
+ *     <code>sample_min (iter)</code>
+ *
+ *     Returns the minimum of the range for the most recently created
+ *     distribution based on \a iter samples.
+ *   <li>
+ *     <code>sample_max (iter)</code>
+ *
+ *     Returns the maximum of the range for the most recently created
+ *     distribution based on \a iter samples.
+ *   <li>
+ *     <code>sample_mean (iter)</code>
+ *
+ *     Returns the mean for the most recently created distribution
+ *     based on \a iter samples.
+ *   <li>
+ *     <code>sample_variance (iter)</code>
+ *
+ *     Returns the variance for the most recently created
+ *     distribution based on \a iter samples.
  *   <li>
  *     <code>sample (iter,low,high)</code>
  *
@@ -131,7 +201,7 @@
  * @version 0.1
  * @date July 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
+ * Copyright &copy; University of Guelph, 2003-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -150,8 +220,35 @@ char errmsg[BUFFERSIZE];
 
 RAN_gen_t *rng;
 PDF_dist_t *current_dist = NULL;
+double * current_sample = NULL;
+int ncurrent_samples = -1;
 
 void g_free_as_GFunc (gpointer data, gpointer user_data);
+
+static void current_sample_free(void)
+{
+  ncurrent_samples = -1;
+  g_free (current_sample);
+  current_sample = NULL;
+}
+
+static gboolean current_sample_create(int nsamples)
+{
+  int i;
+
+  if (1 > nsamples)
+    return FALSE;
+  if (ncurrent_samples == nsamples)
+    return TRUE;
+  current_sample_free ();
+  current_sample = g_new0(double, nsamples);
+  if (NULL == current_sample)
+    return FALSE;
+  for (i = 0; i < nsamples; i++)
+    current_sample[i] = PDF_random (current_dist, rng);
+  ncurrent_samples = nsamples;
+  return TRUE;
+}
 %}
 
 %union {
@@ -159,12 +256,18 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
   GSList *lval;
 }
 
-%token POINT UNIFORM TRIANGULAR PIECEWISE HISTOGRAM GAUSSIAN POISSON BETA
+%token POINT UNIFORM TRIANGULAR PIECEWISE HISTOGRAM GAUSSIAN INVGAUSSIAN
+%token POISSON BETA
 %token BETAPERT GAMMA WEIBULL EXPONENTIAL LOGISTIC LOGLOGISTIC LOGNORMAL
+%token NEGBINOMIAL PARETO
+%token BINOMIAL DISCRETEUNIFORM HYPERGEOMETRIC
 %token PDF CDF INVCDF SAMPLE
+%token HAS_MIN HAS_MAX HAS_MEAN HAS_VARIANCE
+%token REAL_MIN REAL_MAX REAL_MEAN REAL_VARIANCE
+%token SAMPLE_MIN SAMPLE_MAX SAMPLE_MEAN SAMPLE_VARIANCE
 %token NUM
 %token LPAREN RPAREN COMMA
-%token <fval> NUM
+%type <fval> NUM
 %type <lval> num_list
 
 %%
@@ -183,6 +286,7 @@ command :
 new_command :
     POINT LPAREN NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_point_dist ($3);
       PDF_printf_dist (current_dist);
@@ -191,6 +295,7 @@ new_command :
     }
   | UNIFORM LPAREN NUM COMMA NUM RPAREN
     { 
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_uniform_dist ($3, $5);
       PDF_printf_dist (current_dist);
@@ -199,6 +304,7 @@ new_command :
     }
   | TRIANGULAR LPAREN NUM COMMA NUM COMMA NUM RPAREN
     { 
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_triangular_dist ($3, $5, $7);
       PDF_printf_dist (current_dist);
@@ -211,6 +317,7 @@ new_command :
       double *xy, *p;
       GSList *iter;
 
+      current_sample_free ();
       PDF_free_dist (current_dist);
 
       npoints = g_slist_length ($3);
@@ -240,14 +347,25 @@ new_command :
     }
   | GAUSSIAN LPAREN NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_gaussian_dist ($3, $5);
       PDF_printf_dist (current_dist);
       printf ("\n%s", PROMPT);
       fflush (stdout);
     }
+  | INVGAUSSIAN LPAREN NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_inverse_gaussian_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
   | POISSON LPAREN NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_poisson_dist ($3);
       PDF_printf_dist (current_dist);
@@ -256,6 +374,7 @@ new_command :
     }
   | BETA LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_beta_dist ($3, $5, $7, $9);
       PDF_printf_dist (current_dist);
@@ -264,6 +383,7 @@ new_command :
     }
   | BETAPERT LPAREN NUM COMMA NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_beta_pert_dist ($3, $5, $7);
       PDF_printf_dist (current_dist);
@@ -272,6 +392,7 @@ new_command :
     }
   | GAMMA LPAREN NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_gamma_dist ($3, $5);
       PDF_printf_dist (current_dist);
@@ -280,6 +401,7 @@ new_command :
     }
   | WEIBULL LPAREN NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_weibull_dist ($3, $5);
       PDF_printf_dist (current_dist);
@@ -288,6 +410,7 @@ new_command :
     }
   | EXPONENTIAL LPAREN NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_exponential_dist ($3);
       PDF_printf_dist (current_dist);
@@ -296,6 +419,7 @@ new_command :
     }
   | LOGISTIC LPAREN NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_logistic_dist ($3, $5);
       PDF_printf_dist (current_dist);
@@ -304,6 +428,7 @@ new_command :
     }
   | LOGLOGISTIC LPAREN NUM COMMA NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_loglogistic_dist ($3, $5, $7);
       PDF_printf_dist (current_dist);
@@ -312,8 +437,54 @@ new_command :
     }
   | LOGNORMAL LPAREN NUM COMMA NUM RPAREN
     {
+      current_sample_free ();
       PDF_free_dist (current_dist);
       current_dist = PDF_new_lognormal_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
+  | NEGBINOMIAL LPAREN NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_negative_binomial_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
+  | PARETO LPAREN NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_pareto_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
+  | BINOMIAL LPAREN NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_binomial_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
+  | DISCRETEUNIFORM LPAREN NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_discrete_uniform_dist ($3, $5);
+      PDF_printf_dist (current_dist);
+      printf ("\n%s", PROMPT);
+      fflush (stdout);
+    }
+  | HYPERGEOMETRIC LPAREN NUM COMMA NUM COMMA NUM RPAREN
+    {
+      current_sample_free ();
+      PDF_free_dist (current_dist);
+      current_dist = PDF_new_hypergeometric_dist ($3, $5, $7);
       PDF_printf_dist (current_dist);
       printf ("\n%s", PROMPT);
       fflush (stdout);
@@ -326,6 +497,7 @@ new_command :
       double x;
       GSList *iter;
 
+      current_sample_free ();
       PDF_free_dist (current_dist);
 
       /* Allocate a histogram data structure. */
@@ -366,6 +538,70 @@ function_call :
   | INVCDF LPAREN NUM RPAREN
     {
       printf ("%g\n%s", PDF_inverse_cdf ($3, current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | HAS_MIN LPAREN RPAREN
+    {
+      printf ("%d\n%s", PDF_has_min (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | HAS_MAX LPAREN RPAREN
+    {
+      printf ("%d\n%s", PDF_has_max (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | HAS_MEAN LPAREN RPAREN
+    {
+      printf ("%d\n%s", PDF_has_mean (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | HAS_VARIANCE LPAREN RPAREN
+    {
+      printf ("%d\n%s", PDF_has_variance (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | REAL_MIN LPAREN RPAREN
+    {
+      printf ("%g\n%s", PDF_min (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | REAL_MAX LPAREN RPAREN
+    {
+      printf ("%g\n%s", PDF_max (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | REAL_MEAN LPAREN RPAREN
+    {
+      printf ("%g\n%s", PDF_mean (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | REAL_VARIANCE LPAREN RPAREN
+    {
+      printf ("%g\n%s", PDF_variance (current_dist), PROMPT);
+      fflush (stdout);
+    }
+  | SAMPLE_MIN LPAREN NUM RPAREN
+    {
+      current_sample_create($3);
+      printf ("%g\n%s", gsl_stats_min(current_sample, 1, ncurrent_samples), PROMPT);
+      fflush (stdout);
+    }
+  | SAMPLE_MAX LPAREN NUM RPAREN
+    {
+      current_sample_create($3);
+      printf ("%g\n%s", gsl_stats_max(current_sample, 1, ncurrent_samples), PROMPT);
+      fflush (stdout);
+    }
+  | SAMPLE_MEAN LPAREN NUM RPAREN
+    {
+      current_sample_create($3);
+      printf ("%g\n%s", gsl_stats_mean(current_sample, 1, ncurrent_samples), PROMPT);
+      fflush (stdout);
+    }
+  | SAMPLE_VARIANCE LPAREN NUM RPAREN
+    {
+      current_sample_create($3);
+      printf ("%g\n%s", gsl_stats_variance(current_sample, 1, ncurrent_samples), PROMPT);
       fflush (stdout);
     }
   ;
@@ -433,7 +669,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s)
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;

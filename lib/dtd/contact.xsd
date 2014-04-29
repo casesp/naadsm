@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
   <!-- Types of contact between herds. -->
-
-  <simpleType name="contact-type">
-    <restriction base="string">
-      <enumeration value="direct" />
-      <enumeration value="indirect" />
-      <enumeration value="other" />
-    </restriction>
-  </simpleType>
 
   <complexType name="contact-spread-model-type">
     <annotation>
@@ -27,7 +20,16 @@
     </annotation>
     <sequence>
       <!-- Model parameters. -->
-      <element name="fixed-movement-rate" type="ergadm:frequency">
+      
+      <!-- rbh: Note on minOccurs="0"
+      The minOccurs="0" were necessary because contact-spread model parameters
+      originate from either the ContactSpreadParams ssXML forms or the ZoneParams ssXML. 
+      This results in all the elements of model never present in either
+      circumstance, validation fails for both sets of params without
+      the minOccurs="0". Is there a better way to handle this??
+      -->
+      
+      <element name="fixed-movement-rate" type="naadsm:frequency" minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -41,7 +43,7 @@
           </documentation>
         </annotation>
       </element>     
-      <element name="movement-rate" type="ergadm:frequency">
+      <element name="movement-rate" type="naadsm:frequency"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -55,7 +57,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="distance" type="ergadm:PDF">
+      <element name="distance" type="naadsm:PDF"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -64,24 +66,24 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:length</x-axis-type>
+            <x-axis-type>naadsm:length</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="delay" type="ergadm:PDF">
+      <element name="delay" type="naadsm:PDF"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
-              The in-transit time between the source of the contact and the
+              The shipping delay from the source to the
               destination, given as a probability distribution.
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="prob-infect" type="ergadm:probability">
+      <element name="prob-infect" type="naadsm:probability"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -90,7 +92,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="movement-control" type="ergadm:REL">
+      <element name="movement-control" type="naadsm:REL"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -100,12 +102,12 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:unitless</y-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:unitless</y-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="latent-units-can-infect" type="boolean">
+      <element name="latent-units-can-infect" type="boolean"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -115,7 +117,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="subclinical-units-can-infect" type="boolean">
+      <element name="subclinical-units-can-infect" type="boolean"  minOccurs="0" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -128,8 +130,11 @@
     </sequence>
     <attribute name="version" type="string" fixed="0.1" />
     <attribute name="from-production-type" type="string" use="required" />
-    <attribute name="to-production-type" type="string" use="required" />
-    <attribute name="contact-type" type="ergadm:contact-type" use="required" />
+    <!-- rbh: Changed to-production-type use="required" to "optional" because when
+    a zone is specified there is no to-production-type and the XML validation fails. -->
+    <attribute name="to-production-type" type="string" use="optional" />
+    <attribute name="contact-type" type="naadsm:contact-type" use="required" />
+    <attribute name="zone" type="string" use="optional" />
   </complexType>
 
 </schema>

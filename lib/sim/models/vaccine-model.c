@@ -29,24 +29,20 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version vaccine_model_LTX_interface_version
-#define new vaccine_model_LTX_new
-#define run vaccine_model_LTX_run
-#define reset vaccine_model_LTX_reset
-#define events_listened_for vaccine_model_LTX_events_listened_for
-#define is_listening_for vaccine_model_LTX_is_listening_for
-#define has_pending_actions vaccine_model_LTX_has_pending_actions
-#define has_pending_infections vaccine_model_LTX_has_pending_infections
-#define to_string vaccine_model_LTX_to_string
-#define local_printf vaccine_model_LTX_printf
-#define local_fprintf vaccine_model_LTX_fprintf
-#define local_free vaccine_model_LTX_free
-#define handle_request_for_vaccine_delay_event vaccine_model_LTX_handle_request_for_vaccine_delay_event
-#define handle_vaccination_event vaccine_model_LTX_handle_vaccination_event
-#define events_created vaccine_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new vaccine_model_new
+#define run vaccine_model_run
+#define reset vaccine_model_reset
+#define events_listened_for vaccine_model_events_listened_for
+#define is_listening_for vaccine_model_is_listening_for
+#define has_pending_actions vaccine_model_has_pending_actions
+#define has_pending_infections vaccine_model_has_pending_infections
+#define to_string vaccine_model_to_string
+#define local_printf vaccine_model_printf
+#define local_fprintf vaccine_model_fprintf
+#define local_free vaccine_model_free
+#define handle_before_any_simulations_event vaccine_model_handle_before_any_simulations_event
+#define handle_vaccination_event vaccine_model_handle_vaccination_event
 
 #include "model.h"
 #include "model_util.h"
@@ -63,8 +59,6 @@
 #  include <strings.h>
 #endif
 
-#include "guilib.h"
-
 #include "vaccine-model.h"
 
 #if !HAVE_ROUND && HAVE_RINT
@@ -78,22 +72,10 @@ double round (double x);
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "vaccine-model"
 
-#define MODEL_DESCRIPTION "\
-A module to encapsulate knowledge about a vaccine.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 May 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 1
-EVT_event_type_t events_created[] = { EVT_DeclarationOfVaccineDelay };
 
 #define NEVENTS_LISTENED_FOR 2
-EVT_event_type_t events_listened_for[] = { EVT_RequestForVaccineDelay,
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations,
   EVT_Vaccination };
 
 
@@ -120,27 +102,26 @@ local_data_t;
 
 
 /**
- * Responds to a request for vaccine delay by declaring the number of days
+ * Before any simulations, this module declares the number of days between
  * between being vaccinated and becoming immune.  One instance of this module
  * may handle several production types, so one response is issued for each
  * production type that the instance handles.
  *
- * @param self the model.
- * @param queue for any new events the model creates.
+ * @param self this module.
+ * @param queue for any new events the module creates.
  */
 void
-handle_request_for_vaccine_delay_event (struct ergadm_model_t_ *self,
-                                        EVT_event_queue_t * queue)
+handle_before_any_simulations_event (struct naadsm_model_t_ * self,
+                                     EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   unsigned int i;
   char * production_type_name;
-
+  
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_vaccine_delay_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
-
+    
   local_data = (local_data_t *) (self->model_data);
   for (i = 0; i < local_data->production_types->len; i++)
     if (local_data->production_type[i] == TRUE)
@@ -153,8 +134,7 @@ handle_request_for_vaccine_delay_event (struct ergadm_model_t_ *self,
       }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_vaccine_delay_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
   return;
 }
@@ -170,12 +150,12 @@ handle_request_for_vaccine_delay_event (struct ergadm_model_t_ *self,
  * @param rng a random number generator.
  */
 void
-handle_vaccination_event (struct ergadm_model_t_ *self,
+handle_vaccination_event (struct naadsm_model_t_ *self,
                           EVT_vaccination_event_t * event, RAN_gen_t * rng)
 {
   local_data_t *local_data;
   int delay, immunity_period;
-
+  
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_vaccination_event (%s)", MODEL_NAME);
 #endif
@@ -191,8 +171,8 @@ handle_vaccination_event (struct ergadm_model_t_ *self,
     delay = 0;
   else
     delay = local_data->delay;
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "vaccine will take %hu days to take effect", delay);
+#if DEBUG
+  g_debug ("vaccine will take %hu days to take effect", delay);
 #endif
 
   if (event->override_initial_state == VaccineImmune && event->override_days_left_in_state > 0)
@@ -210,8 +190,8 @@ handle_vaccination_event (struct ergadm_model_t_ *self,
           immunity_period = 0;
         }
     }
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "vaccine immunity will last %hu days", immunity_period);
+#if DEBUG
+  g_debug ("vaccine immunity will last %hu days", immunity_period);
 #endif
 
   HRD_vaccinate (event->herd, delay, immunity_period);
@@ -236,7 +216,7 @@ handle_vaccination_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
@@ -245,16 +225,11 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
-    case EVT_RequestForVaccineDelay:
-      handle_request_for_vaccine_delay_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (self, queue);
       break;
     case EVT_Vaccination:
       local_data = (local_data_t *) (self->model_data);
@@ -265,10 +240,9 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
         }
       else
         {
-#if INFO
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                 "herd is %s, sub-model does not apply",
-                 vaccination_event->herd->production_type_name);
+#if DEBUG
+          g_debug ("herd is %s, sub-model does not apply",
+                   vaccination_event->herd->production_type_name);
 #endif
           ;
         }
@@ -282,11 +256,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -297,7 +266,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
@@ -320,7 +289,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -339,7 +308,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -353,7 +322,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -367,7 +336,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   gboolean already_names;
@@ -397,7 +366,7 @@ to_string (struct ergadm_model_t_ *self)
 
   substring = PDF_dist_to_string (local_data->immunity_period);
   g_string_sprintfa (s, "  immunity-period=%s>\n", substring);
-  free (substring);
+  g_free (substring);
 
   /* don't return the wrapper object */
   chararray = s->str;
@@ -415,7 +384,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -435,7 +404,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -448,7 +417,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
@@ -472,23 +441,13 @@ local_free (struct ergadm_model_t_ *self)
 
 
 /**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
-}
-
-
-
-/**
  * Returns a new vaccine model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element *e;
   gboolean success;
@@ -497,13 +456,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -526,7 +482,7 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
   local_data->production_types = herds->production_type_names;
   local_data->production_type =
-    ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
+    naadsm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
 
   e = scew_element_by_name (params, "delay");
   if (e != NULL)
@@ -573,18 +529,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
 
   return m;
-}
-
-char *
-vaccine_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-vaccine_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file vaccine-model.c */

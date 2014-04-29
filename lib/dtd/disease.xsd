@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -15,7 +16,7 @@
     </annotation>
     <sequence>
       <!-- Model parameters. -->
-      <element name="latent-period" type="ergadm:PDF">
+      <element name="latent-period" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -24,11 +25,11 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="infectious-subclinical-period" type="ergadm:PDF">
+      <element name="infectious-subclinical-period" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -38,11 +39,11 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="infectious-clinical-period" type="ergadm:PDF">
+      <element name="infectious-clinical-period" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -51,11 +52,11 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="immunity-period" type="ergadm:PDF">
+      <element name="immunity-period" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -64,11 +65,11 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="prevalence" type="ergadm:REL" minOccurs="0">
+      <element name="prevalence" type="naadsm:REL" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -79,14 +80,15 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:probability</y-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:probability</y-axis-type>
           </appinfo>
         </annotation>
       </element>
     </sequence>
     <attribute name="version" type="string" fixed="0.1" />
     <attribute name="production-type" type="string" use="required" />
+    <attribute name="production-type-id" type="integer" use="required"  />
   </complexType>
 
 </schema>

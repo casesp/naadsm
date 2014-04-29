@@ -7,7 +7,20 @@
  * events announced by other sub-models.
  *
  * @image html events.png
- * @image latex events.eps "" width=4in
+ *
+ * Many NAADSM events correspond to real-world events, for example, the
+ * <i>Exposure</i> and <i>TestResult</i> events.
+ * Three events are used to control timing:
+ * <i>NewDay</i> is the event that initiates all daily processes,
+ * <i>EndOfDay</i> is issued when all events that result (chain-reaction style)
+ * from the NewDay event have wound down,
+ * and <i>Midnight</i> is an event that occurs between simulation days,
+ * when herds change state and zones change shape.
+ * The EndOfDay event is a useful signal for modules that write output,
+ * because it signals that counts will not change past this point,
+ * <i>e.g.</i>, all Detections that are going to occur today have occurred.
+ *
+ * @image html clock_24_hour.png
  *
  * Symbols from this module begin with EVT_.
  *
@@ -15,14 +28,13 @@
  * @sa model.h
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date March 2003
  *
- * Copyright &copy; University of Guelph, 2003-2008
+ * Copyright &copy; University of Guelph, 2003-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,8 +45,9 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <herd.h>
 #include <stdio.h>
+#include "naadsm.h"
+#include "rng.h"
 
 #if STDC_HEADERS
 #  include <stdlib.h>
@@ -44,52 +57,57 @@
 
 
 
-#define EVT_NEVENT_TYPES 29
-
 /** Events of interest. */
 typedef enum
 {
-  EVT_RequestForExposureCauses, EVT_DeclarationOfExposureCauses,
-  EVT_RequestForInfectionCauses, EVT_DeclarationOfInfectionCauses,
-  EVT_RequestForVaccinationReasons, EVT_DeclarationOfVaccinationReasons,
-  EVT_RequestForVaccineDelay, EVT_DeclarationOfVaccineDelay,
-  EVT_RequestForDestructionReasons, EVT_DeclarationOfDestructionReasons,
+  EVT_BeforeAnySimulations,
+  EVT_BeforeEachSimulation,
+  EVT_DeclarationOfExposureCauses,
+  EVT_DeclarationOfInfectionCauses,
+  EVT_DeclarationOfDetectionMeans,
+  EVT_DeclarationOfExamReasons,
+  EVT_DeclarationOfTestReasons,
+  EVT_DeclarationOfVaccinationReasons,
+  EVT_DeclarationOfVaccineDelay,
+  EVT_DeclarationOfDestructionReasons,
+  EVT_DeclarationOfOutputs,
   EVT_NewDay, EVT_Exposure, EVT_AttemptToInfect, EVT_Infection,
-  EVT_Detection, EVT_PublicAnnouncement, EVT_AttemptToTrace, EVT_TraceResult,
-  EVT_RequestForVaccination, EVT_CommitmentToVaccinate, EVT_AttemptToVaccinate,
+  EVT_Detection, EVT_PublicAnnouncement, EVT_Exam, EVT_AttemptToTrace,
+  EVT_TraceResult, EVT_Test, EVT_TestResult, EVT_RequestForVaccination,
+  EVT_CommitmentToVaccinate, EVT_VaccinationCanceled,
   EVT_Vaccination, EVT_RequestForDestruction, EVT_CommitmentToDestroy,
-  EVT_AttemptToDestroy, EVT_Destruction, EVT_RequestForZoneFocus, EVT_EndOfDay,
-  EVT_LastDay
+  EVT_Destruction, EVT_RequestForZoneFocus, EVT_EndOfDay,
+  EVT_LastDay,
+  EVT_Midnight,
+  EVT_NEVENT_TYPES
 }
 EVT_event_type_t;
 
 extern const char *EVT_event_type_name[];
 
-#define EVT_NCONTACT_TYPES 3
-
-/**
- * Ways one herd may contact another.  Direct contact means the movement of
- * animals; indirect contact means the movement of potentially infected things
- * (fomites), e.g., equipment, vehicles, bedding, or people.
- */
-typedef enum
-{
-  UnknownContact, DirectContact, IndirectContact
-}
-EVT_contact_type_t;
-
 
 
 /**
- * A "request for exposure causes" event.  This event signals that any models
- * that can cause exposures must declare the causes(s) they will state for the
- * infections.
+ * A "before any simulations" event.  This event signals modules to do initial
+ * setup.
  */
 typedef struct
 {
   int dummy; /**< to avoid a "struct has no members" warning */
 }
-EVT_request_for_exposure_causes_event_t;
+EVT_before_any_simulations_event_t;
+
+
+
+/**
+ * A "before each simulation" event.  This event signals modules to do per-
+ * simulation setup.
+ */
+typedef struct
+{
+  int dummy; /**< to avoid a "struct has no members" warning */
+}
+EVT_before_each_simulation_event_t;
 
 
 
@@ -107,19 +125,6 @@ EVT_declaration_of_exposure_causes_event_t;
 
 
 /**
- * A "request for infection causes" event.  This event signals that any models
- * that can cause infections must declare the causes(s) they will state for the
- * infections.
- */
-typedef struct
-{
-  int dummy; /**< to avoid a "struct has no members" warning */
-}
-EVT_request_for_infection_causes_event_t;
-
-
-
-/**
  * A "declaration of infection causes" event.  Models that can cause infections
  * use this event to communicate the causes(s) they will state for the
  * infections, so that other models may initialize counters, etc.
@@ -133,15 +138,41 @@ EVT_declaration_of_infection_causes_event_t;
 
 
 /**
- * A "request for vaccination reasons" event.  This event signals that any
- * models that can request vaccinations must declare the reason(s) they will
- * supply for the requests.
+ * A "declaration of detection means" event.  Models that can cause detections
+ * use this event to communicate the means they will state for the detections,
+ * so that other models may initialize counters, etc.
  */
 typedef struct
 {
-  int dummy; /**< to avoid a "struct has no members" warning */
+  GPtrArray *means; /**< array of pointers to ordinary C strings */
 }
-EVT_request_for_vaccination_reasons_event_t;
+EVT_declaration_of_detection_means_event_t;
+
+
+
+/**
+ * A "declaration of exam reasons" event.  Modules that can request exams use
+ * this event to communicate the reason(s) they will supply for the requests,
+ * so that other modules may initialize counters, etc.
+ */
+typedef struct
+{
+  GPtrArray *reasons; /**< array of pointers to ordinary C strings */
+}
+EVT_declaration_of_exam_reasons_event_t;
+
+
+
+/**
+ * A "declaration of test reasons" event.  Modules that can request tests use
+ * this event to communicate the reason(s) they will supply for the requests,
+ * so that other modules may initialize counters, etc.
+ */
+typedef struct
+{
+  GPtrArray *reasons; /**< array of pointers to ordinary C strings */
+}
+EVT_declaration_of_test_reasons_event_t;
 
 
 
@@ -159,20 +190,6 @@ EVT_declaration_of_vaccination_reasons_event_t;
 
 
 /**
- * A "request for vaccine delay" event.  This event signals instances of the
- * vaccine module to declare how long the delay to vaccine immunity is for
- * their production type.  This bit of information is needed in the conflict
- * resolver module to handle one special case.
- */
-typedef struct
-{
-  int dummy; /**< to avoid a "struct has no members" warning */
-}
-EVT_request_for_vaccine_delay_event_t;
-
-
-
-/**
  * A "declaration of vaccine delay" event.  The vaccine module uses this event
  * to communicate how long the delay to vaccine immunity is for their
  * production type.  This bit of information is needed in the conflict resolver
@@ -182,22 +199,9 @@ typedef struct
 {
   HRD_production_type_t production_type;
   char *production_type_name;
-  unsigned short int delay;
+  int delay;
 }
 EVT_declaration_of_vaccine_delay_event_t;
-
-
-
-/**
- * A "request for destruction reasons" event.  This event signals that any
- * models that can request destructions must declare the reason(s) they will
- * supply for the requests.
- */
-typedef struct
-{
-  int dummy; /**< to avoid a "struct has no members" warning */
-}
-EVT_request_for_destruction_reasons_event_t;
 
 
 
@@ -214,10 +218,24 @@ EVT_declaration_of_destruction_reasons_event_t;
 
 
 
+/**
+ * A "declaration of outputs" event.  Modules that track outputs (listed in
+ * Appendix B of the NAADSM User's Guide) use this event to communicate which
+ * outputs they track, in case other modules want to use or aggregate those
+ * outputs.
+ */
+typedef struct
+{
+  GPtrArray *outputs; /**< array of pointers to RPT_reporting_t objects */
+}
+EVT_declaration_of_outputs_event_t;
+
+
+
 /** A "new day" event. */
 typedef struct
 {
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
 }
 EVT_new_day_event_t;
 
@@ -228,10 +246,14 @@ typedef struct
 {
   HRD_herd_t *exposing_herd;
   HRD_herd_t *exposed_herd;
-  unsigned short int day;       /**< day of the simulation */
-  EVT_contact_type_t contact_type;
+  int day;       /**< day of the simulation */
+  NAADSM_contact_type contact_type;
   char *cause; /**< name of the model that created the event */
   gboolean traceable;
+  gboolean traced;
+  gboolean adequate;
+  int initiated_day;
+  int delay;
 }
 EVT_exposure_event_t;
 
@@ -242,11 +264,14 @@ typedef struct
 {
   HRD_herd_t *infecting_herd;
   HRD_herd_t *infected_herd;
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
   char *cause; /**< name of the model that created the event */
   HRD_status_t override_initial_state; /**< when using an infection event to
     specify an in-progress infection, set this to the herd's state (Latent,
     InfectiousSubclinical, or InfectiousClinical). */
+  int override_days_in_state; /**< when using an infection event to specify an
+    in-progress infection, use a non-zero value here to give the number of days
+    a herd has been in its current state. */
   int override_days_left_in_state; /**< when using an infection event to
     specify an in-progress infection, use a non-zero value here to give the
     number of days until the herd transitions to the next state.  A zero value
@@ -262,11 +287,14 @@ typedef struct
 {
   HRD_herd_t *infecting_herd;
   HRD_herd_t *infected_herd;
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
   char *cause; /**< name of the model that created the event */
   HRD_status_t override_initial_state; /**< when using an infection event to
     specify an in-progress infection, set this to the herd's state (Latent,
     InfectiousSubclinical, or InfectiousClinical). */
+  int override_days_in_state; /**< when using an infection event to specify an
+    in-progress infection, use a non-zero value here to give the number of days
+    a herd has been in its current state. */
   int override_days_left_in_state; /**< when using an infection event to
     specify an in-progress infection, use a non-zero value here to give the
     number of days until the herd transitions to the next state.  A zero value
@@ -281,7 +309,9 @@ EVT_infection_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
+  char *means; /**< how the unit was detected */
+  NAADSM_test_result test_result; /**< If detection was by diagnostic testing, what was the test result? **/
 }
 EVT_detection_event_t;
 
@@ -290,9 +320,22 @@ EVT_detection_event_t;
 /** A "public announcement" event. */
 typedef struct
 {
-  unsigned short int day;
+  int day;
 }
 EVT_public_announcement_event_t;
+
+
+
+/** An "exam" event. */
+typedef struct
+{
+  HRD_herd_t *herd;
+  int day;
+  char *reason;
+  double detection_multiplier;
+  gboolean test_if_no_signs;
+}
+EVT_exam_event_t;
 
 
 
@@ -300,7 +343,10 @@ EVT_public_announcement_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
+  NAADSM_contact_type contact_type;
+  NAADSM_trace_direction direction;
+  int trace_period;
 }
 EVT_attempt_to_trace_event_t;
 
@@ -311,11 +357,36 @@ typedef struct
 {
   HRD_herd_t *exposing_herd;
   HRD_herd_t *exposed_herd;
-  EVT_contact_type_t contact_type;
-  unsigned short int day;
+  NAADSM_contact_type contact_type;
+  NAADSM_trace_direction direction;
+  int day;
+  int initiated_day;
   gboolean traced;
 }
 EVT_trace_result_event_t;
+
+
+/** A "test" event. */
+typedef struct
+{
+  HRD_herd_t *herd;
+  int day;
+  char *reason;
+}
+EVT_test_event_t;
+
+
+
+/** A "test result" event. */
+typedef struct
+{
+  HRD_herd_t *herd;
+  int day;
+  gboolean positive;
+  gboolean correct; /**< enables tracking true and false positives and negatives */
+  char *reason;
+}
+EVT_test_result_event_t;
 
 
 
@@ -323,11 +394,14 @@ EVT_trace_result_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
-  unsigned short int priority;
+  int day;
+  int priority;
   char *reason; /**< why vaccination was requested */
-  unsigned short int min_days_before_next;
-  gboolean accepted;
+  gboolean cancel_on_detection; /**< whether to cancel the vaccination if the
+    unit is detected as diseased */
+  int min_days_before_next;
+  int day_commitment_made; /**< the day on which a commitment to fulfil this
+    request was made. */
 }
 EVT_request_for_vaccination_event_t;
 
@@ -337,27 +411,21 @@ EVT_request_for_vaccination_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
 }
 EVT_commitment_to_vaccinate_event_t;
 
 
 
-/** An "attempt to vaccinate" event. */
+/** A "vaccination canceled" event. */
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
-  char *reason; /**< why vaccination was requested */
-  HRD_status_t override_initial_state; /**< when using a vaccination event to
-    specify in-progress immunity, set this to VaccineImmune. */
-  int override_days_left_in_state; /**< when using a vaccination event to
-    specify in-progress immunity, use a non-zero value here to give the number
-    of days until the herd transitions to the next state.  A zero value means
-    that the number should be chosen from the probability distribution given
-    in the disease model parameters. */
+  int day;
+  int day_commitment_made; /**< the day on which a commitment to do this
+    vaccination was made. */  
 }
-EVT_attempt_to_vaccinate_event_t;
+EVT_vaccination_canceled_event_t;
 
 
 
@@ -365,10 +433,15 @@ EVT_attempt_to_vaccinate_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
   char *reason; /**< why vaccination was requested */
+  int day_commitment_made; /**< the day on which a commitment to do this
+    vaccination was made. */
   HRD_status_t override_initial_state; /**< when using a vaccination event to
     specify in-progress immunity, set this to VaccineImmune. */
+  int override_days_in_state; /**< when using a vaccination event to specify
+    in-progress immunity, use a non-zero value here to give the number of days
+    a herd has been in its current state. */
   int override_days_left_in_state; /**< when using a vaccination event to
     specify in-progress immunity, use a non-zero value here to give the number
     of days until the herd transitions to the next state.  A zero value means
@@ -383,10 +456,11 @@ EVT_vaccination_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
-  unsigned short int priority;
+  int day;
+  int priority;
   char *reason; /**< why destruction was requested */
-  gboolean accepted;
+  int day_commitment_made; /**< the day on which a commitment to fulfil this
+    request was made. */
 }
 EVT_request_for_destruction_event_t;
 
@@ -396,20 +470,9 @@ EVT_request_for_destruction_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
 }
 EVT_commitment_to_destroy_event_t;
-
-
-
-/** An "attempt to destroy" event. */
-typedef struct
-{
-  HRD_herd_t *herd;
-  unsigned short int day;
-  char *reason; /**< why destruction was requested */
-}
-EVT_attempt_to_destroy_event_t;
 
 
 
@@ -417,8 +480,10 @@ EVT_attempt_to_destroy_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
   char *reason; /**< why destruction was requested */
+  int day_commitment_made; /**< the day on which a commitment to do this
+    destruction was made. */
 }
 EVT_destruction_event_t;
 
@@ -428,9 +493,8 @@ EVT_destruction_event_t;
 typedef struct
 {
   HRD_herd_t *herd;
-  unsigned short int day;
+  int day;
   char *reason; /**< why a zone focus was requested */
-  gboolean accepted;
 }
 EVT_request_for_zone_focus_event_t;
 
@@ -443,7 +507,7 @@ EVT_request_for_zone_focus_event_t;
  */
 typedef struct
 {
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
 }
 EVT_end_of_day_event_t;
 
@@ -456,9 +520,20 @@ EVT_end_of_day_event_t;
  */
 typedef struct
 {
-  unsigned short int day; /**< day of the simulation */
+  int day; /**< day of the simulation */
 }
 EVT_last_day_event_t;
+
+
+
+/**
+ * A "midnight" event.  This event is specifically for triggering things that
+ * happen between simulation days. */
+typedef struct
+{
+  int day; /**< simulation day that begins just after midnight */
+}
+EVT_midnight_event_t;
 
 
 
@@ -468,35 +543,39 @@ typedef struct
   EVT_event_type_t type;
   union
   {
-    EVT_request_for_exposure_causes_event_t request_for_exposure_causes;
+    EVT_before_any_simulations_event_t before_any_simulations;
+    EVT_before_each_simulation_event_t before_each_simulation;
     EVT_declaration_of_exposure_causes_event_t declaration_of_exposure_causes;
-    EVT_request_for_infection_causes_event_t request_for_infection_causes;
     EVT_declaration_of_infection_causes_event_t declaration_of_infection_causes;
-    EVT_request_for_vaccination_reasons_event_t request_for_vaccination_reasons;
+    EVT_declaration_of_detection_means_event_t declaration_of_detection_means;
+    EVT_declaration_of_exam_reasons_event_t declaration_of_exam_reasons;
+    EVT_declaration_of_test_reasons_event_t declaration_of_test_reasons;
     EVT_declaration_of_vaccination_reasons_event_t declaration_of_vaccination_reasons;
-    EVT_request_for_vaccine_delay_event_t request_for_vaccine_delay;
     EVT_declaration_of_vaccine_delay_event_t declaration_of_vaccine_delay;
-    EVT_request_for_destruction_reasons_event_t request_for_destruction_reasons;
     EVT_declaration_of_destruction_reasons_event_t declaration_of_destruction_reasons;
+    EVT_declaration_of_outputs_event_t declaration_of_outputs;
     EVT_new_day_event_t new_day;
     EVT_exposure_event_t exposure;
     EVT_attempt_to_infect_event_t attempt_to_infect;
     EVT_infection_event_t infection;
     EVT_detection_event_t detection;
     EVT_public_announcement_event_t public_announcement;
+    EVT_exam_event_t exam;
     EVT_attempt_to_trace_event_t attempt_to_trace;
     EVT_trace_result_event_t trace_result;
+    EVT_test_event_t test;
+    EVT_test_result_event_t test_result;
     EVT_request_for_vaccination_event_t request_for_vaccination;
     EVT_commitment_to_vaccinate_event_t commitment_to_vaccinate;
-    EVT_attempt_to_vaccinate_event_t attempt_to_vaccinate;
+    EVT_vaccination_canceled_event_t vaccination_canceled;
     EVT_vaccination_event_t vaccination;
     EVT_request_for_destruction_event_t request_for_destruction;
     EVT_commitment_to_destroy_event_t commitment_to_destroy;
-    EVT_attempt_to_destroy_event_t attempt_to_destroy;
     EVT_destruction_event_t destruction;
     EVT_request_for_zone_focus_event_t request_for_zone_focus;
     EVT_end_of_day_event_t end_of_day;
     EVT_last_day_event_t last_day;
+    EVT_midnight_event_t midnight;
   }
   u;
 }
@@ -504,85 +583,106 @@ EVT_event_t;
 
 
 
-/** A queue of events. */
-typedef GQueue EVT_event_queue_t;
+/** A pool of events. */
+typedef struct
+{
+  GPtrArray *current_wave;
+  GPtrArray *next_wave;
+} EVT_event_queue_t;
 
 
 
 /* Prototypes. */
-EVT_event_t *EVT_new_request_for_exposure_causes_event (void);
+EVT_event_t *EVT_new_before_any_simulations_event (void);
+EVT_event_t *EVT_new_before_each_simulation_event (void);
 EVT_event_t *EVT_new_declaration_of_exposure_causes_event (GPtrArray * causes);
-EVT_event_t *EVT_new_request_for_infection_causes_event (void);
 EVT_event_t *EVT_new_declaration_of_infection_causes_event (GPtrArray * causes);
-EVT_event_t *EVT_new_request_for_vaccination_reasons_event (void);
+EVT_event_t *EVT_new_declaration_of_detection_means_event (GPtrArray * means);
+EVT_event_t *EVT_new_declaration_of_exam_reasons_event (GPtrArray * reasons);
+EVT_event_t *EVT_new_declaration_of_test_reasons_event (GPtrArray * reasons);
 EVT_event_t *EVT_new_declaration_of_vaccination_reasons_event (GPtrArray * reasons);
-EVT_event_t *EVT_new_request_for_vaccine_delay_event (void);
 EVT_event_t *EVT_new_declaration_of_vaccine_delay_event (HRD_production_type_t,
                                                          char * production_type_name,
-                                                         unsigned short int);
-EVT_event_t *EVT_new_request_for_destruction_reasons_event (void);
+                                                         int);
 EVT_event_t *EVT_new_declaration_of_destruction_reasons_event (GPtrArray * reasons);
-EVT_event_t *EVT_new_new_day_event (unsigned short int day);
+EVT_event_t *EVT_new_declaration_of_outputs_event (GPtrArray *);
+EVT_event_t *EVT_new_new_day_event (int day);
 EVT_event_t *EVT_new_exposure_event (HRD_herd_t * exposing_herd,
                                      HRD_herd_t * exposed_herd,
-                                     unsigned short int day, char *cause, gboolean traceable);
+                                     int day,
+                                     char *cause,
+                                     gboolean traceable,
+                                     gboolean adequate,
+                                     int delay);
 EVT_event_t *EVT_new_attempt_to_infect_event (HRD_herd_t * infecting_herd,
                                               HRD_herd_t * infected_herd,
-                                              unsigned short int day, char *cause);
-EVT_event_t *EVT_new_inprogress_infection_event (HRD_herd_t * infecting_herd,
-                                                 HRD_herd_t * infected_herd,
-                                                 unsigned short int day,
-                                                 char *cause,
-                                                 HRD_status_t start_in_state,
-                                                 int days_left_in_state);
+                                              int day, char *cause);
 EVT_event_t *EVT_new_infection_event (HRD_herd_t * infecting_herd,
                                       HRD_herd_t * infected_herd,
-                                      unsigned short int day, char *cause);
-EVT_event_t *EVT_new_detection_event (HRD_herd_t *, unsigned short int day);
-EVT_event_t *EVT_new_public_announcement_event (unsigned short int day);
-EVT_event_t *EVT_new_attempt_to_trace_event (HRD_herd_t *, unsigned short int day);
+                                      int day, char *cause);
+EVT_event_t *EVT_new_detection_event (HRD_herd_t *, int day,
+                                      char *means, NAADSM_test_result test_result);
+EVT_event_t *EVT_new_public_announcement_event (int day);
+EVT_event_t *EVT_new_exam_event (HRD_herd_t *,
+                                 int day,
+                                 char *reason,
+                                 double detection_multiplier,
+                                 gboolean test_if_no_signs);
+EVT_event_t *EVT_new_attempt_to_trace_event (HRD_herd_t *,
+                                             int day,
+                                             NAADSM_contact_type,
+                                             NAADSM_trace_direction,
+                                             int trace_period);
 EVT_event_t *EVT_new_trace_result_event (HRD_herd_t * exposing_herd,
                                          HRD_herd_t * exposed_herd,
-                                         EVT_contact_type_t contact_type,
-                                         unsigned short int day, gboolean traced);
+                                         NAADSM_contact_type,
+                                         NAADSM_trace_direction,
+                                         int day, int initiated_day, gboolean traced);
+EVT_event_t *EVT_new_test_event (HRD_herd_t *,
+                                 int day,
+                                 char *reason);
+EVT_event_t *EVT_new_test_result_event (HRD_herd_t *,
+                                        int day,
+                                        gboolean positive,
+                                        gboolean correct,
+                                        char *reason);
 EVT_event_t *EVT_new_request_for_vaccination_event (HRD_herd_t *,
-                                                    unsigned short int day,
+                                                    int day,
                                                     char *reason,
-                                                    unsigned short int priority,
-                                                    unsigned short int min_days_before_next);
-EVT_event_t *EVT_new_commitment_to_vaccinate_event (HRD_herd_t *, unsigned short int day);
-EVT_event_t *EVT_new_attempt_to_vaccinate_event (HRD_herd_t *,
-                                                 unsigned short int day, char *reason);
+                                                    int priority,
+                                                    gboolean cancel_on_detection,
+                                                    int min_days_before_next);
+EVT_event_t *EVT_new_commitment_to_vaccinate_event (HRD_herd_t *, int day);
+EVT_event_t *EVT_new_vaccination_canceled_event (HRD_herd_t *, int day,
+                                                 int day_commitment_made);
 EVT_event_t *EVT_new_inprogress_immunity_event (HRD_herd_t * herd,
-                                                unsigned short int day,
+                                                int day,
                                                 char *cause,
                                                 HRD_status_t start_in_state,
+                                                int days_in_state,
                                                 int days_left_in_state);
-EVT_event_t *EVT_new_vaccination_event (HRD_herd_t *, unsigned short int day, char *reason);
+EVT_event_t *EVT_new_vaccination_event (HRD_herd_t *, int day, char *reason,
+                                        int day_commitment_made);
 EVT_event_t *EVT_new_request_for_destruction_event (HRD_herd_t *,
-                                                    unsigned short int day,
-                                                    char *reason, unsigned short int priority);
-EVT_event_t *EVT_new_commitment_to_destroy_event (HRD_herd_t *, unsigned short int day);
-EVT_event_t *EVT_new_attempt_to_destroy_event (HRD_herd_t *, unsigned short int day, char *reason);
-EVT_event_t *EVT_new_destruction_event (HRD_herd_t *, unsigned short int day, char *reason);
+                                                    int day,
+                                                    char *reason, int priority);
+EVT_event_t *EVT_new_commitment_to_destroy_event (HRD_herd_t *, int day);
+EVT_event_t *EVT_new_destruction_event (HRD_herd_t *, int day, char *reason,
+                                        int day_commitment_made);
 EVT_event_t *EVT_new_request_for_zone_focus_event (HRD_herd_t *,
-                                                   unsigned short int day, char *reason);
-EVT_event_t *EVT_new_end_of_day_event (unsigned short int day);
-EVT_event_t *EVT_new_last_day_event (unsigned short int day);
+                                                   int day, char *reason);
+EVT_event_t *EVT_new_end_of_day_event (int day);
+EVT_event_t *EVT_new_last_day_event (int day);
+EVT_event_t *EVT_new_midnight_event (int day);
 
 void EVT_free_event (EVT_event_t *);
 EVT_event_t *EVT_clone_event (EVT_event_t *);
 char *EVT_event_to_string (EVT_event_t *);
 int EVT_fprintf_event (FILE *, EVT_event_t *);
 
-#define EVT_printf_event(Q) EVT_fprintf_event(stdout,Q)
+#define EVT_printf_event(E) EVT_fprintf_event(stdout,E)
 
-/**
- * Creates a new, empty event queue.
- *
- * @return a pointer to a newly-created event queue.
- */
-#define EVT_new_event_queue g_queue_new
+EVT_event_queue_t *EVT_new_event_queue (void);
 
 /**
  * Adds an event to an event queue.
@@ -590,16 +690,7 @@ int EVT_fprintf_event (FILE *, EVT_event_t *);
  * @param Q an event queue.
  * @param E an event.
  */
-#define EVT_event_enqueue(Q,E) g_queue_push_tail(Q,E)
-
-/**
- * Retrieves the next event from an event queue.  Returns NULL if the queue is
- * empty.
- *
- * @param Q an event queue.
- * @return an event.
- */
-#define EVT_event_dequeue(Q) g_queue_pop_head(Q)
+#define EVT_event_enqueue(Q,E) g_ptr_array_add((Q)->next_wave,E)
 
 /**
  * Returns whether an event queue is empty.
@@ -607,8 +698,9 @@ int EVT_fprintf_event (FILE *, EVT_event_t *);
  * @param Q an event queue.
  * @return TRUE if the queue is empty, FALSE otherwise.
  */
-#define EVT_event_queue_is_empty(Q) g_queue_is_empty(Q)
+#define EVT_event_queue_is_empty(Q) ((Q)->current_wave->len == 0 && (Q)->next_wave->len == 0)
 
+EVT_event_t *EVT_event_dequeue (EVT_event_queue_t *, RAN_gen_t *);
 void EVT_free_event_queue (EVT_event_queue_t *);
 char *EVT_event_queue_to_string (EVT_event_queue_t *);
 int EVT_fprintf_event_queue (FILE *, EVT_event_queue_t *);

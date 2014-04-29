@@ -4,24 +4,21 @@ AUTOMAKE_OPTIONS = dejagnu
 
 RUNTESTDEFAULTFLAGS = --srcdir $$srcdir/test
 
-SUBDIRS = libltdl \
-  replace \
-  rng \
-  wml \
+SUBDIRS = wml \
   rel_chart \
   gis \
   herd \
-  event \
   prob_dist \
   reporting \
-  zone \
-  src \
   models \
+  src \
   smherds2xml \
   sm3herds2xml \
   xml2sm3herds \
   filters \
+  dll \
   doc
-
-EXTRA_DIST = Doxyfile
+mandir= $(exec_prefix)/man
+man1_MANS=naadsm.1
+EXTRA_DIST = Doxyfile doxygen.css graph.py naadsm.1 INSTALL.html
 

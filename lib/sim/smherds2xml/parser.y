@@ -58,9 +58,6 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 HRD_herd_list_t * herds;
 gboolean first_exposure_fields = TRUE;
@@ -167,13 +164,13 @@ herd:
       length = 6 + g_slist_length ($13);
       if (length < nfields)
         {
-	  snprintf (errmsg, BUFFERSIZE, "Too few fields (found %i, require %i)",
+          g_snprintf (errmsg, BUFFERSIZE, "Too few fields (found %i, require %i)",
 	    length, nfields);
           yyerror (errmsg);
 	}
       else if (length > nfields)
         {
-	  snprintf (errmsg, BUFFERSIZE, "Too many fields (found %i, require %i)",
+          g_snprintf (errmsg, BUFFERSIZE, "Too many fields (found %i, require %i)",
 	    length, nfields);
           yyerror (errmsg);
 	}

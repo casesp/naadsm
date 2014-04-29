@@ -285,19 +285,19 @@ draw_herds (SHPHandle shape_file, DBFHandle attribute_file, int nherds, gdImageP
               g_warning ("no status for herd %i", shape_index);
               herd_colour = white;
             }
-          else if (strcmp (field_value, "Susceptible") == 0)
+          else if (strcmp (field_value, "Susc") == 0)
             herd_colour = white;
-          else if (strcmp (field_value, "Latent") == 0)
+          else if (strcmp (field_value, "Lat") == 0)
             herd_colour = yellow;
-          else if (strcmp (field_value, "Infectious Subclinical") == 0)
+          else if (strcmp (field_value, "Subc") == 0)
             herd_colour = orange;
-          else if (strcmp (field_value, "Infectious Clinical") == 0)
+          else if (strcmp (field_value, "Clin") == 0)
             herd_colour = red;
-          else if (strcmp (field_value, "Naturally Immune") == 0)
+          else if (strcmp (field_value, "NImm") == 0)
             herd_colour = green;
-          else if (strcmp (field_value, "Vaccine Immune") == 0)
+          else if (strcmp (field_value, "VImm") == 0)
             herd_colour = blue;
-          else if (strcmp (field_value, "Destroyed") == 0)
+          else if (strcmp (field_value, "Dest") == 0)
             herd_colour = black;
 
           /* Note that we don't free field_value; it is a pointer to an
@@ -590,20 +590,18 @@ main (int argc, char *argv[])
   poptGetNextOpt (option);
   herd_shapefile_name = poptGetArg (option);
   if (herd_shapefile_name == NULL)
-    g_error ("Need the name of an ArcView file of herds.");
+    {
+      g_error ("Need the name of an ArcView file of herds.");
+    }
 
   poptGetNextOpt (option);
   image_file_name = (char *) poptGetArg (option);
   poptFreeContext (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
   if (verbosity < 1)
     {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
+      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);

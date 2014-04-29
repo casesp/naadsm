@@ -19,16 +19,16 @@
  *         <ol>
  *           <li>
  *             Compute the probability of detection <i>P</i> =
- *             <i>p</i><sub>1</sub> \htmlonly &times; \endhtmlonly
- *             \latexonly $\times$ \endlatexonly <i>p</i><sub>2</sub>.
+ *             <i>p</i><sub>1</sub> &times; <i>p</i><sub>2</sub>.
  *         </ol>
  *       <li>
- *         If the unit is inside a zone focus,
+ *         If the unit is inside a zone focus, <i>p</i><sub>1</sub> is assumed
+ *         to be 1 and a multiplier may be applied to <i>p</i><sub>2</sub> to
+ *         simulate increased scrutiny.
  *         <ol>
  *           <li>
  *             Compute the probability of detection <i>P</i> =
- *             <i>p</i><sub>2</sub> \htmlonly &times; \endhtmlonly
- *             \latexonly $\times$ \endlatexonly zone multiplier.
+ *             <i>p</i><sub>2</sub> &times; zone multiplier.
  *         </ol>
  *       <li>
  *         Generate a random number <i>r</i> in [0,1).
@@ -36,6 +36,12 @@
  *         If <i>r</i> < <i>P</i>, report a detection to the authorities.
  *     </ol>
  * </ol>
+ *
+ * New in version 3.2: This module also listens for requests for a visual
+ * inspection.  Such a request might happen when a visit is made to perform
+ * tracing, for example.  The request may have a multiplier to simulate
+ * increased scrutiny.  The probability of detection <i>P</i> =
+ * <i>p</i><sub>2</sub> &times; request multiplier.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
  *   Grid Computing Research Group<br>
@@ -45,7 +51,7 @@
  * @version 0.1
  * @date June 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
+ * Copyright &copy; University of Guelph, 2003-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -59,27 +65,25 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version detection_model_LTX_interface_version
-#define is_singleton detection_model_LTX_is_singleton
-#define new detection_model_LTX_new
-#define set_params detection_model_LTX_set_params
-#define run detection_model_LTX_run
-#define reset detection_model_LTX_reset
-#define events_listened_for detection_model_LTX_events_listened_for
-#define is_listening_for detection_model_LTX_is_listening_for
-#define has_pending_actions detection_model_LTX_has_pending_actions
-#define has_pending_infections detection_model_LTX_has_pending_infections
-#define to_string detection_model_LTX_to_string
-#define local_printf detection_model_LTX_printf
-#define local_fprintf detection_model_LTX_fprintf
-#define local_free detection_model_LTX_free
-#define handle_new_day_event detection_model_LTX_handle_new_day_event
-#define handle_detection_event detection_model_LTX_handle_detection_event
-#define handle_public_announcement_event detection_model_LTX_handle_public_announcement_event
-#define events_created detection_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define is_singleton detection_model_is_singleton
+#define new detection_model_new
+#define set_params detection_model_set_params
+#define run detection_model_run
+#define reset detection_model_reset
+#define events_listened_for detection_model_events_listened_for
+#define is_listening_for detection_model_is_listening_for
+#define has_pending_actions detection_model_has_pending_actions
+#define has_pending_infections detection_model_has_pending_infections
+#define to_string detection_model_to_string
+#define local_printf detection_model_printf
+#define local_fprintf detection_model_fprintf
+#define local_free detection_model_free
+#define handle_before_any_simulations_event detection_model_handle_before_any_simulations_event
+#define handle_declaration_of_exam_reasons_event detection_model_handle_declaration_of_exam_reasons_event
+#define handle_new_day_event detection_model_handle_new_day_event
+#define handle_exam_event detection_model_handle_exam_event
+#define handle_public_announcement_event detection_model_handle_public_announcement_event
 
 #include "model.h"
 #include "model_util.h"
@@ -92,8 +96,6 @@
 #  include <strings.h>
 #endif
 
-#include "guilib.h"
-
 #include "detection-model.h"
 
 extern const char *HRD_status_name[];
@@ -102,22 +104,15 @@ extern const char *RPT_frequency_name[];
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "detection-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a farmer or veterinarian reporting signs of a disease.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 June 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
+
+#define NEVENTS_LISTENED_FOR 5
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations,
+  EVT_DeclarationOfExamReasons, EVT_NewDay, EVT_PublicAnnouncement, EVT_Exam };
 
 
 
-#define NEVENTS_CREATED 1
-EVT_event_type_t events_created[] = { EVT_Detection };
-
-#define NEVENTS_LISTENED_FOR 3
-EVT_event_type_t events_listened_for[] = { EVT_NewDay, EVT_Detection, EVT_PublicAnnouncement };
+const char detection_model_detection_means[] = "Clin"; /* short for clinical signs */
 
 
 
@@ -142,7 +137,7 @@ typedef struct
     of the form zone_multiplier[zone->level-1][production_type] to get a
     particular multiplier. */
   gboolean outbreak_known;
-  unsigned short int public_announcement_day;
+  int public_announcement_day;
   gboolean *detected;
   unsigned int nherds; /**< Number of herds.  Stored here because it is also
     the length of the detected flag array. */
@@ -152,6 +147,75 @@ typedef struct
     outbreak is known. */
 }
 local_data_t;
+
+
+
+/**
+ * Before any simulations, this module declares all the means by which it may
+ * create a detection.
+ *
+ * @param queue for any new events the module creates.
+ */
+void
+handle_before_any_simulations_event (EVT_event_queue_t * queue)
+{
+  GPtrArray *means;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
+#endif
+
+  means = g_ptr_array_sized_new (1);
+  g_ptr_array_add (means, detection_model_detection_means);
+  EVT_event_enqueue (queue, EVT_new_declaration_of_detection_means_event (means));
+
+  /* Note that we don't clean up the GPtrArray.  It will be freed along with
+   * the declaration event after all interested modules have processed the
+   * event. */
+
+#if DEBUG
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
+#endif
+  return;
+}
+
+
+
+/**
+ * Responds to a declaration of exam reasons by giving those same reasons as
+ * reasons why *this* module may request a test.
+ *
+ * @param event a declaration of exam reasons event.
+ * @param queue for any new events the module creates.
+ */
+void
+handle_declaration_of_exam_reasons_event (EVT_declaration_of_exam_reasons_event_t * event,
+                                          EVT_event_queue_t * queue)
+{
+  GPtrArray *reasons;
+  unsigned int n, i;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_declaration_of_exam_reasons_event (%s)", MODEL_NAME);
+#endif
+
+  /* Copy the potential reasons for exams. */
+  n = event->reasons->len;
+  reasons = g_ptr_array_sized_new (n);
+  for (i = 0; i < n; i++)
+    g_ptr_array_add (reasons, (char *) g_ptr_array_index (event->reasons, i));
+
+  /* Declare those same reasons as potential reasons for tests. */
+  EVT_event_enqueue (queue, EVT_new_declaration_of_test_reasons_event (reasons));
+
+  /* Note that we don't clean up the GPtrArray.  It will be freed along with
+   * the declaration event after all interested modules have processed the
+   * event. */
+
+#if DEBUG
+  g_debug ("----- EXIT handle_declaration_of_exam_reasons_event (%s)", MODEL_NAME);
+#endif
+}
 
 
 
@@ -166,7 +230,7 @@ local_data_t;
  * @param queue for any new events the model creates.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                       ZON_zone_list_t * zones, EVT_new_day_event_t * event,
                       RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
@@ -243,6 +307,11 @@ handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
       /* Compute the probability that the disease would be noticed, based
        * on clinical signs.  This is multiplied with the probability
        * computed above. */
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+             "using chart value for day %hu in clinical state",
+             herd->days_in_status);
+#endif
       prob_report_from_signs =
         REL_chart_lookup (herd->days_in_status, param_block->prob_report_vs_days_clinical);
 
@@ -266,14 +335,15 @@ handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
       if (r < P)
         {
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "r (%g) < P (%g)", r, P);
+          g_debug ("r (%g) < P (%g)", r, P);
+          g_debug ("unit \"%s\" detected and reported", herd->official_id);
 #endif
-#if INFO
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                 "unit \"%s\" detected and reported", herd->official_id);
-#endif
-
-          EVT_event_enqueue (queue, EVT_new_detection_event (herd, event->day));
+          /* There was no diagnostic test, so NAADSM_TestUnspecified is a legitimate value here. */
+          EVT_event_enqueue (queue,
+                             EVT_new_detection_event (herd, event->day,
+                                                      detection_model_detection_means,
+                                                      NAADSM_TestUnspecified));
+          local_data->detected[herd->index] = TRUE;
         }
       else
         {
@@ -292,26 +362,98 @@ handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
 
 
 /**
- * Records which herds have been detected (by this or other sub-models).
+ * Responds to an exam event by potentially generating a detection.
  *
  * @param self the model.
- * @param event a detection event.
+ * @param herds a herd list.
+ * @param event a new day event.
+ * @param rng a random number generator.
+ * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * event)
+handle_exam_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
+                   EVT_exam_event_t * event, RAN_gen_t * rng,
+                   EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
+  param_block_t *param_block;
+  HRD_herd_t *herd;
+  unsigned int prod_type;
+  double prob_report_from_signs;
+  double P, r;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_exam_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
-  local_data->detected[event->herd->index] = TRUE;
+  herd = event->herd;
+
+  /* Check whether the herd is a production type we're interested in.  If not,
+   * abort. */
+  prod_type = herd->production_type;
+  param_block = local_data->param_block[prod_type];
+  if (param_block == NULL)
+    goto end;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("unit \"%s\" is %s, state is %s, %s detected",
+           herd->official_id,
+           herd->production_type_name,
+           HRD_status_name[herd->status],
+           local_data->detected[herd->index] ? "already" : "not");
 #endif
+
+  /* Check whether the herd has already been detected.  If so, abort. */
+  if (local_data->detected[herd->index])
+    goto end;
+
+  /* Check whether the herd is showing clinical signs of disease. */
+  if (herd->status == InfectiousClinical)
+    {
+      /* Compute the probability that the disease would be noticed, based on
+       * clinical signs and the request multiplier. */
+      prob_report_from_signs =
+        REL_chart_lookup (herd->days_in_status, param_block->prob_report_vs_days_clinical);
+
+      P = prob_report_from_signs * event->detection_multiplier;
+#if DEBUG
+      g_debug ("P = %g * %g", prob_report_from_signs, event->detection_multiplier);
+#endif
+      r = RAN_num (rng);
+      if (r < P)
+        {
+#if DEBUG
+          g_debug ("r (%g) < P (%g)", r, P);
+          g_debug ("unit \"%s\" detected and reported", herd->official_id);
+#endif
+          /* There was no diagnostic test, so NAADSM_TestUnspecified is a legitimate value here. */
+          EVT_event_enqueue (queue,
+                             EVT_new_detection_event (herd, event->day,
+                                                      detection_model_detection_means,
+                                                      NAADSM_TestUnspecified));
+          local_data->detected[herd->index] = TRUE;
+        }
+      else
+        {
+#if DEBUG
+          g_debug ("r (%g) >= P (%g), not detected", r, P);
+#endif
+          if (event->test_if_no_signs == TRUE)
+            EVT_event_enqueue (queue, EVT_new_test_event (herd, event->day, event->reason));
+        }
+    } /* end of case where herd is Infectious Clinical */
+  else
+    {
+      if (event->test_if_no_signs == TRUE)
+        EVT_event_enqueue (queue, EVT_new_test_event (herd, event->day, event->reason));
+    }
+
+end:
+#if DEBUG
+  g_debug ("----- EXIT handle_exam_event (%s)", MODEL_NAME);
+#endif
+  return;
 }
 
 
@@ -325,7 +467,7 @@ handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * ev
  * @param event a public announcement event.
  */
 void
-handle_public_announcement_event (struct ergadm_model_t_ *self,
+handle_public_announcement_event (struct naadsm_model_t_ *self,
                                   EVT_public_announcement_event_t * event)
 {
   local_data_t *local_data;
@@ -340,9 +482,8 @@ handle_public_announcement_event (struct ergadm_model_t_ *self,
     {
       local_data->outbreak_known = TRUE;
       local_data->public_announcement_day = event->day;
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "community is now aware of outbreak, detection more likely");
+#if DEBUG
+      g_debug ("community is now aware of outbreak, detection more likely");
 #endif
     }
 
@@ -367,25 +508,26 @@ handle_public_announcement_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 
   switch (event->type)
     {
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (queue);
+      break;
+    case EVT_DeclarationOfExamReasons:
+      handle_declaration_of_exam_reasons_event (&(event->u.declaration_of_exam_reasons), queue);
+      break;
     case EVT_NewDay:
       handle_new_day_event (self, herds, zones, &(event->u.new_day), rng, queue);
       break;
-    case EVT_Detection:
-      handle_detection_event (self, &(event->u.detection));
+    case EVT_Exam:
+      handle_exam_event (self, herds, &(event->u.exam), rng, queue);
       break;
     case EVT_PublicAnnouncement:
       handle_public_announcement_event (self, &(event->u.public_announcement));
@@ -399,11 +541,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -414,7 +551,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   int nprod_types, i;
@@ -456,7 +593,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -475,7 +612,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -489,7 +626,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -503,7 +640,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   local_data_t *local_data;
@@ -530,11 +667,11 @@ to_string (struct ergadm_model_t_ *self)
 
       substring = REL_chart_to_string (param_block->prob_report_vs_days_clinical);
       g_string_append_printf (s, "\n    prob-report-vs-days-clinical=%s", substring);
-      free (substring);
+      g_free (substring);
 
       substring = REL_chart_to_string (param_block->prob_report_vs_days_since_outbreak);
       g_string_append_printf (s, "\n    prob-report-vs-days-since-outbreak=%s", substring);
-      free (substring);
+      g_free (substring);
 
       for (j = 0; j < nzones; j++)
         {
@@ -561,7 +698,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -581,7 +718,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -594,7 +731,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int nprod_types, nzones, i;
@@ -640,17 +777,6 @@ local_free (struct ergadm_model_t_ *self)
 
 
 /**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
-}
-
-
-
-/**
  * Returns whether this model is a singleton or not.
  */
 gboolean
@@ -665,7 +791,7 @@ is_singleton (void)
  * Adds a set of parameters to a detection model.
  */
 void
-set_params (struct ergadm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, scew_element * params)
 {
   local_data_t *local_data;
   param_block_t t;
@@ -719,12 +845,17 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
           g_warning ("%s: setting zone multiplier to 1 (no effect)", MODEL_NAME);
           zone_multiplier = 1;
         }
-      if (zone_multiplier < 0)
+      else if (zone_multiplier < 0)
         {
           g_warning ("%s: zone multiplier cannot be negative, setting to 1 (no effect)",
                      MODEL_NAME);
           zone_multiplier = 1;
         }
+      else if (zone_multiplier < 1)
+        {
+          g_warning ("%s: zone multiplier is less than 1, will result in slower detection inside zone",
+                     MODEL_NAME);
+        }      
     }
   else
     {
@@ -734,9 +865,9 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   /* Find out which production types, or which production type-zone
    * combinations, these parameters apply to. */
   production_type =
-    ergadm_read_prodtype_attribute (params, "production-type", local_data->production_types);
+    naadsm_read_prodtype_attribute (params, "production-type", local_data->production_types);
   if (scew_attribute_by_name (params, "zone") != NULL)
-    zone = ergadm_read_zone_attribute (params, local_data->zones);
+    zone = naadsm_read_zone_attribute (params, local_data->zones);
   else
     zone = NULL;
 
@@ -823,10 +954,11 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
 /**
  * Returns a new detection model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *self;
+  naadsm_model_t *self;
   local_data_t *local_data;
   unsigned int nprod_types, nzones, i, j;
 
@@ -834,13 +966,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  self = g_new (ergadm_model_t, 1);
+  self = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   self->name = MODEL_NAME;
-  self->description = MODEL_DESCRIPTION;
-  self->events_created = events_created;
-  self->nevents_created = NEVENTS_CREATED;
   self->events_listened_for = events_listened_for;
   self->nevents_listened_for = NEVENTS_LISTENED_FOR;
   self->outputs = g_ptr_array_new ();
@@ -899,28 +1028,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
 
   return self;
-}
-
-
-char *
-detection_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-
-ergadm_model_t *
-detection_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
-}
-
-
-
-gboolean
-detection_model_is_singleton (void)
-{
-  return is_singleton ();
 }
 
 /* end of file detection-model.c */

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -22,33 +23,16 @@
             <element name="variable-name">
               <simpleType>
                 <restriction base="string">                
-                  <enumeration value="num-units-awaiting-vaccination">
+                  <enumeration value="vacwU">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The number of units waiting to be vaccinated.  This
-                          variable always reports the length of the waiting
-                          list on the day of reporting, regardless of whether
-                          it is reported daily, weekly, or at some other
-                          interval.
+                          The number of units waiting to be vaccinated.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-units-awaiting-vaccination-by-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of units waiting to be vaccinated, broken
-                          down by production type.  This variable always
-                          reports the length of the waiting list on the day of
-                          reporting, regardless of whether it is reported
-                          daily, weekly, or at some other interval.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="peak-num-units-awaiting-vaccination">
+                  <enumeration value="vacwUMax">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
@@ -58,33 +42,26 @@
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-animals-awaiting-vaccination">
+                  <enumeration value="vacwUMaxDay">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The number of animals waiting to be vaccinated.  This
-                          variable always reports the number of animals on the
-                          waiting list on the day of reporting, regardless of
-                          whether it is reported daily, weekly, or at some
-                          other interval.
+                          The first simulation day on which the maximum number
+                          of units in queue for vaccination was reached.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-animals-awaiting-vaccination-by-production-type">
+                  <enumeration value="vacwA">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The number of animals waiting to be vaccinated,
-                          broken down by production type.  This variable always
-                          reports the number of animals on the waiting list on
-                          the day of reporting, regardless of whether it is
-                          reported daily, weekly, or at some other interval.
+                          The number of animals waiting to be vaccinated.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="peak-num-animals-awaiting-vaccination">
+                  <enumeration value="vacwAMax">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
@@ -94,24 +71,34 @@
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="average-vaccination-wait-time">
+                  <enumeration value="vacwAMaxDay">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The average number of days any unit was waiting to be
-                          vaccinated.  This value is based on units that have
-                          been vaccinated and units currently waiting.
+                          The first simulation day on which the maximum number
+                          of animals in queue for vaccination was reached.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="peak-vaccination-wait-time">
+                  <enumeration value="vacwUTimeAvg">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The average number of days any unit was waiting to be
+                          vaccinated.  This value is based only on units that have
+                          been vaccinated.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="vacwUTimeMax">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
                           The peak number of days any unit was waiting to be
-                          vaccinated.  This value is based on units that have
-                          been vaccinated and units currently waiting.
+                          vaccinated.  This value is based only on units that have
+                          been vaccinated.
                         ]]>
                       </documentation>
                     </annotation>
@@ -119,7 +106,8 @@
                 </restriction>
               </simpleType>                   
             </element>
-            <element name="frequency" type="ergadm:output-variable-frequency" />
+            <element name="broken-down" type="naadsm:yes-no" minOccurs="0" />
+            <element name="frequency" type="naadsm:output-variable-frequency" />
           </sequence>
         </complexType>
       </element>

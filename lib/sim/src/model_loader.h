@@ -25,10 +25,10 @@
 
 
 /* Prototypes. */
-int ergadm_load_models (char *parameter_file,
-                        HRD_herd_list_t *, ZON_zone_list_t *,
-                        char *model_dir, unsigned int *ndays,
-                        unsigned int *nruns, ergadm_model_t *** models, GPtrArray * outputs);
-void ergadm_unload_models (int nmodels, ergadm_model_t ** models);
+int naadsm_load_models (char *parameter_file,
+                        HRD_herd_list_t *, projPJ, ZON_zone_list_t *,
+                        unsigned int *ndays, unsigned int *nruns,
+                        naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions);
+void naadsm_unload_models (int nmodels, naadsm_model_t ** models);
 
 #endif /* !MODEL_LOADER_H */

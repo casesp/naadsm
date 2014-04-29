@@ -20,8 +20,7 @@
 #ifndef CONTACT_SPREAD_MODEL_H
 #define CONTACT_SPREAD_MODEL_H
 
-char *contact_spread_model_interface_version (void);
-ergadm_model_t *contact_spread_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                          ZON_zone_list_t * zones);
+naadsm_model_t *contact_spread_model_new (scew_element * params, HRD_herd_list_t *,
+                                          projPJ, ZON_zone_list_t *);
 gboolean contact_spread_model_is_singleton (void);
 #endif

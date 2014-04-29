@@ -172,7 +172,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s)
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;

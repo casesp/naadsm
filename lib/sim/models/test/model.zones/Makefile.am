@@ -11,7 +11,7 @@ dist_noinst_DATA = all.exp
 nodist_all_exp_SOURCES = ../tests_start_tag.xml all.xml ../tests_end_tag.xml
 
 all.exp: $(nodist_all_exp_SOURCES)
-	cat $^ | python ../xml2expect.py > $@  
+	cat $^ | python ../xml2expect.py > $@
 
 # Do include the test scenario parameter files in the distribution file.
 
@@ -33,4 +33,12 @@ EXTRA_DIST = no_zones.xml no_zones_w_vars.xml 1_zone_1_focus_w_vars.xml \
   animal_days_in_zone_1.xml animal_days_in_zone_1_w_destr.xml \
   animal_days_in_zone_1_w_destr_limit.xml \
   animal_days_in_zone_2.xml animal_days_in_zone_2_w_destr.xml \
-  rtree_test_1.xml zone_area_1.xml zone_area_2.xml zone_names_utf.xml
+  rtree_test_1.xml zone_area_1.xml zone_area_2.xml zone_area_3.xml \
+  zone_names_utf.xml \
+  trace_0_nm.xml trace_1_nm.xml trace_1_nm_w_vars.xml trace_1_merge_nm_w_vars.xml \
+  trace_cattle_nm_w_vars.xml trace_pigs_nm_w_vars.xml \
+  zone_perimeter_1.xml zone_perimeter_2.xml zone_perimeter_3.xml \
+  shipping_joined_areas_2_w_vars.xml \
+  donut_holes_removed_2.xml \
+  zone_nesting_1.xml zone_nesting_2.xml zone_nesting_3.xml zone_nesting_4.xml \
+  zone_nesting_5.xml

@@ -1,6 +1,6 @@
 /** @file event_manager.h
  * Interface for event_manager.c.  The event manager is a singleton object that
- * handles all communication among sub-models.  See ergadm_create_event() for
+ * handles all communication among sub-models.  See naadsm_create_event() for
  * a flowchart describing its actions.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
@@ -11,7 +11,7 @@
  * @version 0.1
  * @date April 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
+ * Copyright &copy; University of Guelph, 2003-2011
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -37,18 +37,19 @@
 typedef struct
 {
   int nmodels;
-  ergadm_model_t **models;
+  naadsm_model_t **models;
   EVT_event_queue_t *queue;
   GSList *listeners[EVT_NEVENT_TYPES]; /** which models are listening for which events */
 }
-ergadm_event_manager_t;
+naadsm_event_manager_t;
 
 
 
 /* Prototypes. */
-ergadm_event_manager_t *ergadm_new_event_manager (ergadm_model_t **, int);
-void ergadm_free_event_manager (ergadm_event_manager_t *);
-void ergadm_create_event (ergadm_event_manager_t *, EVT_event_t *,
+naadsm_event_manager_t *naadsm_new_event_manager (naadsm_model_t **, int);
+void naadsm_free_event_manager (naadsm_event_manager_t *);
+void naadsm_create_event (naadsm_event_manager_t *, EVT_event_t *,
                           HRD_herd_list_t *, ZON_zone_list_t *, RAN_gen_t *);
+                          
 
 #endif /* !EVENT_MANAGER_H */

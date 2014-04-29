@@ -28,8 +28,9 @@
 
 
 /* Prototypes. */
-gboolean *ergadm_read_prodtype_attribute (scew_element *, char *, GPtrArray *);
-gboolean *ergadm_read_zone_attribute (scew_element *, ZON_zone_list_t *);
-void ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index);
+gboolean *naadsm_read_prodtype_attribute (scew_element *, char *, GPtrArray *);
+gboolean *naadsm_read_zone_attribute (scew_element *, ZON_zone_list_t *);
+void naadsm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index);
+void g_queue_free_as_GDestroyNotify (gpointer data);
 
 #endif /* !MODEL_UTIL_H */

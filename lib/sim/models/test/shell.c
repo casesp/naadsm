@@ -11,7 +11,7 @@
  * @version 0.1
  * @date November 2003
  *
- * Copyright &copy; University of Guelph, 2003-2008
+ * Copyright &copy; University of Guelph, 2003-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -42,7 +42,7 @@ main (int argc, char *argv[])
   size_t bufsize = 0;
   ssize_t len;
   GString *cmd = NULL;
-  FILE *tmp_file;
+  int tmp_file;
   char *tmp_filename;
   GError *error;
 
@@ -64,12 +64,12 @@ main (int argc, char *argv[])
           buf[len - 1] = '\0';
 
           /* Run the simulator. */
-          g_string_printf (cmd, "test/minisim -V 0 -o %s --model-dir=.. -h %s",
+          g_string_printf (cmd, "test/mininaadsm -V 0 -o %s -h %s",
                            tmp_filename, &buf[21]);
           system (cmd->str);
 
           /* Get a table of the output variable values. */
-          g_string_printf (cmd, "../filters/full_table_filter %s", tmp_filename);
+          g_string_printf (cmd, "../filters/full_table_filter < %s", tmp_filename);
           system (cmd->str);
 
           /* Remove the temporary file. */
@@ -78,7 +78,7 @@ main (int argc, char *argv[])
         }
       else if (g_ascii_strncasecmp (buf, "stochastic", 10) == 0)
         {
-          g_string_printf (cmd, "test/minisim -V 0 --model-dir=.. -h %s", &buf[11]);
+          g_string_printf (cmd, "test/mininaadsm -V 0 -h %s", &buf[11]);
           system (cmd->str);
         }
       else if (g_ascii_strncasecmp (buf, "variables", 9) == 0)
@@ -92,12 +92,12 @@ main (int argc, char *argv[])
           buf[len - 1] = '\0';
 
           /* Run the simulator. */
-          g_string_printf (cmd, "test/minisim -r 0.5 -V 0 -o %s --model-dir=models -h %s",
+          g_string_printf (cmd, "test/mininaadsm -r 0.5 -V 0 -o %s -h %s",
                            tmp_filename, &buf[10]);
           system (cmd->str);
 
           /* Get a table of the output variable values. */
-          g_string_printf (cmd, "../filters/full_table_filter %s", tmp_filename);
+          g_string_printf (cmd, "../filters/full_table_filter < %s", tmp_filename);
           system (cmd->str);
 
           /* Remove the temporary file. */
@@ -106,7 +106,7 @@ main (int argc, char *argv[])
         }
       else
         {
-          g_string_printf (cmd, "test/minisim -r 0.5 -V 0 --model-dir=models -h %s", buf);
+          g_string_printf (cmd, "test/mininaadsm -r 0.5 -V 0 -h %s", buf);
           system (cmd->str);
         }
       printf (PROMPT);

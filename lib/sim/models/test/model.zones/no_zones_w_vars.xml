@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>10</num-days>
@@ -18,11 +18,7 @@
 
     <zone-monitor>
       <output>
-        <variable-name>num-separate-areas</variable-name>
-        <frequency>daily</frequency>
-      </output>
-      <output>
-        <variable-name>num-units-in-zone</variable-name>
+        <variable-name>unitsInZone</variable-name>
         <frequency>daily</frequency>
       </output>
     </zone-monitor>
@@ -95,7 +91,7 @@
 
     <detection-monitor>
       <output>
-        <variable-name>num-units-detected</variable-name> 
+        <variable-name>detnU</variable-name> 
         <frequency>daily</frequency>
       </output>
     </detection-monitor>
@@ -104,4 +100,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

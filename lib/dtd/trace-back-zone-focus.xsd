@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<!-- XSD file created for 3.1.15 XML output validation -->
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -20,7 +22,8 @@
     </sequence>
     <attribute name="version" type="string" fixed="0.1" />
     <attribute name="production-type" type="string" />
-    <attribute name="contact-type" type="ergadm:contact-type" use="required" />
+    <attribute name="production-type-id" type="integer"  />
+    <attribute name="contact-type" type="naadsm:contact-type" use="required" />
   </complexType>
 
 </schema>

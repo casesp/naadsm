@@ -24,6 +24,8 @@
 #include "rng.h"
 #include <sprng.h>
 
+#include "naadsm.h"
+
 
 
 /**
@@ -54,13 +56,15 @@ sprng_as_get (void *dummy)
 /**
  * Creates a new random number generator object.
  *
- * @param seed a seed value
+ * @param seed a seed value.  Use -1 to indicate that a seed should be picked
+ *  automatically.
  * @return a random number generator.
  */
 RAN_gen_t *
 RAN_new_generator (int seed)
 {
   RAN_gen_t *self;
+  char s[1024];
 
   if (seed == -1)
     seed = make_sprng_seed ();
@@ -84,6 +88,11 @@ RAN_new_generator (int seed)
 
   self->as_gsl_rng.type = &(self->as_gsl_rng_type);
   self->as_gsl_rng.state = self;
+
+  if( NULL != naadsm_debug ) {
+    sprintf( s, "RNG seed set to %d", seed );
+    naadsm_debug( s );
+  }
 
   return self;
 }

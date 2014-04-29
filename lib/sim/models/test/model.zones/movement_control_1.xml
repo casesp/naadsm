@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>20</num-days>
@@ -156,7 +156,7 @@
 
     <exposure-monitor>
       <output>
-	<variable-name>num-units-exposed-by-cause</variable-name>
+	<variable-name>expnU</variable-name>
 	<frequency>daily</frequency>
       </output>
     </exposure-monitor>
@@ -165,4 +165,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

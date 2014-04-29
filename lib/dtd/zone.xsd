@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\3Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\3Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -17,7 +18,7 @@
     </annotation>
     <sequence>
       <!-- Component parameters. -->
-      <element name="name" type="ergadm:text">
+      <element name="name" type="naadsm:text">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -26,7 +27,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="level" type="ergadm:unitless" minOccurs="0" maxOccurs="1" >
+      <element name="level" type="naadsm:unitless" minOccurs="0" maxOccurs="1" >
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -40,7 +41,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="radius" type="ergadm:length">
+      <element name="radius" type="naadsm:length">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -98,12 +99,14 @@
                 </restriction>
               </simpleType>
             </element>
-            <element name="frequency" type="ergadm:output-variable-frequency" />
+            <element name="frequency" type="naadsm:output-variable-frequency" />
           </sequence>
         </complexType>
       </element>
 
     </sequence>
+    <!-- Use can not be required until ZoneParams ssXML specifies a zone-id for the Background zone -->
+    <attribute name="zone-id" type="integer" use="optional"  />
     <attribute name="version" type="string" fixed="0.1" />
   </complexType>
 

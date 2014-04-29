@@ -17,7 +17,7 @@ import sys
 import time
 import xml.dom.minidom
 from sets import Set
-from string import upper
+from string import upper, join
 from warnings import warn
 
 OUTPUT_ENCODING = "utf-8" # Doxygen's preferred encoding
@@ -36,6 +36,53 @@ def getText (element):
 
 
 
+def getIntensity (color):
+	"""Returns the intensity (a.k.a. value in HSV color space) of a color.  The
+	color parameter must be an (r,g,b) tuple where each number is between 0 and
+	255 inclusive.  The intensity is a value from 0 to 1 inclusive."""
+	return 1.0 * max(color) / 255
+
+
+
+def getColor (state):
+	"""Returns the color corresponding to a state.  The state parameter may be a
+	single-letter state code, or a sequence of state code / count pairs, such as
+	S50L25.  The return value is an (r,g,b) tuple where each number is between 0
+	and 255 inclusive.  If the state cannot be read, returns white as a default."""
+
+	color = (0xff,0xff,0xff) # default
+
+	state_color = {
+	  'S': (0xff, 0xff, 0xff), # white
+	  'L': (0xe5, 0xe5, 0x00), # yellow
+	  'B': (0xe5, 0x99, 0x00), # orange
+	  'C': (0xcc, 0x00, 0x00), # red
+	  'N': (0x00, 0xa8, 0x00), # green
+	  'V': (0x00, 0x00, 0xa8), # blue
+	  'D': (0x00, 0x00, 0x00), # black
+	  'X': (0x7f, 0x7f, 0x7f)  # grey
+	}
+
+	# One unit-level state.
+	if state_color.has_key(state):
+		color = state_color[state]
+
+	return color
+
+
+
+def getUnitNames (filename):
+	"""Returns an array of strings, giving the names of units in the population
+	file in the order they appear."""
+	try:
+		doc = xml.dom.minidom.parse (filename)
+		names = [getText(node) for node in doc.getElementsByTagName ("id")]
+	except IOError:
+		names = None
+	return names
+
+
+
 def main ():
 	doc = xml.dom.minidom.parse (sys.stdin)
 	print """\
@@ -45,7 +92,6 @@ def main ():
  * <a href="testsuite.html">model test suite pages</a> to be built.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
@@ -60,20 +106,16 @@ def main ():
  *
  * Some thoughts about testing:	
  *
- * "The first principle is that you must not fool yourself
- * \htmlonly &ndash; \endhtmlonly \latexonly -- \endlatexonly
+ * &ldquo;The first principle is that you must not fool yourself &ndash;
  * and you are the easiest person to fool.
  * I'm talking about a specific, extra type of integrity ...
- * bending over backwards to show how you're maybe wrong."<br>
- * \htmlonly &ndash; \endhtmlonly \latexonly -- \endlatexonly Richard Feynman,
- * in a Caltech commencement address given in 1974,
- * also in <i>Surely You're Joking, Mr. Feynman!</i>
+ * bending over backwards to show how you're maybe wrong.&rdquo;<br>
+ * &ndash; Richard Feynman, in a Caltech commencement
+ * address given in 1974, also in <i>Surely You're Joking, Mr. Feynman!</i>
  *
- * "Trust Jesus"<br>
- * \htmlonly &ndash; \endhtmlonly \latexonly -- \endlatexonly graffiti on a
- * sidewalk near Portland State U<br>
- * "but cut the cards"<br>
- * \htmlonly &ndash; \endhtmlonly \latexonly -- \endlatexonly added below
+ * &ldquo;The competent programmer is fully aware of the strictly limited size of his
+ * own skull; therefore he approaches the programming task in full humility&rdquo;<br>
+ * &ndash; Edsger W. Dijkstra, in <i>The Humble Programmer</i>, 1972.
  *"""
 
 	# Find the categories.  We will sort the output by these.
@@ -121,6 +163,21 @@ def main ():
 	print ' * Total %i tests' % sum ([testcount[category] for category in testcount.keys()])
 	print ' */'
 
+	state_code = {
+	  'Susceptible': 'S', # map long names to short ones
+	  'Latent': 'L',
+	  'InfectiousSubclinical': 'B',
+	  'InfectiousClinical': 'C',
+	  'NaturallyImmune': 'N',
+	  'VaccineImmune': 'V',
+	  'Destroyed': 'D'
+	}
+
+	# This will cache the names of units in the test population.  The keys are
+	# population file names and the values are arrays of strings, giving the names
+	# of units in the order in which they appear.    
+	unitNames = {}
+
 	# Print a page of detailed entries for each category.
 	for category, displayName in categories:
 		print
@@ -154,12 +211,15 @@ def main ():
 
 			description = getText (test.getElementsByTagName ("description")[0])
 			for line in description.split('\n'):
-				print ' * %s' % line.strip()
+				print ' * %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 			print ' *'
 
 			try:
-				author = getText (test.getElementsByTagName ("author")[0])
-				print ' * Author: %s' % author.encode(OUTPUT_ENCODING, "replace")
+				authors = test.getElementsByTagName ("author")
+				if len(authors) == 1:
+					print ' * Author: %s' % getText(authors[0]).encode(OUTPUT_ENCODING, "replace")
+				else:
+					print ' * Authors: %s' % join([getText(author).encode(OUTPUT_ENCODING, "replace") for author in authors], ', ')
 				print ' *'
 			except IndexError:
 				warn ("Missing author for test %s/%s" % (category, shortName))
@@ -170,6 +230,13 @@ def main ():
 				print ' *'
 			except IndexError:
 				warn ("Missing creation date for test %s/%s" % (category, shortName))
+
+			try:
+				last_modified_date = getText (test.getElementsByTagName ("last-modified-date")[0])
+				print ' * Last modified: %s' % last_modified_date
+				print ' *'
+			except IndexError:
+				pass
 
 			try:
 				model_version = getText (test.getElementsByTagName ("model-version")[0])
@@ -189,15 +256,15 @@ def main ():
 			print ' *'
 
 			herdFileName = getText (test.getElementsByTagName ("herd-file")[0])
+			if not unitNames.has_key (herdFileName):
+				unitNames[herdFileName] = getUnitNames (herdFileName + ".xml")
 			diagrams = test.getElementsByTagName ("diagram")
 			if len (diagrams) >= 1:
 				for element in diagrams:
 					diagram = getText (element)
 					print ' * @image html %s.png Using %s.xml' % (diagram, herdFileName)
-					print ' * @image latex %s.eps "Using %s.xml" width=3in' % (diagram, herdFileName)
 			else:
 				print ' * @image html %s.png Using %s.xml' % (herdFileName, herdFileName)
-				print ' * @image latex %s.eps "Using %s.xml" width=3in' % (herdFileName, herdFileName)
 			print ' *'
 
 			noutcomes = 0
@@ -213,11 +280,15 @@ def main ():
 				print ' *     <th>Day</th>',
 				rows = table.getElementsByTagName ("tr")
 				if testtype == "deterministic-test" or testtype == "stochastic-test":
-					# Find out how many units there are.
-					nherds = len (rows[0].getElementsByTagName ("td"))
-					print '<th>Unit 0</th>',
-					for i in range (1, nherds):
-						print ('<th>%i</th>' % i),
+					# Print the units' names.
+					names = unitNames[herdFileName]
+					if not names:
+						# Find out how many units there are.
+						nherds = len (rows[0].getElementsByTagName ("td"))
+						names = [str(n) for n in range(nherds)]
+					print '<th>Unit %s</th>' % names[0]
+					for name in names[1:]:
+						print ('<th>%s</th>' % name),
 				elif testtype == "variable-test" or testtype == "stochastic-variable-test":
 					# Find out how many output variables there are.
 					for cell in rows[0].getElementsByTagName ("td"):
@@ -231,8 +302,19 @@ def main ():
 					day += 1
 					print (' *     <td>%i</td>' % day),
 					for cell in row.getElementsByTagName ("td"):
-						state = getText (cell)
-						print ('<td class="%s">%s</td>' % (state, state)),
+						if testtype == "deterministic-test" or testtype == "stochastic-test":
+							state = getText (cell)
+							if state_code.has_key(state):
+								state = state_code[state] # convert long name to short
+							background_color = getColor (state)
+							if getIntensity (background_color) > 0.5:
+								text_color = 'black'
+							else:
+								text_color = 'white'
+							print ('<td style="background-color:#%02x%02x%02x;color:%s">%s</td>' % (background_color+(text_color,state))),
+						elif testtype == "variable-test" or testtype == "stochastic-variable-test":
+							value = getText (cell) or "&nbsp;"
+							print ('<td>%s</td>' % value),
 					print '\n *   </tr>'
 				print ' * </table>\n *'
 

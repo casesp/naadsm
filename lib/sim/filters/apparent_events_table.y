@@ -8,8 +8,6 @@
 #include "event.h"
 #include "reporting.h"
 #include <stdio.h>
-#include <gsl/gsl_statistics_double.h>
-#include <gsl/gsl_sort.h>
 
 #if STDC_HEADERS
 #  include <stdlib.h>
@@ -33,14 +31,11 @@
  * values format.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
- * @date January 2005
  *
- * Copyright &copy; University of Guelph, 2005-2007
+ * Copyright &copy; University of Guelph, 2005-2011
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -51,91 +46,24 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
-typedef struct
-{
-  unsigned int run;
-  unsigned int day;
-  EVT_event_t event;
-} run_day_event_triple_t;
-
 HRD_herd_list_t *herds;
-GPtrArray *reasons; /**< Reasons for detection, vaccination and destruction.
-  Each item in the list is a unique string.  Events stored in the array
-  output_values reference the strings in this list. */
-GPtrArray *detections; /**< Each item in the list is GArray of run-day-event
-  triples for one node. */
-GPtrArray *vaccinations; /**< Each item in the list is GArray of run-day-event
-  triples for one node. */
-GPtrArray *destructions; /**< Each item in the list is GArray of run-day-event
-  triples for one node. */
-unsigned int current_node;
-GArray *current_run; /**< The most recent run number we have seen in the output from each node. */
-GArray *current_day; /**< The most recent day we have seen in the output from each node. */
+int current_node; /**< The most recent node number we have seen in the
+  simulator output. */
+int current_run; /**< The most recent run number we have seen in the output. */
+int current_day; /**< The most recent day we have seen in the output. */
+int run; /**< A run identifier that increases each time we print one complete
+  Monte Carlo run.  This is distinct from the per-node run numbers in the
+  simulator output. */
 
 
 
 /**
- * Wraps GLib's g_array_free function so that it can be used as the
- * GDestroyNotify function in a Keyed Data List.
- */
-void
-g_array_free_as_GDestroyNotify (gpointer data)
-{
-  g_array_free ((GArray *) data, TRUE);
-}
-
-
-
-/**
- * Wraps free so that it can be used with a Pointer Array's foreach function.
- */
-void
-free_as_GFunc (gpointer data, gpointer user_data)
-{
-  free ((void *) data);
-}
-
-
-
-
-/**
- * Wraps GLib's g_string_free function so that it can be used with a Pointer
- * Array's foreach function.
- */
-void
-g_string_free_as_GFunc (gpointer data, gpointer user_data)
-{
-  g_string_free ((GString *) data, TRUE);
-}
-
-
-
-/**
- * Wraps g_ascii_strcasecmp so that it can be used as a GCompareFunc to
- * sort a Pointer Array of GStrings.
- */
-gint
-g_ascii_strcasecmp_as_GCompareFunc (gconstpointer a, gconstpointer b)
-{
-  char *s1, *s2;
-
-  s1 = (*((GString **) a))->str;
-  s2 = (*((GString **) b))->str;
-  return g_ascii_strcasecmp (s1, s2);  
-}
-
-
-
-/**
- * Adds all the values stored in an RPT_reporting_t structure to the master
- * list of outputs.  This function is typed as a GDataForeachFunc so that
- * it can easily be called recursively on the sub-variables.
+ * Prints the values stored in an RPT_reporting_t structure.  This function is
+ * typed as a GDataForeachFunc so that it can easily be called recursively on
+ * the sub-variables.
  *
  * @param key_id use 0.
  * @param data an output variable, cast to a gpointer.
@@ -144,38 +72,38 @@ g_ascii_strcasecmp_as_GCompareFunc (gconstpointer a, gconstpointer b)
  *   call.
  */
 void
-add_values (GQuark key_id, gpointer data, gpointer user_data)
+print_value (GQuark key_id, gpointer data, gpointer user_data)
 {
   RPT_reporting_t *reporting;
-  GArray *values;
+  EVT_event_type_t event_type;
+  char *reason;
   char *s; /* For building temporary strings. */
   gchar **tokens, **iter;
   unsigned int herd_index;
-
-  run_day_event_triple_t tmp;
-  unsigned int i;
+  HRD_herd_t *herd;
 
   reporting = (RPT_reporting_t *) data;
 
   /* The reporting variable is one level deep; the categories are the reasons
    * for detection/vaccination/destruction. */
 
-  /* If this is a "detections", "vaccinations", or "destructions" variable,
-   * recurse into its sub-categories. */
+  /* If this is a "detections", "exams", "vaccinations", or "destructions"
+   * variable, recurse into its sub-categories. */
   if (user_data == NULL) /* will be false when in a sub-category */
     {
       if (strcmp (reporting->name, "detections") == 0
+	  || strcmp (reporting->name, "exams") == 0
 	  || strcmp (reporting->name, "vaccinations") == 0
 	  || strcmp (reporting->name, "destructions") == 0)
 	{
 #if DEBUG
 	  s = RPT_reporting_value_to_string (reporting, NULL);
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "found relevant variable, value = %s", s);
+          g_debug ("found %s variable, value = %s", reporting->name, s);
 	  free (s);
 #endif
           if (reporting->type == RPT_group)
 	    {
-	      g_datalist_foreach ((GData **) (&reporting->data), add_values, reporting->name);
+	      g_datalist_foreach ((GData **) (&reporting->data), print_value, reporting->name);
 	      goto end;
 	    }
 	}
@@ -185,164 +113,61 @@ add_values (GQuark key_id, gpointer data, gpointer user_data)
         }
     }
 
-  /* If this is a sub-category of a "detections", "vaccinations", or
-   * "destructions" variable, we want to add the individual units to the list.
-   * We get the individual units from the variable's value, which is a comma-
-   * separated list of unit indices. */
+  /* If this is a sub-category of a "detections", "exams", "vaccinations", or
+   * "destructions" variable, we want to print the individual events.  We get
+   * the individual units from the variable's value, which is a comma-separated
+   * list of unit indices. */
   s = RPT_reporting_get_text (reporting, NULL);
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "s = \"%s\"", s);
+  g_debug ("s = \"%s\"", s);
 #endif
   if (strlen (s) == 0)
     goto end;
 
   if (strcmp (user_data ? (char *)user_data : reporting->name, "detections") == 0)
-    values = (GArray *) g_ptr_array_index (detections, current_node);
-  else if (strcmp (user_data ? (char *)user_data : reporting->name, "vaccinations") == 0)
-    values = (GArray *) g_ptr_array_index (vaccinations, current_node);
-  else if (strcmp (user_data ? (char *)user_data : reporting->name, "destructions") == 0)
-    values = (GArray *) g_ptr_array_index (destructions, current_node);
-
-  /* Set the run number, day number, and reason, which will be the same for all
-   * of the events.  Note that we store data in a destruction event structure
-   * regardless of what type of event it really is. */
-  tmp.run = g_array_index (current_run, unsigned int, current_node);
-  tmp.day = g_array_index (current_day, unsigned int, current_node);
-  for (i = 0; i < reasons->len; i++)
-    if (strcmp (reporting->name, (char *) g_ptr_array_index (reasons, i)) == 0)
-      break;
-  if (i < reasons->len)
-    tmp.event.u.destruction.reason = g_ptr_array_index (reasons, i);
-  else
     {
-      /* This is a reason we haven't encountered before, add it to the list. */
-      tmp.event.u.destruction.reason = g_strdup (reporting->name);
-      g_ptr_array_add (reasons, tmp.event.u.destruction.reason);
+      event_type = EVT_Detection;
+      reason = reporting->name;
+    }
+  else if (strcmp (user_data ? (char *)user_data : reporting->name, "exams") == 0)
+    {
+      event_type = EVT_Exam;
+      reason = NULL;
+    }
+  else if (strcmp (user_data ? (char *)user_data : reporting->name, "vaccinations") == 0)
+    {
+      event_type = EVT_Vaccination;
+      reason = reporting->name;
+    }
+  else if (strcmp (user_data ? (char *)user_data : reporting->name, "destructions") == 0)
+    {
+      event_type = EVT_Destruction;
+      reason = reporting->name;
     }
 
   /* Split the text on commas. */
   tokens = g_strsplit (s, ",", 0);
   for (iter = tokens; *iter != NULL; iter++)
     {
+      g_print ("%i,%i,%s,%s,", run, current_day,
+               event_type == EVT_Detection ? "Detection"
+                 : (event_type == EVT_Exam ? "Exam"
+                     : (event_type == EVT_Vaccination ? "Vaccination" : "Destruction")),
+               reason ? reason : "");
       /* This chunk of text will be a herd index. */
       herd_index = strtol (*iter, NULL, 10);
-      tmp.event.u.destruction.herd = HRD_herd_list_get (herds, herd_index);
-      g_array_append_val (values, tmp);
+      herd = HRD_herd_list_get (herds, herd_index);
+      g_print ("%s,%s,%u,%g,%g\n",
+               herd->official_id,
+               herd->production_type_name,
+               herd->size,
+               herd->latitude,
+               herd->longitude);
     }
   g_strfreev (tokens);
 
 end:
   return;
-}
-
-
-
-/**
- * Prints the stored events for one node.
- */
-void
-print_values (unsigned int node)
-{
-  unsigned int i, j, k;
-  GArray *detection_events, *vaccination_events, *destruction_events;
-  run_day_event_triple_t *tmp;
-  unsigned int day;
-  gboolean done;
-  EVT_destruction_event_t *event;
-  static unsigned int run = 1; /* A run identifier than increases with each
-    call to this function.  This is distinct from the per-node run numbers
-    stored in the run-day-event triples. */
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "printing stored events for node %u", node);
-#endif
-
-  detection_events = (GArray *) g_ptr_array_index (detections, node);
-  vaccination_events = (GArray *) g_ptr_array_index (vaccinations, node);
-  destruction_events = (GArray *) g_ptr_array_index (destructions, node);
-  
-  i = j = k = 0;
-  done = FALSE;
-  for (day = 1; !done; day++)
-    {
-      /* Print all detections that happened on this day. */
-      while (1)
-        {
-	  if (i >= detection_events->len)
-	    break;
-	  tmp = &g_array_index (detection_events, run_day_event_triple_t, i);
-	  if (tmp->day != day)
-	    break;
-	  event = &(tmp->event.u.destruction);
-	  printf ("%u,%u,Detection,,%s,%s,%u,%g,%g\n",
-		  run, tmp->day,
-		  event->herd->official_id,
-		  event->herd->production_type_name,
-		  event->herd->size,
-		  event->herd->lat,
-		  event->herd->lon);
-	  i++;
-	}
-
-      /* Print all vaccinations that happened on this day. */
-      while (1)
-        {
-	  if (j >= vaccination_events->len)
-	    break;
-	  tmp = &g_array_index (vaccination_events, run_day_event_triple_t, j);
-	  if (tmp->day != day)
-	    break;
-	  event = &(tmp->event.u.destruction);
-	  printf ("%u,%u,Vaccination,%s,%s,%s,%u,%g,%g\n",
-		  run, tmp->day, event->reason,
-		  event->herd->official_id,
-		  event->herd->production_type_name,
-		  event->herd->size,
-		  event->herd->lat,
-		  event->herd->lon);
-	  j++;
-	}
-
-      /* Print all destructions that happened on this day. */
-      while (1)
-        {
-	  if (k >= destruction_events->len)
-	    break;
-	  tmp = &g_array_index (destruction_events, run_day_event_triple_t, k);
-	  if (tmp->day != day)
-	    break;
-	  event = &(tmp->event.u.destruction);
-	  printf ("%u,%u,Destruction,%s,%s,%s,%u,%g,%g\n",
-		  run, tmp->day, event->reason,
-		  event->herd->official_id,
-		  event->herd->production_type_name,
-		  event->herd->size,
-		  event->herd->lat,
-		  event->herd->lon);
-	  k++;
-	}
-
-      done = (i >= detection_events->len
-	      && j >= vaccination_events->len
-	      && k >= destruction_events->len);
-    }
-
-  run++;
-
-  return;
-}
-
-
-
-/**
- * Clears the stored events for one node.
- */
-void
-clear_values (unsigned int node)
-{
-  g_array_set_size ((GArray *) g_ptr_array_index (detections, node), 0);
-  g_array_set_size ((GArray *) g_ptr_array_index (vaccinations, node), 0);
-  g_array_set_size ((GArray *) g_ptr_array_index (destructions, node), 0);
 }
 
 %}
@@ -378,57 +203,25 @@ output_line:
 tracking_line:
     NODE INT RUN INT
     {
-      unsigned int node = $2;
-      unsigned int run = $4;
-      GArray *new_list;
+      int node = $2;
+      int node_run = $4;
 
-      /* If we haven't seen output from this node before, we need to extend
-       * the tracking lists for current run and current day, and create new
-       * GArrays to hold events for the new node. */
-      if ((node + 1) > current_run->len)
+      /* When we see that the node number or run number has changed, we know
+       * the output from one Monte Carlo trial is over, so we reset the day. */
+      if (node != current_node || node_run != current_run)
         {
-	  g_array_set_size (current_run, node + 1);
-
-	  g_array_set_size (current_day, node + 1);
-	  g_array_index (current_day, unsigned int, node) = 1;
-
-	  g_ptr_array_set_size (detections, node + 1);
-	  /* Initialize the new entry to an empty GArray. */
-	  new_list = g_array_new (FALSE, FALSE, sizeof (run_day_event_triple_t));
-	  g_ptr_array_index (detections, node) = new_list;
-
-	  g_ptr_array_set_size (vaccinations, node + 1);
-	  /* Initialize the new entry to an empty GArray. */
-	  new_list = g_array_new (FALSE, FALSE, sizeof (run_day_event_triple_t));
-	  g_ptr_array_index (vaccinations, node) = new_list;
-
-	  g_ptr_array_set_size (destructions, node + 1);
-	  /* Initialize the new entry to an empty GArray. */
-	  new_list = g_array_new (FALSE, FALSE, sizeof (run_day_event_triple_t));
-	  g_ptr_array_index (destructions, node) = new_list;
-	}
-      else
-	{
-	  /* Since output from a single node is sequential, when we see
-	   * that the run number has changed, we know the output from one
-	   * Monte Carlo trial is over.  So we print the values, clear the
-	   * data for that node, and reset the day for that node. */
-	  if (run != g_array_index (current_run, unsigned int, node))
-            {
-	      print_values (node);
-	      clear_values (node);
-	      g_array_index (current_run, unsigned int, node) = run;
-	      g_array_index (current_day, unsigned int, node) = 1;
-	    }
-	  else
-	    g_array_index (current_day, unsigned int, node) ++;
-	}
-      current_node = node;
+          current_day = 1;
+          run++;
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-	     "node %u now on run %u, day %u",
-	     node, run, g_array_index (current_day, unsigned int, node));
+          g_debug ("now on day 1 (node %i, run %i)", node, node_run);
 #endif
+        }
+      else
+        {
+          current_day++;
+        }
+      current_node = node;
+      current_run = node_run;
     }
   ;
 
@@ -476,11 +269,10 @@ var:
 	   * run 1,day 1,trace out,2
 	   *
 	   * So we call a function that drills down into the RPT_reporting_t
-	   * structure and adds whatever sub-variables it finds, with their values,
-	   * to the master list of outputs.
+	   * structure and prints whatever sub-variables it finds.
 	   */
-	  add_values (0, $3, NULL);
-	  RPT_free_reporting ($3, TRUE);
+	  print_value (0, $3, NULL);
+	  RPT_free_reporting ($3);
 	}
       else
         g_free ($1);
@@ -498,7 +290,7 @@ value:
     }
   | STRING
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_text, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_text, RPT_never);
       RPT_reporting_set_text ($$, $1, NULL);
       /* The string token's value is set with a g_strndup, so we need to free
        * it after copying it into the RPT_reporting structure. */
@@ -520,7 +312,7 @@ value:
     {
       GSList *iter;
 
-      $$ = RPT_new_reporting (NULL, NULL, RPT_group, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_group, RPT_never);
       for (iter = $2; iter != NULL; iter = g_slist_next (iter))
 	RPT_reporting_splice ($$, (RPT_reporting_t *) (iter->data));
 
@@ -623,7 +415,6 @@ main (int argc, char *argv[])
   const char *herd_file = NULL;
   int verbosity = 0;
   unsigned int nherds;
-  unsigned int nnodes, i;
   struct poptOption options[2];
 
   /* Get the command-line options and arguments.  There should be one command-
@@ -650,66 +441,51 @@ main (int argc, char *argv[])
   poptFreeContext (option);
 
   if (herd_file == NULL)
-    g_error ("Need the name of a herd file.");
+    {
+      g_error ("Need the name of a herd file.");
+    }
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("reporting", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("reporting", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-    }
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
+  g_debug ("verbosity = %i", verbosity);
 #endif
 
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list (herd_file, NULL);
+#else
   herds = HRD_load_herd_list (herd_file);
+#endif
   nherds = HRD_herd_list_length (herds);
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i units read", nherds);
+#if DEBUG
+  g_debug ("%i units read", nherds);
 #endif
   if (nherds == 0)
-    g_error ("no units in file %s", herd_file);
+    {
+      g_error ("no units in file %s", herd_file);
+    }
 
   /* Print the table header. */
   printf ("Run,Day,Type,Reason,ID,Production type,Size,Lat,Lon\n");
 
-  reasons = g_ptr_array_new ();
-  detections = g_ptr_array_new ();
-  vaccinations = g_ptr_array_new ();
-  destructions = g_ptr_array_new ();
-  current_run = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-  current_day = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-    
+  run = 0;
+  /* Initialize the current node to "-1" so that whatever node appears first in
+   * the simulator output will signal the parser that output from a new node is
+   * beginning, that the current day needs to be reset, etc. */
+  current_node = -1;
+
   yyin = stdin;
   while (!feof(yyin))
     yyparse();
 
-  /* Some output values may have been printed during the parse.  Print out any
-   * remaining values. */
-  nnodes = current_run->len;
-  for (i = 0; i < nnodes; i++)
-    {
-      print_values (i);
-      clear_values (i);
-    }
-
   /* Clean up. */
   HRD_free_herd_list (herds);
-  g_ptr_array_foreach (reasons, free_as_GFunc, NULL);
-  g_ptr_array_free (reasons, TRUE);
-  g_array_free (current_run, TRUE);
-  g_array_free (current_day, TRUE);
-  g_ptr_array_free (detections, TRUE);
-  g_ptr_array_free (vaccinations, TRUE);
-  g_ptr_array_free (destructions, TRUE);
 
   return EXIT_SUCCESS;
 }

@@ -11,8 +11,6 @@
 #  include <stdlib.h>
 #endif
 
-#include <assert.h>
-
 /** @file filters/state_table.c
  * A filter that turns SHARCSpread output into a table of herd states.
  *
@@ -41,91 +39,53 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
-typedef struct
-{
-  unsigned int run;
-  unsigned int day;
-  GArray *state_list;
-} run_day_value_triple_t;
+GArray *unit_states; /**< The herd states. */
+int current_node; /**< The most recent node number we have seen in the
+  simulator output. */
+int current_run; /**< The most recent run number we have seen in the output. */
+int current_day; /**< The most recent day we have seen in the output. */
+gboolean printed_header; /**< Whether we have printed the header line for the
+  table or not. */
 
-GPtrArray *unit_states; /**< The herd states.  Each item in the list is for one
-  node.  The items are GArrays of run-day-statelist triples. */
-unsigned int current_node;
-GArray *current_run; /**< The most recent run number we have seen in the output from each node. */
-GArray *current_day; /**< The most recent day we have seen in the output from each node. */
-gboolean header_printed;
 
 
 /**
- * Prints the stored output values for one node.
+ * Prints the stored output values.
  */
 void
-print_values (unsigned int node)
+print_values ()
 {
-  GArray *tmp;
-  GArray *state_list;
-  unsigned int ndays, nherds;
-  unsigned int day, i;
-  static unsigned int run = 1; /* A run identifier than increases with each
-    call to this function.  This is distinct from the per-node run numbers
-    stored in the run-day-event triples. */
+  static int run = 0; /* A run identifier than increases each time we print one
+    complete Monte Carlo run.  This is distinct from the per-node run numbers
+    in the simulator output. */
+  unsigned int nherds, i;
 
-  /* Get the data for this node. */
-  tmp = (GArray *) g_ptr_array_index (unit_states, node);
+  if (current_day == 1)
+    run++;
 
-  /* If the header line for the table hasn't been printed yet, do so now. */
-  if (!header_printed && tmp->len > 0)
-    {
-      printf ("Run,Day");
-      state_list = g_array_index (tmp, run_day_value_triple_t, 0).state_list;
-      nherds = state_list->len;
-      for (i = 0; i < nherds; i++) /* inner loop = columns = herds */
-        printf (",%i", i);
-      printf ("\n");
-      header_printed = TRUE;
-    }
+  printf ("%u,%u", run, current_day);
+  /* Output the state codes. */
+  nherds = unit_states->len;
+  for (i = 0; i < nherds; i++)
+    printf (",%i", g_array_index (unit_states, HRD_status_t, i));
+  printf ("\n");
+  fflush (stdout);
 
-  ndays = tmp->len;
-  for (day = 0; day < ndays; day++) /* outer loop = rows = days */
-    {
-      printf ("%u,%u", run, day + 1);
-      state_list = g_array_index (tmp, run_day_value_triple_t, day).state_list;
-      nherds = state_list->len;
-      for (i = 0; i < nherds; i++) /* inner loop = columns = herds */
-        printf (",%i", g_array_index (state_list, HRD_status_t, i));
-      printf ("\n");
-    }
-
-  run++;
+  return;
 }
 
 
 
 /**
- * Clears the stored output values for one node.
+ * Clears the stored output values.
  */
 void
-clear_values (unsigned int node)
+clear_values ()
 {
-  GArray *tmp;
-  unsigned int i, n;
-
-  /* Get the data for this node. */
-  tmp = (GArray *) g_ptr_array_index (unit_states, node);
-
-  /* Free the dynamic part of each element. */
-  n = tmp->len;
-  for (i = 0; i < n; i++)
-    g_array_free (g_array_index (tmp, run_day_value_triple_t, i).state_list, TRUE);
-
-  /* Truncate this array. */
-  g_array_set_size (tmp, 0);
+  g_array_set_size (unit_states, 0);
 }
 
 %}
@@ -153,82 +113,55 @@ output_lines :
 
 output_line:
     tracking_line NEWLINE data_line NEWLINE
-    { }
+    {
+      unsigned int nherds,i;
+
+      /* If this was the first line read, print the table header. */
+      if (!printed_header)
+        {
+          printf ("Run,Day");
+          nherds = unit_states->len;
+          for (i = 0; i < nherds; i++)
+            printf (",%i", i);
+          printf ("\n");
+          fflush (stdout);
+          printed_header = TRUE;
+        }
+      print_values();
+      clear_values();
+    }
   ;
 
 tracking_line:
     NODE INT RUN INT
     {
-      unsigned int node = $2;
-      unsigned int run = $4;
-      GArray *new_list;
+      int node = $2;
+      int run = $4;
 
-      /* If we haven't seen output from this node before, we need to extend
-       * the tracking lists for current run and current day, and create a
-       * new Keyed Data List to hold output values for the new node. */
-      if ((node + 1) > current_run->len)
+      /* When we see that the node number or run number has changed, we know
+       * the output from one Monte Carlo trial is over, so we reset the day. */
+      if (node != current_node || run != current_run)
         {
-	  g_array_set_size (current_run, node + 1);
-
-	  g_array_set_size (current_day, node + 1);
-	  g_array_index (current_day, unsigned int, node) = 1;
-
-	  g_ptr_array_set_size (unit_states, node + 1);
-	  /* Initialize the new entry to an empty GArray. */
-	  new_list = g_array_new (FALSE, FALSE, sizeof(run_day_value_triple_t));
-	  g_ptr_array_index (unit_states, node) = new_list;
-	}
-      else
-	{
-	  /* Since output from a single node is sequential, when we see
-	   * that the run number has changed, we know the output from one
-	   * Monte Carlo trial is over.  So we print the values, clear the
-	   * data for that node, and reset the day for that node. */
-	  if (run != g_array_index (current_run, unsigned int, node))
-            {
-	      print_values (node);
-	      clear_values (node);
-	      g_array_index (current_run, unsigned int, node) = run;
-	      g_array_index (current_day, unsigned int, node) = 1;
-	    }
-	  else
-	    g_array_index (current_day, unsigned int, node) ++;
-	}
-      current_node = node;
+          current_day = 1;
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "node %u now on run %u, day %u",
-             node, run, g_array_index (current_day, unsigned int, node));
+          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                 "now on day 1 (node %i, run %i)", node, run);
 #endif
+        }
+      else
+        {
+          current_day++;
+        }
+      current_node = node;
+      current_run = run;
     }
   ;
 
 data_line:
     state_codes vars
-    {
-      run_day_value_triple_t tmp;
-      GArray *states;
-      
-      /* Add the line of state codes for this node. */
-      tmp.run = g_array_index (current_run, unsigned int, current_node);
-      tmp.day = g_array_index (current_day, unsigned int, current_node);
-      tmp.state_list = $1;
-      
-      states = (GArray *) g_ptr_array_index (unit_states, current_node);
-      g_array_append_val (states, tmp);
-    }
+    { }
   | state_codes
-    {
-      run_day_value_triple_t tmp;
-      GArray *states;
-      
-      /* Add the line of state codes for this node. */
-      tmp.run = g_array_index (current_run, unsigned int, current_node);
-      tmp.day = g_array_index (current_day, unsigned int, current_node);
-      tmp.state_list = $1;
-      
-      states = (GArray *) g_ptr_array_index (unit_states, current_node);
-      g_array_append_val (states, tmp);    
-    }
+    { }
   | vars
     { }
   |
@@ -238,14 +171,11 @@ data_line:
 state_codes:
     state_codes INT
     {
-      $$ = $1;
-      g_array_append_val ($$, $2);
+      g_array_append_val (unit_states, $2);
     }
   | INT
     {
-      /* Initialize an array of state codes. */
-      $$ = g_array_new (FALSE, FALSE, sizeof(HRD_status_t));
-      g_array_append_val ($$, $1);
+      g_array_append_val (unit_states, $1);
     }
   ;
 
@@ -366,7 +296,6 @@ main (int argc, char *argv[])
 {
   poptContext option;
   int verbosity = 0;
-  unsigned int nnodes, i;
   struct poptOption options[2];
 
   /* Get the command-line options and arguments. */
@@ -391,28 +320,24 @@ main (int argc, char *argv[])
   poptFreeContext (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
 
-  /* First pass to find all the output variable names.  We need them to print
-   * the table header. */
-  unit_states = g_ptr_array_new ();
-  current_run = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-  current_day = g_array_sized_new (FALSE, TRUE, sizeof (unsigned int), 1);
-
-  /* We can't print the header line until we know how many herds there are. */
-  header_printed = FALSE;
+  unit_states = g_array_new (/* zero_terminated = */ FALSE,
+                             /* clear = */ FALSE,
+                             /* element_size = */ sizeof(HRD_status_t));
+  /* Initialize the current node to "-1" so that whatever node appears first in
+   * the simulator output will signal the parser that output from a new node is
+   * beginning, that the current day needs to be reset, etc. */
+  current_node = -1;
+  /* We have not yet printed the table header line. */
+  printed_header = FALSE;
 
   /* Call the parser to fill in the unit_states array. */
   if (yyin == NULL)
@@ -420,22 +345,8 @@ main (int argc, char *argv[])
   while (!feof(yyin))
     yyparse();
 
-  /* Some output values may have been printed during the parse.  Print out any
-   * remaining values. */
-  nnodes = current_run->len;
-  for (i = 0; i < nnodes; i++)
-    {
-      print_values (i);
-      clear_values (i);
-    }
-
   /* Clean up. */
-  g_array_free (current_run, TRUE);
-  g_array_free (current_day, TRUE);
-  /*
-  g_ptr_array_foreach (output_names, g_string_free_as_GFunc, NULL);
-  g_ptr_array_free (unit_states, TRUE);
-  */
+  g_array_free (unit_states, TRUE);
   
   return EXIT_SUCCESS;
 }

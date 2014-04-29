@@ -19,14 +19,12 @@
  * appears at the herd's location.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
  * @date December 2003
  *
- * Copyright &copy; University of Guelph, 2003-2007
+ * Copyright &copy; University of Guelph, 2003-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -54,7 +52,7 @@
 #  include <errno.h>
 #endif
 
-#define EPSILON 0.001
+#define EPSILON 0.01 /* 10 m */
 #define CIRCLE_NSIDES 20        /* must be divisible by 4! */
 #define TWOPI 6.28318530717958647692
 
@@ -83,6 +81,7 @@ ZON_new_fragment (ZON_zone_t * parent, int contour)
 #endif
   fragment->parent = parent;
   fragment->contour = contour;
+  fragment->nests_in = NULL;
   return fragment;
 }
 
@@ -181,8 +180,6 @@ ZON_zone_list_append (ZON_zone_list_t * zones, ZON_zone_t * zone)
   nzones = ZON_zone_list_length (zones);
   has_background_zone = (nzones > 0);
 
-  zones->use_rtree_index = zones->use_rtree_index & (zone->radius <= zone->use_rtree_index);
-
   if (zone->radius < EPSILON && has_background_zone)
     {
       /* This zone claims to be the "background" zone.  Since a background
@@ -196,7 +193,7 @@ ZON_zone_list_append (ZON_zone_list_t * zones, ZON_zone_t * zone)
           g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
                  "setting name of background zone to \"%s\"", zone->name);
 #endif
-          free (existing_zone->name);
+          g_free (existing_zone->name);
           existing_zone->name = zone->name;
         }
       else
@@ -357,12 +354,12 @@ ZON_zone_list_to_string (ZON_zone_list_t * zones)
     {
       substring = ZON_zone_to_string (ZON_zone_list_get (zones, 0));
       g_string_assign (s, substring);
-      free (substring);
+      g_free (substring);
       for (i = 1; i < nzones; i++)
         {
           substring = ZON_zone_to_string (ZON_zone_list_get (zones, i));
           g_string_append_printf (s, "\n%s", substring);
-          free (substring);
+          g_free (substring);
         }
     }
   /* don't return the wrapper object */
@@ -431,7 +428,7 @@ ZON_free_zone_list (ZON_zone_list_t * zones)
   for (i = 0; i < nzones; i++)
     {
       zone = ZON_zone_list_get (zones, i);
-      ZON_free_zone (zone, TRUE);
+      ZON_free_zone (zone);
     }
   g_ptr_array_free (zones->list, TRUE);
 
@@ -515,7 +512,7 @@ ZON_new_zone (char *name, int level, double radius)
   z->level = level;
   z->radius = radius;
   z->radius_sq = radius * radius;
-  z->radius_as_degrees = radius / GIS_DEGREE_DISTANCE;
+  z->epsilon_sq = (radius + EPSILON) * (radius + EPSILON) - z->radius_sq;
   z->foci = g_array_new (FALSE, FALSE, sizeof (gpc_vertex));
   z->poly = g_new (gpc_polygon, 1);
   z->poly->num_contours = 0;
@@ -523,7 +520,14 @@ ZON_new_zone (char *name, int level, double radius)
   z->poly->contour = NULL;
   z->fragments = g_queue_new ();
   z->area = 0;
+  z->perimeter = 0;
   z->nholes_filled = 0;
+#ifdef USE_SC_GUILIB
+  z->max_area = 0.0;
+  z->max_day = 0;
+  z->_herdDays = g_hash_table_new( g_direct_hash, g_direct_equal );
+  z->_animalDays = g_hash_table_new( g_direct_hash, g_direct_equal );
+#endif
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ZON_new_zone");
@@ -565,24 +569,20 @@ ZON_clone_zone (ZON_zone_t * zone)
  * Deletes a zone structure from memory.
  *
  * @param zone a pointer to a ZON_zone_t structure.
- * @param free_segment if TRUE, also frees the dynamically-allocated parts of
- *   the zone structure.
  */
 void
-ZON_free_zone (ZON_zone_t * zone, gboolean free_segment)
+ZON_free_zone (ZON_zone_t * zone)
 {
   if (zone == NULL)
     return;
 
-  if (free_segment == TRUE)
-    {
-      g_free (zone->name);
-      g_array_free (zone->foci, TRUE);
-      gpc_free_polygon (zone->poly);
-      while (!g_queue_is_empty (zone->fragments))
-        ZON_free_fragment ((ZON_zone_fragment_t *) g_queue_pop_head (zone->fragments));
-      g_queue_free (zone->fragments);
-    }
+  g_free (zone->name);
+  g_array_free (zone->foci, TRUE);
+  gpc_free_polygon (zone->poly);
+  g_free (zone->poly);
+  while (!g_queue_is_empty (zone->fragments))
+    ZON_free_fragment ((ZON_zone_fragment_t *) g_queue_pop_head (zone->fragments));
+  g_queue_free (zone->fragments);
   g_free (zone);
 }
 
@@ -744,7 +744,8 @@ gpc_new_polygon (void)
 {
   gpc_polygon *poly;
 
-  poly = g_new (gpc_polygon, 1);
+  poly = (gpc_polygon *) malloc (sizeof(gpc_polygon));
+  g_assert (poly != NULL);
   poly->num_contours = 0;
   poly->hole = NULL;
   poly->contour = NULL;
@@ -821,7 +822,7 @@ ZON_zone_fragment_t *
 ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
 {
   gpc_vertex_list *contour;
-  double angle, step, mult;
+  double angle, step;
   int i, j;                     /* loop counter */
   gpc_polygon *circle, *intermedpoly, *newpoly;
   int nholes, hole_index;
@@ -853,9 +854,8 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
   step = TWOPI / CIRCLE_NSIDES; /* radians in each segment of the circle */
   for (i = 0, angle = 0; i < CIRCLE_NSIDES; i++, angle += step)
     {
-      contour->vertex[i].y = sin (angle) * zone->radius_as_degrees + y;
-      mult = 1.0 / cos (DEG2RAD * contour->vertex[i].y);
-      contour->vertex[i].x = cos (angle) * zone->radius_as_degrees * mult + x;
+      contour->vertex[i].y = sin (angle) * zone->radius + y;
+      contour->vertex[i].x = cos (angle) * zone->radius + x;
     }
 
   /* Wrap the contour in a polygon object. */
@@ -879,8 +879,12 @@ ZON_zone_add_focus (ZON_zone_t * zone, double x, double y, gpc_polygon ** holes)
 
       *holes = gpc_new_polygon ();
       (*holes)->num_contours = nholes;
-      (*holes)->hole = g_new0 (int, nholes);
-      (*holes)->contour = g_new (gpc_vertex_list, nholes);
+      (*holes)->hole = (int *) malloc (sizeof(int) * nholes);
+      g_assert ((*holes)->hole != NULL);
+      for (i = 0; i < nholes; i++)
+        (*holes)->hole[i] = 0;
+      (*holes)->contour = (gpc_vertex_list *) malloc (sizeof(gpc_vertex_list) * nholes);
+      g_assert ((*holes)->contour != NULL);
     }
   hole_index = 0;
   i = 0;
@@ -1110,16 +1114,41 @@ end:
 void
 ZON_reset (ZON_zone_t * zone)
 {  
-  /* If this is the "background" zone, there's nothing to do. */
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ZON_reset");
+#endif
+
+#ifdef USE_SC_GUILIB
+  zone->max_area = 0.0;
+  zone->max_day = 0;
+
+  if ( zone->_herdDays != NULL )
+  {
+    g_hash_table_destroy( zone->_herdDays );
+    zone->_herdDays = g_hash_table_new( g_direct_hash, g_direct_equal );
+  };
+
+  if ( zone->_animalDays != NULL )
+  {
+    g_hash_table_destroy( zone->_animalDays );
+    zone->_animalDays =  g_hash_table_new( g_direct_hash, g_direct_equal );
+  };
+#endif
+
+/* If this is the "background" zone, there's nothing to do. */
   if (zone->radius < EPSILON)
+  {
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ZON_reset, early exit; background zone, no work to perform.");
+#endif                   
     return;
+  }
 
   /* Empty the list of the foci that built the zone. */
   g_array_set_size (zone->foci, 0);
 
   /* Erase the polygon and create a new, empty one. */
   gpc_free_polygon (zone->poly);
-  zone->poly = g_new (gpc_polygon, 1);
   zone->poly->num_contours = 0;
   zone->poly->hole = NULL;
   zone->poly->contour = NULL;
@@ -1128,11 +1157,14 @@ ZON_reset (ZON_zone_t * zone)
   while (!g_queue_is_empty (zone->fragments))
     ZON_free_fragment ((ZON_zone_fragment_t *) g_queue_pop_head (zone->fragments));
 
-  /* Reset the area. */
-  zone->area = 0;
+  /* Reset the area and perimeter. */
+  zone->area = zone->perimeter = 0;
 
   /* Reset the count of holes filled. */
   zone->nholes_filled = 0;
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ZON_reset");
+#endif  
 }
 
 
@@ -1173,6 +1205,37 @@ ZON_same_fragment (ZON_zone_fragment_t * fragment1, ZON_zone_fragment_t * fragme
 
 
 /**
+ * Tests whether one zone fragment nests inside another.
+ *
+ * @param inner a fragment of the higher-level zone (smaller zone circles)
+ * @param outer a fragment of the lower-level zone (larger zone circles)
+ * @return TRUE if "inner" nests inside "outer", FALSE otherwise.
+ */
+gboolean
+ZON_nests_in (ZON_zone_fragment_t * inner, ZON_zone_fragment_t * outer)
+{
+  gboolean result;
+
+  /* The level of "inner" must be less than the level of "outer" (e.g., zone
+   * circles of level 1 are inside zone circles of level 2). */
+  if (ZON_level (inner) >= ZON_level (outer))
+    result = FALSE;
+  else if (ZON_level (inner) == ZON_level (outer) - 1)
+    {
+      result = ZON_same_fragment (inner->nests_in, outer);
+    }
+  else
+    {
+      /* Recursive call. */
+      result = ZON_nests_in (inner->nests_in, outer);
+    }
+
+  return result;
+}
+
+
+
+/**
  * Re-calculates the area of the zone polygon.
  *
  * @param zone a zone.
@@ -1186,9 +1249,118 @@ ZON_update_area (ZON_zone_t *zone)
   if (zone == NULL)
     area = 0;
   else
-    area = zone->area = GIS_local_latlon_polygon_area (zone->poly);
+    area = zone->area = GIS_polygon_area (zone->poly);
 
   return area;
 }
+
+
+/**
+ * Re-calculates the perimeter of the zone polygon.
+ *
+ * @param zone a zone.
+ * @return the calculated perimeter.
+ */
+double
+ZON_update_perimeter (ZON_zone_t *zone)
+{
+  double perimeter;
+  
+  if (zone == NULL)
+    perimeter = 0;
+  else
+    perimeter = zone->perimeter = GIS_polygon_perimeter (zone->poly);
+
+  return perimeter;
+}
+
+#ifdef USE_SC_GUILIB
+  void addToZoneTotals( unsigned short int _day, ZON_zone_t *_zone, unsigned int _prod_id, unsigned int _herd_size   )
+  {
+    guint herdCount, animalCount;
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER addToZoneTotals");
+#endif  
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Checking Herd Days...");
+#endif    
+
+if ( _zone == NULL )
+{
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, "----- EXIT addToZoneTotals, premature exit, _zone == NULL !");       
+  return;
+};
+  
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Zone herdDays, for zone (%s), hash table size is: %i", ((_zone->name != NULL)? _zone->name:"NONE"),  g_hash_table_size( _zone->_herdDays) );
+#endif    
+
+    if ( g_hash_table_size( _zone->_herdDays ) == 0 )
+    {  
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...inserting first one.");
+#endif          
+  	  herdCount = 1;
+      g_hash_table_insert( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
+    }
+    else
+    {
+	  if ( g_hash_table_lookup( _zone->_herdDays, GUINT_TO_POINTER(_prod_id) ) == NULL )
+	  {
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...inserting.");
+#endif            
+  	    herdCount = 1;
+        g_hash_table_insert( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
+	  }
+	  else
+	  {
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the herd Count for this produciton type...replacing.");
+#endif           
+        herdCount =  GPOINTER_TO_UINT(g_hash_table_lookup( _zone->_herdDays, GUINT_TO_POINTER(_prod_id) )) + 1;
+        g_hash_table_replace( _zone->_herdDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(herdCount) );
+	  };
+    };
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Checkig Animal Days...");
+#endif   
+
+    if ( g_hash_table_size( _zone->_animalDays ) == 0 ) 
+    {   
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...inserting first one.");
+#endif           
+      animalCount = _herd_size;      
+      g_hash_table_insert( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
+    }
+    else
+    {
+	  if ( g_hash_table_lookup( _zone->_animalDays, GUINT_TO_POINTER(_prod_id) ) == NULL )
+	  {
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...inserting.");
+#endif            
+		animalCount = _herd_size;      
+        g_hash_table_insert( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
+	  }
+	  else
+	  {
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- addToZoneTotals: Adding to the animal Count for this produciton type...replacing.");
+#endif           
+  	    animalCount =  GPOINTER_TO_UINT( g_hash_table_lookup( _zone->_animalDays, GUINT_TO_POINTER(_prod_id) )) + _herd_size;
+        g_hash_table_replace( _zone->_animalDays, GUINT_TO_POINTER(_prod_id), GUINT_TO_POINTER(animalCount) );
+	  };
+    };    
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT addToZoneTotals");
+#endif 
+ 
+  }
+#endif
 
 /* end of file zone.c */

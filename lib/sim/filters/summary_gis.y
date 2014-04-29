@@ -18,9 +18,14 @@
 #  include <strings.h>
 #endif
 
+#if HAVE_MATH_H
+#  include <math.h>
+#endif
+
 #include <assert.h>
 
 #define GRID_SIDE_LENGTH 10
+#define DEGREE_DISTANCE 111.31949 /**< 1/360th of equatorial radius, in km */
 
 /** @file filters/summary_gis.c
  * A filter that takes a state table (output from state_table_filter), a herd
@@ -51,14 +56,11 @@
  * objects.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
- *   Department of Computing & Information Science, University of Guelph<br>
+ *   School of Computer Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
- * @date November 2005
  *
- * Copyright &copy; University of Guelph, 2005-2007
+ * Copyright &copy; University of Guelph, 2005-2011
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -87,12 +89,18 @@ gboolean *infected = NULL; /**< Flags indicating whether each herd was infected
 gboolean *destroyed = NULL; /**< Flags indicating whether each herd was
   destroyed during the current Monte Carlo run.  The length of this array is
   the number of herds. */
+gboolean *vimmune = NULL; /**< Flags indicating whether each herd was
+  vaccine immune at any time during the current Monte Carlo run.  The length of
+  this array is the number of herds. */
 double *ninfected; /**< Counts of the number of herds in a polygon that were
   infected at any time during the current Monte Carlo run.  The length of this
   array is the number of polygons. */
 double *ndestroyed; /**< Counts of the number of herds in a polygon that were
   destroyed during the current Monte Carlo run.  The length of this array is
   the number of polygons. */
+double *nvimmune; /**< Counts of the number of herds in a polygon that were
+  vaccine immune at any time during the current Monte Carlo run.  The length of
+  this array is the number of polygons. */
 unsigned int last_run = 0; /**< The most recent run number we have seen in the
   table. */
 const char *arcview_shp_filename = NULL;
@@ -132,6 +140,35 @@ end:
   return;
 }
 
+
+
+/**
+ * Returns the approximate distance in km between points 1 and 2.  Latitudes
+ * and longitudes must be given in degrees.  The calculation is from the
+ * Aviation Formulary by Ed Williams (http://williams.best.vwh.net/avform.htm).
+ *
+ * @param lat1 latitude of point 1, in degrees.
+ * @param lon1 longitude of point 1, in degrees.
+ * @param lat2 latitude of point 2, in degrees.
+ * @param lon2 longitude of point 2, in degrees.
+ * @return the distance (in km) between points 1 and 2.
+ */
+double
+approx_distance (double lat1, double lon1, double lat2, double lon2)
+{
+  double dlat, dlon;
+  double x;
+
+  dlat = lat2 - lat1;
+  dlon = fabs (lon2 - lon1);
+  /* Handle the case where the shortest line between the points crosses the
+   * +180/-180 line. */
+  if (dlon > 180)
+    dlon = 360 - dlon;
+
+  x = dlon * cos (DEG_TO_RAD * lat1);
+  return sqrt (x * x + dlat * dlat) * DEGREE_DISTANCE;
+}
 
 
 /**
@@ -194,55 +231,6 @@ end:
 
 
 /**
- * Finds the minimum and maximum lat and long in a herd list.
- *
- * @param herds a list of herds.
- * @param min_lat a location in which to store the minimum latitude found.
- * @param min_lon a location in which to store the minimum longitude found.
- * @param max_lat a location in which to store the maximum latitude found.
- * @param max_lon a location in which to store the maximum longitude found.
- */
-void
-get_bounds (HRD_herd_list_t *herds,
-	    double *min_lat, double *min_lon,
-	    double *max_lat, double *max_lon)
-{
-  unsigned int nherds, i;
-  HRD_herd_t *herd;
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER get_bounds");
-#endif
-
-  nherds = HRD_herd_list_length (herds);
-  g_assert (nherds >= 1);
-
-  /* Find the minimum and maximum lat and long. */
-  herd = HRD_herd_list_get (herds, 0);
-  *min_lat = *max_lat = herd->lat;
-  *min_lon = *max_lon = herd->lon;
-  for (i = 1; i < nherds; i++)
-    {
-      herd = HRD_herd_list_get (herds, i);
-      if (herd->lat < *min_lat)
-	*min_lat = herd->lat;
-      else if (herd->lat > *max_lat)
-	*max_lat = herd->lat;
-      if (herd->lon < *min_lon)
-	*min_lon = herd->lon;
-      else if (herd->lon > *max_lon)
-	*max_lon = herd->lon;
-    }
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT get_bounds");
-#endif
-  return;
-}
-
-
-
-/**
  * Creates ArcView files containing a grid that covers the herds.  Sets the
  * global npolys to a count of polygons.  Allocates and fills in the global
  * herd_count (number of herds in each polygon) array.  Fills in the global
@@ -270,7 +258,29 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER create_polys_as_grid");
 #endif
 
-  get_bounds (herds, &min_lat, &min_lon, &max_lat, &max_lon);
+  nherds = HRD_herd_list_length (herds);
+  for (i = 0; i < nherds; i++)
+    {
+      herd = HRD_herd_list_get (herds, i);
+      herd->x = herd->longitude;
+      herd->y = herd->latitude;
+    }
+  /* Find the minimum and maximum latitude and longitude. */
+  herd = HRD_herd_list_get (herds, 0);
+  min_lat = max_lat = herd->latitude;
+  min_lon = max_lon = herd->longitude;
+  for (i = 1; i < nherds; i++)
+    {
+      herd = HRD_herd_list_get (herds, i);
+      if (herd->latitude < min_lat)
+        min_lat = herd->latitude;
+      else if (herd->latitude > max_lat)
+        max_lat = herd->latitude;        
+      if (herd->longitude < min_lon)
+        min_lon = herd->longitude;
+      else if (herd->longitude > max_lon)
+        max_lon = herd->longitude;
+    }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
          "herds bound by (lat,lon) (%.1f,%.1f),(%.1f,%.1f)",
@@ -278,7 +288,7 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 #endif
 
   /* Work out the step size for the grid. */
-  height = GIS_local_distance (min_lat, min_lon, max_lat, min_lon);
+  height = approx_distance (min_lat, min_lon, max_lat, min_lon);
   lat_step = GRID_SIDE_LENGTH / height * (max_lat - min_lat);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -288,8 +298,8 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	 "latitude step to get %i km grid squares = %.3f",
 	 GRID_SIDE_LENGTH, lat_step);
 #endif
-  width = (GIS_local_distance (min_lat, min_lon, min_lat, max_lon)
-	    + GIS_local_distance (max_lat, min_lon, max_lat, max_lon)) * 0.5;
+  width = (approx_distance (min_lat, min_lon, min_lat, max_lon)
+	    + approx_distance (max_lat, min_lon, max_lat, max_lon)) * 0.5;
   lon_step = GRID_SIDE_LENGTH / width * (max_lon - min_lon);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -300,7 +310,6 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	 GRID_SIDE_LENGTH, lon_step);
 #endif
 
-  nherds = HRD_herd_list_length (herds);
   npolys = 0;
   tmp_herd_count = g_array_new (/* zero-terminated = */ FALSE,
 				/* clear = */ TRUE,
@@ -321,8 +330,8 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	      continue;
 
 	    herd = HRD_herd_list_get (herds, i);
-	    if (herd->lat > lat || herd->lat <= (lat - lat_step)
-		|| herd->lon < lon || herd->lon >= (lon + lon_step))
+	    if (herd->latitude > lat || herd->latitude <= (lat - lat_step)
+		|| herd->longitude < lon || herd->longitude >= (lon + lon_step))
 	      continue;
 
 	    if (no_herds_yet)
@@ -448,7 +457,7 @@ read_polys_from_file (HRD_herd_list_t *herds, char *shape_filename)
 	    continue;
 
 	  herd = HRD_herd_list_get (herds, i);
-	  if (GIS_point_in_polygon (poly, herd->lon, herd->lat))
+	  if (GIS_point_in_polygon (poly, herd->longitude, herd->latitude))
 	    {
 	      herd_map[i] = shape_index;
 	      herd_count[shape_index] += 1;
@@ -507,8 +516,10 @@ write_polys_with_stats (char *input_shp_filename, char *output_shp_filename)
   int nherds_field_index;
   int avg_ninfected_field_index;
   int avg_ndestroyed_field_index;
+  int avg_nvimmune_field_index;
   int avg_frinfected_field_index;
   int avg_frdestroyed_field_index;
+  int avg_frvimmune_field_index;
   const char *field_value_string;
   int field_value_int;
   double field_value_double;
@@ -578,9 +589,13 @@ write_polys_with_stats (char *input_shp_filename, char *output_shp_filename)
 					   FTDouble, 9, 1);
   avg_ndestroyed_field_index = DBFAddField (output_dbf_file, "avgndest",
 					    FTDouble, 9, 1);
+  avg_nvimmune_field_index = DBFAddField (output_dbf_file, "avgnvimm",
+					    FTDouble, 9, 1);
   avg_frinfected_field_index = DBFAddField (output_dbf_file, "avgfrinf",
 					    FTDouble, 9, 3);
   avg_frdestroyed_field_index = DBFAddField (output_dbf_file, "avgfrdest",
+					     FTDouble, 9, 3);
+  avg_frvimmune_field_index = DBFAddField (output_dbf_file, "avgfrvimm",
 					     FTDouble, 9, 3);
 
   /* Copy the data records from the old file to the new. */
@@ -640,10 +655,14 @@ write_polys_with_stats (char *input_shp_filename, char *output_shp_filename)
         ninfected[i]);
       DBFWriteDoubleAttribute (output_dbf_file, i, avg_ndestroyed_field_index,
         ndestroyed[i]);
+      DBFWriteDoubleAttribute (output_dbf_file, i, avg_nvimmune_field_index,
+        nvimmune[i]);
       DBFWriteDoubleAttribute (output_dbf_file, i, avg_frinfected_field_index,
         ninfected[i] / herd_count[i]);
       DBFWriteDoubleAttribute (output_dbf_file, i, avg_frdestroyed_field_index,
         ndestroyed[i] / herd_count[i]);
+      DBFWriteDoubleAttribute (output_dbf_file, i, avg_frvimmune_field_index,
+        nvimmune[i] / herd_count[i]);
     }
 
   /* Clean up. */
@@ -712,6 +731,29 @@ record_destructions (void)
 
 
 /**
+ * Counts the number of herds in each polygon that were vaccine immune during a
+ * Monte Carlo trial.
+ */
+void
+record_vimmune (void)
+{
+  unsigned int herd_index;
+  int poly_index;
+
+  for (herd_index = 0; herd_index < nherds; herd_index++)
+    {
+      poly_index = herd_map[herd_index];
+      if (poly_index == -1) /* herd is not in any polygon */
+        continue;
+
+      if (vimmune[herd_index])
+	nvimmune[poly_index] += 1;
+    }
+}
+
+
+
+/**
  * Resets the flags that show which herds were infected during a Monte Carlo
  * trial to all false.
  */
@@ -739,6 +781,21 @@ clear_destroyed_flags (void)
     destroyed[i] = FALSE;
 }
 
+
+
+/**
+ * Resets the flags that show which herds were vaccine immune during a Monte
+ * Carlo trial to all false.
+ */
+void
+clear_vimmune_flags (void)
+{
+  unsigned int i;
+
+  for (i = 0; i < nherds; i++)
+    vimmune[i] = FALSE;
+}
+
 %}
 
 %union {
@@ -764,8 +821,10 @@ header_line:
     RUN COMMA DAY COMMA herd_seqs
     {
       if ($5 != nherds)
-        g_error ("number of herds in state table (%i) does not match number of herds in herd file (%u)",
-		 $5, nherds);
+        {
+          g_error ("number of herds in state table (%i) does not match number of herds in herd file (%u)",
+                   $5, nherds);
+        }
     }
   ;
 
@@ -809,8 +868,10 @@ data_line:
 	    {
 	      record_infections();
 	      record_destructions();
+	      record_vimmune();
 	      clear_infected_flags();
 	      clear_destroyed_flags();
+	      clear_vimmune_flags();
 	    }
 	  last_run = run;
 	}
@@ -832,6 +893,8 @@ state_codes:
 	infected[herd_index] = TRUE;
       else if (state == Destroyed)
         destroyed[herd_index] = TRUE;
+      else if (state == VaccineImmune)
+        vimmune[herd_index] = TRUE;
       $$ = herd_index;
     }
   | INT
@@ -850,6 +913,8 @@ state_codes:
 	infected[herd_index] = TRUE;
       else if (state == Destroyed)
         destroyed[herd_index] = TRUE;
+      else if (state == VaccineImmune)
+        vimmune[herd_index] = TRUE;
       $$ = herd_index;
     }
   ;
@@ -920,13 +985,17 @@ main (int argc, char *argv[])
   poptGetNextOpt (option);
   herd_filename = poptGetArg (option);
   if (herd_filename == NULL)
-    g_error ("Need the name of a herd file file.");
+    {
+      g_error ("Need the name of a herd file.");
+    }
 
   poptGetNextOpt (option);
   arcview_shp_filename = poptGetArg (option);
   if (arcview_shp_filename == NULL
       || !g_str_has_suffix (arcview_shp_filename, ".shp"))
-    g_error ("Need the name of an ArcView shape (.shp) file.");
+    {
+      g_error ("Need the name of an ArcView shape (.shp) file.");
+    }
 
   poptGetNextOpt (option);
   polygon_shp_filename = (char *) poptGetArg (option);
@@ -934,21 +1003,15 @@ main (int argc, char *argv[])
   poptFreeContext (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
   g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-  g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
 
   /* Get the base part (without the .shp) of the ArcView file name. */
   arcview_base_name = g_strndup (arcview_shp_filename,
@@ -959,7 +1022,11 @@ main (int argc, char *argv[])
 #endif
 
   /* Read in the herds file. */
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list (herd_filename, NULL);
+#else
   herds = HRD_load_herd_list (herd_filename);
+#endif
   nherds = HRD_herd_list_length (herds);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -991,14 +1058,16 @@ main (int argc, char *argv[])
       read_polys_from_file (herds, polygon_shp_filename);
     }
 
-  /* Initialize arrays of flags showing whether a particular herd was infected
-   * or destroyed in a particular run. */
+  /* Initialize arrays of flags showing whether a particular herd was infected,
+   * destroyed, or vaccine immune in a particular run. */
   infected = g_new0 (gboolean, nherds);
   destroyed = g_new0 (gboolean, nherds);
-  /* Initialize arrays of counts of infected or destroyed herds in each
-   * polygon in a particular run. */
+  vimmune = g_new0 (gboolean, nherds);
+  /* Initialize arrays of counts of infected, destroyed, or vaccine immune
+   * herds in each polygon in a particular run. */
   ninfected = g_new0 (double, npolys);
   ndestroyed = g_new0 (double, npolys);
+  nvimmune = g_new0 (double, npolys);
 
   /* Call the parser.  It will go through the herd states file and populate the
    * ninfected and ndestroyed arrays. */
@@ -1011,12 +1080,13 @@ main (int argc, char *argv[])
   record_infections();
   record_destructions();
   /* The variable last_run stores a count of the number of Monte Carlo trials.
-   * Use it to get a mean number of herds infected and destroyed per polygon
-   * per trial. */
+   * Use it to get a mean number of herds infected, destroyed, and vaccine
+   * immune per polygon per trial. */
   for (i = 0; i < npolys; i++)
     {
       ninfected[i] /= last_run;
       ndestroyed[i] /= last_run;
+      nvimmune[i] /= last_run;
     }
 
 #if DEBUG
@@ -1044,6 +1114,16 @@ main (int argc, char *argv[])
     g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
 	   "mean # of destroyed herds in each poly = %s", s->str);
     g_string_free (s, TRUE);
+
+    s = g_string_new (NULL);
+    for (i = 0; i < npolys; i++)
+      {
+        if (i > 0)
+          g_string_append_c (s, ',');
+        g_string_append_printf (s, "%.0f", nvimmune[i]);
+      }
+    g_debug ("mean # of vaccine immune herds in each poly = %s", s->str);
+    g_string_free (s, TRUE);
   }
 #endif
 
@@ -1063,10 +1143,14 @@ main (int argc, char *argv[])
     g_free (infected);
   if (destroyed != NULL)
     g_free (destroyed);
+  if (vimmune != NULL)
+    g_free (vimmune);
   if (ninfected != NULL)
     g_free (ninfected);
   if (ndestroyed != NULL)
     g_free (ndestroyed);
+  if (nvimmune != NULL)
+    g_free (nvimmune);
 
   return EXIT_SUCCESS;
 }

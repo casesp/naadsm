@@ -19,8 +19,7 @@
 #ifndef BASIC_ZONE_FOCUS_MODEL_H
 #define BASIC_ZONE_FOCUS_MODEL_H
 
-char *basic_zone_focus_model_interface_version (void);
-ergadm_model_t *basic_zone_focus_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                            ZON_zone_list_t * zones);
+naadsm_model_t *basic_zone_focus_model_new (scew_element * params, HRD_herd_list_t *,
+                                            projPJ, ZON_zone_list_t *);
 
 #endif

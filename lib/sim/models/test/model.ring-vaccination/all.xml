@@ -30,6 +30,8 @@
     There is no spread or destruction.
   </parameter-description>
 
+  <diagram>16herds_square_w_ring_radius_0</diagram>
+
   <output>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
@@ -40,6 +42,79 @@
 -->
   </output>
 </deterministic-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>0 km radius, check reporting variables</short-name>
+
+  <description>
+    Test a scenario with 0 km radius ring vaccination.  No units will be
+    vaccinated.  This scenario is idential to "0 km radius" above.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>19 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>16herds_square</herd-file>
+
+  <parameter-file>radius_0_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: see "0 km radius" above.
+  </parameter-description>
+
+  <diagram>16herds_square_w_ring_radius_0</diagram>
+
+  <output>
+    <tr>
+      <td>vaccOccurred</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>0 km radius, vaccinate detected units, check reporting variables</short-name>
+
+  <description>
+    Test a scenario with 0 km radius ring vaccination, with the option to
+    vaccinate detected units turned on.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>16herds_square</herd-file>
+
+  <parameter-file>radius_0_vacc_detected_w_vars</parameter-file>
+
+  <parameter-description>
+    Parameters: This scenario is identical to "0 km radius" above, but with the
+    option to vaccinate detected units turned on.
+  </parameter-description>
+
+  <diagram>16herds_square_w_ring_radius_0</diagram>
+
+  <output>
+    <tr>
+      <td>vaccOccurred</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
 
 <deterministic-test>
   <category>ring-vaccination</category>
@@ -72,6 +147,8 @@
 
     There is no spread or destruction.
   </parameter-description>
+
+  <diagram>16herds_square_w_ring_radius_0.5</diagram>
 
   <output>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
@@ -116,6 +193,8 @@
     There is no spread or destruction.
   </parameter-description>
 
+  <diagram>16herds_square_w_ring_radius_1</diagram>
+
   <output>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
@@ -159,6 +238,8 @@
     There is no spread or destruction.
   </parameter-description>
 
+  <diagram>16herds_square_w_ring_radius_2.5</diagram>
+
   <output>
     <tr><td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
     <tr><td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
@@ -201,6 +282,8 @@
 
     There is no spread or destruction.
   </parameter-description>
+
+  <diagram>16herds_square_w_ring_radius_1</diagram>
 
   <output>
     <tr><td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
@@ -376,28 +459,26 @@
     vaccination happens "before" the infection (0.5). -->
   <output probability="0.5">
     <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-vaccinated</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>vacnUAll</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>1</td>  <td>0</td></tr>
   </output>
 
   <!-- probability that unit becomes Latent = probability that the infection
     happens "before" the vaccination (0.5). -->
   <output probability="0.5">
     <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-vaccinated</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>vacnUAll</td>
+      <td>expnUAll</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>1</td>  <td>1</td></tr>
   </output>
 </stochastic-variable-test>
 
@@ -829,6 +910,140 @@
     <tr><td>Destroyed</td>           <td>Susceptible</td>    <td>Destroyed</td></tr>
   </output>
 </deterministic-test>
+
+<deterministic-test>
+  <category>ring-vaccination</category>
+  <short-name>re-vaccination with 2 production types</short-name>
+
+  <description>
+    Test that the minimum number of days between re-vaccination is respected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>revaccinate_2_prodtypes</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 2 days, and immunity lasts 3 days.  Pigs are similar but the latent
+    period is 5 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit is destroyed, and all units
+    within 2.5 km will be vaccinated.  The vaccine produces immunity
+    immediately, and the immunity lasts 3 days in cattle, 4 in pigs.  The
+    minimum time between vaccinations is 4 days for cattle, 5 for pigs.  The
+    authorities can vaccinate or destroy an unlimited/very large number of
+    units each day.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 units 0 and 1 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       marked for destruction, and all the other units will be marked for
+       vaccination (including unit 1, because no-one knows it is infected yet).
+     - On day 3 unit 0 will be destroyed and units 1-5 will be vaccinated.
+       Their states will show the change on the next day.
+     - On day 6 unit 1 will be Infectious Clinical.  It will be detected and
+       marked for destruction, and all the remaining non-destroyed units will
+       be marked for vaccination.  (We don't know how long it will be before
+       vaccination can be done, so we make the request for all units in the
+       ring, ignoring the minimum time between vaccinations.)
+     - On day 7 units 2 and 4 will be re-vaccinated because it has been 4 days
+       since their last vaccination.  Units 3 and 5 will not, because there is
+       a minimum 5 day wait for their production type.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>L</td>  <td>S</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>L</td>  <td>V</td>  <td>V</td>  <td>V</td>  <td>V</td></tr>
+    <tr><td>D</td>  <td>L</td>  <td>V</td>  <td>V</td>  <td>V</td>  <td>V</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>V</td>  <td>V</td>  <td>V</td>  <td>V</td></tr>
+    <tr><td>D</td>  <td>C</td>  <td>S</td>  <td>V</td>  <td>S</td>  <td>V</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>V</td>  <td>S</td>  <td>V</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>re-vaccination with 2 production types, check reporting variables</short-name>
+
+  <description>
+    Test that the minimum number of days between re-vaccination is respected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>revaccinate_2_prodtypes_w_vars</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 2 days, and immunity lasts 3 days.  Pigs are similar but the latent
+    period is 5 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased unit is detected, that unit is destroyed, and all units
+    within 2.5 km will be vaccinated.  The vaccine produces immunity
+    immediately, and the immunity lasts 3 days in cattle, 4 in pigs.  The
+    minimum time between vaccinations is 4 days for cattle, 5 for pigs.  The
+    authorities can vaccinate or destroy an unlimited/very large number of
+    units each day.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 units 0 and 1 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       marked for destruction, and all the other units will be marked for
+       vaccination (including unit 1, because no-one knows it is infected yet).
+     - On day 3 unit 0 will be destroyed and units 1-5 will be vaccinated.
+       Their states will show the change on the next day.
+     - On day 6 unit 1 will be Infectious Clinical.  It will be detected and
+       marked for destruction, and all the remaining non-destroyed units will
+       be marked for vaccination.  (We don't know how long it will be before
+       vaccination can be done, so we make the request for all units in the
+       ring, ignoring the minimum time between vaccinations.)
+     - On day 7 units 2 and 4 will be re-vaccinated because it has been 4 days
+       since their last vaccination.  Units 3 and 5 will not, because there is
+       a minimum 5 day wait for their production type.  The number of units
+       awaiting vaccination should drop from 4 to 0, even though only 2 units
+       were vaccinated.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>5</td> <td>0</td></tr>
+    <tr><td>0</td> <td>5</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>4</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
 
 <deterministic-test>
   <category>ring-vaccination</category>
@@ -1590,9 +1805,8 @@
     lasts 3 days, clinical signs accompany infectiousness immediately, and
     natural immunity lasts 5 days.
 
-    The mean movement rate from sheep units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    The movement rate from sheep units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The movement rate
     multiplier is 0 until the public is aware of the outbreak, then it
     immediately goes to 1.  (This is the opposite of what one might expect from
     movement controls; its purpose here is to make sure any contact we see
@@ -1754,9 +1968,8 @@
     lasts 3 days, clinical signs accompany infectiousness immediately, and
     natural immunity lasts 5 days.
 
-    The mean movement rate from sheep units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    The movement rate from sheep units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The movement rate
     multiplier is 0 until the public is aware of the outbreak, then it
     immediately goes to 1.  (This is the opposite of what one might expect from
     movement controls; its purpose here is to make sure any contact we see
@@ -1922,17 +2135,17 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td></td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>   <td></td>  <td>0</td></tr>
     <tr><td>0</td>   <td>0</td> <td>1</td> <td>25</td>  <td>1</td>  <td>25</td>  <td>1</td>  <td>1</td></tr>
     <tr><td>0</td>   <td>0</td> <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>1</td>  <td>1</td></tr>
     <tr><td>0</td>   <td>0</td> <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>1</td>  <td>1</td></tr>
@@ -2072,21 +2285,21 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>2</td>  <td>2</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>3</td>  <td>3</td></tr>
-    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>4</td>  <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td></td>   <td></td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>   <td></td>   <td></td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>   <td></td>   <td></td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>   <td></td>   <td></td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>   <td></td>   <td></td></tr>
+    <tr><td>1</td>  <td>25</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>   <td></td>   <td></td></tr>
     <tr><td>0</td>   <td>0</td> <td>1</td>  <td>25</td>  <td>1</td>  <td>25</td>  <td>5</td>  <td>5</td></tr>
     <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>5</td>  <td>5</td></tr>
     <!-- No infectious units, simulation stops. -->
@@ -2207,20 +2420,20 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>2</td>  <td>2</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td>3</td>  <td>3</td></tr>
+    <tr><td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td></td>  <td></td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td></td>  <td></td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td></td>  <td></td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td></td>  <td></td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>25</td>  <td></td>  <td></td></tr>
   </output>
 </variable-test>
 
@@ -2357,21 +2570,21 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>2</td>  <td>2</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>3</td>  <td>3</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>4</td>  <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
     <tr><td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
     <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
   </output>
@@ -2434,29 +2647,49 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-units-vaccinated-by-production-type:Sheep</td>
-      <td>num-units-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-units-vaccinated-by-production-type:Pigs</td>
-      <td>num-animals-vaccinated-by-production-type:Sheep</td>
-      <td>num-animals-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-animals-vaccinated-by-production-type:Pigs</td>
+      <td>vacwUAll</td>
+      <td>vacwUSheep</td>
+      <td>vacwUBeefCattle</td>
+      <td>vacwUPigs</td>
+      <td>vacwAAll</td>
+      <td>vacwASheep</td>
+      <td>vacwABeefCattle</td>
+      <td>vacwAPigs</td>
+      <td>vacnUSheep</td>
+      <td>vacnUBeefCattle</td>
+      <td>vacnUPigs</td>
+      <td>vacnUIniSheep</td>
+      <td>vacnUIniBeefCattle</td>
+      <td>vacnUIniPigs</td>
+      <td>vacnURingSheep</td>
+      <td>vacnURingBeefCattle</td>
+      <td>vacnURingPigs</td>
+      <td>vacnUIni</td>
+      <td>vacnURing</td>
+      <td>vacnUAll</td>
+      <td>vacnASheep</td>
+      <td>vacnABeefCattle</td>
+      <td>vacnAPigs</td>
+      <td>vacnAIniSheep</td>
+      <td>vacnAIniBeefCattle</td>
+      <td>vacnAIniPigs</td>
+      <td>vacnARingSheep</td>
+      <td>vacnARingBeefCattle</td>
+      <td>vacnARingPigs</td>
+      <td>vacnAIni</td>
+      <td>vacnARing</td>
+      <td>vacnAAll</td>
     </tr>
-    <!--  # units waiting                     # animals waiting                     # units vaccinated                  # animals vaccinated                -->
-    <!--  Sheep       Cattle      Pigs        Sheep        Cattle       Pigs        Sheep       Cattle      Pigs        Sheep        Cattle       Pigs      -->
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <!--  # units waiting                              |   # animals waiting                               |   # units vaccinated                Initially/  Initially/  Initially/                                                                         |   # animals vaccinated                Initially/  Initially/  Initially/                                                                              -->
+    <!--  Total       Sheep       Cattle      Pigs     |   Total        Sheep        Cattle       Pigs     |   Sheep       Cattle      Pigs        Sheep       Cattle       Pigs     Ring/Sheep  Ring/Cattle Ring/Pigs   Initially     Ring        Total    |   Sheep        Cattle       Pigs        Sheep       Cattle       Pigs     Ring/Sheep  Ring/Cattle   Ring/Pigs   Initially       Ring        Total     -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>2</td>  <td>2</td>   <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>50</td>  <td>50</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2600,10 +2833,10 @@
      - On day 6 there will be no vaccination capacity for another 1 day.
      - On day 7 there is capacity to vaccinate 1 unit.  Unit 1 will be chosen
        because cattle have priority over pigs.  The average wait time will be 5
-       (both units have been waiting for 5 days).
+       (1 unit waited 5 days before vaccination).
      - On day 8 unit 1's state will show as Immune.  There is no capacity to
-       vaccinate on day 8.  The average wait time will be 5.5 (unit 1 waited 5
-       days, unit 2 has been waiting for 6 days).
+       vaccinate on day 8.  The average wait time will still be 5 because it
+       counts only completed vaccinations.
      - On day 9 there is capacity to vaccinate 1 unit.  Unit 2 will be
        vaccinated.  The average wait time will be 6 (unit 1 waited 5 days, unit
        2 waited 7 days).
@@ -2613,23 +2846,23 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>2</td>  <td>2</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>3</td>  <td>3</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>4</td>  <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
     <tr><td>1</td>  <td>25</td>  <td>1</td>  <td>25</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>6</td>  <td>5.5</td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
     <tr><td>0</td>   <td>0</td>  <td>1</td>  <td>25</td>  <td>2</td>  <td>50</td>  <td>7</td>  <td>6</td></tr>
     <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>7</td>  <td>6</td></tr>
   </output>
@@ -2699,31 +2932,51 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-units-vaccinated-by-production-type:Sheep</td>
-      <td>num-units-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-units-vaccinated-by-production-type:Pigs</td>
-      <td>num-animals-vaccinated-by-production-type:Sheep</td>
-      <td>num-animals-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-animals-vaccinated-by-production-type:Pigs</td>
+      <td>vacwUAll</td>
+      <td>vacwUSheep</td>
+      <td>vacwUBeefCattle</td>
+      <td>vacwUPigs</td>
+      <td>vacwAAll</td>
+      <td>vacwASheep</td>
+      <td>vacwABeefCattle</td>
+      <td>vacwAPigs</td>
+      <td>vacnUAll</td>
+      <td>vacnUSheep</td>
+      <td>vacnUBeefCattle</td>
+      <td>vacnUPigs</td>
+      <td>vacnUIni</td>
+      <td>vacnURing</td>
+      <td>vacnUIniSheep</td>
+      <td>vacnUIniBeefCattle</td>
+      <td>vacnUIniPigs</td>
+      <td>vacnURingSheep</td>
+      <td>vacnURingBeefCattle</td>
+      <td>vacnURingPigs</td>
+      <td>vacnAAll</td>
+      <td>vacnASheep</td>
+      <td>vacnABeefCattle</td>
+      <td>vacnAPigs</td>
+      <td>vacnAIni</td>
+      <td>vacnARing</td>
+      <td>vacnAIniSheep</td>
+      <td>vacnAIniBeefCattle</td>
+      <td>vacnAIniPigs</td>
+      <td>vacnARingSheep</td>
+      <td>vacnARingBeefCattle</td>
+      <td>vacnARingPigs</td>
     </tr>
-    <!--  # units waiting                     # animals waiting                     # units vaccinated                  # animals vaccinated                -->
-    <!--  Sheep       Cattle      Pigs        Sheep        Cattle       Pigs        Sheep       Cattle      Pigs        Sheep        Cattle       Pigs      -->
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>0</td>  <td>25</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>25</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>0</td>  <td>25</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <!--  # units waiting                              |    # animals waiting                              |   # units vaccinated                                                    Initially/  Initially/  Initially/                                     |    # animals vaccinated                                                      Initially/  Initially/  Initially/                                        -->
+    <!--  Total       Sheep       Cattle      Pigs     |    Total       Sheep        Cattle       Pigs     |   Total       Sheep       Cattle      Pigs      Initially      Ring       Sheep       Cattle       Pigs     Ring/Sheep  Ring/Cattle Ring/Pigs  |    Total        Sheep        Cattle       Pigs      Initially      Ring        Sheep       Cattle       Pigs     Ring/Sheep   Ring/Cattle  Ring/Pigs   -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>25</td>  <td>0</td>   <td>0</td>  <td>25</td>   <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>25</td>   <td>0</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>25</td>   <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>25</td>  <td>0</td>   <td>0</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>25</td>   <td>0</td>   <td>0</td>  <td>25</td>  <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>25</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2859,32 +3112,32 @@
      - On day 6 there will be no vaccination capacity for another 1 day.
      - On day 7 there is capacity to vaccinate 1 unit.  Unit 1 will be chosen
        because cattle have priority over pigs.  The average wait time will be 5
-       (both units have been waiting for 5 days).
+       (1 unit waited 1 day for vaccination).
      - On day 8 unit 1's state will show as Immune.  The average wait time will
-       be 5.5 (unit 1 waited 5 days, unit 2 has been waiting for 6 days).
-       Because there are no infectious units left and nothing left to do, the
-       simulation can end.
+       still be 5 because it counts only completed vaccinations.  Because there
+       are no infectious units left and nothing left to do, the simulation can
+       end.
   </parameter-description>
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-animals-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>num-animals-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-num-animals-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>average-vaccination-wait-time</td>
+      <td>vacwUAll</td>
+      <td>vacwAAll</td>
+      <td>vacnUAll</td>
+      <td>vacnAAll</td>
+      <td>vacwUMax</td>
+      <td>vacwAMax</td>
+      <td>vacwUTimeMax</td>
+      <td>vacwUTimeAvg</td>
     </tr>
-    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>1</td>  <td>1</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>2</td>  <td>2</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>3</td>  <td>3</td></tr>
-    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>4</td>  <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>   <td>0</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
+    <tr><td>2</td>  <td>50</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>   <td></td>   <td></td></tr>
     <tr><td>1</td>  <td>25</td>  <td>1</td>  <td>25</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
-    <tr><td>1</td>  <td>25</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>6</td>  <td>5.5</td></tr>
+    <tr><td>1</td>  <td>25</td>  <td>0</td>   <td>0</td>  <td>2</td>  <td>50</td>  <td>5</td>  <td>5</td></tr>
   </output>
 </variable-test>
 
@@ -2947,29 +3200,49 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-units-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Sheep</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Beef Cattle</td>
-      <td>num-animals-awaiting-vaccination-by-production-type:Pigs</td>
-      <td>num-units-vaccinated-by-production-type:Sheep</td>
-      <td>num-units-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-units-vaccinated-by-production-type:Pigs</td>
-      <td>num-animals-vaccinated-by-production-type:Sheep</td>
-      <td>num-animals-vaccinated-by-production-type:Beef Cattle</td>
-      <td>num-animals-vaccinated-by-production-type:Pigs</td>
+      <td>vacwUAll</td>
+      <td>vacwUSheep</td>
+      <td>vacwUBeefCattle</td>
+      <td>vacwUPigs</td>
+      <td>vacwAAll</td>
+      <td>vacwASheep</td>
+      <td>vacwABeefCattle</td>
+      <td>vacwAPigs</td>
+      <td>vacnUAll</td>
+      <td>vacnUSheep</td>
+      <td>vacnUBeefCattle</td>
+      <td>vacnUPigs</td>
+      <td>vacnUIni</td>
+      <td>vacnURing</td>
+      <td>vacnUIniSheep</td>
+      <td>vacnUIniBeefCattle</td>
+      <td>vacnUIniPigs</td>
+      <td>vacnURingSheep</td>
+      <td>vacnURingBeefCattle</td>
+      <td>vacnURingPigs</td>
+      <td>vacnAAll</td>
+      <td>vacnASheep</td>
+      <td>vacnABeefCattle</td>
+      <td>vacnAPigs</td>
+      <td>vacnAIni</td>
+      <td>vacnARing</td>
+      <td>vacnAIniSheep</td>
+      <td>vacnAIniBeefCattle</td>
+      <td>vacnAIniPigs</td>
+      <td>vacnARingSheep</td>
+      <td>vacnARingBeefCattle</td>
+      <td>vacnARingPigs</td>
     </tr>
-    <!--  # units waiting                     # animals waiting                     # units vaccinated                  # animals vaccinated                -->
-    <!--  Sheep       Cattle      Pigs        Sheep        Cattle       Pigs        Sheep       Cattle      Pigs        Sheep        Cattle       Pigs      -->
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>0</td>  <td>25</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>0</td>  <td>25</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>25</td>   <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td></tr>
+    <!--  # units waiting                              |    # animals waiting                              |   # units vaccinated                                                    Initially/  Initially/  Initially/                                     |    # animals vaccinated                                                    Initially/  Initially/  Initially/                                       -->
+    <!--  Total       Sheep       Cattle      Pigs     |    Total       Sheep        Cattle       Pigs     |   Total       Sheep       Cattle       Pigs     Initially      Ring       Sheep       Cattle       Pigs     Ring/Sheep  Ring/Cattle Ring/Pigs  |    Total       Sheep        Cattle       Pigs     Initially       Ring       Sheep       Cattle       Pigs     Ring/Sheep   Ring/Cattle Ring/Pigs   -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>2</td>  <td>0</td>  <td>1</td>  <td>1</td>   <td>50</td>  <td>0</td>  <td>25</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>25</td>  <td>0</td>   <td>0</td>  <td>25</td>   <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>   <td>25</td>  <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>25</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>25</td>  <td>0</td>   <td>0</td>  <td>25</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>    <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -3130,19 +3403,19 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>num-units-awaiting-destruction</td>
-      <td>num-units-destroyed</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+      <td>vacwUMax</td>
+      <td>vacwUTimeMax</td>
+      <td>deswUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>3</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>4</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>   <td></td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>   <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>   <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>   <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>   <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>   <td></td>  <td>1</td>  <td>0</td></tr>
     <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>5</td>  <td>1</td>  <td>0</td></tr>
     <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>5</td>  <td>1</td>  <td>0</td></tr>
     <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>5</td>  <td>0</td>  <td>1</td></tr>
@@ -3299,20 +3572,20 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>num-units-awaiting-destruction</td>
-      <td>num-units-destroyed</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+      <td>vacwUMax</td>
+      <td>vacwUTimeMax</td>
+      <td>deswUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>3</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>4</td>  <td>0</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>4</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td></td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td></td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td></td>  <td>0</td>  <td>0</td></tr>
     <!-- No infectious units, simulation stops. -->
   </output>
 </variable-test>
@@ -3467,21 +3740,21 @@
 
   <output>
     <tr>
-      <td>num-units-awaiting-vaccination</td>
-      <td>num-units-vaccinated</td>
-      <td>peak-num-units-awaiting-vaccination</td>
-      <td>peak-vaccination-wait-time</td>
-      <td>num-units-awaiting-destruction</td>
-      <td>num-units-destroyed</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+      <td>vacwUMax</td>
+      <td>vacwUTimeMax</td>
+      <td>deswUAll</td>
+      <td>desnUAll</td>
     </tr>
-    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>2</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>3</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>4</td>  <td>1</td>  <td>0</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>5</td>  <td>0</td>  <td>1</td></tr>
-    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>5</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td></td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td></td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td></td>  <td>0</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td></td>  <td>0</td>  <td>0</td></tr>
     <!-- No infectious units, simulation stops. -->
   </output>
 </variable-test>
@@ -3491,7 +3764,7 @@
   <short-name>ring at equator</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the equator and the R-tree is not used.
   </description>
@@ -3527,7 +3800,7 @@
 
   <output>
     <tr>
-      <td>num-units-vaccinated-by-reason:ring vaccination</td>
+      <td>vacnUAll</td>
     </tr>
     <tr> <td>0</td></tr>
     <tr> <td>0</td></tr>
@@ -3541,7 +3814,7 @@
   <short-name>ring at lat 45</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the 45th parallel and the R-tree is not used.
   </description>
@@ -3577,7 +3850,58 @@
 
   <output>
     <tr>
-      <td>num-units-vaccinated-by-reason:ring vaccination</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr> <td>0</td></tr>
+    <tr> <td>0</td></tr>
+    <tr><td>46</td></tr>
+    <tr> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>ring at lat -45</short-name>
+
+  <description>
+    This is one of a set of 6 scenarios to check that the ring is drawn
+    correctly at all latitudes, and with and without the R-tree index.  In this
+    scenario, the ring is at the -45th parallel (southern hemisphere) and the
+    R-tree is not used.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 May 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>no_rtree_lat-45</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units within 1 km will be vaccinated.
+    The authorities can vaccinate an unlimited/very large number of units each
+    day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  The
+       46 units around unit 0 will be marked for vaccination.
+     - On day 3 those units will be vaccinated.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
     </tr>
     <tr> <td>0</td></tr>
     <tr> <td>0</td></tr>
@@ -3591,7 +3915,7 @@
   <short-name>ring at equator, using R-tree</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the equator and the R-tree is used.
   </description>
@@ -3627,7 +3951,7 @@
 
   <output>
     <tr>
-      <td>num-units-vaccinated-by-reason:ring vaccination</td>
+      <td>vacnUAll</td>
     </tr>
     <tr> <td>0</td></tr>
     <tr> <td>0</td></tr>
@@ -3641,7 +3965,7 @@
   <short-name>ring at lat 45, using R-tree</short-name>
 
   <description>
-    This is one of a set of 4 scenarios to check that the ring is drawn
+    This is one of a set of 6 scenarios to check that the ring is drawn
     correctly at all latitudes, and with and without the R-tree index.  In this
     scenario, the ring is at the 45th parallel and the R-tree is used.
   </description>
@@ -3677,7 +4001,7 @@
 
   <output>
     <tr>
-      <td>num-units-vaccinated-by-reason:ring vaccination</td>
+      <td>vacnUAll</td>
     </tr>
     <tr> <td>0</td></tr>
     <tr> <td>0</td></tr>
@@ -3685,3 +4009,1610 @@
     <tr> <td>0</td></tr>
   </output>
 </variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>ring at lat -45, using R-tree</short-name>
+
+  <description>
+    This is one of a set of 6 scenarios to check that the ring is drawn
+    correctly at all latitudes, and with and without the R-tree index.  In this
+    scenario, the ring is at the -45th parallel (southern hemisphere) and the
+    R-tree is used.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 May 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>rtree_lat-45</herd-file>
+
+  <parameter-file>lat_and_rtree</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units within 1 km will be vaccinated.
+    The authorities can vaccinate an unlimited/very large number of units each
+    day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected unit (unit 0) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected.  The
+       46 units around unit 0 will be marked for vaccination.
+     - On day 3 those units will be vaccinated.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
+    </tr>
+    <tr> <td>0</td></tr>
+    <tr> <td>0</td></tr>
+    <tr><td>46</td></tr>
+    <tr> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit destroyed prior to ring</short-name>
+
+  <description>
+    Test that vaccination is not requested for units that are already
+    destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>destroyed_before_ring</parameter-file>
+
+  <parameter-description>
+    For cattle units, the latent period lasts 1 day, the infectious clinical
+    period lasts 2 days, and immunity lasts 3 days.  Pig units are similar but
+    the latent period lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased cattle unit is detected, that unit is destroyed.  When a
+    diseased pig unit is detected, all units within 2 km will be vaccinated.
+    The vaccine produces immunity immediately, and the immunity lasts 5 days.
+    The authorities can vaccinate or destroy an unlimited/very large number of
+    units each day.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 3 unit 0 will be destroyed.
+     - On day 4 unit 1 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Units 4 and 5 will be marked for
+       vaccination, but not 0, because it is already destroyed.
+     - On day 5 units 4 and 5 will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit destroyed same day as ring</short-name>
+
+  <description>
+    Test that a request for vaccination is canceled when a vaccination ring is
+    drawn the same day that a unit in the ring is destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>21 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>destroyed_sameday_ring</parameter-file>
+
+  <parameter-description>
+    For cattle units, the latent period lasts 1 day, the infectious clinical
+    period lasts 2 days, and immunity lasts 3 days.  Pig units are similar but
+    the latent period lasts 2 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased cattle unit is detected, that unit is destroyed.  When a
+    diseased pig unit is detected, all units within 2 km will be vaccinated.
+    The vaccine produces immunity immediately, and the immunity lasts 5 days.
+    The authorities can vaccinate or destroy an unlimited/very large number of
+    units each day.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 3 unit 0 will be destroyed.  Unit 1 will be Infectious Clinical.
+       It will be detected and will trigger a vaccination ring.  We don't
+       commit to whether the detection or destruction should come "first", but
+       the day's final count for units awaiting vaccination should be 2 (just
+       units 4 and 5).
+     - On day 4 units 4 and 5 will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>desnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected prior to ring, default</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we accept the default
+    behavior of NAADSM 3.x, which is to vaccinate everything in the ring except
+    the unit at the center that triggered the ring.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_before_ring_default</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 2 days, and immunity lasts 3 days.  Pigs are similar but the latent
+    period lasts 2 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated.  The vaccine produces immunity immediately, and the immunity
+    lasts 5 days. The authorities can vaccinate an unlimited/very large number
+    of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected but
+       will not trigger vaccination.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Units 0, 4, and 5 will be marked for
+       vaccination.
+     - On day 4 those units will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>3</td> <td>0</td></tr>
+    <tr><td>0</td> <td>3</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected prior to ring, vaccinate detected units</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly allow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_before_ring_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 2 days, and immunity lasts 3 days.  Pigs are similar but the latent
+    period lasts 2 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated, including detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected but
+       will not trigger vaccination.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Units 0, 1, 4, and 5 will be marked
+       for vaccination.
+     - On day 4 those units will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>4</td> <td>0</td></tr>
+    <tr><td>0</td> <td>4</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected prior to ring, do not vaccinate detected units</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly disallow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_before_ring_no_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 2 days, and immunity lasts 3 days.  Pigs are similar but the latent
+    period lasts 2 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated, excluding detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected but
+       will not trigger vaccination.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Units 4 and 5 will be marked for
+       vaccination.
+     - On day 4 those units will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected same day as ring, default</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we accept the default
+    behavior of NAADSM 3.x, which is to vaccinate everything in the ring except
+    the unit at the center that triggered the ring.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_sameday_ring_default</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated.  The vaccine produces immunity immediately, and the immunity
+    lasts 5 days. The authorities can vaccinate an unlimited/very large number
+    of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and unit 1 will trigger a vaccination ring.  Units 0, 4, and 5
+       will be marked for vaccination.
+     - On day 3 those units will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>3</td> <td>0</td></tr>
+    <tr><td>0</td> <td>3</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected same day as ring, vaccinate detected units</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly allow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_sameday_ring_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated, including detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and unit 1 will trigger a vaccination ring.  Units 0, 1, 4, and
+       5 will be marked for vaccination.
+     - On day 3 those units will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>4</td> <td>0</td></tr>
+    <tr><td>0</td> <td>4</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected same day as ring, do not vaccinate detected units</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly disallow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_sameday_ring_no_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased pig unit is detected, all units within 2 km will be
+    vaccinated, excluding detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and unit 1 will trigger a vaccination ring.  We don't commit to
+       which detection should come "first", but the day's final count for units
+       awaiting vaccination should be 2.
+     - On day 3 units 4 and 5 will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>unit detected same day as ring, do not vaccinate detected units 2</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly disallow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_sameday_ring_no_vacc_detected2</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased cattle unit is detected, all units within 2 km will be
+    vaccinated, excluding detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    This test differs from "unit detected same day as ring, do not vaccinate
+    detected units" above in which unit is detected.  This is needed to make
+    sure that marking the other infected unit for vaccination vs. not marking
+    it is done intentionally, and is not just an artifact of which unit is
+    detected first.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and unit 0 will trigger a vaccination ring.  We don't commit to
+       which detection should come "first", but the day's final count for units
+       awaiting vaccination should be 2.
+     - On day 3 units 4 and 5 will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_ring2</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>2</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>two units detected same day, rings overlap, do not vaccinate detected units</short-name>
+
+  <description>
+    This is one of a set of scenarios to test the option to allow or disallow
+    vaccination of known infected units.  In this test, we explicitly disallow
+    vaccination of detected units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>detected_sameday_rings_no_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+
+    For both production types, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units within 2.5 km will be
+    vaccinated, excluding detected ones.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days. The authorities can vaccinate
+    an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  We don't commit
+       to which detection should come "first", but the day's final count for
+       units awaiting vaccination should be 4.
+     - On day 3 units 2, 3, 4 and 5 will be vaccinated.
+  </parameter-description>
+
+  <diagram>6herds_2_w_rings</diagram>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+      <td>vacnUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td></tr>
+    <tr><td>4</td> <td>0</td></tr>
+    <tr><td>0</td> <td>4</td></tr>
+    <tr><td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>destroyed while waiting, check count of units waiting</short-name>
+
+  <description>
+    Test whether the number of units awaiting vaccination is decremented each
+    time one of those units is destroyed (not when the unit finally comes up
+    for vaccination).  This makes sure the waiting list will not appear
+    inflated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>22 May 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>destroyed_while_waiting_4_w_vars</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units of types C-G within 5 km will
+    be marked for both vaccination and destruction.  (This might not be a
+    sensible strategy, but it is a useful setup for this test.)  The authorities
+    can destroy 1 unit per day.  Vaccination capacity does not come on-line
+    until after all units are destroyed in this scenario.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for both vaccination and destruction.
+     - On days 3-7, one of the waiting units will be destroyed each day.  The
+       count of units awaiting vaccination should drop by 1 each day.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUMax</td>
+      <td>vacwUMaxDay</td>
+      <td>vaccUAll</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td>  <td></td> <td>0</td></tr>
+    <tr><td>0</td> <td>5</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>4</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>3</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>2</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>5</td> <td>2</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>5</td> <td>2</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>detected while waiting, check count of units waiting</short-name>
+
+  <description>
+    Test whether the number of units awaiting vaccination is decremented each
+    time one of those units is detected (not when the unit finally comes up
+    for vaccination).  This makes sure the waiting list will not appear
+    inflated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>22 May 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>detected_after_ring_no_vacc_detected</parameter-file>
+
+  <parameter-description>
+    For production type A, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.  The same is true
+    for production type C.  Production types D-G each have one additional day
+    on the latent period: 2 days for D, 3 days for E, etc.
+
+    Airborne spread can occur from units of type A to units of types C-G.
+    The probability of airborne spread at 1 km is 0.8723 and it drops off
+    exponentially.  This parameter gives a 0.505 probability of infection at 5
+    km (0.8723&lt;sup&gt;5&lt;/sup&gt; = 0.505).
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units of types C-G within 5 km will
+    be marked for vaccination.  Vaccination capacity does not come on-line
+    until after all units are detected in this scenario.
+
+    There is no destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for vaccination.  Airborne spread from units 0 and 1 will
+       infect units 4-8.
+     - On day 3 the newly-infected units (4-8) will be Latent.
+     - On days 4-8, one of the waiting units will become Infectious Clinical
+       and be detected each day.  The count of units awaiting vaccination
+       should drop by 1 each day.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUMax</td>
+      <td>vacwUMaxDay</td>
+      <td>vaccUAll</td>
+      <td>firstDetection</td>
+      <td>lastDetection</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td>  <td></td> <td>0</td>  <td></td>  <td></td></tr>
+    <tr><td>2</td> <td>5</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>2</td></tr>
+    <tr><td>0</td> <td>5</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>2</td></tr>
+    <tr><td>1</td> <td>4</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>4</td></tr>
+    <tr><td>1</td> <td>3</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>5</td></tr>
+    <tr><td>1</td> <td>2</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>6</td></tr>
+    <tr><td>1</td> <td>1</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>7</td></tr>
+    <tr><td>1</td> <td>0</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>8</td></tr>
+    <tr><td>0</td> <td>0</td> <td>5</td> <td>2</td> <td>0</td> <td>2</td> <td>8</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>destroyed while waiting, check average time waiting</short-name>
+
+  <description>
+    This is one of a set of 3 tests of the average wait time.  In this test,
+    units are destroyed while waiting for vaccination.  Their wait times should
+    not be included in the average (if they were, this could make the wait time
+    for vaccination seem artificially low.)
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 Jun 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>destroyed_while_waiting_4_w_vars2</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "destroyed while waiting, check count of
+    units waiting" above.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for both vaccination and destruction.
+     - On days 3-7, one of the waiting units will be destroyed each day.  The
+       average wait time should never have a value, because it counts only
+       completed vaccinations.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>vacwUAll</td>
+      <td>vaccUAll</td>
+      <td>vacwUTimeAvg</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td></td></tr>
+    <tr><td>0</td> <td>5</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>4</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>3</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>2</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td></td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td></td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>destroyed while waiting, check unit-days and animal-days in queue</short-name>
+
+  <description>
+    This scenario checks the counting of unit-days and animal-days spent in the
+    vaccination and destruction queues.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>20 July 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>destroyed_while_waiting_4_w_vars3</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "destroyed while waiting, check count of
+    units waiting" above.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for both vaccination and destruction.  Unit-days and
+       animal-days in queue will be 0 on this day: units are in queue, but no
+       unit has spent a day in queue yet.
+     - On days 3-7, one of the waiting units will be destroyed each day.  On
+       day 3, the number of unit-days in queue will be 5 (one day each for the
+       1 unit that was destroyed today and the 4 that are still in queue).
+       Each unit has 25 animals, so the number of animal-days in queue will
+       always be the unit-days multiplied by 25.  Note that days spent in the
+       vaccination queue accumulate even though the vaccinations are being
+       canceled.
+     - On day 4, the number of unit-days in queue will increase by 4, to 9
+       (one additional day each for the 1 unit that was destroyed today and the
+       3 that are still in queue).
+     - On day 5, the number of unit-days in queue will increase by 3, to 12.
+     - On day 6, the number of unit-days in queue will increase by 2, to 14.
+     - On day 7, the number of unit-days in queue will increase by 1, to 15.
+       No more units are in queue, so the total number of unit-days in queue
+       will remain at 15 on subsequent days.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>deswUAll</td>
+      <td>deswUDaysInQueue</td>
+      <td>deswADaysInQueue</td>
+      <td>vacnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUDaysInQueue</td>
+      <td>vacwADaysInQueue</td>
+    </tr>
+    <!-- Destruction                                   | Vaccination                                     -->
+    <!--  units      units     unit-days   animal-days |   units      units     unit-days   animal-days  -->
+    <!--destroyed   waiting    in queue     in queue   | vaccinated  waiting    in queue     in queue    -->
+    <tr><td>0</td> <td>0</td>  <td>0</td>   <td>0</td>   <td>0</td> <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td> <td>5</td>  <td>0</td>   <td>0</td>   <td>0</td> <td>5</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>1</td> <td>4</td>  <td>5</td> <td>125</td>   <td>0</td> <td>4</td>  <td>5</td> <td>125</td></tr>
+    <tr><td>1</td> <td>3</td>  <td>9</td> <td>225</td>   <td>0</td> <td>3</td>  <td>9</td> <td>225</td></tr>
+    <tr><td>1</td> <td>2</td> <td>12</td> <td>300</td>   <td>0</td> <td>2</td> <td>12</td> <td>300</td></tr>
+    <tr><td>1</td> <td>1</td> <td>14</td> <td>350</td>   <td>0</td> <td>1</td> <td>14</td> <td>350</td></tr>
+    <tr><td>1</td> <td>0</td> <td>15</td> <td>375</td>   <td>0</td> <td>0</td> <td>15</td> <td>375</td></tr>
+    <tr><td>0</td> <td>0</td> <td>15</td> <td>375</td>   <td>0</td> <td>0</td> <td>15</td> <td>375</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>detected while waiting, check average time waiting</short-name>
+
+  <description>
+    This is one of a set of 3 tests of the average wait time.  In this test,
+    units are detected while waiting for vaccination, which cancels the
+    vaccination.  Their wait times should not be included in the average (if
+    they were, this could make the wait time for vaccination seem artificially
+    low.)
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 Jun 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>detected_after_ring_no_vacc_detected2</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "detected while waiting, check count of
+    units waiting" above.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  Airborne spread
+       from units 0 and 1 will infect units 4-8.  Units 0 and 1 will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for vaccination.
+     - On day 3 the newly-infected units (4-8) will be Latent.
+     - On days 4-8, one of the waiting units will become Infectious Clinical
+       and be detected each day.  The average wait time should never have a
+       value, because it counts only completed vaccinations.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacwUAll</td>
+      <td>vaccUAll</td>
+      <td>vacwUTimeAvg</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td></td></tr>
+    <tr><td>2</td> <td>5</td> <td>0</td> <td></td></tr>
+    <tr><td>0</td> <td>5</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>4</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>3</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>2</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>1</td> <td>0</td> <td></td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td></td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td></td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>vaccinated, check average time waiting</short-name>
+
+  <description>
+    This is one of a set of 3 tests of the average wait time.  In this test,
+    units are vaccinated one by one.  Their wait times should be included in
+    the average.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 Jun 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>9herds</herd-file>
+
+  <parameter-file>avg_wait_time</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    When a diseased unit is detected, all units of types C-G within 5 km will
+    be marked for vaccination.  The authorities can vaccinate 1 unit per day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 units 0 and 1 will be Infectious Clinical.  They will be
+       detected and both units will trigger vaccination rings.  Units 4-8 will
+       be marked for vaccination.
+     - On days 3-7, one of the waiting units will be vaccinated each day.  For
+       day 3, the average wait should be 1.0 (1 unit waited 1 day before
+       vaccination).  For day 4, the average wait should be (2+1)/2 = 1.5 (1
+       unit waited 2 days before vaccination, 1 unit waited 1 day before
+       vaccination).  For day 5, the average wait should be (3+2+1)/3=2 (1 unit
+       waited 3 days before vaccination, 1 unit waited 2 days before
+       vaccination, 1 unit waited 1 day before vaccination).  On day 7, when
+       the last unit has been vaccinated, the average wait time should be
+       (5+4+3+2+1)/5=3.0.
+  </parameter-description>
+
+  <diagram>9herds</diagram>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUTimeAvg</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td></td></tr>
+    <tr><td>0</td> <td>5</td> <td></td></tr>
+    <tr><td>1</td> <td>4</td> <td>1</td></tr>
+    <tr><td>1</td> <td>3</td> <td>1.5</td></tr>
+    <tr><td>1</td> <td>2</td> <td>2</td></tr>
+    <tr><td>1</td> <td>1</td> <td>2.5</td></tr>
+    <tr><td>1</td> <td>0</td> <td>3</td></tr>
+    <tr><td>0</td> <td>0</td> <td>3</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>initially vaccine immune unit is not first vaccination</short-name>
+
+  <description>
+    This scenario tests whether an initially vaccine immune unit is counted as
+    the first vaccination in a simulation (it should not be).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>9 Sep 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds_1_start_vimmune</herd-file>
+
+  <parameter-file>initially_vimmune</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 2 days,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    The authorities will vaccinate units within 10 km of a detected unit.  The
+    vaccine produces immunity immediately and the immunity lasts 5 days. The
+    authorities can vaccinate an unlimited/very large number of units each day.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 unit 0 will be Latent.  Unit 1 will already be vaccine immune,
+       and we will count 1 vaccinated unit (initially vaccine immune units are
+       counted and reported) but we will not count it as the first vaccination
+       during the simulation.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       unit 1 will be marked for vaccination because it is within 10 km.
+     - On day 3 unit 1 will be vaccinated, and that will count as the first
+       vaccination during the simulation.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
+      <td>firstVaccination</td>
+    </tr>
+    <tr><td>0</td>   <td></td></tr>
+    <tr><td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>3</td></tr>
+    <tr><td>0</td>  <td>3</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>initially vaccine immune unit does not count toward average wait time</short-name>
+
+  <description>
+    This scenario tests whether an initially vaccine immune unit counts toward
+    the average wait time calculation (it should not).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_1_start_vimmune</herd-file>
+
+  <parameter-file>initially_vimmune_avg_wait</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious clinical period lasts 1 day,
+    and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    The authorities will vaccinate units within 10 km of a detected unit.  The
+    vaccine produces immunity immediately and the immunity lasts 5 days. The
+    authorities can vaccinate 1 unit each day, starting 2 days after the 1st
+    detection.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 unit 2 will be Latent.  Unit 0 will already be vaccine immune.
+     - On day 2 unit 2 will be Infectious Clinical.  It will be detected and
+       unit 1 will be marked for vaccination because it is within 10 km.
+     - On day 4 unit 1 will be vaccinated, and the average wait time should be
+       2 (1 unit committed to vaccinate on day 2, vaccinated on day 4).  The
+       initially vaccine immune unit, which did not wait at all, should not
+       lower that number.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>firstVaccination</td>
+      <td>vacwUTimeAvg</td>
+    </tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td></td>    <td></td></tr>
+    <tr><td>4</td>  <td>2</td></tr>
+    <tr><td>4</td>  <td>2</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>in queue twice, both vaccinations happen</short-name>
+
+  <description>
+    This is one of a set of scenarios that test counting of queued vaccinations
+    when a unit is in the queue twice.  In this scenario, a unit's two stints
+    in queue overlap, and both vaccinations happen.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>in_queue_twice</parameter-file>
+
+  <parameter-description>
+    For sheep and cattle, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.  For cattle, the
+    latent period lasts 4 days and the other durations are the same.  For pigs,
+    the latent period lasts 3 days and the other durations are the same.
+
+    There is airborne spread from sheep units to cattle units, with exponential
+    dropoff and p of spread at 1 km = 0.934.  (This makes the p of spread at 10
+    km = 0.505, so with fixed "random" numbers of 0.5, spread will occur at 10
+    km.)
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1 for sheep and pigs, and 0 for cattle.  The
+    probability of detection vs. the number of days since a public announcement
+    of an outbreak is fixed at 1.
+
+    All units within 11 km of a detected unit will be vaccinated.  Vaccination
+    resources allow for 1 unit to be vaccinated 4 days after the first
+    detection, and another unit 6 days after the first detection.  The vaccine
+    produces immunity immediately and the immunity lasts 2 days.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 2) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will infect unit 1.  It
+       will be detected and will trigger a vaccination ring.  Unit 1 will be
+       marked for vaccination. The output vacwUAll will show 1 vaccination to
+       do.
+     - On day 3 the output vacwUDaysInQueue will show 1 (1 unit has spent 1 day
+       in queue).
+     - On day 4 unit 2 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Unit 1 will again be marked for
+       vaccination.  The output vacwUAll will show 2 vaccinations to do (of the
+       same unit, but 2 vaccinations nonetheless).  The output vacwUDaysInQueue
+       will show 2 (1 unit has spent 2 days in queue).
+     - On day 5 the output vacwUDaysInQueue will show 3 (1 unit has spent 3
+       days in queue).  Note that we are in the overlap between the unit's 2
+       stints in queue right now, but this output does not double-count units 
+       in that situation.
+     - On day 6 (4 days after the first detection), there will be resources to
+       vaccinate 1 unit.  Unit 1 will be vaccinated.  The vaccination will have
+       no effect because unit 1 is already Latent.
+     - On day 7 unit 1 will be Infectious Clinical, but it will not be detected
+       because the probability of detection for cattle units is 0.
+     - On day 8 (6 days after the first detection), there will be resources to
+       vaccinate 1 unit.  Unit 1 will be vaccinated again.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacnUAll</td>
+      <td>vaccUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUDaysInQueue</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>2</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td>  <td>3</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>4</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>1</td>  <td>5</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>2</td>  <td>0</td>  <td>6</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>2</td>  <td>0</td>  <td>6</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>in queue twice, one vaccination canceled</short-name>
+
+  <description>
+    This is one of a set of scenarios that test counting of queued vaccinations
+    when a unit is in the queue twice.  In this scenario, a unit's two stints
+    in queue overlap, and the later vaccination is canceled.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>in_queue_twice_1_canceled</parameter-file>
+
+  <parameter-description>
+    For sheep and cattle, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.  For cattle, the
+    latent period lasts 4 days and the other durations are the same.  For pigs,
+    the latent period lasts 3 days and the other durations are the same.
+
+    There is airborne spread from sheep units to cattle units, with exponential
+    dropoff and p of spread at 1 km = 0.934.  (This makes the p of spread at 10
+    km = 0.505, so with fixed "random" numbers of 0.5, spread will occur at 10
+    km.)
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    All units within 11 km of a detected unit will be vaccinated.  Vaccination
+    resources allow for 1 unit to be vaccinated 4 days after the first
+    detection, and another unit 6 days after the first detection.  The vaccine
+    produces immunity immediately and the immunity lasts 2 days.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 2) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will infect unit 1.  It
+       will be detected and will trigger a vaccination ring.  Unit 1 will be
+       marked for vaccination. The output vacwUAll will show 1 vaccination to
+       do.
+     - On day 3 the output vacwUDaysInQueue will show 1 (1 unit has spent 1 day
+       in queue).
+     - On day 4 unit 2 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Unit 1 will again be marked for
+       vaccination.  The output vacwUAll will show 2 vaccinations to do (of the
+       same unit, but 2 vaccinations nonetheless).  The output vacwUDaysInQueue
+       will show 2 (1 unit has spent 2 days in queue).
+     - On day 5 the output vacwUDaysInQueue will show 3 (1 unit has spent 3
+       days in queue).  Note that we are in the overlap between the unit's 2
+       stints in queue right now, but this output does not double-count units 
+       in that situation.
+     - On day 6 (4 days after the first detection), there will be resources to
+       vaccinate 1 unit.  Unit 1 will be vaccinated.  The vaccination will have
+       no effect because unit 1 is already Latent.
+     - On day 7 unit 1 will be Infectious Clinical.  It will be detected and
+       its upcoming vaccination will be canceled.
+     - On day 8 (6 days after the first detection), there will be resources to
+       vaccinate 1 unit, but there are no vaccinations left to do.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacnUAll</td>
+      <td>vaccUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUDaysInQueue</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>2</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td>  <td>3</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>1</td>  <td>1</td>  <td>4</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>5</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>0</td>  <td>5</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>in queue twice, both vaccinations canceled</short-name>
+
+  <description>
+    This is one of a set of scenarios that test counting of queued vaccinations
+    when a unit is in the queue twice.  In this scenario, a unit's two stints
+    in queue overlap, and both vaccinations are canceled.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>6 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>in_queue_twice_both_canceled</parameter-file>
+
+  <parameter-description>
+    For sheep and cattle, the latent period lasts 1 day, the infectious
+    clinical period lasts 1 day, and immunity lasts 3 days.  For cattle, the
+    latent period lasts 2 days and the other durations are the same.  For pigs,
+    the latent period lasts 3 days and the other durations are the same.
+
+    There is airborne spread from sheep units to cattle units, with exponential
+    dropoff and p of spread at 1 km = 0.934.  (This makes the p of spread at 10
+    km = 0.505, so with fixed "random" numbers of 0.5, spread will occur at 10
+    km.)
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    All units within 11 km of a detected unit will be vaccinated.  Vaccination
+    resources allow for 1 unit to be vaccinated 4 days after the first
+    detection, and another unit 6 days after the first detection.  The vaccine
+    produces immunity immediately and the immunity lasts 2 days.
+
+    There is no spread or destruction.
+
+    What should happen:
+     - On day 1 the infected units (0 and 2) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will infect unit 1.  It
+       will be detected and will trigger a vaccination ring.  Unit 1 will be
+       marked for vaccination. The output vacwUAll will show 1 vaccination to
+       do.
+     - On day 3 the output vacwUDaysInQueue will show 1 (1 unit has spent 1 day
+       in queue).
+     - On day 4 unit 2 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Unit 1 will again be marked for
+       vaccination.  The output vacwUAll will show 2 vaccinations to do (of the
+       same unit, but 2 vaccinations nonetheless).  The output vacwUDaysInQueue
+       will show 2 (1 unit has spent 2 days in queue).
+     - On day 5 the output vacwUDaysInQueue will show 3 (1 unit has spent 3
+       days in queue).  Note that we are in the overlap between the unit's 2
+       stints in queue right now, but this output does not double-count units 
+       in that situation.  Unit 1 will be Infectious Clinical.  It will be
+       detected and its upcoming vaccinations will be canceled.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacnUAll</td>
+      <td>vaccUAll</td>
+      <td>vacwUAll</td>
+      <td>vacwUDaysInQueue</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>2</td>  <td>2</td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>3</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>3</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>vaccination canceled for unit with longest wait time, baseline</short-name>
+
+  <description>
+    This is one of a set of scenarios that test tracking of maximum wait time
+    for vaccination, specifically, that maximum wait time does not count units
+    whose vaccination is canceled.  In this scenario, one unit waits 2 days for
+    vaccination, then another waits 4 days.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>cancel_max_wait_0</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 3 days, and immunity lasts 3 days.  For pigs, the latent period lasts
+    3 days and the other durations are the same.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    All cattle units within 1 km of a detected unit will be vaccinated.
+    Vaccination resources allow for 1 unit to be vaccinated 2 days after the
+    first detection, and another unit 6 days after the first detection.
+
+    All cattle units within 1 km of a detected pig unit will be destroyed.
+    Destruction resources allow for 1 unit to be vaccinated each day starting
+    at 7 days after the first detection.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Unit 2 will be marked for vaccination.
+     - On day 4 unit 2 will be vaccinated, after a 2-day wait.  2 days is now
+       the maximum wait time.  Also on day 4, unit 1 will be Infectious
+       Clinical.  It will be detected and will trigger a vaccination ring.
+       Unit 4 will be marked for vaccination.
+     - On day 8 unit 4 will be vaccinated, after a 4-day wait.  4 days is now
+       the maximum wait time.
+     - On day 9 unit 4 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacnUAll</td>
+      <td>desnUAll</td>
+      <td>vacwUTimeMax</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>1</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>1</td>  <td>0</td>  <td>4</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>4</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>4</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>ring-vaccination</category>
+  <short-name>vaccination canceled for unit with longest wait time</short-name>
+
+  <description>
+    This is one of a set of scenarios that test tracking of maximum wait time
+    for vaccination, specifically, that maximum wait time does not count units
+    whose vaccination is canceled.  In this scenario, one unit waits 2 days for
+    vaccination, then another waits 4 days but is destroyed instead of
+    vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 October 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>6herds_2</herd-file>
+
+  <parameter-file>cancel_max_wait_1</parameter-file>
+
+  <parameter-description>
+    For cattle, the latent period lasts 1 day, the infectious clinical period
+    lasts 3 days, and immunity lasts 3 days.  For pigs, the latent period lasts
+    3 days and the other durations are the same.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+
+    All cattle units within 1 km of a detected unit will be vaccinated.
+    Vaccination resources allow for 1 unit to be vaccinated 2 days after the
+    first detection, and another unit 6 days after the first detection.
+
+    All cattle units within 1 km of a detected pig unit will be destroyed.
+    Destruction resources allow for 1 unit to be vaccinated each day starting
+    at 6 days after the first detection.
+
+    There is no spread.
+
+    What should happen:
+     - On day 1 the infected units (0 and 1) will be Latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected and
+       will trigger a vaccination ring.  Unit 2 will be marked for vaccination.
+     - On day 4 unit 2 will be vaccinated, after a 2-day wait.  2 days is now
+       the maximum wait time.  Also on day 4, unit 1 will be Infectious
+       Clinical.  It will be detected and will trigger a vaccination ring.
+       Unit 4 will be marked for vaccination.
+     - On day 8 unit 4 will be destroyed.  The maximum wait time will still be
+       2 days, the wait time for the only unit that was actually vaccinated.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>detnUAll</td>
+      <td>vacnUAll</td>
+      <td>desnUAll</td>
+      <td>vacwUTimeMax</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>   <td></td></tr>
+    <tr><td>1</td>  <td>1</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>1</td>  <td>2</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>2</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>ring-vaccination</category>
+  <short-name>double-detected units not counted twice toward vaccination threhold</short-name>
+
+  <description>
+    In NAADSM version 3.2 and forward, there is more than one means of
+    detection.  In this test, the threshold for vaccination is 3 detected
+    units.  Two units are detected, the first by clinical signs, the second by
+    clinical signs &lt;i&gt;and&lt;/i&gt; a positive test result on the same
+    day.  No vaccinations should be done, because only 2 units have been
+    detected (the unit that is detected twice should not count twice toward the
+    vaccination threshold).
+
+    This test failed in version 3.2.5 and was fixed in 3.2.6.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 November 2010</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_sheep_infected</herd-file>
+
+  <parameter-file>same_unit_detected_twice_check_vacc_threshold</parameter-file>
+
+  <parameter-description>
+    For sheep (unit 0), the infectious subclinical period lasts 1 day, the
+    infectious clinical period lasts 1 day, and immunity lasts 5 days.  For
+    cattle (unit 1) and pigs (unit 2), the latent period lasts 1 day, the
+    infectious clinical period lasts 1 day, and immunity lasts 5 days.
+
+    Sheep units send 1 shipment per day to cattle units.  The distance of
+    shipment is 10 km, and the probability of infection is 1.  There are no
+    other kinds of contact.
+
+    Diseased units will be detected (by self-reporting) on their first day
+    showing clinical signs.
+
+    Direct contacts out of a detected unit will be traced.  There is no
+    delay to trace, and tracing success is 100%.  Units found by trace will be
+    examined; if no signs of disease are detected, they will be tested.  A
+    test requires 1 day and has 100% sensitivity and specificity.
+
+    Vaccination begins when disease has been detected in 3 units.  Pig units
+    within 15 km of a diseased cattle unit will be vaccinated.  Vaccination
+    resources allow for 10 units to be vaccinated per day.
+
+    What should happen:
+     - On day 1 unit 0 will be Infectious Subclinical.  It will ship to and
+       infect unit 1.
+     - On day 2 unit 1 will be Latent.  Unit 0 will be Infectious Clinical.
+       Unit 0 will be detected.  Because it is a sheep unit, it will not
+       trigger a vaccination ring.  However, it will trigger a trace, which
+       will lead to unit 1.  Unit 1 will be examined, but no clinical signs of
+       disease will be found (it is still Latent).  A test will be ordered.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected by
+       clinical signs.  Also on this day, a positive test result will come back
+       for unit 1.  However, since only 1 units have been detected up to this
+       point, no vaccination will be done.
+  </parameter-description>
+
+  <output>
+    <tr><td>B</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>C</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>N</td>  <td>S</td></tr>
+    <tr><td>D</td>  <td>D</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>

@@ -135,9 +135,6 @@ proc simvaroutput_string_to_list { s } {
 			# is needed to skip the "Run" and "Day" columns.
 			#
 			set value [lindex $columns [expr $i + 2]]
-			if { [string length $value] == 0 } {
-				set value 0
-			}			
 			lappend values $value
 		}
 
@@ -165,6 +162,7 @@ proc progress_test { params herds answer {test "progress"} } {
 	global prompt
 	global rowspat
 	global state_name
+	global verbose
 
 	set true_ndays [llength $answer]
 	set true_nherds [llength [lindex $answer 0]]
@@ -232,6 +230,7 @@ proc stochastic_progress_test { params herds answer {test "stochastic_progress"}
 	global rowspat
 	global state_name
 	global epsilon
+	global verbose
 
 	set noutcomes [llength $answer]
 	set first_outcome [lindex $answer 0]
@@ -367,6 +366,7 @@ proc variable_test { params herds answer {test "variable"}} {
 	global prompt
 	global tablelinespat
 	global epsilon
+	global verbose
 
 	set true_nvars [llength $answer]
 	set true_ndays [expr [llength [lindex $answer 0]] - 1]
@@ -444,6 +444,7 @@ proc stochastic_variable_test { params herds answer {test "stochastic_variable"}
 	global prompt
 	global tablelinespat
 	global epsilon
+	global verbose
 
 	set noutcomes [llength $answer]
 	set first_outcome [lindex $answer 0]

@@ -2,15 +2,7 @@
 
 AUTOMAKE_OPTIONS = dejagnu
 
-SUBDIRS = . test
-
-INCLUDES = -I$(top_srcdir) @GLIB_CFLAGS@ -DG_LOG_DOMAIN=\"rel_chart\"
-
-lib_LTLIBRARIES = librel_chart.la
-include_HEADERS = rel_chart.h
-
-librel_chart_la_SOURCES = rel_chart.c rel_chart.h
-librel_chart_la_LIBADD = @GLIB_LIBS@ @GSL_LIBS@
+SUBDIRS = test
 
 RUNTESTDEFAULTFLAGS = --tool librel_chart --debug -v -v SHELL=$$srcdir/test/shell --srcdir $$srcdir/test
 

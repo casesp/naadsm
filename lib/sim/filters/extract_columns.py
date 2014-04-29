@@ -12,14 +12,14 @@ __date__ = "September 2006"
 
 import getopt
 import os
+import re
 import string
 import sys
 from math import floor, sqrt
 from sets import Set
 
 DEBUG = False
-STATE_NAMES = ["Susceptible", "Latent", "Infectious Subclinical",
-  "Infectious Clinical", "Naturally Immune", "Vaccine Immune", "Destroyed"]
+STATE_NAMES = ["Susc", "Lat", "Subc", "Clin", "NImm", "VImm", "Dest", "Dead"]
 
 
 
@@ -30,7 +30,8 @@ Usage: python extract_columns.py [OPTIONS] "variablename1,variablename2,..." < T
 
 Options are:
 -r, --run INT               only get results from given run (default = all)
--e, --exclude TEXT          exclude matching variable names"""
+-e, --exclude TEXT          exclude matching variable names
+-n, --case-insensitive      case insensitive"""
 
 
 
@@ -38,11 +39,12 @@ def main ():
 	# Set defaults for the command-line options.
 	desired_run = None
 	excluded_varnames = []
+	case_insensitive = False
 
 	# Get any command-line arguments.
 	try:
-		opts, args = getopt.getopt (sys.argv[1:], "r:e:h", ["run=", "exclude=",
-		  "help"])
+		opts, args = getopt.getopt (sys.argv[1:], "r:e:nh", ["run=", "exclude=",
+		  "case-insensitive", "help"])
 	except getopt.GetoptError, details:
 		print details
 		sys.exit()
@@ -55,11 +57,21 @@ def main ():
 			desired_run = int(a)
 		elif o in ("-e", "--exclude"):
 			excluded_varnames = a.split(",")
+		elif o in ("-n", "--case-insensitive"):
+			case_insensitive = True
 
 	if len (args) >= 1:
 		desired_varnames = args[0].split(",")
 	else:
-		desired_varnames = ["num-units-in-each-state:" + statename for statename in STATE_NAMES]
+		desired_varnames = ["tsdU" + statename for statename in STATE_NAMES]
+
+	# Treat the desired and excluded varnames as regular expressions.
+	if case_insensitive:
+		regex_flags = re.IGNORECASE
+	else:
+		regex_flags = 0
+	desired_varnames = [re.compile (desired_varname, regex_flags) for desired_varname in desired_varnames]
+	excluded_varnames = [re.compile (excluded_varname, regex_flags) for excluded_varname in excluded_varnames]
 
 	# Read the header line.
 	header = sys.stdin.readline().strip()
@@ -70,10 +82,12 @@ def main ():
 	for i in range (len (varnames)):
 		keep = False
 		for desired_varname in desired_varnames:
-			if varnames[i].find (desired_varname) >= 0:
+			match = desired_varname.search (varnames[i])
+			if match:
 				keep = True
 		for excluded_varname in excluded_varnames:
-			if varnames[i].find (excluded_varname) >= 0:
+			match = excluded_varname.search (varnames[i])
+			if match:
 				keep = False
 		if keep:
 			indices.append (i)

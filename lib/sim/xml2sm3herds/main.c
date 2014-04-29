@@ -11,7 +11,7 @@
  * @version 0.1
  * @date March 2004
  *
- * Copyright &copy; University of Guelph, 2004-2007
+ * Copyright &copy; University of Guelph, 2004-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -36,7 +36,11 @@ main (int argc, char *argv[])
   int days_left;
 
   g_print ("ID,ProductionType,HerdSize,Lat,Lon,Status,DaysLeftInStatus\n");
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list_from_stream (NULL, NULL, NULL);
+#else
   herds = HRD_load_herd_list_from_stream (NULL, NULL);
+#endif
   nherds = HRD_herd_list_length (herds);
   for (i = 0; i < nherds; i++)
     {
@@ -46,7 +50,7 @@ main (int argc, char *argv[])
         days_left = -1;
       g_print ("%s,%s,%u,%g,%g,%i,%i\n",
                herd->official_id, herd->production_type_name, herd->size,
-               herd->lat, herd->lon, herd->status, days_left);
+               herd->y, herd->x, herd->status, days_left);
     }
 
   HRD_free_herd_list (herds);

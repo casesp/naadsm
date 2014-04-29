@@ -83,6 +83,10 @@ char errmsg[BUFFERSIZE];
 
 HRD_herd_list_t *current_herds = NULL;
 GPtrArray *production_type_names = NULL;
+GHashTable *dummy; /* The HRD_step function, which advances a herd's state, has
+  as an argument a hash table of infectious herds, which is updated at the same
+  time as the state change.  In this small test program, we don't need to do
+  that, but we still need a hash table to pass to HRD_step. */
 
 
 void g_free_as_GFunc (gpointer data, gpointer user_data);
@@ -148,7 +152,7 @@ infect_command:
     INFECT LPAREN INT COMMA INT COMMA INT COMMA INT COMMA INT RPAREN
     {
       g_assert (0 <= $3 && $3 < HRD_herd_list_length (current_herds));
-      HRD_infect (HRD_herd_list_get (current_herds, $3), $5, $7, $9, $11);
+      HRD_infect (HRD_herd_list_get (current_herds, $3), $5, $7, $9, $11, 0);
       printf ("%s", PROMPT);
       fflush (stdout);
     }
@@ -184,7 +188,7 @@ step_command :
       g_assert (nherds > 0);
       
       for (i = 0; i < nherds; i++)
-	HRD_step (HRD_herd_list_get (current_herds, i));
+	HRD_step (HRD_herd_list_get (current_herds, i), dummy);
 
       printf ("%s", HRD_status_name[HRD_herd_list_get (current_herds, 0)->status]);
       for (i = 1; i < nherds; i++)
@@ -223,7 +227,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s )
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;
@@ -264,6 +272,7 @@ main (int argc, char *argv[])
 
   current_herds = HRD_new_herd_list ();
   production_type_names = g_ptr_array_new ();
+  dummy = g_hash_table_new (g_direct_hash, g_direct_equal);
 
   printf (PROMPT);
   if (yyin == NULL)

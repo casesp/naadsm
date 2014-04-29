@@ -2,14 +2,13 @@
  * Records the day on which the first detection occurred.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date June 2004
  *
- * Copyright &copy; University of Guelph, 2004-2006
+ * Copyright &copy; University of Guelph, 2004-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,23 +20,21 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version detection_monitor_LTX_interface_version
-#define new detection_monitor_LTX_new
-#define run detection_monitor_LTX_run
-#define reset detection_monitor_LTX_reset
-#define events_listened_for detection_monitor_LTX_events_listened_for
-#define is_listening_for detection_monitor_LTX_is_listening_for
-#define has_pending_actions detection_monitor_LTX_has_pending_actions
-#define has_pending_infections detection_monitor_LTX_has_pending_infections
-#define to_string detection_monitor_LTX_to_string
-#define local_printf detection_monitor_LTX_printf
-#define local_fprintf detection_monitor_LTX_fprintf
-#define local_free detection_monitor_LTX_free
-#define handle_detection_event detection_monitor_LTX_handle_detection_event
-#define events_created event_detection_monitor_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new detection_monitor_new
+#define run detection_monitor_run
+#define reset detection_monitor_reset
+#define events_listened_for detection_monitor_events_listened_for
+#define is_listening_for detection_monitor_is_listening_for
+#define has_pending_actions detection_monitor_has_pending_actions
+#define has_pending_infections detection_monitor_has_pending_infections
+#define to_string detection_monitor_to_string
+#define local_printf detection_monitor_printf
+#define local_fprintf detection_monitor_fprintf
+#define local_free detection_monitor_free
+#define handle_new_day_event detection_monitor_handle_new_day_event
+#define handle_declaration_of_detection_means_event detection_monitor_handle_declaration_of_detection_means_event
+#define handle_detection_event detection_monitor_handle_detection_event
 
 #include "model.h"
 
@@ -47,7 +44,8 @@
 
 #include "detection-monitor.h"
 
-#include "guilib.h"
+#include "naadsm.h"
+#include "general.h"
 
 extern const char *HRD_status_name[];
 extern const char *RPT_frequency_name[];
@@ -55,22 +53,24 @@ extern const char *RPT_frequency_name[];
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "detection-monitor"
 
-#define MODEL_DESCRIPTION "\
-A module to record the day of the first detection.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 June 2004\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
+
+#define NEVENTS_LISTENED_FOR 3
+EVT_event_type_t events_listened_for[] =
+  { EVT_NewDay, EVT_DeclarationOfDetectionMeans, EVT_Detection };
 
 
 
-#define NEVENTS_CREATED 0
-EVT_event_type_t events_created[] = { 0 };
-
-#define NEVENTS_LISTENED_FOR 1
-EVT_event_type_t events_listened_for[] = { EVT_Detection };
+/**
+ * A struct that records how many times a unit has been detected on one day,
+ * and holds the means of detection that is currently recorded for that unit.
+ */
+typedef struct
+{
+  unsigned int count;
+  const char *means;
+}
+count_and_means_t;
 
 
 
@@ -79,72 +79,388 @@ typedef struct
 {
   GPtrArray *production_types;
   RPT_reporting_t *detections;
-  RPT_reporting_t *day_1st_detection;
-  RPT_reporting_t *nherds_detected;
-  RPT_reporting_t *nherds_detected_by_prodtype;
-  RPT_reporting_t *cumul_nherds_detected;
-  RPT_reporting_t *cumul_nherds_detected_by_prodtype;
-  gboolean first_detection;
+  RPT_reporting_t *detection_occurred;
+  RPT_reporting_t *first_detection;
+  RPT_reporting_t *first_detection_by_means;
+  RPT_reporting_t *first_detection_by_prodtype;
+  RPT_reporting_t *first_detection_by_means_and_prodtype;
+  RPT_reporting_t *last_detection;
+  RPT_reporting_t *last_detection_by_means;
+  RPT_reporting_t *last_detection_by_prodtype;
+  RPT_reporting_t *last_detection_by_means_and_prodtype;
+  RPT_reporting_t *nunits_detected;
+  RPT_reporting_t *nunits_detected_by_means;
+  RPT_reporting_t *nunits_detected_by_prodtype;
+  RPT_reporting_t *nunits_detected_by_means_and_prodtype;
+  RPT_reporting_t *nanimals_detected;
+  RPT_reporting_t *nanimals_detected_by_means;
+  RPT_reporting_t *nanimals_detected_by_prodtype;
+  RPT_reporting_t *nanimals_detected_by_means_and_prodtype;
+  RPT_reporting_t *cumul_nunits_detected;
+  RPT_reporting_t *cumul_nunits_detected_by_means;
+  RPT_reporting_t *cumul_nunits_detected_by_prodtype;
+  RPT_reporting_t *cumul_nunits_detected_by_means_and_prodtype;
+  RPT_reporting_t *cumul_nanimals_detected;
+  RPT_reporting_t *cumul_nanimals_detected_by_means;
+  RPT_reporting_t *cumul_nanimals_detected_by_prodtype;
+  RPT_reporting_t *cumul_nanimals_detected_by_means_and_prodtype;
   GString *target;              /* a temporary string used repeatedly. */
+  GHashTable *detected_today; /**< A table for tracking multiple detections of
+    a unit on one day.  If a unit has been detected today, it will be in the
+    table.  The key is the unit (HRD_herd_t *), and the associated value is a
+    pointer to a count_and_means_t struct. */
+  RPT_reporting_t *first_detection_by_means_yesterday;
+  RPT_reporting_t *first_detection_by_means_and_prodtype_yesterday;
+  RPT_reporting_t *last_detection_by_means_yesterday;
+  RPT_reporting_t *last_detection_by_means_and_prodtype_yesterday;
 }
 local_data_t;
 
 
 
 /**
- * Records the day of the first detection.
+ * On each new day, zero the daily counts of detections.
+ *
+ * @param self the module.
+ */
+void
+handle_new_day_event (struct naadsm_model_t_ *self)
+{
+  local_data_t *local_data;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+#endif
+
+  local_data = (local_data_t *) (self->model_data);
+
+  /* Zero the daily counts. */
+  RPT_reporting_zero (local_data->detections);
+  RPT_reporting_zero (local_data->nunits_detected);
+  RPT_reporting_zero (local_data->nunits_detected_by_means);
+  RPT_reporting_zero (local_data->nunits_detected_by_prodtype);
+  RPT_reporting_zero (local_data->nunits_detected_by_means_and_prodtype);
+  RPT_reporting_zero (local_data->nanimals_detected);
+  RPT_reporting_zero (local_data->nanimals_detected_by_means);
+  RPT_reporting_zero (local_data->nanimals_detected_by_prodtype);
+  RPT_reporting_zero (local_data->nanimals_detected_by_means_and_prodtype);
+
+  /* Empty the table that tracks multiple detections of a unit on one day. */
+  g_hash_table_remove_all (local_data->detected_today);
+
+  /* Make a backup copy of the first & last days of detection recorded so far.
+   * We need this in case we "change our mind" about the means of detection for
+   * a particular unit. */
+  RPT_free_reporting (local_data->first_detection_by_means_yesterday);
+  local_data->first_detection_by_means_yesterday =
+    RPT_clone_reporting (local_data->first_detection_by_means);
+  RPT_free_reporting (local_data->first_detection_by_means_and_prodtype_yesterday);
+  local_data->first_detection_by_means_and_prodtype_yesterday =
+    RPT_clone_reporting (local_data->first_detection_by_means_and_prodtype);
+  RPT_free_reporting (local_data->last_detection_by_means_yesterday);
+  local_data->last_detection_by_means_yesterday =
+    RPT_clone_reporting (local_data->last_detection_by_means);
+  RPT_free_reporting (local_data->last_detection_by_means_and_prodtype_yesterday);
+  local_data->last_detection_by_means_and_prodtype_yesterday =
+    RPT_clone_reporting (local_data->last_detection_by_means_and_prodtype);
+
+#if DEBUG
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+#endif
+}
+
+
+
+/**
+ * Responds to a declaration of detection means by recording the potential
+ * means of detection.
+ *
+ * @param self the module.
+ * @param event a declaration of detection means event.
+ */
+void
+handle_declaration_of_detection_means_event (struct naadsm_model_t_ * self,
+                                             EVT_declaration_of_detection_means_event_t * event)
+{
+  local_data_t *local_data;
+  unsigned int n, i, j;
+  char *means;
+  char *drill_down_list[3] = { NULL, NULL, NULL };
+
+#if DEBUG
+  g_debug ("----- ENTER handle_declaration_of_detection_means_event (%s)", MODEL_NAME);
+#endif
+
+  local_data = (local_data_t *) (self->model_data);
+
+  /* If any potential means is not already present in our reporting variables,
+   * add it, with an initial count of 0 detections. */
+  n = event->means->len;
+  for (i = 0; i < n; i++)
+    {
+      means = (char *) g_ptr_array_index (event->means, i);
+      RPT_reporting_append_text1 (local_data->detections, "", means);
+      /* Two function calls for the first_detection and last_detection
+       * variables: one to establish the type of the sub-variables (they are
+       * integers), and one to clear them to "null" (they have no meaningful
+       * value until a detection occurs). */
+      RPT_reporting_add_integer1 (local_data->first_detection_by_means, 0, means);
+      RPT_reporting_set_null1 (local_data->first_detection_by_means, means);
+      RPT_reporting_add_integer1 (local_data->last_detection_by_means, 0, means);
+      RPT_reporting_set_null1 (local_data->last_detection_by_means, means);
+      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, 0, means);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, 0, means);
+
+      drill_down_list[0] = means;
+      for (j = 0; j < local_data->production_types->len; j++)
+        {
+          drill_down_list[1] = (char *) g_ptr_array_index (local_data->production_types, j);
+          RPT_reporting_add_integer (local_data->first_detection_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_set_null (local_data->first_detection_by_means_and_prodtype,
+                                  drill_down_list);
+          RPT_reporting_add_integer (local_data->last_detection_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_set_null (local_data->last_detection_by_means_and_prodtype,
+                                  drill_down_list);
+          RPT_reporting_add_integer (local_data->nunits_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->nanimals_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+          RPT_reporting_add_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, 0,
+                                     drill_down_list);
+        }
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT handle_declaration_of_detection_means_event (%s)", MODEL_NAME);
+#endif
+}
+
+
+
+/**
+ * Records a detection.  Updates the day of first detection and day of last
+ * detection, if needed.
  *
  * @param self the model.
  * @param event a detection event.
+ * @param rng a random number generator.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * event)
+handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * event,
+                        RAN_gen_t * rng)
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
   char *peek;
-  gboolean first;
-  HRD_update_t update;
+  gboolean first_of_means;
+  char *drill_down_list[3] = { NULL, NULL, NULL };
+  HRD_detect_t detection;
+  gpointer p;
+  count_and_means_t *previous_detection;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 
-  peek = RPT_reporting_get_text (local_data->detections, NULL);
-  first = (peek == NULL) || (strlen (peek) == 0);
+  peek = RPT_reporting_get_text1 (local_data->detections, event->means);
+  first_of_means = (peek == NULL) || (strlen (peek) == 0);
 
-  g_string_printf (local_data->target, first ? "%u" : ",%u", herd->index);
-  RPT_reporting_append_text (local_data->detections, local_data->target->str, NULL);
+  g_string_printf (local_data->target, first_of_means ? "%u" : ",%u", herd->index);
+  RPT_reporting_append_text1 (local_data->detections, local_data->target->str, event->means);
 
-  if (NULL != guilib_detect_herd)
+  detection.herd_index = herd->index;
+  
+  if( 0 == strcmp( "Clin", event->means ) )
+    detection.reason = NAADSM_DetectionClinicalSigns;
+  else if( 0 == strcmp( "Test", event->means ) )
+    detection.reason = NAADSM_DetectionDiagnosticTest;
+  else
     {
-      update.index = herd->index;
-      update.success = 2;       /* Unused */
-      guilib_detect_herd (update);
+      g_error( "Unrecoginized means of detection (%s) encountered in handle_detection_event", event->means );
+      detection.reason = 0;  
     }
-  /*
-     #if ARDEBUG
-     printf( "Successful detection: herd index %d\n", herd->index );
-     #endif
-   */
-
-  if (local_data->first_detection)
+     
+  detection.test_result = event->test_result;
+  
+#ifdef USE_SC_GUILIB
+  sc_detect_herd( event->day, herd, detection );
+#else  
+  if (NULL != naadsm_detect_herd)
     {
-      RPT_reporting_set_integer (local_data->day_1st_detection, event->day, NULL);
-      local_data->first_detection = FALSE;
+      naadsm_detect_herd (detection);
     }
-  RPT_reporting_add_integer (local_data->nherds_detected, 1, NULL);
-  RPT_reporting_add_integer1 (local_data->nherds_detected_by_prodtype, 1,
-                              herd->production_type_name);
-  RPT_reporting_add_integer (local_data->cumul_nherds_detected, 1, NULL);
-  RPT_reporting_add_integer1 (local_data->cumul_nherds_detected_by_prodtype, 1,
-                              herd->production_type_name);
+#endif  
+
+  /* A unit can be detected multiple times on one day, by different means of
+   * detection.  Handle the outputs that are not broken down by means of
+   * detection first. */
+  if (RPT_reporting_is_null (local_data->first_detection, NULL))
+    {
+      RPT_reporting_set_integer (local_data->first_detection, event->day, NULL);
+      _iteration.first_detection = TRUE;
+      RPT_reporting_set_integer (local_data->detection_occurred, 1, NULL);
+    } 
+  if (RPT_reporting_is_null1 (local_data->first_detection_by_prodtype, herd->production_type_name))
+    RPT_reporting_set_integer1 (local_data->first_detection_by_prodtype, event->day, herd->production_type_name);
+  RPT_reporting_set_integer (local_data->last_detection, event->day, NULL);
+  RPT_reporting_set_integer1 (local_data->last_detection_by_prodtype, event->day, herd->production_type_name);  
+
+  p = g_hash_table_lookup (local_data->detected_today, herd);
+  if (p == NULL)
+    {
+      /* This unit has not been detected already today. */
+      if (RPT_reporting_is_null1 (local_data->first_detection_by_means, event->means))
+        RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, event->means);
+      RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, event->means);
+      RPT_reporting_add_integer (local_data->nunits_detected, 1, NULL);
+      RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, event->means);
+      RPT_reporting_add_integer1 (local_data->nunits_detected_by_prodtype, 1, herd->production_type_name);
+      RPT_reporting_add_integer (local_data->nanimals_detected, herd->size, NULL);
+      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, event->means);
+      RPT_reporting_add_integer1 (local_data->nanimals_detected_by_prodtype, herd->size, herd->production_type_name);
+      RPT_reporting_add_integer (local_data->cumul_nunits_detected, 1, NULL);
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, event->means);
+      RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_prodtype, 1, herd->production_type_name);
+      RPT_reporting_add_integer (local_data->cumul_nanimals_detected, herd->size, NULL);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, event->means);
+      RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_prodtype, herd->size, herd->production_type_name);
+      drill_down_list[0] = event->means;
+      drill_down_list[1] = herd->production_type_name;
+      if (RPT_reporting_is_null (local_data->first_detection_by_means_and_prodtype, drill_down_list))
+        RPT_reporting_set_integer (local_data->first_detection_by_means_and_prodtype, event->day, drill_down_list);
+      if (local_data->last_detection_by_means_and_prodtype->frequency != RPT_never)
+        RPT_reporting_set_integer (local_data->last_detection_by_means_and_prodtype, event->day, drill_down_list);
+      RPT_reporting_add_integer (local_data->nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+      if (local_data->nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+        RPT_reporting_add_integer (local_data->nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+      if (local_data->cumul_nunits_detected_by_means_and_prodtype->frequency != RPT_never)
+        RPT_reporting_add_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+      if (local_data->cumul_nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+        RPT_reporting_add_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+
+      previous_detection = g_new (count_and_means_t, 1);
+      previous_detection->count = 1;
+      previous_detection->means = event->means;
+      g_hash_table_insert (local_data->detected_today, herd, previous_detection);
+    } /* end of case where the unit has not been detected already today */
+  else
+    {
+      /* This unit has been detected already today. */
+      previous_detection = (count_and_means_t *) p;
+      if (previous_detection->means != event->means) /* static strings: if they match, the pointers will be identical */
+        {
+          /* This detection is by a different means than the means currently
+           * recorded for this unit.  Decide whether to "change our mind" about
+           * what means of detection to report for this unit. */
+          double P, r;
+
+          P = 1.0 / (previous_detection->count + 1);
+          r = RAN_num (rng);
+          if (r < P)
+            {
+#if DEBUG
+              g_debug ("r (%g) < P (%g), replacing recorded means \"%s\" with \"%s\"",
+                       r, P, previous_detection->means, event->means);
+#endif
+              /* We have changed our mind about what means of detection to
+               * report for this unit.  Decrement the count of detections by
+               * the old means. */
+              RPT_reporting_sub_integer1 (local_data->nunits_detected_by_means, 1, previous_detection->means);
+              RPT_reporting_sub_integer1 (local_data->nanimals_detected_by_means, herd->size, previous_detection->means);
+              RPT_reporting_sub_integer1 (local_data->cumul_nunits_detected_by_means, 1, previous_detection->means);
+              RPT_reporting_sub_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, previous_detection->means);
+              if (RPT_reporting_get_integer1 (local_data->nunits_detected_by_means, previous_detection->means) == 0)
+                {
+                  /* We counted detections by a particular means today, but then
+                   * we changed our mind and un-counted them all.  Restore
+                   * yesterday's values for first & last detection by that means. */
+                  if (RPT_reporting_is_null1 (local_data->first_detection_by_means_yesterday, previous_detection->means))
+                    RPT_reporting_set_null1 (local_data->first_detection_by_means, previous_detection->means);
+                  else
+                    RPT_reporting_set_integer1 (local_data->first_detection_by_means,
+                                                RPT_reporting_get_integer1 (local_data->first_detection_by_means_yesterday, previous_detection->means),
+                                                previous_detection->means);
+                  if (RPT_reporting_is_null1 (local_data->last_detection_by_means_yesterday, previous_detection->means))
+                    RPT_reporting_set_null1 (local_data->last_detection_by_means, previous_detection->means);
+                  else
+                    RPT_reporting_set_integer1 (local_data->last_detection_by_means,
+                                                RPT_reporting_get_integer1 (local_data->last_detection_by_means_yesterday, previous_detection->means),
+                                                previous_detection->means);
+                }
+              drill_down_list[0] = previous_detection->means;
+              drill_down_list[1] = herd->production_type_name;
+              RPT_reporting_sub_integer (local_data->nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+              if (local_data->nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_sub_integer (local_data->nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+              if (local_data->cumul_nunits_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_sub_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+              if (local_data->cumul_nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_sub_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+              if (RPT_reporting_get_integer (local_data->nunits_detected_by_means_and_prodtype, drill_down_list) == 0)
+                {
+                  /* We counted detections by a particular combination of means
+                   * and production type today, but then we changed our mind
+                   * and un-counted them all.  Restore yesterday's values for
+                   * first & last detection by that combination of means and
+                   * production type. */
+                  if (RPT_reporting_is_null (local_data->first_detection_by_means_and_prodtype_yesterday, drill_down_list))
+                    RPT_reporting_set_null (local_data->first_detection_by_means_and_prodtype, drill_down_list);
+                  else
+                    RPT_reporting_set_integer (local_data->first_detection_by_means_and_prodtype,
+                                               RPT_reporting_get_integer (local_data->first_detection_by_means_and_prodtype_yesterday, drill_down_list),
+                                               drill_down_list);
+                  if (RPT_reporting_is_null (local_data->last_detection_by_means_and_prodtype_yesterday, drill_down_list))
+                    RPT_reporting_set_null (local_data->last_detection_by_means_and_prodtype, drill_down_list);
+                  else
+                    RPT_reporting_set_integer (local_data->last_detection_by_means_and_prodtype,
+                                               RPT_reporting_get_integer (local_data->last_detection_by_means_and_prodtype_yesterday, drill_down_list),
+                                               drill_down_list);
+                }
+
+              /* Increment the count of detections by the new means. */
+              if (RPT_reporting_is_null1 (local_data->first_detection_by_means, event->means))
+                RPT_reporting_set_integer1 (local_data->first_detection_by_means, event->day, event->means);
+              RPT_reporting_set_integer1 (local_data->last_detection_by_means, event->day, event->means);
+              RPT_reporting_add_integer1 (local_data->nunits_detected_by_means, 1, event->means);
+              RPT_reporting_add_integer1 (local_data->nanimals_detected_by_means, herd->size, event->means);
+              RPT_reporting_add_integer1 (local_data->cumul_nunits_detected_by_means, 1, event->means);
+              RPT_reporting_add_integer1 (local_data->cumul_nanimals_detected_by_means, herd->size, event->means);
+              drill_down_list[0] = event->means;
+              if (RPT_reporting_is_null (local_data->first_detection_by_means_and_prodtype, drill_down_list))
+                RPT_reporting_set_integer (local_data->first_detection_by_means_and_prodtype, event->day, drill_down_list);
+              if (local_data->last_detection_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_set_integer (local_data->last_detection_by_means_and_prodtype, event->day, drill_down_list);
+              RPT_reporting_add_integer (local_data->nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+              if (local_data->nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_add_integer (local_data->nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+              if (local_data->cumul_nunits_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_add_integer (local_data->cumul_nunits_detected_by_means_and_prodtype, 1, drill_down_list);
+              if (local_data->cumul_nanimals_detected_by_means_and_prodtype->frequency != RPT_never)
+                RPT_reporting_add_integer (local_data->cumul_nanimals_detected_by_means_and_prodtype, herd->size, drill_down_list);
+            } /* end of case where previously recorded means of detection is replaced */
+          else
+            {
+#if DEBUG
+              g_debug ("r (%g) >= P (%g), not replacing recorded means \"%s\" with \"%s\"",
+                       r, P, previous_detection->means, event->means);
+#endif
+              ;
+            } /* end of case where previously recorded means of detection is not replaced */
+        } /* end of case where previously recorded means of detection does not match the current detection event */
+      previous_detection->count += 1;
+    } /* end of case where the unit has been detected already today */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -161,17 +477,23 @@ handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * ev
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
 
   switch (event->type)
     {
+    case EVT_NewDay:
+      handle_new_day_event (self);
+      break;
+    case EVT_DeclarationOfDetectionMeans:
+      handle_declaration_of_detection_means_event (self, &(event->u.declaration_of_detection_means));
+      break;
     case EVT_Detection:
-      handle_detection_event (self, &(event->u.detection));
+      handle_detection_event (self, &(event->u.detection), rng);
       break;
     default:
       g_error
@@ -180,7 +502,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
 }
 
@@ -192,34 +514,35 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  unsigned int n, i;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
-  local_data->first_detection = TRUE;
-  RPT_reporting_reset (local_data->detections);
-  RPT_reporting_reset (local_data->day_1st_detection);
-  RPT_reporting_zero (local_data->nherds_detected);
-  RPT_reporting_zero (local_data->cumul_nherds_detected);
-  RPT_reporting_reset (local_data->nherds_detected_by_prodtype);
-  RPT_reporting_reset (local_data->cumul_nherds_detected_by_prodtype);
-  n = local_data->production_types->len;
-  for (i = 0; i < n; i++)
-    {
-      RPT_reporting_set_integer1 (local_data->nherds_detected_by_prodtype, 0,
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
-      RPT_reporting_set_integer1 (local_data->cumul_nherds_detected_by_prodtype, 0,
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
-    }
+  RPT_reporting_zero (local_data->detection_occurred);
+  RPT_reporting_set_null (local_data->first_detection, NULL);
+  RPT_reporting_set_null (local_data->first_detection_by_means, NULL);
+  RPT_reporting_set_null (local_data->first_detection_by_prodtype, NULL);
+  RPT_reporting_set_null (local_data->first_detection_by_means_and_prodtype, NULL);
+  RPT_reporting_set_null (local_data->last_detection, NULL);
+  RPT_reporting_set_null (local_data->last_detection_by_means, NULL);
+  RPT_reporting_set_null (local_data->last_detection_by_prodtype, NULL);
+  RPT_reporting_set_null (local_data->last_detection_by_means_and_prodtype, NULL);
+  RPT_reporting_zero (local_data->cumul_nunits_detected);
+  RPT_reporting_zero (local_data->cumul_nunits_detected_by_means);
+  RPT_reporting_zero (local_data->cumul_nunits_detected_by_prodtype);
+  RPT_reporting_zero (local_data->cumul_nunits_detected_by_means_and_prodtype);
+  RPT_reporting_zero (local_data->cumul_nanimals_detected);
+  RPT_reporting_zero (local_data->cumul_nanimals_detected_by_means);
+  RPT_reporting_zero (local_data->cumul_nanimals_detected_by_prodtype);
+  RPT_reporting_zero (local_data->cumul_nanimals_detected_by_means_and_prodtype);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -233,7 +556,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -252,7 +575,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -266,7 +589,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -280,7 +603,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *chararray;
@@ -304,7 +627,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -324,7 +647,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -337,43 +660,58 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
-  RPT_free_reporting (local_data->detections, TRUE);
-  RPT_free_reporting (local_data->day_1st_detection, TRUE);
-  RPT_free_reporting (local_data->nherds_detected, TRUE);
-  RPT_free_reporting (local_data->nherds_detected_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->cumul_nherds_detected, TRUE);
-  RPT_free_reporting (local_data->cumul_nherds_detected_by_prodtype, TRUE);
+  RPT_free_reporting (local_data->detections);
+  RPT_free_reporting (local_data->detection_occurred);
+  RPT_free_reporting (local_data->first_detection);
+  RPT_free_reporting (local_data->first_detection_by_means);
+  RPT_free_reporting (local_data->first_detection_by_prodtype);
+  RPT_free_reporting (local_data->first_detection_by_means_and_prodtype);
+  RPT_free_reporting (local_data->last_detection);
+  RPT_free_reporting (local_data->last_detection_by_means);
+  RPT_free_reporting (local_data->last_detection_by_prodtype);
+  RPT_free_reporting (local_data->last_detection_by_means_and_prodtype);
+  RPT_free_reporting (local_data->nunits_detected);
+  RPT_free_reporting (local_data->nunits_detected_by_means);
+  RPT_free_reporting (local_data->nunits_detected_by_prodtype);
+  RPT_free_reporting (local_data->nunits_detected_by_means_and_prodtype);
+  RPT_free_reporting (local_data->nanimals_detected);
+  RPT_free_reporting (local_data->nanimals_detected_by_means);
+  RPT_free_reporting (local_data->nanimals_detected_by_prodtype);
+  RPT_free_reporting (local_data->nanimals_detected_by_means_and_prodtype);
+  RPT_free_reporting (local_data->cumul_nunits_detected);
+  RPT_free_reporting (local_data->cumul_nunits_detected_by_means);
+  RPT_free_reporting (local_data->cumul_nunits_detected_by_prodtype);
+  RPT_free_reporting (local_data->cumul_nunits_detected_by_means_and_prodtype);
+  RPT_free_reporting (local_data->cumul_nanimals_detected);
+  RPT_free_reporting (local_data->cumul_nanimals_detected_by_means);
+  RPT_free_reporting (local_data->cumul_nanimals_detected_by_prodtype);
+  RPT_free_reporting (local_data->cumul_nanimals_detected_by_means_and_prodtype);
 
   g_string_free (local_data->target, TRUE);
+
+  g_hash_table_destroy (local_data->detected_today);
+  RPT_free_reporting (local_data->first_detection_by_means_yesterday);
+  RPT_free_reporting (local_data->first_detection_by_means_and_prodtype_yesterday);
+  RPT_free_reporting (local_data->last_detection_by_means_yesterday);
+  RPT_free_reporting (local_data->last_detection_by_means_and_prodtype_yesterday);
 
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -381,129 +719,248 @@ interface_version (void)
 /**
  * Returns a new detection monitor.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *self;
   local_data_t *local_data;
   scew_element *e, **ee;
-  unsigned int noutputs;
-  RPT_reporting_t *output;
+  unsigned int n;
   const XML_Char *variable_name;
-  int i, j;                     /* loop counters */
+  RPT_frequency_t freq;
+  gboolean success;
+  gboolean broken_down;
+  unsigned int i;         /* loop counter */
+  char *prodtype_name;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  self = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
-  m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
-  m->events_listened_for = events_listened_for;
-  m->nevents_listened_for = NEVENTS_LISTENED_FOR;
-  m->outputs = g_ptr_array_sized_new (6);
-  m->model_data = local_data;
-  m->run = run;
-  m->reset = reset;
-  m->is_listening_for = is_listening_for;
-  m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
-  m->to_string = to_string;
-  m->printf = local_printf;
-  m->fprintf = local_fprintf;
-  m->free = local_free;
+  self->name = MODEL_NAME;
+  self->events_listened_for = events_listened_for;
+  self->nevents_listened_for = NEVENTS_LISTENED_FOR;
+  self->outputs = g_ptr_array_new ();
+  self->model_data = local_data;
+  self->run = run;
+  self->reset = reset;
+  self->is_listening_for = is_listening_for;
+  self->has_pending_actions = has_pending_actions;
+  self->has_pending_infections = has_pending_infections;
+  self->to_string = to_string;
+  self->printf = local_printf;
+  self->fprintf = local_fprintf;
+  self->free = local_free;
 
   /* Make sure the right XML subtree was sent. */
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
 
-  local_data->detections = RPT_new_reporting ("detections", NULL, RPT_text, RPT_never, FALSE);
-  local_data->day_1st_detection =
-    RPT_new_reporting ("time-to-first-detection", NULL, RPT_integer, RPT_never, TRUE);
-  local_data->nherds_detected =
-    RPT_new_reporting ("num-units-detected", NULL, RPT_integer, RPT_never, FALSE);
-  local_data->nherds_detected_by_prodtype =
-    RPT_new_reporting ("num-units-detected-by-production-type", NULL, RPT_group, RPT_never, FALSE);
-  local_data->cumul_nherds_detected =
-    RPT_new_reporting ("cumulative-num-units-detected", NULL, RPT_integer, RPT_never, TRUE);
-  local_data->cumul_nherds_detected_by_prodtype =
-    RPT_new_reporting ("cumulative-num-units-detected-by-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
-  g_ptr_array_add (m->outputs, local_data->detections);
-  g_ptr_array_add (m->outputs, local_data->day_1st_detection);
-  g_ptr_array_add (m->outputs, local_data->nherds_detected);
-  g_ptr_array_add (m->outputs, local_data->nherds_detected_by_prodtype);
-  g_ptr_array_add (m->outputs, local_data->cumul_nherds_detected);
-  g_ptr_array_add (m->outputs, local_data->cumul_nherds_detected_by_prodtype);
+  local_data->detections = RPT_new_reporting ("detections", RPT_group, RPT_never);
+  local_data->detection_occurred =
+    RPT_new_reporting ("detOccurred", RPT_integer, RPT_never);
+  local_data->first_detection =
+    RPT_new_reporting ("firstDetection", RPT_integer, RPT_never);
+  local_data->first_detection_by_means =
+    RPT_new_reporting ("firstDetection", RPT_group, RPT_never);
+  local_data->first_detection_by_prodtype =
+    RPT_new_reporting ("firstDetection", RPT_group, RPT_never);
+  local_data->first_detection_by_means_and_prodtype =
+    RPT_new_reporting ("firstDetection", RPT_group, RPT_never);
+  local_data->last_detection =
+    RPT_new_reporting ("lastDetection", RPT_integer, RPT_never);
+  local_data->last_detection_by_means =
+    RPT_new_reporting ("lastDetection", RPT_group, RPT_never);
+  local_data->last_detection_by_prodtype =
+    RPT_new_reporting ("lastDetection", RPT_group, RPT_never);
+  local_data->last_detection_by_means_and_prodtype =
+    RPT_new_reporting ("lastDetection", RPT_group, RPT_never);
+  local_data->nunits_detected =
+    RPT_new_reporting ("detnUAll", RPT_integer, RPT_never);
+  local_data->nunits_detected_by_means =
+    RPT_new_reporting ("detnU", RPT_group, RPT_never);
+  local_data->nunits_detected_by_prodtype =
+    RPT_new_reporting ("detnU", RPT_group, RPT_never);
+  local_data->nunits_detected_by_means_and_prodtype =
+    RPT_new_reporting ("detnU", RPT_group, RPT_never);
+  local_data->nanimals_detected =
+    RPT_new_reporting ("detnAAll", RPT_integer, RPT_never);
+  local_data->nanimals_detected_by_means =
+    RPT_new_reporting ("detnA", RPT_group, RPT_never);
+  local_data->nanimals_detected_by_prodtype =
+    RPT_new_reporting ("detnA", RPT_group, RPT_never);
+  local_data->nanimals_detected_by_means_and_prodtype =
+    RPT_new_reporting ("detnA", RPT_group, RPT_never);
+  local_data->cumul_nunits_detected =
+    RPT_new_reporting ("detcUAll", RPT_integer, RPT_never);
+  local_data->cumul_nunits_detected_by_means =
+    RPT_new_reporting ("detcU", RPT_group, RPT_never);
+  local_data->cumul_nunits_detected_by_prodtype =
+    RPT_new_reporting ("detcU", RPT_group, RPT_never);
+  local_data->cumul_nunits_detected_by_means_and_prodtype =
+    RPT_new_reporting ("detcU", RPT_group, RPT_never);
+  local_data->cumul_nanimals_detected =
+    RPT_new_reporting ("detcAAll", RPT_integer, RPT_never);
+  local_data->cumul_nanimals_detected_by_means =
+    RPT_new_reporting ("detcA", RPT_group, RPT_never);
+  local_data->cumul_nanimals_detected_by_prodtype =
+    RPT_new_reporting ("detcA", RPT_group, RPT_never);
+  local_data->cumul_nanimals_detected_by_means_and_prodtype =
+    RPT_new_reporting ("detcA", RPT_group, RPT_never);
+  g_ptr_array_add (self->outputs, local_data->detections);
+  g_ptr_array_add (self->outputs, local_data->detection_occurred);
+  g_ptr_array_add (self->outputs, local_data->first_detection);
+  g_ptr_array_add (self->outputs, local_data->first_detection_by_means);
+  g_ptr_array_add (self->outputs, local_data->first_detection_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->first_detection_by_means_and_prodtype);
+  g_ptr_array_add (self->outputs, local_data->last_detection);
+  g_ptr_array_add (self->outputs, local_data->last_detection_by_means);
+  g_ptr_array_add (self->outputs, local_data->last_detection_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->last_detection_by_means_and_prodtype);
+  g_ptr_array_add (self->outputs, local_data->nunits_detected);
+  g_ptr_array_add (self->outputs, local_data->nunits_detected_by_means);
+  g_ptr_array_add (self->outputs, local_data->nunits_detected_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->nunits_detected_by_means_and_prodtype);
+  g_ptr_array_add (self->outputs, local_data->nanimals_detected);
+  g_ptr_array_add (self->outputs, local_data->nanimals_detected_by_means);
+  g_ptr_array_add (self->outputs, local_data->nanimals_detected_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->nanimals_detected_by_means_and_prodtype);
+  g_ptr_array_add (self->outputs, local_data->cumul_nunits_detected);
+  g_ptr_array_add (self->outputs, local_data->cumul_nunits_detected_by_means);
+  g_ptr_array_add (self->outputs, local_data->cumul_nunits_detected_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->cumul_nunits_detected_by_means_and_prodtype);
+  g_ptr_array_add (self->outputs, local_data->cumul_nanimals_detected);
+  g_ptr_array_add (self->outputs, local_data->cumul_nanimals_detected_by_means);
+  g_ptr_array_add (self->outputs, local_data->cumul_nanimals_detected_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->cumul_nanimals_detected_by_means_and_prodtype);
 
   /* Set the reporting frequency for the output variables. */
-  ee = scew_element_list (params, "output", &noutputs);
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i output variables", noutputs);
+  ee = scew_element_list (params, "output", &n);
+#if DEBUG
+  g_debug ("%u output variables", n);
 #endif
-  for (i = 0; i < noutputs; i++)
+  for (i = 0; i < n; i++)
     {
       e = ee[i];
       variable_name = scew_element_contents (scew_element_by_name (e, "variable-name"));
-      /* Do the outputs include a variable with this name? */
-      for (j = 0; j < m->outputs->len; j++)
+      freq = RPT_string_to_frequency (scew_element_contents
+                                      (scew_element_by_name (e, "frequency")));
+      broken_down = PAR_get_boolean (scew_element_by_name (e, "broken-down"), &success);
+      if (!success)
+        broken_down = FALSE;
+      broken_down = broken_down || (g_strstr_len (variable_name, -1, "-by-") != NULL); 
+      /* Starting at version 3.2 we accept either the old, verbose output
+       * variable names or the shorter ones used in NAADSM/PC. */
+      if (strcmp (variable_name, "detections") == 0)
         {
-          output = (RPT_reporting_t *) g_ptr_array_index (m->outputs, j);
-          if (strcmp (output->name, variable_name) == 0)
-            break;
+          RPT_reporting_set_frequency (local_data->detections, freq);
         }
-      if (j == m->outputs->len)
-        g_warning ("no output variable named \"%s\", ignoring", variable_name);
+      else if (strcmp (variable_name, "detOccurred") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->detection_occurred, freq);
+        }
+      else if (strcmp (variable_name, "firstDetection") == 0
+               || strcmp (variable_name, "time-to-first-detection") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->first_detection, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->first_detection_by_means, freq);
+              RPT_reporting_set_frequency (local_data->first_detection_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->first_detection_by_means_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "lastDetection") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->last_detection, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->last_detection_by_means, freq);
+              RPT_reporting_set_frequency (local_data->last_detection_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->last_detection_by_means_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "detnU") == 0
+               || strncmp (variable_name, "num-units-detected", 18) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->nunits_detected, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->nunits_detected_by_means, freq);
+              RPT_reporting_set_frequency (local_data->nunits_detected_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->nunits_detected_by_means_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "detnA") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->nanimals_detected, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->nanimals_detected_by_means, freq);
+              RPT_reporting_set_frequency (local_data->nanimals_detected_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->nanimals_detected_by_means_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "detcU") == 0
+               || strncmp (variable_name, "cumulative-num-units-detected", 29) == 0)
+        {
+          RPT_reporting_set_frequency (local_data->cumul_nunits_detected, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->cumul_nunits_detected_by_means, freq);
+              RPT_reporting_set_frequency (local_data->cumul_nunits_detected_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->cumul_nunits_detected_by_means_and_prodtype, freq);
+            }
+        }
+      else if (strcmp (variable_name, "detcA") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->cumul_nanimals_detected, freq);
+          if (broken_down)
+            {
+              RPT_reporting_set_frequency (local_data->cumul_nanimals_detected_by_means, freq);
+              RPT_reporting_set_frequency (local_data->cumul_nanimals_detected_by_prodtype, freq);
+              RPT_reporting_set_frequency (local_data->cumul_nanimals_detected_by_means_and_prodtype, freq);
+            }
+        }
       else
-        {
-          RPT_reporting_set_frequency (output,
-                                       RPT_string_to_frequency (scew_element_contents
-                                                                (scew_element_by_name
-                                                                 (e, "frequency"))));
-#if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "report \"%s\" %s", variable_name,
-                 RPT_frequency_name[output->frequency]);
-#endif
-        }
+        g_warning ("no output variable named \"%s\", ignoring", variable_name);
     }
   free (ee);
 
-  /* No detections yet. */
-  local_data->first_detection = TRUE;
-
+  /* Initialize the categories in the output variables. */
   local_data->production_types = herds->production_type_names;
   for (i = 0; i < local_data->production_types->len; i++)
     {
-      RPT_reporting_set_integer1 (local_data->nherds_detected_by_prodtype, 0,
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
-      RPT_reporting_set_integer1 (local_data->cumul_nherds_detected_by_prodtype, 0,
-                                  (char *) g_ptr_array_index (local_data->production_types, i));
+      prodtype_name = (char *) g_ptr_array_index (local_data->production_types, i);
+      RPT_reporting_set_integer1 (local_data->first_detection_by_prodtype, 0, prodtype_name);
+      RPT_reporting_set_integer1 (local_data->last_detection_by_prodtype, 0, prodtype_name);
+      RPT_reporting_set_integer1 (local_data->nunits_detected_by_prodtype, 0, prodtype_name);
+      RPT_reporting_set_integer1 (local_data->nanimals_detected_by_prodtype, 0, prodtype_name);
+      RPT_reporting_set_integer1 (local_data->cumul_nunits_detected_by_prodtype, 0, prodtype_name);
+      RPT_reporting_set_integer1 (local_data->cumul_nanimals_detected_by_prodtype, 0, prodtype_name);
     }
 
   local_data->target = g_string_new (NULL);
 
+  /* Initialize a table to track multiple detections of a unit on one day. */
+  local_data->detected_today = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
+
+  /* These variables hold a backup copy of the first & last days of detection
+   * recorded so far.  They are needed in case we "change our mind" about the
+   * means of detection for a particular unit. */
+  local_data->first_detection_by_means_yesterday = NULL;
+  local_data->first_detection_by_means_and_prodtype_yesterday = NULL;
+  local_data->last_detection_by_means_yesterday = NULL;
+  local_data->last_detection_by_means_and_prodtype_yesterday = NULL;
+
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
-  return m;
-}
-
-
-char *
-detection_monitor_interface_version (void)
-{
-  return interface_version ();
-}
-
-
-ergadm_model_t *
-detection_monitor_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
+  return self;
 }
 
 /* end of file detection-monitor.c */

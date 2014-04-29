@@ -11,7 +11,7 @@ set label "2" at 2.16667,-0.166667 left
 set label "3" at 3.16667,-0.166667 left
 set label "4" at 3.16667,0.833333 left
 set label "5" at 4.16667,0.833333 left
-set label "6" at 4.16667,-0.166667 left
+set label "6*" at 4.16667,-0.166667 left
 set label "vaccination\nring" at 3.5,1.8 center tc lt 3
 set parametric
 plot [0:2*pi] 0.75*sin(t)+3.5, 0.75*cos(t)+0.5 notitle w l lt 3 lw 3,\

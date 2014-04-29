@@ -26,12 +26,6 @@
  *     Finds the convex hull around the most recently created point set.  The
  *     output from this command is a list of point indices, separated by
  *     spaces.
- *   <li>
- *     <code>point_in_poly (x,y)</code>
- *
- *     Finds whether the point x,y is inside the arbitrary polygon whose
- *     vertices are defined by the most recently created point set.  The output
- *     is 't' or 'f'.
  * </ul>
  *
  * The shell exits on EOF (Ctrl+D if you're typing commands into it
@@ -72,8 +66,7 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
   GSList *lval;
 }
 
-%token POINTSET HULL POINTINPOLY
-%token NUM
+%token POINTSET HULL
 %token LPAREN RPAREN COMMA
 %token <fval> NUM
 %type <lval> num_list
@@ -158,18 +151,6 @@ function_call :
       WML_free_ConvexHull2 (hull);
       printf ("\n%s", PROMPT);
       fflush (stdout);
-    }
-  | POINTINPOLY LPAREN NUM COMMA NUM RPAREN
-    {
-      WML_Vector2 point = { $3, $5 };
-      gboolean inside;
-      
-      inside = WML_PointInPolygon (current_points->len,
-				   (WML_Vector2 *)(current_points->data),
-				   &point);
-      printf (inside ? "t" : "f");
-      printf ("\n%s", PROMPT);
-      fflush (stdout);      
     }
   ;
 

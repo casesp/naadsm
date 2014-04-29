@@ -16,11 +16,16 @@
  * any later version.
  */
 
+/*
+ * NOTE: This module is DEPRECATED, and is included only for purposes of backward
+ * compatibility with parameter files from NAADSM 3.0 - 3.1.x.  Any new 
+ * development should be done elsewhere: see trace-zone-focus-model.
+*/
+
 #ifndef TRACE_BACK_ZONE_FOCUS_MODEL_H
 #define TRACE_BACK_ZONE_FOCUS_MODEL_H
 
-char *trace_back_zone_focus_model_interface_version (void);
-ergadm_model_t *trace_back_zone_focus_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                                 ZON_zone_list_t * zones);
+naadsm_model_t *trace_back_zone_focus_model_new (scew_element * params, HRD_herd_list_t *,
+                                                 projPJ, ZON_zone_list_t *);
 
 #endif

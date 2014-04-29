@@ -38,7 +38,11 @@
 #define BUFFERSIZE 32768
 #define ADJUST (tokenpos = charpos, charpos += yyleng)
 
+#ifdef USE_PLAIN_YACC
+int yyerror (char *s);
+#else
 int yyerror (char *s, int fatal);
+#endif
 
 char linebuf[BUFFERSIZE];
 int charpos = 0, tokenpos = 0;
@@ -80,9 +84,6 @@ int charpos = 0, tokenpos = 0;
   "subtract"                { ADJUST; return SUBTRACT; }
   "get"                     { ADJUST; return GET; }
   "daily"                   { ADJUST; return DAILY; }
-  "weekly"                  { ADJUST; return WEEKLY; }
-  "monthly"                 { ADJUST; return MONTHLY; }
-  "yearly"                  { ADJUST; return YEARLY; }
   "t" {
     ADJUST;
     yylval.bval = TRUE;
@@ -115,7 +116,11 @@ int charpos = 0, tokenpos = 0;
   [[:space:]] { /* Ignore whitespace */ }
   . {
     /* Report an unrecognized token. */
+#ifdef USE_PLAIN_YACC
+    yyerror ("Unrecognized token");
+#else
     yyerror ("Unrecognized token", 1);
+#endif
   }
 }
 %%

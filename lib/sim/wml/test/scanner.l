@@ -75,7 +75,6 @@ int charpos = 0, tokenpos = 0;
   ")"                       { ADJUST; return RPAREN; }
   points(et)?               { ADJUST; return POINTSET; }
   "hull"                    { ADJUST; return HULL; }
-  point_in_poly(gon)?       { ADJUST; return POINTINPOLY; }
   [+-]?[[:digit:]]+(\.[[:digit:]]+)?([eE][+-][[:digit:]]+)? {
     ADJUST;
     yylval.fval = (double)atof(yytext);

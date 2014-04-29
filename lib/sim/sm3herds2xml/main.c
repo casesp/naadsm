@@ -11,7 +11,7 @@
  * @version 0.1
  * @date August 2004
  *
- * Copyright &copy; University of Guelph, 2004-2006
+ * Copyright &copy; University of Guelph, 2004-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -88,15 +88,10 @@ main (int argc, char *argv[])
   poptGetNextOpt (option);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 
   /* Get the list of herds. */
@@ -111,8 +106,8 @@ main (int argc, char *argv[])
     fclose (yyin);
   nherds = HRD_herd_list_length (herds);
 
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i herds read", nherds);
 #if DEBUG
+  g_debug ("%i herds read", nherds);
   summary = HRD_herd_list_to_string (herds);
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "\n%s", summary);
   free (summary);
@@ -127,8 +122,8 @@ main (int argc, char *argv[])
       printf ("    <production-type>%u</production-type>\n", herd->production_type);
       printf ("    <size>%u</size>\n", herd->size);
       printf ("    <location>\n");
-      printf ("      <latitude>%g</latitude>\n", herd->lat);
-      printf ("      <longitude>%g</longitude>\n", herd->lon);
+      printf ("      <latitude>%g</latitude>\n", herd->y);
+      printf ("      <longitude>%g</longitude>\n", herd->x);
       printf ("    </location>\n");
       printf ("    <status>%s</status>\n", HRD_status_name[herd->status]);
       printf ("  </herd>\n");

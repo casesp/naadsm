@@ -20,7 +20,7 @@
  * @version 0.1
  * @date October 2005
  *
- * Copyright &copy; University of Guelph, 2005-2006
+ * Copyright &copy; University of Guelph, 2005-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -153,8 +153,8 @@ write_herds (SHPHandle shape_file, DBFHandle attribute_file, int *attribute_id,
   for (i = 0; i < n; i++)
     {
       herd = HRD_herd_list_get (herds, i);
-      x = (double) herd->lon;
-      y = (double) herd->lat;
+      x = herd->longitude;
+      y = herd->latitude;
 
       /* Keep track of the minimum and maximum x and y values, in case the
        * shapefile library gets them wrong. */
@@ -209,6 +209,7 @@ main (int argc, char *argv[])
   struct poptOption options[2];
   const char *herd_file_name = NULL;    /* name of the herd file */
   char *arcview_file_name = NULL;       /* base name of the ArcView files */
+  char *dot_location;
   char *attribute_file_name;
   int verbosity = 0;
   HRD_herd_list_t *herds;
@@ -241,15 +242,10 @@ main (int argc, char *argv[])
   option = poptGetContext (NULL, argc, (const char **) argv, options, 0);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
@@ -258,17 +254,19 @@ main (int argc, char *argv[])
   poptGetNextOpt (option);
   herd_file_name = poptGetArg (option);
   if (herd_file_name == NULL)
-    g_error ("Need the name of a herd file.");
+    {
+      g_error ("Need the name of a herd file.");
+    }
 
   poptGetNextOpt (option);
   arcview_file_name = g_strdup (poptGetArg (option));
   if (arcview_file_name == NULL)
     {
       char *herd_file_base_name;
-      char *dot_location;
 
       /* Construct the ArcView file name based on the herd file name. */
       herd_file_base_name = g_path_get_basename (herd_file_name);
+      /* The herd file name is expected to end in '.xml'. */
       dot_location = rindex (herd_file_base_name, '.');
       if (dot_location == NULL)
         arcview_file_name = g_strdup (herd_file_base_name);
@@ -281,20 +279,40 @@ main (int argc, char *argv[])
       g_free (herd_file_base_name);
     }
   poptFreeContext (option);
-
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list (herd_file_name, NULL);
+#else
   herds = HRD_load_herd_list (herd_file_name);
+#endif
   nherds = HRD_herd_list_length (herds);
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i units read", nherds);
+#if DEBUG
+  g_debug ("%i units read", nherds);
 #endif
   if (nherds == 0)
-    g_error ("no units in file %s", herd_file_name);
+    {
+      g_error ("no units in file %s", herd_file_name);
+    }
 
   /* Initialize the shape and DBF (attribute) files for writing. */
-  shape_file = SHPCreate (arcview_file_name, SHPT_POINT);
-  attribute_file_name = g_new (char, strlen (arcview_file_name) + 4 + 1);
-  sprintf (attribute_file_name, "%s.dbf", arcview_file_name);
+  /* Something odd: if there are periods in the base file name, SHPCreate will
+   * remove anything after the last period, which will create shp and shx
+   * filenames that don't match the dbf filename.  As a workaround, if there is
+   * a period in arcview_file_name, add '.tmp' to the end of the filename to
+   * give SHPCreate something harmless to remove. */
+  dot_location = index (arcview_file_name, '.');
+  if (dot_location == NULL)
+    {
+      shape_file = SHPCreate (arcview_file_name, SHPT_POINT);
+    }
+  else
+    {
+      char *tmp_arcview_file_name;
+      tmp_arcview_file_name = g_strdup_printf ("%s.tmp", arcview_file_name);
+      shape_file = SHPCreate (tmp_arcview_file_name, SHPT_POINT);
+      g_free (tmp_arcview_file_name);
+    }
+  attribute_file_name = g_strdup_printf ("%s.dbf", arcview_file_name);
   attribute_file = DBFCreate (attribute_file_name);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,

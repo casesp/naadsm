@@ -20,28 +20,30 @@
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  */
+ 
+/*
+ * NOTE: This module is DEPRECATED, and is included only for purposes of backward
+ * compatibility with parameter files from NAADSM 3.0 - 3.1.x.  Any new 
+ * development should be done elsewhere: see trace-zone-focus-model.
+*/
 
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version trace_back_zone_focus_model_LTX_interface_version
-#define new trace_back_zone_focus_model_LTX_new
-#define run trace_back_zone_focus_model_LTX_run
-#define reset trace_back_zone_focus_model_LTX_reset
-#define events_listened_for trace_back_zone_focus_model_LTX_events_listened_for
-#define is_listening_for trace_back_zone_focus_model_LTX_is_listening_for
-#define has_pending_actions trace_back_zone_focus_model_LTX_has_pending_actions
-#define has_pending_infections trace_back_zone_focus_model_LTX_has_pending_infections
-#define to_string trace_back_zone_focus_model_LTX_to_string
-#define local_printf trace_back_zone_focus_model_LTX_printf
-#define local_fprintf trace_back_zone_focus_model_LTX_fprintf
-#define local_free trace_back_zone_focus_model_LTX_free
-#define handle_detection_event trace_back_zone_focus_model_LTX_handle_detection_event
-#define events_created trace_back_zone_focus_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new trace_back_zone_focus_model_new
+#define run trace_back_zone_focus_model_run
+#define reset trace_back_zone_focus_model_reset
+#define events_listened_for trace_back_zone_focus_model_events_listened_for
+#define is_listening_for trace_back_zone_focus_model_is_listening_for
+#define has_pending_actions trace_back_zone_focus_model_has_pending_actions
+#define has_pending_infections trace_back_zone_focus_model_has_pending_infections
+#define to_string trace_back_zone_focus_model_to_string
+#define local_printf trace_back_zone_focus_model_printf
+#define local_fprintf trace_back_zone_focus_model_fprintf
+#define local_free trace_back_zone_focus_model_free
+#define handle_trace_result_event trace_back_zone_focus_model_handle_trace_result_event
 
 #include "model.h"
 #include "model_util.h"
@@ -58,8 +60,6 @@
 #  include <math.h>
 #endif
 
-#include "guilib.h"
-
 #include "trace-back-zone-focus-model.h"
 
 #if !HAVE_ROUND && HAVE_RINT
@@ -70,25 +70,10 @@
  * but they're #defined so AC_CHECK_FUNCS doesn't find them. */
 double round (double x);
 
-extern const char *EVT_contact_type_name[];
-
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "trace-back-zone-focus-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of establishing a zone focus around diseased\n\
-units.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 June 2006\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 1
-EVT_event_type_t events_created[] = { EVT_RequestForZoneFocus };
 
 #define NEVENTS_LISTENED_FOR 1
 EVT_event_type_t events_listened_for[] = { EVT_TraceResult };
@@ -98,7 +83,7 @@ EVT_event_type_t events_listened_for[] = { EVT_TraceResult };
 /** Specialized information for this model. */
 typedef struct
 {
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   const char *contact_type_name;
   gboolean *production_type;
   GPtrArray *production_types;
@@ -115,7 +100,7 @@ local_data_t;
  * @param queue for any new events the model creates.
  */
 void
-handle_trace_result_event (struct ergadm_model_t_ *self,
+handle_trace_result_event (struct naadsm_model_t_ *self,
                            EVT_trace_result_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
@@ -136,9 +121,8 @@ handle_trace_result_event (struct ergadm_model_t_ *self,
   if (event->contact_type != local_data->contact_type)
     goto end;
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-         "ordering a zone focus around unit \"%s\"", herd->official_id);
+#if DEBUG
+  g_debug ("ordering a zone focus around unit \"%s\"", herd->official_id);
 #endif
   EVT_event_enqueue (queue, EVT_new_request_for_zone_focus_event (herd, event->day, "trace out"));
 
@@ -162,18 +146,13 @@ end:
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
      ZON_zone_list_t * zones, EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
     case EVT_TraceResult:
@@ -188,11 +167,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -203,7 +177,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
@@ -226,7 +200,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -245,7 +219,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -259,7 +233,7 @@ has_pending_actions (struct ergadm_model_t_ * self)
  * @return TRUE if the model has pending infections.
  */
 gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_infections (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -273,7 +247,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   gboolean already_names;
@@ -317,7 +291,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -337,7 +311,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -350,7 +324,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
@@ -373,23 +347,13 @@ local_free (struct ergadm_model_t_ *self)
 
 
 /**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
-}
-
-
-
-/**
  * Returns a new trace-back zone focus model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_attribute *attr;
   XML_Char const *attr_text;
@@ -398,13 +362,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -429,39 +390,25 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_assert (attr != NULL);
   attr_text = scew_attribute_value (attr);
   if (strcmp (attr_text, "direct") == 0)
-    local_data->contact_type = DirectContact;
+    local_data->contact_type = NAADSM_DirectContact;
   else if (strcmp (attr_text, "indirect") == 0)
-    local_data->contact_type = IndirectContact;
+    local_data->contact_type = NAADSM_IndirectContact;
   else
     g_assert_not_reached ();
-  local_data->contact_type_name = EVT_contact_type_name[local_data->contact_type];
+  local_data->contact_type_name = NAADSM_contact_type_abbrev[local_data->contact_type];
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting production types");
 #endif
   local_data->production_types = herds->production_type_names;
   local_data->production_type =
-    ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
+    naadsm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-
-char *
-trace_back_zone_focus_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-trace_back_zone_focus_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                 ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file trace-back-zone-focus-model.c */

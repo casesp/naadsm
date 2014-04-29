@@ -40,7 +40,7 @@
  *
  */
 gboolean *
-ergadm_read_prodtype_attribute (scew_element * params,
+naadsm_read_prodtype_attribute (scew_element * params,
                                 char *attr_name, GPtrArray * production_type_names)
 {
   gboolean *flags;
@@ -53,7 +53,7 @@ ergadm_read_prodtype_attribute (scew_element * params,
   int i;                        /* loop counter */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_read_prodtype_attribute");
+  g_debug ("----- ENTER naadsm_read_prodtype_attribute");
 #endif
 
   nprod_types = production_type_names->len;
@@ -102,7 +102,7 @@ ergadm_read_prodtype_attribute (scew_element * params,
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_read_prodtype_attribute");
+  g_debug ("----- EXIT naadsm_read_prodtype_attribute");
 #endif
 
   return flags;
@@ -114,7 +114,7 @@ ergadm_read_prodtype_attribute (scew_element * params,
  *
  */
 gboolean *
-ergadm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
+naadsm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
 {
   gboolean *flags;
   unsigned int nzones;
@@ -125,7 +125,7 @@ ergadm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
   int i;                        /* loop counter */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_read_zone_attribute");
+  g_debug ("----- ENTER naadsm_read_zone_attribute");
 #endif
 
   nzones = ZON_zone_list_length (zones);
@@ -169,7 +169,7 @@ ergadm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_read_zone_attribute");
+  g_debug ("----- EXIT naadsm_read_zone_attribute");
 #endif
 
   return flags;
@@ -190,32 +190,31 @@ ergadm_read_zone_attribute (scew_element * params, ZON_zone_list_t * zones)
  *
  * The array "rotates" so there are additional steps beyond simply extending
  * the array.  The first figure below shows the case when there is room at the
- * end of the newly-extended array for all items before the rotating index.
+ * end of the newly-extended array for all items before and including the rotating index.
+ * (Darker blue indicates events that will be reached sooner.)
  * So given an array of length <i>n</i> (1), we (2) add null entries to the
- * end, (3) copy the items from before the rotating index to the new space at
- * the end, and (4) overwrite the spaces before the rotating index with null
+ * end, (3) copy the items up to and including the rotating index to the new space at
+ * the end, and (4) overwrite the spaces up to and including the rotating index with null
  * entries.
  *
  * The second figure shows the case when there is not room at the end of the
- * extended array for all items before the rotating index.  Given an array of
+ * extended array for all items before and including the rotating index.  Given an array of
  * length <i>n</i> (1), we (2) add null entries to the end, (3) copy as many
  * items as we can from before the rotating index to the new space at the end,
- * (4) copy the remaining entries before the rotating index to the start of the
- * array, and (5) overwrite the spaces before the rotating index with null
+ * (4) copy the remaining entries before and including the rotating index to the start of the
+ * array, and (5) overwrite the spaces up to and including the rotating index with null
  * entries.
  *
  * @image html extend_array_1.png "Extending the array when there is room at the end for all items before the index"
- * @image latex extend_array_1.eps "Extending the array when there is room at the end for all items before the index" width=4in
  *
  * @image html extend_array_2.png "Extending the array when there is not room at the end for all items before the index"
- * @image latex extend_array_2.eps "Extending the array when there is not room at the end for all items before the index" width=4in
  *
  * @param array the pending results array
  * @param length the new length
  * @param index the current location of the rotating index
  */
 void
-ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index)
+naadsm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index)
 {
   unsigned int old_length, diff;
   unsigned int i;
@@ -225,7 +224,7 @@ ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned i
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER ergadm_extend_rotating_array");
+  g_debug ("----- ENTER naadsm_extend_rotating_array");
 #endif
 
   old_length = array->len;
@@ -259,7 +258,7 @@ ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned i
    * of the list. */
   diff = length - old_length;
   for (i = 0; i < diff; i++)
-    if (i < index)
+    if (i <= index)
       {
 #if DEBUG
         g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -275,16 +274,16 @@ ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned i
         g_ptr_array_index (array, old_length + i) = g_queue_new ();
       }
 
-  /* If there are still items sitting just before the rotating index, move them
-   * down to the start of the list. */
-  for (i = 0; i + diff < index; i++)
+  /* If there are still items sitting just before or at the rotating index
+   * position, move them down to the start of the list. */
+  for (i = 0; i + diff <= index; i++)
     {
 #if DEBUG
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "copying item at pos %u to pos %u", i + diff, i);
 #endif
       g_ptr_array_index (array, i) = g_ptr_array_index (array, i + diff);
     }
-  for (; i < index; i++)
+  for (; i <= index; i++)
     {
 #if DEBUG
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "adding empty item at pos %u", i);
@@ -315,10 +314,22 @@ ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned i
 
 end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ergadm_extend_rotating_array");
+  g_debug ("----- EXIT naadsm_extend_rotating_array");
 #endif
 
   return;
+}
+
+
+
+/**
+ * The g_queue_free function from GLib, cast to the format of a GDestroyNotify
+ * function.
+ */
+void
+g_queue_free_as_GDestroyNotify (gpointer data)
+{
+  g_queue_free ((GQueue *) data);
 }
 
 /* end of file model_util.c */
