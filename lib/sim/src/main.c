@@ -717,12 +717,7 @@ node 0 run 0
 #include "sc_naadsm_outputs.h"
 #endif
 
-#ifdef TORRINGTON
-  #include "herd-randomizer.h"
-#endif
-#ifdef WHEATLAND
-  #include "herd-randomizer.h"
-#endif
+#include "herd-randomizer.h"
 
 #if HAVE_MPI && !CANCEL_MPI
 #  include "mpix.h"
@@ -1011,6 +1006,8 @@ run_sim_main (const char *herd_file,
 #endif
 {
   unsigned int ndays, nruns, day, run;
+  gboolean randomize_herds;
+  int initial_state_numbers[HRD_NSTATES];
   double prevalence_num, prevalence_denom;
   RPT_reporting_t *show_unit_states;
   RPT_reporting_t *num_units_in_state;
@@ -1047,6 +1044,9 @@ run_sim_main (const char *herd_file,
   double m_total_time, total_processor_time;
   unsigned long total_runs;
   m_total_time = total_processor_time = 0.0;
+
+  for( i = 0; i < HRD_NSTATES; ++i )
+    initial_state_numbers[i] = 0;
 
 #ifdef USE_SC_GUILIB
   GPtrArray *production_types;
@@ -1091,15 +1091,15 @@ run_sim_main (const char *herd_file,
       /* #define G_LOG_DOMAIN "debug_off" to disable logging for selected units,
        * or #define G_LOG_DOMAIN "debug_on" to enable logging only for selected units. */
         
-      g_log_set_handler (NULL, G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("prob_dist", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("rel_chart", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("reporting", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("zone", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("gis", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("debug_off", G_LOG_ALL_LEVELS, silent_log_handler, NULL);
-      g_log_set_handler ("debug_on", G_LOG_ALL_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler (NULL, G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("herd", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("prob_dist", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("rel_chart", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("reporting", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("zone", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("gis", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("debug_off", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("debug_on", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
       
       g_debug ("This will be the first debugging message reported to the GUI."); 
     #else
@@ -1227,7 +1227,8 @@ run_sim_main (const char *herd_file,
   /* Get the simulation parameters and sub-models. */
   nmodels =
     naadsm_load_models (parameter_file, herds, herds->projection, zones,
-                        &ndays, &nruns, &models, reporting_vars, &exit_conditions );
+                        &ndays, &nruns, &randomize_herds, initial_state_numbers,
+                        &models, reporting_vars, &exit_conditions );
   nzones = ZON_zone_list_length (zones);
 
   /* The clock time reporting variable is special -- it can only be reported
@@ -1356,20 +1357,11 @@ run_sim_main (const char *herd_file,
       /* Reset all zones. */
       ZON_zone_list_reset (zones);
 
-#ifdef TORRINGTON
-      /* Randomize initial states for all herds, if desired.
-         Note that this function selects the indicated number
-         of initially infected units from each production type separately.*/
-      randomize_initial_states( herds, rng );
-#endif 
+      /* Reset initial disease states, if necessary. */
+      if( randomize_herds )
+        randomize_initial_states( herds, HRD_NSTATES, initial_state_numbers, rng );
 
-#ifdef WHEATLAND
-      /* Randomize initial states for all herds, if desired.
-         Note that this function selects the indicated number of
-         initially infected units randomly from the entire population. */
-      randomize_initial_states( herds, rng );
-#endif
-
+      /* Reset some iteration variables. */
       active_infections_yesterday = TRUE;
       pending_actions = TRUE;
       pending_infections = TRUE;

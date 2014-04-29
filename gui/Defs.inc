@@ -51,14 +51,6 @@ Public License as published by the Free Software Foundation; either version 2 of
 // NOTE: A symbol for only one experimental version should be defined at a time.
 //{$DEFINE RIVERTON}
 
-// Define the following symbol to compile NAADSM as the experimental 'Torrington' version.
-// NOTE: A symbol for only one experimental version should be defined at a time.
-//{$DEFINE TORRINGTON}
-
-// Define the following symbol to compile NAADSM as the experimental 'Wheatland' version.
-// NOTE: A symbol for only one experimental version should be defined at a time.
-//{$DEFINE WHEATLAND}
-
 // If DEBUG is defined, this symbol can be used to disable network connections in NAADSM.
 // If DEBUG is not defined, then this symbol has no effect.
 {$DEFINE DISABLEWEBCHECK}
@@ -71,7 +63,7 @@ Public License as published by the Free Software Foundation; either version 2 of
 //{$DEFINE TESTING}
 
 // Define the following symbol to enable making screen shots of the main form w/o showing a version number.
-{$DEFINE NOSHOWVERSION}
+//{$DEFINE NOSHOWVERSION}
 
 // Define the following symbol to disable translation of the GUI to languages other than US English.
 {$DEFINE ENGLISHONLY}

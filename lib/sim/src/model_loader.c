@@ -176,13 +176,13 @@ get_exit_condition (scew_element * e)
 }
 
 /**
- * Extracts the number of days the simulation is to last.
+ * Extracts an integer value from XML.
  *
- * @param e a "num-days" element from the simulation parameters.
- * @return the number of days.
+ * @param e an element from the simulation parameters.
+ * @return the number specified by the element.
  */
 unsigned int
-get_num_days (scew_element * e)
+get_xml_int (scew_element * e)
 {
   long int tmp;
 
@@ -194,19 +194,16 @@ get_num_days (scew_element * e)
 
 
 /**
- * Extracts the number of Monte Carlo runs for the simulation.
+ * Extracts a boolean value to indicate whether initially infected
+ * herds are selected at random for each iteration in a simulation.
  *
- * @param e a "num-runs" element from the simulation parameters.
- * @return the number of runs.
+ * @param e a "randomize-initially-infected-herds" element from the simulation parameters.
+ * @return if TRUE, then initially infected herds are chosen at random.  If FALSE, individual herd states must be specified.
  */
-unsigned int
-get_num_runs (scew_element * e)
+gboolean
+get_randomize_herds (scew_element * e)
 {
-  long int tmp;
-
-  tmp = strtol (scew_element_contents (e), NULL, 10);   /* base 10 */
-  g_assert (errno != ERANGE && errno != EINVAL);
-  return (unsigned int) tmp;
+  return (gboolean)( strcasecmp( scew_element_contents (e), "true" ) == 0 );
 }
 
 
@@ -236,7 +233,7 @@ get_num_runs (scew_element * e)
 int
 naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
                     projPJ projection, ZON_zone_list_t * zones,
-                    unsigned int *ndays, unsigned int *nruns,
+                    unsigned int *ndays, unsigned int *nruns, gboolean *randomize_herds, int *initial_state_numbers,
                     naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions )
 {
   scew_parser *parser;          /* to read the parameter file */
@@ -305,10 +302,28 @@ naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
 #endif
 
   g_assert (scew_element_by_name (params, "num-days") != NULL);
-  *ndays = get_num_days (scew_element_by_name (params, "num-days"));
+  *ndays = get_xml_int (scew_element_by_name (params, "num-days"));
   g_assert (scew_element_by_name (params, "num-runs") != NULL);
-  *nruns = get_num_runs (scew_element_by_name (params, "num-runs"));
-  
+  *nruns = get_xml_int (scew_element_by_name (params, "num-runs"));
+
+
+  if (NULL != scew_element_by_name (params, "randomize-initially-infected-herds") ) {
+    *randomize_herds = get_randomize_herds (scew_element_by_name (params, "randomize-initially-infected-herds"));
+    if (NULL != scew_element_by_name (params, "num-initially-latent-units") )
+      initial_state_numbers[Latent] = (int)get_xml_int (scew_element_by_name (params, "num-initially-latent-units"));
+    if (NULL != scew_element_by_name (params, "num-initially-subclinical-units") )
+      initial_state_numbers[InfectiousSubclinical] = (int)get_xml_int (scew_element_by_name (params, "num-initially-subclinical-units"));
+    if (NULL != scew_element_by_name (params, "num-initially-clinical-units") )
+      initial_state_numbers[InfectiousClinical] = (int)get_xml_int (scew_element_by_name (params, "num-initially-clinical-units"));
+    if (NULL != scew_element_by_name (params, "num-initially-naturally-immune-units") )
+      initial_state_numbers[NaturallyImmune] = (int)get_xml_int (scew_element_by_name (params, "num-initially-naturally-immune-units"));
+    if (NULL != scew_element_by_name (params, "num-initially-vaccine-immune-units") )
+      initial_state_numbers[VaccineImmune] = (int)get_xml_int (scew_element_by_name (params, "num-initially-vaccine-immune-units"));
+  } else {
+    *randomize_herds = FALSE;
+  }
+
+
   /*  This isn't a mandatory parameter.  If this element is NULL, the function
       will return "0" for "no premature exit" */
   *_exit_conditions = get_exit_condition( scew_element_by_name ( params, "exit-condition" ) );
@@ -320,6 +335,7 @@ naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
 #if DEBUG
   g_debug ("%i sub-models in parameters", nmodels);
 #endif
+
 
   singletons = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -403,6 +419,7 @@ naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
 #endif
     }                           /* end of loop over models */
 
+
   /* We can free the hash table structure without freeing the keys (because the
    * keys are model names, which are static strings) or the values (because the
    * values are model instances, which persist after this function ends). */
@@ -449,6 +466,7 @@ naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
     }
   free (ee);
 
+
   /* Make sure the zones' surveillance level numbers start at 1 and are
    * consecutive, because we're going to use them as list indices later. */
   nzones = ZON_zone_list_length (zones);
@@ -466,6 +484,7 @@ naadsm_load_models (const char *parameter_file, HRD_herd_list_t * herds,
 
   /* Clean up. */
   scew_parser_free (parser);
+
 
 #if DEBUG
   g_debug ("----- EXIT naadsm_load_models");

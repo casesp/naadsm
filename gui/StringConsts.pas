@@ -37,54 +37,40 @@ interface
   // It may or may not need to be altered.
 	const
     MAJORVERSION = '3';
-    MINORVERSION = '2';
-    RELEASENUMBER = '19';
+    MINORVERSION = '3';
+    RELEASENUMBER = '2';
     MAJORVERSIONNUMBER = MAJORVERSION + '.' + MINORVERSION;
     MINORVERSIONNUMBER = RELEASENUMBER;
 
     // Add new major version numbers here as they are released.
     // Any change in the XML schema warrants a change in the minor version number (i.e., 3.2 to 3.3).
-    const ALL_MAJOR_VERSIONS: array[ 0..0 ] of string = (
-      '3.2'
+    const ALL_MAJOR_VERSIONS: array[ 0..1 ] of string = (
+      '3.2', '3.3'
     );
 
     {$IF Defined( CHEYENNE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19-CHEYENNE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-CHEYENNE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Cheyenne';
       BRANCHNAMEPARENS = ' (Cheyenne) ';
       SIM_DLL_NAME = 'cheyenne.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Cheyenne';
     {$ELSEIF Defined( LARAMIE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19-LARAMIE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-LARAMIE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Laramie';
       BRANCHNAMEPARENS = ' (Laramie) ';
       SIM_DLL_NAME = 'laramie.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Laramie';
     {$ELSEIF Defined( RIVERTON ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19-RIVERTON'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-RIVERTON'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Riverton';
       BRANCHNAMEPARENS = ' (Riverton) ';
       SIM_DLL_NAME = 'riverton.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Riverton';
-    {$ELSEIF Defined( TORRINGTON ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19-TORRINGTON'; // Used to determine if the right version of the core model is present
-      BRANCHNAME = 'Torrington';
-      BRANCHNAMEPARENS = ' (Torrington) ';
-      SIM_DLL_NAME = 'torrington.dll';
-      IS_EXPERIMENTAL = true;
-      VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Torrington';
-    {$ELSEIF Defined( WHEATLAND ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19-WHEATLAND'; // Used to determine if the right version of the core model is present
-      BRANCHNAME = 'Wheatland';
-      BRANCHNAMEPARENS = ' (Wheatland) ';
-      SIM_DLL_NAME = 'wheatland.dll';
-      IS_EXPERIMENTAL = true;
-      VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Wheatland';
     {$ELSE}
-      MIN_COMPATIBLE_DLL_VERSION = '3.2.19'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.3.2'; // Used to determine if the right version of the core model is present
       BRANCHNAME = '';
       BRANCHNAMEPARENS = ' ';
       SIM_DLL_NAME = 'naadsm.dll';
@@ -92,7 +78,7 @@ interface
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER;
     {$IFEND}
 
-    BUILDNUMBER = '20130702';
+    BUILDNUMBER = '20130806';
 
     APPNAME = 'NAADSM';
     VERSIONNUMBER = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' Build ' + BUILDNUMBER;
@@ -160,14 +146,6 @@ implementation
       {$ENDIF}
 
       {$IFDEF RIVERTON}
-        inc( nDefs );
-      {$ENDIF}
-
-      {$IFDEF TORRINGTON}
-        inc( nDefs );
-      {$ENDIF}
-
-      {$IFDEF WHEATLAND}
         inc( nDefs );
       {$ENDIF}
 

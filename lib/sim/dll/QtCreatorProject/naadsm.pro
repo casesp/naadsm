@@ -5,7 +5,7 @@
 # Version: $Revision: 1.2.2.2 $
 # Project:NAADSM
 # Website: http://www.naadsm.org
-# Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
 # Copyright (C) 2012 - 2013 NAADSM Development Team
 #
@@ -16,9 +16,6 @@
 
 QT       -= core gui
 
-TARGET = naadsm
-TEMPLATE = lib
-
 DEFINES += \
   HAVE_CONFIG_H \
   DLL_EXPORTS \
@@ -27,8 +24,29 @@ DEFINES += \
   
 ## The following definitions are used to select experimental versions.
 ## For the base version of NAADSM, none of these symbols should be defined.
-# DEFINES += \
-#  \ TORRINGTON
+DEFINES += \
+#  CHEYENNE
+#  LARAMIE
+#  RIVERTON
+
+
+## Change the name of the target, depending on the defined symbols.
+contains( DEFINES, CHEYENNE ) {
+  TARGET = cheyenne
+} else {
+  contains( DEFINES, LARAMIE ) {
+    TARGET = laramie
+  } else {
+    contains( DEFINES, RIVERTON ) {
+      TARGET = riverton
+    } else {
+      TARGET = naadsm
+    }
+  }
+}
+
+TEMPLATE = lib
+
 
 INCLUDEPATH += \
     C:/libs/C_libs/glib-2.22.2/include/glib-2.0 \

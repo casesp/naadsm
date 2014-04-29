@@ -8,7 +8,7 @@
 # Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
 # Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
-# Copyright (C) 2008 - 2010 Animal Population Health Institute, Colorado State University
+# Copyright (C) 2008 - 2013 NAADSM Development Team
 # 
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 # Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -16,7 +16,7 @@
 
 
 #Name of the Program being installed
-Name "NAADSM-Riverton 3.1.22"
+Name "NAADSM-Riverton 3.3.2"
 
 #NOTE: Can use the 'Icon' command to specify an icon file(.ico) for the .exe file.
 Icon installerIcon.ico
@@ -25,7 +25,7 @@ Icon installerIcon.ico
 outFile "RivertonSetup.exe"
 
 #Default Installation Directory
-installDir "$PROGRAMFILES\NAADSM-Riverton 3.1.22"
+installDir "$PROGRAMFILES\NAADSM-Riverton 3.3.2"
 
 #Sets the text to be shown in the license page
 LicenseData ../license.txt
@@ -35,7 +35,7 @@ page custom startDialog "" ": Start Dialog"
  Function startDialog
  
   MessageBox MB_OKCANCEL "This application will install \
-  NAADSM 'Riverton' version 3.1.22 \ 
+  NAADSM 'Riverton' version 3.3.2 \ 
   on your computer. Click OK to continue." \
   IDCANCEL NoCancelAbort 
   Abort
@@ -92,6 +92,7 @@ file "C:\libs\Delphi_libs\qclasses\dll\qclasses.dll"
 file "C:\libs\Delphi_libs\zipmaster\dll\UnzDll.dll"
 file "C:\libs\Delphi_libs\zipmaster\dll\ZipDll.dll"
 file "..\riverton.exe"
+file "..\rivertonconsole.exe"
 file "..\remote.dll"
 file "..\riverton.dll"
 file "..\license.txt"
@@ -100,16 +101,16 @@ file "..\license.txt"
 writeUninstaller $INSTDIR\RivertonUninstall.exe
 
 #the following 2 commands add uninstall functionality in Add/Remove Programs
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.1.22" \
-                 "DisplayName" "NAADSM-Riverton 3.1.22"
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.1.22" \
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.3.2" \
+                 "DisplayName" "NAADSM-Riverton 3.3.2"
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.3.2" \
                  "UninstallString" "$INSTDIR\RivertonUninstall.exe"
 sectionEnd
 
 #this section can also be selectively installed by the user
 #	and it is checked by default
 section "Install Start menu shortcut"
-createShortCut "$SMPROGRAMS\NAADSM-Riverton 3.1.22.lnk" "$INSTDIR\riverton.exe"
+createShortCut "$SMPROGRAMS\NAADSM-Riverton 3.3.2.lnk" "$INSTDIR\riverton.exe"
 sectionEnd
 
 #this section can be selectively installed by the user
@@ -117,7 +118,7 @@ sectionEnd
 section /o "Install desktop shortcut"
 setOutPath $DESKTOP
 #creates a shortcut to the executable file
-createShortCut "$DESKTOP\NAADSM-Riverton 3.1.22.lnk" "$INSTDIR\riverton.exe"
+createShortCut "$DESKTOP\NAADSM-Riverton 3.3.2.lnk" "$INSTDIR\riverton.exe"
 sectionEnd
 
 #brings up the uninstall confirmation page before uninstalling
@@ -134,6 +135,7 @@ section "Uninstall"
   Delete "$INSTDIR\libaphi.dll"
   Delete "$INSTDIR\libgmp-10.dll"
   Delete "$INSTDIR\libglib-2.0-0.dll"
+  Delete "$INSTDIR\libgcc_s_dw2-1.dll"
   Delete "$INSTDIR\libgsl.dll"
   Delete "$INSTDIR\libgslcblas.dll"
   Delete "$INSTDIR\libiconv-2.dll"
@@ -146,28 +148,29 @@ section "Uninstall"
   Delete "$INSTDIR\QtCore4.dll"
   Delete "$INSTDIR\QtNetwork4.dll"
   Delete "$INSTDIR\sprng.dll"
-  Delete "$INSTDIR\naadsm.dll"
+  Delete "$INSTDIR\riverton.dll"
   Delete "$INSTDIR\UnzDll.dll"
   Delete "$INSTDIR\remote.dll"
   Delete "$INSTDIR\riverton.exe"
+  Delete "$INSTDIR\rivertonconsole.exe"  
   Delete "$INSTDIR\ZipDll.dll"
   Delete "$INSTDIR\libgcc_s_dw2-1.dll"  
   Delete "$INSTDIR\spreadmodel.ini"
 
-  ifFileExists "$SMPROGRAMS\NAADSM-Riverton 3.1.22.lnk" DeleteSMlink DoNothingSM
+  ifFileExists "$SMPROGRAMS\NAADSM-Riverton 3.3.2.lnk" DeleteSMlink DoNothingSM
   DeleteSMlink:
-  Delete "$SMPROGRAMS\NAADSM-Riverton 3.1.22.lnk"
+  Delete "$SMPROGRAMS\NAADSM-Riverton 3.3.2.lnk"
   
   DoNothingSM:
 
-  ifFileExists "$DESKTOP\NAADSM-Riverton 3.1.22.lnk" DeleteDesktopLink DoNothingDESK
+  ifFileExists "$DESKTOP\NAADSM-Riverton 3.3.2.lnk" DeleteDesktopLink DoNothingDESK
   DeleteDesktopLink:
-  Delete "$DESKTOP\NAADSM-Riverton 3.1.22.lnk"
+  Delete "$DESKTOP\NAADSM-Riverton 3.3.2.lnk"
 
   DoNothingDESK:
 
   RMDir $INSTDIR
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.1.22"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM-Riverton-3.3.2"
 
 sectionEnd

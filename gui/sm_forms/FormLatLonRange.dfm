@@ -1,6 +1,6 @@
 object FormLatLonRange: TFormLatLonRange
-  Left = 612
-  Top = 206
+  Left = 1106
+  Top = 33
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'Lat/lon range selection'
@@ -213,6 +213,124 @@ object FormLatLonRange: TFormLatLonRange
       end
     end
   end
+  object pnlHorizSpacer2: TPanel
+    Left = 0
+    Top = 265
+    Width = 458
+    Height = 8
+    Align = alBottom
+    BevelOuter = bvNone
+    Color = clCream
+    TabOrder = 6
+  end
+  object gbxCircle: TGroupBox
+    Left = 64
+    Top = 112
+    Width = 377
+    Height = 129
+    Caption = 'Circular area '
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsBold]
+    ParentFont = False
+    TabOrder = 5
+    object lblCenter: TLabel
+      Left = 56
+      Top = 20
+      Width = 112
+      Height = 13
+      Caption = 'Center coordinates:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object lblLatCenter: TLabel
+      Left = 64
+      Top = 40
+      Width = 41
+      Height = 13
+      Caption = 'Latitude:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lblLonCenter: TLabel
+      Left = 200
+      Top = 40
+      Width = 50
+      Height = 13
+      Caption = 'Longitude:'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+    end
+    object lblRadius: TLabel
+      Left = 56
+      Top = 76
+      Width = 103
+      Height = 13
+      Caption = 'Circle radius (km):'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object rleLatCenter: TREEdit
+      Left = 112
+      Top = 40
+      Width = 65
+      Height = 21
+      EditAlign = eaLeft
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 0
+    end
+    object rleLonCenter: TREEdit
+      Left = 256
+      Top = 40
+      Width = 65
+      Height = 21
+      EditAlign = eaLeft
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 1
+    end
+    object rleRadius: TREEdit
+      Left = 112
+      Top = 96
+      Width = 65
+      Height = 21
+      EditAlign = eaLeft
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
   object gbxRect: TGroupBox
     Left = 8
     Top = 88
@@ -359,124 +477,6 @@ object FormLatLonRange: TFormLatLonRange
       Font.Style = []
       ParentFont = False
       TabOrder = 3
-    end
-  end
-  object pnlHorizSpacer2: TPanel
-    Left = 0
-    Top = 265
-    Width = 458
-    Height = 8
-    Align = alBottom
-    BevelOuter = bvNone
-    Color = clCream
-    TabOrder = 6
-  end
-  object gbxCircle: TGroupBox
-    Left = 64
-    Top = 112
-    Width = 377
-    Height = 129
-    Caption = 'Circular area '
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = [fsBold]
-    ParentFont = False
-    TabOrder = 5
-    object lblCenter: TLabel
-      Left = 56
-      Top = 20
-      Width = 112
-      Height = 13
-      Caption = 'Center coordinates:'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
-    object lblLatCenter: TLabel
-      Left = 64
-      Top = 40
-      Width = 41
-      Height = 13
-      Caption = 'Latitude:'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-    end
-    object lblLonCenter: TLabel
-      Left = 200
-      Top = 40
-      Width = 50
-      Height = 13
-      Caption = 'Longitude:'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-    end
-    object lblRadius: TLabel
-      Left = 56
-      Top = 76
-      Width = 103
-      Height = 13
-      Caption = 'Circle radius (km):'
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = [fsBold]
-      ParentFont = False
-    end
-    object rleLatCenter: TREEdit
-      Left = 112
-      Top = 40
-      Width = 65
-      Height = 21
-      EditAlign = eaLeft
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 0
-    end
-    object rleLonCenter: TREEdit
-      Left = 256
-      Top = 40
-      Width = 65
-      Height = 21
-      EditAlign = eaLeft
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 1
-    end
-    object rleRadius: TREEdit
-      Left = 112
-      Top = 96
-      Width = 65
-      Height = 21
-      EditAlign = eaLeft
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = []
-      ParentFont = False
-      TabOrder = 2
     end
   end
 end

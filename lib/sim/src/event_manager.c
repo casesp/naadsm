@@ -207,7 +207,6 @@ naadsm_create_event (naadsm_event_manager_t * manager, EVT_event_t * new_event,
 #if DEBUG
       s = EVT_event_to_string (event);
       g_debug ("now handling %s", s);
-      /* naadsm_printf( s ); */
       g_free (s);
 #endif
 

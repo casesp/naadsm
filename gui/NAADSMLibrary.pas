@@ -900,7 +900,7 @@ implementation
         _herds := herds;
         _smdb := db;
 
-        if( not ( _smSim.isValid( false, @errMsg ) and _herds.isValid( @errMsg ) ) ) then
+        if( not ( _smSim.isValid( false, _herds, @errMsg ) and _herds.isValid( _smSim, @errMsg ) ) ) then
           begin
             result := ERRINVALIDSCENARIO;
             exit;
@@ -914,7 +914,7 @@ implementation
         if( not (
           ( _smSim.writeXMLFile( sfn, false, ssStopReasonGuiDefined, -1, @errMsg ) )
         and
-          ( _herds.writeXMLFile( hfn, true, @errMsg ) ) ) )
+          ( _herds.writeXMLFile( hfn, _smSim.herdRandomizationOptions, true, @errMsg ) ) ) )
         then
           begin
             dbcout( 'NAADSM: ' + errMsg, DBSHOWMSG );

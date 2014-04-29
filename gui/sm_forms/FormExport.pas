@@ -242,7 +242,7 @@ implementation
     begin
       err := '';
 
-      simIsValid := smSim.isValid( true, @err );
+      simIsValid := smSim.isValid( true, _scenario.herdList, @err );
 
       if( simIsValid ) then
         begin
@@ -303,14 +303,14 @@ implementation
 
       localHerdList := _scenario.herdList;
 
-      herdsAreValid := localHerdList.isValid( @err );
+      herdsAreValid := localHerdList.isValid( smSim, @err );
 
       if( herdsAreValid ) then
         begin
           //dbcout( 'Writing herd list to file ' + herdFileName );
 
           // FIX ME: Use of the projected coordinate system is not currently allowed by herd export.
-          if( localHerdList.writeXMLFile( herdFileName, false ) ) then
+          if( localHerdList.writeXMLFile( herdFileName, smSim.herdRandomizationOptions, false ) ) then
             result := ExpSuccess
           else
             begin

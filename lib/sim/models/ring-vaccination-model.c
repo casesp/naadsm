@@ -267,6 +267,7 @@ end:
 #if DEBUG
   g_debug ("----- EXIT check_and_choose (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -1198,8 +1198,8 @@ implementation
                 begin
                   dbcout( '######## pt will be removed: ' + intToStr( dm.productionTypeID ), DBPRODUCTIONTYPE );
 
-                  // Remove this production type from the PTP list in memory
-                  if( nil <> sim.ptpList ) then sim.ptpList.removeProductionType( dm.productionTypeID );
+                  // Remove this production type from the sim objects in memory
+                  if( nil <> sim ) then sim.removeProductionType( dm.productionTypeID );
 
                   // Remove this production type, as well as herds
                   // and PTPs that use it, from the database.

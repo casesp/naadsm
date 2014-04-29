@@ -27,7 +27,7 @@
 /* Prototypes. */
 int naadsm_load_models (const char *parameter_file,
                         HRD_herd_list_t *, projPJ, ZON_zone_list_t *,
-                        unsigned int *ndays, unsigned int *nruns,
+                        unsigned int *ndays, unsigned int *nruns, gboolean *randomizeHerds, int *initial_state_numbers,
                         naadsm_model_t *** models, GPtrArray * outputs, guint *_exit_conditions);
 void naadsm_unload_models (int nmodels, naadsm_model_t ** models);
 

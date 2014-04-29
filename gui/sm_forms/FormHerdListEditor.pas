@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -85,6 +85,9 @@ interface
       
       fraHerdListEditor: TFrameHerdListEditor;
 
+      rdoAssignedDzStateParams: TRadioButton;
+      rdoRandomizedDzStateParams: TRadioButton;
+
       // Import/export
       //--------------
       procedure acnExportExecute(Sender: TObject);
@@ -100,6 +103,9 @@ interface
       //--------------
       procedure acnCancelExecute(Sender: TObject);
       procedure acnFinishExecute(Sender: TObject);
+
+      procedure fraHerdListEditorbtnTestClick(Sender: TObject);
+      procedure rdoAssignedDzStateParamsClick(Sender: TObject);
 
     protected
       // Variables and variable-like properties for internal use
@@ -211,8 +217,8 @@ implementation
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          Caption := tr( 'Scenario parameters: Set up starting units' );
-          pnlCaption.Caption := tr( 'Set up starting units' );
+          Caption := tr( 'Scenario parameters: Set up units' );
+          pnlCaption.Caption := tr( 'Set up units' );
           btnExport.Hint := tr( 'Export unit list to file' );
           btnPrint.Hint := tr( 'Print unit list' );
           btnImportReplace.Hint := tr( 'Import and replace existing unit list' );
@@ -288,6 +294,12 @@ implementation
 
       dbcout( 'initializeFromSim end: herd list is updated: ' + uiBoolToText( _smScenarioOriginal.herdList.updated ), DBFORMHERDLISTEDITOR );
       dbcout( 'initializeFromSim end: herd list is updated: ' + uiBoolToText( fraHerdListEditor.herdList.updated ), DBFORMHERDLISTEDITOR );
+
+      if( _smScenarioOriginal.simInput.herdRandomizationOptions.initInfectedRandomize ) then
+        rdoRandomizedDzStateParams.Checked := true
+      else
+        rdoAssignedDzStateParams.Checked := true
+      ;
     end
   ;
 
@@ -299,6 +311,7 @@ implementation
       hListUpdateSuccess: boolean;
       errMsg: string;
     begin
+      _smScenarioOriginal.simInput.herdRandomizationOptions.initInfectedRandomize := rdoRandomizedDzStateParams.Checked;
 
       if( not( _indexExists ) ) then
         begin
@@ -307,8 +320,8 @@ implementation
         end
       ;
 
-      // If there were no changes to the herd list, just walk away.
-      //-----------------------------------------------------------
+      // If there were no changes to the herd list, just walk away at this point.
+      //-------------------------------------------------------------------------
       if( not( fraHerdListEditor.herdList.Updated ) ) then
         exit
       ;
@@ -368,7 +381,9 @@ implementation
       
       // Update/populate the database with the changed/new herd list.
       //-------------------------------------------------------------
+      _smScenarioOriginal.simInput.herdRandomizationOptions.populateDatabase( _smScenarioOriginal.simInput.database );
       _smScenarioOriginal.simInput.database.initializeAllOutputRecords();
+
 
       if( _replaceHerdsInDatabase ) then _smScenarioOriginal.simInput.database.clearHerds();
 
@@ -463,7 +478,7 @@ implementation
       if( frm.execute() ) then
         begin
           case frm.fileFormat of
-            XML_FILE_FORMAT: success := _herdList.writeXMLFile( frm.fileName, false );
+            XML_FILE_FORMAT: success := _herdList.writeXMLFile( frm.fileName, _smScenarioOriginal.simInput.herdRandomizationOptions, false );
             CSV_FILE_FORMAT: success := _herdList.writeCSVFile( frm.fileName, frm.productionTypeByName, frm.initialStateAsCharacter, false );
             else success := false;
           end;
@@ -982,6 +997,25 @@ begin
   inherited;
   fraHerdListEditor.selectAllHerds();
 end;
+
+procedure TFormHerdListEditor.fraHerdListEditorbtnTestClick(
+  Sender: TObject);
+begin
+  inherited;
+  fraHerdListEditor.btnTestClick(Sender);
+
+end;
+
+procedure TFormHerdListEditor.rdoAssignedDzStateParamsClick( Sender: TObject );
+  begin
+    inherited;
+    if( rdoRandomizedDzStateParams.Checked ) then
+      fraHerdListEditor.hideDiseaseStateColumns()
+    else
+      fraHerdListEditor.showDiseaseStateColumns()
+    ;
+  end
+;
 
 initialization
 	RegisterClass( TFormHerdListEditor );

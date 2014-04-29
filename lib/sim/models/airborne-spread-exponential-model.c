@@ -332,6 +332,7 @@ check_and_infect (int id, gpointer arg)
                     HRD_status_name[herd2->status]);
 #endif
   param_block = local_data->param_block[herd1->production_type][herd2->production_type];
+
   herd2_can_be_target = (
     param_block != NULL 
     && herd2->status != Destroyed
@@ -449,6 +450,7 @@ end:
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_infect (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

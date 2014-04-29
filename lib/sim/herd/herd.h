@@ -194,6 +194,7 @@ typedef struct
   double latitude, longitude;
   double x;                     /**< x-coordinate on a km grid */
   double y;                     /**< y-coordinate on a km grid */
+  gboolean may_be_initially_infected;
   HRD_status_t status;
   HRD_status_t initial_status;
   int days_in_initial_status;

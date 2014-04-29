@@ -342,6 +342,7 @@ implementation
       //
       // FIX ME: more sophisticated validation might eventually be used:
       //  - Make sure that the specified region bounds at least part of the study area
+      // See TFormInitialUnitOptions.dataIsValid()
 
       result := true;
 
@@ -365,11 +366,11 @@ implementation
             if( latS > latN ) then
               begin
                 result := false;
-                msgOK( 
-                  tr( 'The southern latitude must be less than or equal to the northern latitude.' ), 
-                  tr( 'Invalid latitude range' ), 
-                  IMGWarning, 
-                  self 
+                msgOK(
+                  tr( 'The southern latitude must be less than or equal to the northern latitude.' ),
+                  tr( 'Invalid latitude range' ),
+                  IMGWarning,
+                  self
                 );
                 rleLatSE.SetFocus();
                 exit;

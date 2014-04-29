@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2009 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -198,9 +198,9 @@ implementation
   	begin
     	inherited create( AOwner );
       self.Name := 'FormYesNoPrevalence';
-      self.Caption := tr( 'Scenario parameters: Within-unit prevalence' );
+      self.Caption := tr( 'Scenario parameters: Disease options' );
     	pnlCaption.Caption := tr( 'Disease options' );
-      grpButtons.Caption := tr( 'Would you like to include WITHIN-UNIT PREVALENCE?' ) + ' ';
+      grpButtons.Caption := tr( 'Would you like to include within-unit prevalence?' ) + ' ';
       btnYes.Caption := tr( 'Yes, use within-unit prevalence' );
       btnNo.Caption := tr( 'No, use a specified probability of infection transfer instead' );
       //field := Detection;

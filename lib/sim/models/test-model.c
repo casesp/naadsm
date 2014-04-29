@@ -320,6 +320,19 @@ handle_test_event (struct naadsm_model_t_ *self,
   g_string_printf (s, "unit \"%s\" is %s", herd->official_id,
         	   HRD_status_name [herd->status]);
 #endif
+
+#ifdef RIVERTON
+  /*
+   * In 'Riverton', the naturally immune state is used to represent "dead from disease".
+   * It should be possible to test units in this state, and if they test positive,
+   * to take appropriate further steps. For this reason, 'Riverton' is no different from
+   * the standard version in this respect.  Note that this is how NAADSM 4 handles the
+   * DeadFromDisease state as well.
+   *
+   * (The #ifdef above is provided in order to make it easy to find this explanation
+   * during a search.)
+  */
+#endif
   switch (herd->status)
     {
     case Latent:
@@ -426,6 +439,7 @@ end:
 #if DEBUG
   g_debug ("----- EXIT handle_test_event (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

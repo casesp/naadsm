@@ -169,6 +169,7 @@ check_and_choose (int id, gpointer arg)
    *
    * In the experimental version 'Riverton', "naturally immune" units have
    * died out and no longer exist, so they don't need to be destroyed. */
+
   if (
       local_data->to_production_type[herd2->production_type] == FALSE
       || herd2->status == Destroyed
@@ -191,6 +192,7 @@ end:
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_choose (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

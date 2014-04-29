@@ -1,8 +1,8 @@
 #include <windows.h> // include for version info constants
 
 1 VERSIONINFO
-FILEVERSION 3,2,19,0
-PRODUCTVERSION 3,2,19,0
+FILEVERSION 3,3,2,0
+PRODUCTVERSION 3,3,2,0
 FILETYPE VFT_DLL
 {
   BLOCK "StringFileInfo"
@@ -10,14 +10,18 @@ FILETYPE VFT_DLL
 		 BLOCK "040904E4"
 		 {
 			 VALUE "CompanyName", "http://www.naadsm.org"
-			 VALUE "FileVersion", "3.2.19"
+			 VALUE "FileVersion", "3.3.2"
 			 VALUE "FileDescription", "NAADSM Core Model Library"
 			 VALUE "InternalName", "naadsm.dll"
 			 VALUE "LegalCopyright", "Copyright 2003 - 2013 NAADSM Development Team"
 			 VALUE "LegalTrademarks", ""
+#ifdef RIVERTON
+			 VALUE "OriginalFilename", "riverton.dll"
+#else
 			 VALUE "OriginalFilename", "naadsm.dll"
+#endif       
 			 VALUE "ProductName", "NAADSM"
-			 VALUE "ProductVersion", "3.2.19"
+			 VALUE "ProductVersion", "3.3.2"
 		 }
 	 }
   BLOCK "VarFileInfo"

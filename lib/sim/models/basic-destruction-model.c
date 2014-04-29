@@ -145,6 +145,7 @@ handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
    *
    * In the experimental version 'Riverton', "naturally immune" units have
    * died out and no longer exist, so they don't need to be destroyed. */
+
   if (
       local_data->production_type[herd->production_type] == TRUE
       && herd->status != Destroyed
@@ -166,6 +167,7 @@ handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
 #if DEBUG
   g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

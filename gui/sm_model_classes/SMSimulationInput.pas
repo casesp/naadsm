@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
                                        
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -43,6 +43,7 @@ interface
     VaccinationParams,
     RingVaccParams,
     GlobalControlParams,
+    HerdRandomizationOptions,
     SMOutputOptions,
     FunctionPointers,
     CustomOutputDefinitions,
@@ -79,6 +80,8 @@ interface
       _costTrackDestruction: boolean;
       _costTrackVaccination: boolean;
       _costTrackZoneSurveillance: boolean;
+
+      _herdRandomizationOptions: THerdRandomizationOptions;
 
       _outputOptions: TSMOutputOptions;
 
@@ -198,6 +201,7 @@ interface
 
       function populateDatabase( const updateAction: TDBUpdateActionType ): boolean; override;
       function removeDbFunction( const fnID: integer ): boolean; override;
+      procedure removeProductionType( const ptID: integer );
 
       function ssXml(
         const writeOutputs: boolean;
@@ -213,7 +217,7 @@ interface
         errMsg: PString = nil
       ): boolean;
 
-      function isValid( skipOutputOptions: boolean; msg: PString = nil ): boolean;
+      function isValid( skipOutputOptions: boolean; herdList: TObject; msg: PString = nil ): boolean;
 
 
       // Functions for handling model outputs
@@ -264,6 +268,8 @@ interface
       property costTrackVaccination: boolean read getCostTrackVaccination write setCostTrackVaccination;
       property costTrackZoneSurveillance: boolean read getCostTrackZoneSurveillance write setCostTrackZoneSurveillance;
 
+      property herdRandomizationOptions: THerdRandomizationOptions read _herdRandomizationOptions write _herdRandomizationOptions;
+
       property outputOptions: TSMOutputOptions read _outputOptions write _outputOptions;
 
       property customOutputDefinitions: TCustomOutputList read _customOutputDefinitions;
@@ -292,7 +298,8 @@ implementation
     UnicodeDev,
     I88n,
 
-    StringConsts
+    StringConsts,
+    Herd
   ;
 
 //-----------------------------------------------------------------------------
@@ -401,6 +408,7 @@ implementation
       //----------------------------------------------------------------------------------------------
       inc( nStepsComplete );
       if( nil <> @fnPrimaryProgress ) then fnPrimaryProgress( trunc( 100 * nStepsComplete / nSteps ) );
+      _herdRandomizationOptions := THerdRandomizationOptions.create( db );
       _outputOptions := TSMOutputOptions.create( db );
       _customOutputDefinitions := TCustomOutputList.create( db );
       _selectDailyOutputs := TSelectDailyOutputs.create( db );
@@ -545,7 +553,7 @@ implementation
         functionsOK := false
       ;
 
-      _outputOptions := TSMOutputOptions.create( db );
+      _herdRandomizationOptions := THerdRandomizationOptions.create( db );
       if( nil <> @setProgressPercent ) then
         begin
           setProgressPercent( round( 6 * 100 / nSteps ) );
@@ -553,10 +561,18 @@ implementation
         end
       ;
 
-      _customOutputDefinitions := TCustomOutputList.create( db );
+      _outputOptions := TSMOutputOptions.create( db );
       if( nil <> @setProgressPercent ) then
         begin
           setProgressPercent( round( 7 * 100 / nSteps ) );
+          Application.ProcessMessages();
+        end
+      ;
+
+      _customOutputDefinitions := TCustomOutputList.create( db );
+      if( nil <> @setProgressPercent ) then
+        begin
+          setProgressPercent( round( 8 * 100 / nSteps ) );
           Application.ProcessMessages();
         end
       ;
@@ -567,7 +583,7 @@ implementation
       _selectDailyOutputs := TSelectDailyOutputs.create( db );
       if( nil <> @setProgressPercent ) then
         begin
-          setProgressPercent( round( 8 * 100 / nSteps ) );
+          setProgressPercent( round( 9 * 100 / nSteps ) );
           Application.ProcessMessages();
         end
       ;
@@ -712,6 +728,8 @@ implementation
 
       _ctrl := TGlobalControlParams.create( src._ctrl, self );
 
+      _herdRandomizationOptions := THerdRandomizationOptions.create( src._herdRandomizationOptions, self );
+
       _outputOptions := TSMOutputOptions.create( src._outputOptions, self );
 
       _customOutputDefinitions := TCustomOutputList.create( src._customOutputDefinitions, self );
@@ -728,6 +746,7 @@ implementation
       freeAndNil( _ptList );
       freeAndNil( _ptpList );
       freeAndNil( _ctrl );
+      freeAndNil( _herdRandomizationOptions );
       freeAndNil( _outputOptions );
       freeAndNil( _zoneList );
       freeAndNil( _customOutputDefinitions );
@@ -818,6 +837,10 @@ implementation
             _ctrl.populateDatabase( _db, MDBAForceUpdate ) // ALWAYS force updates for this class
           ;
 
+          if( _herdRandomizationOptions.updated ) then
+            _herdRandomizationOptions.populateDatabase( _db ) // Updates are always forced for this class
+          ;
+
           if( _outputOptions.updated ) then
             _outputOptions.populateDatabase( _db, MDBAForceUpdate ) // ALWAYS force updates for this class
           ;
@@ -846,6 +869,23 @@ implementation
           raise exception.create( '_db is nil in TSMSimulationInput.removeDbFunction()' );
           result := false;
         end
+      ;
+    end
+  ;
+
+
+  procedure TSMSimulationInput.removeProductionType( const ptID: integer );
+    begin
+      if( nil <> _ptpList ) then
+        _ptpList.removeProductionType( ptID )
+      else
+        dbcout( '_ptpList is nil in TSMSimulationInput.removeProductionType()', true )
+      ;
+
+      if( nil <> _herdRandomizationOptions ) then
+        _herdRandomizationOptions.removeProductionType( ptID )
+      else
+        dbcout( '_herdRandomizationOptions is nil in THerdList.removeProductionType()', true )
       ;
     end
   ;
@@ -1821,6 +1861,8 @@ implementation
 
       result := result + endl;
 
+      result := result + herdRandomizationOptions.ssXml( 2 );
+
       // Write the models header
       //========================
       result := result + '<models>' + endl;
@@ -2008,7 +2050,7 @@ implementation
 
 
 
-function TSMSimulationInput.isValid( skipOutputOptions: boolean; msg: PString = nil ): boolean;
+function TSMSimulationInput.isValid( skipOutputOptions: boolean; herdList: TObject; msg: PString = nil ): boolean;
   begin
     result := true;
 
@@ -2055,6 +2097,10 @@ function TSMSimulationInput.isValid( skipOutputOptions: boolean; msg: PString = 
     ;
 
     //dbcout2( 'Check 5: ' + usBoolToText( updated ) );
+
+    if( not( _herdRandomizationOptions.validate( herdList, msg ) ) )  then
+      result := false
+    ;
 
     if( not( skipOutputOptions ) ) then
       begin
@@ -2253,6 +2299,17 @@ function TSMSimulationInput.findDestructionParams( typeDescr: string ): TDestruc
         end
       else
         dbcout( '========= (_selectDailyOutputs is nil)', true )
+      ;
+
+      // Herd randomization options
+      if( nil <> _herdRandomizationOptions ) then
+        begin
+          dbcout( '========= BEGIN HERD RANDOMIZATION OPTIONS', true );
+          _herdRandomizationOptions.debug();
+          dbcout( '========= END HERD RANDOMIZATION OPTIONS' + endl, true );
+        end
+      else
+        dbcout( '========= (_herdRandomizationOptions is nil)', true )
       ;
 
       dbcout( '=+=+=+=+=+=+=+=+= Done TSMSimulationInput.debug()', true );
@@ -2512,21 +2569,23 @@ function TSMSimulationInput.findDestructionParams( typeDescr: string ): TDestruc
   function TSMSimulationInput.getUpdated(): boolean;
     begin
       result := inherited getUpdated();
-      //dbcout2( 'nextCheck 0: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _zoneList.updated;
-      //dbcout2( 'nextCheck 1: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _ptList.updated;
-      //dbcout2( 'nextCheck 2: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _ptpList.updated;
-      //dbcout2( 'nextCheck 3: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _ctrl.updated;
-      //dbcout2( 'nextCheck 4: ' + usBoolToText( result ) );
+
+      if( false = result ) then result := _herdRandomizationOptions.updated;
+
       if( false = result ) then result := _outputOptions.updated;
-      //dbcout2( 'nextCheck 5: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _customOutputDefinitions.updated;
-      //dbcout2( 'nextCheck 6: ' + usBoolToText( result ) );
+
       if( false = result ) then result := _selectDailyOutputs.updated;
-      //dbcout2( 'nextCheck 7: ' + usBoolToText( result ) );
+
     end
   ;
 //-----------------------------------------------------------------------------

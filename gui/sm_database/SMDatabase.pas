@@ -48,10 +48,10 @@ interface
     // versions may use the same database schema (e.g. applications 3.0.63
     // and 3.0.64 both used database schema 3.0.63).
     DB_SCHEMA_APPLICATION = 'NAADSMXXXX';
-    DB_SCHEMA_VERSION = '3.2.18';
+    DB_SCHEMA_VERSION = '3.3.0';
 
-    DB_SCHEMA_DATE = '09/29/11 3:44:11 PM';
-    DB_SCHEMA_ID = '1317332651'; // Number of seconds from 1970-01-01 00:00:00 to schema date.
+    DB_SCHEMA_DATE = '08/02/13 11:29:36 PM';
+    DB_SCHEMA_ID = '1375507776'; // Number of seconds from 1970-01-01 00:00:00 to schema date.
     DB_SCHEMA_INFO_URL = '';
 
 
@@ -560,11 +560,18 @@ implementation
 
       // There were no schema updates for versions 3.2.14 through 3.2.17
 
+      else if( '3.2.18' = _vNumber ) then
+        begin
+          if( DBUpdateMinorChanges > result ) then result := DBUpdateMinorChanges;
+        end
+
+      // There was no schema update for version 3.2.19
+
       // The last entry here should be the current schema version.
       // This exception ensures that someone doesn't get too carried away with copy/paste
       else if( DBUpdateOK = result ) then
         raise exception.create( 'Looks like you forgot something in TSMDatabase.setUpdateReason()')
-      else if( '3.2.18' = _vNumber ) then
+      else if( '3.3.0' = _vNumber ) then
         begin
           if( DBUpdateOK > result ) then result := DBUpdateOK;
         end
@@ -1270,6 +1277,35 @@ implementation
         end
       ;
 
+      // Update 3.2.18 to 3.3.0
+      //-----------------------
+      if( '3.2.18' = _vNumber ) then
+        begin
+          try
+            dbcout( 'Updating from 3.2.18', true );
+
+            execSuccess :=
+              processDDLCommands( getResourceAsString( 'DBSchema3_3_0' ) )
+            and
+              self.execute( 'UPDATE `inGeneral` SET `initInfectedRandomize` = FALSE' )
+            ;
+
+            if( not( execSuccess ) ) then
+              begin
+                updateSuccess := false;
+                exit;
+              end
+            ;
+
+            _vNumber := '3.3.0';
+            result := true;
+          except
+            updateSuccess := false;
+            exit;
+          end;
+        end
+      ;
+
       //--- IMPORTANT ---
       // When updating this function, don't forget to update makeDBTables()
       //--- IMPORTANT ---
@@ -1343,6 +1379,8 @@ implementation
                 ( ( '3.2.13' = _vNumber ) and ( 1309203153 = _vID ) )
               or
                 ( ( '3.2.18' = _vNumber ) and ( 1317332651 = _vID ) )
+              or
+                ( ( '3.3.0' = _vNumber ) and ( 1375507776 = _vID ) )
               then
                 result := true
               ;
@@ -1584,6 +1622,9 @@ implementation
       processDDLCommands( getResourceAsString( 'DBSchema3_2_13' ) );
       processDDLCommands( getResourceAsString( 'DBSchema3_2_18' ) );
 
+      // The jump was made here from version 3.2 to version 3.3.
+      processDDLCommands( getResourceAsString( 'DBSchema3_3_0' ) );
+
       // Add additional DDL 'files' here as needed
 
       // Populate the version table
@@ -1643,6 +1684,8 @@ implementation
 
       dict['writeNAADSMapOutput'] := usBoolToText( false );
       dict['NAADSMapDirectory'] := DATABASE_NULL_VALUE;
+
+      dict['initInfectedRandomize'] := usBoolToText( false );
 
       q := writeQuery( 'inGeneral', QInsert, dict );
       if not( execute( q ) ) then
@@ -4481,8 +4524,6 @@ implementation
     function cheyenneUpdateReason( const oldVersion: string ): TVersionUpdateReason;
     function laramieUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
     function rivertonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
-    function torringtonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
-    function wheatlandUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
 
   "Private" functions used to check from bugs related to very specialized conditions:
     function bug3_1_19( db: TSMDatabase ): boolean;
@@ -4766,63 +4807,9 @@ implementation
             result := VERSOK
           ;
         end
+      else if( '3.3.2-Riverton' = oldVersion ) then
+        result := VERSOK
       else // There are no other versions of Riverton
-        result := VERSUnrecognized
-      ;
-    end
-  ;
-
-
-  function torringtonUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
-    begin
-      if( rightStr( oldVersion, 10 ) <> 'Torrington' ) then
-        result := VERSModelSpecChange
-
-      else if
-        ( '3.1.28-Torrington' = oldVersion )
-      or
-        ( '3.2.14-Torrington' = oldVersion )
-      or
-        ( '3.2.15-Torrington' = oldVersion )
-      then
-        result := VERSBUG
-      else if
-        ( '3.2.16-Torrington' = oldVersion )
-      or
-        ( '3.2.17-Torrington' = oldVersion )
-      or
-        ( '3.2.18-Torrington' = oldVersion )
-      then
-        begin
-          if( zoneBug3_2_18( db ) ) then
-            result := VERSBUG
-          else
-            result := VERSOK
-          ;
-        end
-      else // There are no other versions of Torrington
-        result := VERSUnrecognized
-      ;
-    end
-  ;
-
-
-  function wheatlandUpdateReason( db: TSMDatabase; const oldVersion: string ): TVersionUpdateReason;
-    begin
-      if( rightStr( oldVersion, 9 ) <> 'Wheatland' ) then
-        result := VERSModelSpecChange
-
-      else if
-        ( '3.2.18-Wheatland' = oldVersion )
-      then
-        begin
-          if( zoneBug3_2_18( db ) ) then
-            result := VERSBUG
-          else
-            result := VERSOK
-          ;
-        end
-      else // There are no other versions of Wheatland
         result := VERSUnrecognized
       ;
     end
@@ -4834,7 +4821,7 @@ implementation
       res: TSqlResult;
       row: TSqlRow;
       oldVersion: string;
-      usingCheyenne, usingLaramie, usingRiverton, usingTorrington, usingWheatland: boolean;
+      usingCheyenne, usingLaramie, usingRiverton: boolean;
     begin
       {$IFDEF CHEYENNE}
         usingCheyenne := true;
@@ -4852,18 +4839,6 @@ implementation
         usingRiverton := true;
       {$ELSE}
         usingRiverton := false;
-      {$ENDIF}
-
-      {$IFDEF TORRINGTON}
-        usingTorrington := true;
-      {$ELSE}
-        usingTorrington := false;
-      {$ENDIF}
-
-      {$IFDEF WHEATLAND}
-        usingWheatland := true;
-      {$ELSE}
-        usingWheatland := false;
       {$ENDIF}
 
       res := TSqlResult.create( 'SELECT `version` FROM `outGeneral`', self );
@@ -4911,10 +4886,6 @@ implementation
                 result := laramieUpdateReason( self, oldVersion )
               else if( usingRiverton ) then
                 result := rivertonUpdateReason( self, oldVersion )
-              else if( usingTorrington ) then
-                result := torringtonUpdateReason( self, oldVersion )
-              else if( usingWheatland ) then
-                result := wheatlandUpdateReason( self, oldVersion )
 
               // ...then deal with standard versions.
               else if
@@ -5139,6 +5110,13 @@ implementation
 
               else if
                 ( '3.2.19' = oldVersion )
+              then
+                result := VERSOK
+
+              // Make the jump here to 3.3.x
+              //----------------------------
+              else if
+                ( '3.3.2' = oldVersion )
               then
                 result := VERSOK
 

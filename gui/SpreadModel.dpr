@@ -164,6 +164,7 @@ uses
   GlobalControlParamsList in 'sm_model_classes\GlobalControlParamsList.pas',
   ProductionTypePair in 'sm_model_classes\ProductionTypePair.pas',
   SMSimOutByProdType in 'sm_model_classes\SMSimOutByProdType.pas',
+  HerdRandomizationOptions in 'sm_model_classes\HerdRandomizationOptions.pas',
   SMOutputOptions in 'sm_model_classes\SMOutputOptions.pas',
   EventsAndExposures in 'sm_model_classes\EventsAndExposures.pas',
   SMScenario in 'sm_model_classes\SMScenario.pas',
@@ -199,7 +200,9 @@ uses
     FormSelectProdTypes in 'sm_forms\FormSelectProdTypes.pas' {FormSelectProdTypes},
     FormProdTypePairs in 'sm_forms\FormProdTypePairs.pas' {FormProdTypePairs},
     FormSelectProdTypePairs in 'sm_forms\FormSelectProdTypePairs.pas' {FormSelectProdTypePairs},
-    
+
+    FormInitialUnitOptions in 'sm_forms\FormInitialUnitOptions.pas'  {FormInitialUnitOptions},
+
     FormDisease in 'sm_forms\FormDisease.pas' {FormDisease},
     FormDetection in 'sm_forms\FormDetection.pas' {FormDetection},
     FrameDetection in 'sm_forms\FrameDetection.pas' {FrameDetection: TFrame},
@@ -383,7 +386,7 @@ var
       // Check that the required DLLs are loaded
       //----------------------------------------
       if
-        ( not( naadsmLibLoaded ) )  // naadsm.dll (cheyenne.dll, laramie.dll, riverton.dll, torrington.dll, wheatland.dll) cannot be found, or is the wrong version
+        ( not( naadsmLibLoaded ) )  // naadsm.dll (cheyenne.dll, laramie.dll, riverton.dll) cannot be found, or is the wrong version
       or
         ( not( pdfGslFnsLoaded() ) ) // libgsl.dll cannot be found or is the wrong version
       or
@@ -1073,7 +1076,7 @@ var
       hList := THerdList.create( smdb, sim );
 
       if
-        sim.isValid( true, @errMsg )
+        sim.isValid( true, hList, @errMsg )
       and
         hList.isValid( @errMsg )
       then
@@ -1087,7 +1090,7 @@ var
           if( success ) then
             begin
               cout( 'Writing unit XML file...' );
-              success := hList.writeXMLFile( hfn, false, @errMsg );
+              success := hList.writeXMLFile( hfn, sim.herdRandomizationOptions, false, @errMsg );
             end
           ;
 

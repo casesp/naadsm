@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2013 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -47,7 +47,8 @@ interface
     SMSimulationInput,
     ProductionType,
     StatusEnums,
-    HerdControlActivities
+    HerdControlActivities,
+    HerdRandomizationOptions
   ;
 
   type THerdList = class; // forward declaration, for the benefit of THerd
@@ -163,9 +164,11 @@ interface
         { Projects all herd lat/lon coordinates to the specified projection system. }
         function project(): boolean;
 
+        function meetsRandomizationCriteria( hro: THerdRandomizationOptions ): boolean;
+
         // Text export
         //------------
-        function ssXml( const useProjection: boolean ): string;
+        function ssXml( const useProjection: boolean; const randomizationSetting: THerdRandomizationSettings ): string;
         function csvText( const writeProdTypeName, writeInitialStateChar, useProjection: boolean ): string;
 
         // GIS "properties"
@@ -181,8 +184,8 @@ interface
 
         // Functions called when a simulation is in progress
         //--------------------------------------------------
-        procedure initializeAllOutputRecords(); // at sim start
-        procedure prepareForIteration(); // at iteration start
+        procedure initializeAllOutputRecords( const randomizeInitialHerdStates: boolean ); // at sim start
+        procedure prepareForIteration( const randomizeInitialHerdStates: boolean ); // at iteration start
         procedure prepareForDay(); // at day start
 
         procedure changeHerdState( const val: TNAADSMDiseaseState; const day: integer );
@@ -362,9 +365,9 @@ interface
       //------------
       // This function produces a potentially huge string, and is currently unused.
       // If a file is to be written, writeXMLFile() is more efficient.
-      function ssXml( const useProjection: boolean ): string;
+      function ssXml( hro: THerdRandomizationOptions; const useProjection: boolean ): string;
 
-      function writeXMLFile( fileName: string; const useProjection: boolean; errMsg: PString = nil ): boolean;
+      function writeXMLFile( fileName: string; hro: THerdRandomizationOptions; const useProjection: boolean; errMsg: PString = nil ): boolean;
 
       function writeCSVFile(
         fileName: string;
@@ -412,7 +415,7 @@ interface
 
       // Validation and debugging
       //--------------------------
-      function isValid( err: PString = nil ): boolean;
+      function isValid( smSim: TSMSimulationInput; err: PString = nil ): boolean;
       procedure debug();
       procedure invProjectDebug(); /// Used to double-check that inverse cartographic projection is OK.
 
@@ -435,7 +438,7 @@ interface
       // For simulation outputs
       //-----------------------
       procedure initializeAllOutputRecords(); // upon sim start
-      procedure prepareForIteration( iteration: integer ); // upon iteration start
+      procedure prepareForIteration( const iteration: integer ); // upon iteration start
       procedure prepareForDay( day: integer ); // upon day start.  There is nothing to do on day end.
       procedure processIterationRecords( db: TSMDatabase; iterationJustCompleted: integer ); // upon iteration end
 
@@ -468,6 +471,8 @@ interface
 
       property westLon: double read getWestLon;
       property eastLon: double read getEastLon;
+
+      property sim: TSMSimulationInput read _sim;
     end
   ;
 
@@ -792,7 +797,7 @@ implementation
         _daysLeftInInitialState := src._daysLeftInInitialState;
 
         if( resetToInitialState ) then
-          initializeAllOutputRecords()
+          initializeAllOutputRecords( (_sim as TSMSimulationInput).herdRandomizationOptions.initInfectedRandomize )
         else
           begin
             _diseaseStatus := src._diseaseStatus;
@@ -862,6 +867,25 @@ implementation
     ;
 
 
+    function THerd.meetsRandomizationCriteria( hro: THerdRandomizationOptions ): boolean;
+      var
+        matches: boolean;
+      begin
+        if( hro.initInfectedUseRange ) then
+          matches := self.isBoundedBy( hro.initInfectedLatNW, hro.initInfectedLonNW, hro.initInfectedLatSE, hro.initInfectedLonSE )
+        else
+          matches := true
+        ;
+
+        if( matches and hro.initInfectedSelectedProdTypes ) then
+          matches := hro.initInfectedProdTypes.contains( self.prodTypeID )
+        ;
+
+        result := matches;
+      end
+    ;
+
+
     procedure THerd.setLatLon( lat, lon: double );
       begin
         // FIX ME: Should we be this generous about allowing invalid lat and lon values?
@@ -892,7 +916,7 @@ implementation
   //---------------------------------------------------------------------------
   // THerd: Text export
   //---------------------------------------------------------------------------
-    function THerd.ssXML( const useProjection: boolean ): string;
+    function THerd.ssXML( const useProjection: boolean; const randomizationSetting: THerdRandomizationSettings ): string;
       begin
         result := '';
         result := result + '  <herd>' + endl;
@@ -914,15 +938,32 @@ implementation
         ;
         
         result := result + '    </location>' + endl;
-        result := result + '    <status>' + naadsmDiseaseStateXml( self.initialStatus ) + '</status>' + endl;
 
-        if( -1 < daysInInitialState ) then
-          result := result + '    <days-in-status>' + intToStr( daysInInitialState ) + '</days-in-status>' + endl
-        ;
+        case randomizationSetting of
+          HerdRNDCanBeSelected:
+            begin
+              result := result + '    <may-be-initially-infected>true</may-be-initially-infected>' + endl;
+            end
+          ;
+          HerdRNDCannotBeSelected:
+            begin
+              result := result + '    <may-be-initially-infected>false</may-be-initially-infected>' + endl;
+            end
+          ;
+          HerdRNDNoSelection:
+            begin
+              result := result + '    <status>' + naadsmDiseaseStateXml( self.initialStatus ) + '</status>' + endl;
 
-        if( -1 < daysLeftInInitialState ) then
-          result := result + '    <days-left-in-status>' + intToStr( daysLeftInInitialState ) + '</days-left-in-status>' + endl
-        ;
+              if( -1 < daysInInitialState ) then
+                result := result + '    <days-in-status>' + intToStr( daysInInitialState ) + '</days-in-status>' + endl
+              ;
+
+              if( -1 < daysLeftInInitialState ) then
+                result := result + '    <days-left-in-status>' + intToStr( daysLeftInInitialState ) + '</days-left-in-status>' + endl
+              ;
+            end
+          ;
+        end;
 
         result := result + '  </herd>' + endl;
       end
@@ -1132,40 +1173,36 @@ implementation
   //---------------------------------------------------------------------------
   // THerd: Functions for simulation in progress
   //---------------------------------------------------------------------------
-    procedure THerd.initializeAllOutputRecords(); // at start of simulation
+    procedure THerd.initializeAllOutputRecords( const randomizeInitialHerdStates: boolean ); // at start of simulation
       begin
-        // For both Torrington and Wheatland, set initial state to susceptible.
+        // If using randomized initially infected herds, set initial state to susceptible.
         // The core library will randomize the location of the initially infected herd(s)
         // while the simulation is in progress.
 
-        {$IF Defined( TORRINGTON ) }
-          self.prodType.setInitialDailyRecords( initialSize, NAADSMStateSusceptible );
-        {$ELSEIF Defined( WHEATLAND ) }
-          self.prodType.setInitialDailyRecords( initialSize, NAADSMStateSusceptible );
-        {$ELSE}
+        if( randomizeInitialHerdStates ) then
+          self.prodType.setInitialDailyRecords( initialSize, NAADSMStateSusceptible )
+        else
           self.prodType.setInitialDailyRecords( initialSize, initialStatus );
-        {$IFEND}
+        ;
 
         _ctrlActivities.initializeAllOutputRecords();
 
-        prepareForIteration();
+        prepareForIteration( randomizeInitialHerdStates );
       end
     ;
 
 
-    procedure THerd.prepareForIteration(); // at start of each iteration
+    procedure THerd.prepareForIteration( const randomizeInitialHerdStates: boolean ); // at start of each iteration
       begin
-        // For both Torrington and Wheatland, set initial state to susceptible.
+        // If initially infected herds are selected at random, set initial state to susceptible.
         // The core library will randomize the location of the initially infected herd(s)
         // while the simulation is in progress.
 
-        {$IF Defined( TORRINGTON ) }
-           _diseaseStatus := NAADSMStateSusceptible;
-        {$ELSEIF Defined( WHEATLAND ) }
-           _diseaseStatus := NAADSMStateSusceptible;
-        {$ELSE}
-           _diseaseStatus := self.initialStatus;
-        {$IFEND}
+        if( randomizeInitialHerdStates ) then
+           _diseaseStatus := NAADSMStateSusceptible
+        else
+          _diseaseStatus := self.initialStatus
+        ;
 
         _zoneLevel := -1;
         _ctrlActivities.prepareForIteration();
@@ -1819,6 +1856,8 @@ implementation
         herdCounter: integer;
         percentComplete: extended;
         percentCompleteInt: integer;
+
+        randomizeInitials: boolean;
       begin
         dbcout( 'Starting to create herd list', DBHERDLIST );
         inherited create( true );
@@ -1826,6 +1865,7 @@ implementation
 
         _smdb := db;
         _sim := sim as TSMSimulationInput;
+        randomizeInitials := (sim as TSMSimulationInput).herdRandomizationOptions.initInfectedRandomize;
 
         // Create the basic herd list first
         //----------------------------------
@@ -1875,18 +1915,16 @@ implementation
             h.id := row.field('herdID');
             h.setLatLon( row.field('latitude'), row.field('longitude') );
 
-            h.initialStatus :=  naadsmDiseaseStateFromCode( charAt( string( row.field('initialStateCode') ), 0 ) );
+            if( randomizeInitials ) then
+              h.initialStatus := NAADSMStateSusceptible
+            else
+              h.initialStatus := naadsmDiseaseStateFromCode( charAt( string( row.field('initialStateCode') ), 0 ) )
+            ;
 
             if( null <> row.field( 'finalStateCode' ) ) then
               h._diseaseStatus := naadsmDiseaseStateFromCode( charAt( string( row.field('finalStateCode' ) ), 0 ) )
             else
-              {$IF Defined( TORRINGTON ) }
-                 h._diseaseStatus := NAADSMStateSusceptible
-              {$ELSEIF Defined( WHEATLAND ) }
-                 h._diseaseStatus := NAADSMStateSusceptible
-              {$ELSE}
-                 h._diseaseStatus := h.initialStatus
-              {$IFEND}
+              h._diseaseStatus := h.initialStatus
             ;
 
             if( NAADSMStateSusceptible = h.initialStatus ) then
@@ -2106,7 +2144,7 @@ implementation
             setProjection( defaultProjection( _minLat, _minLon, _maxLat, _maxLon ) );
           end
         ;
-        
+
         _updated := src._updated;
 
         srcIt.Free();
@@ -2334,6 +2372,8 @@ implementation
         h: THerd;
         it: THerdListIterator;
       begin
+        _sim := sim as TSMSimulationInput;
+
         it := THerdListIterator.create( self );
 
         while( nil <> it.current() ) do
@@ -3008,7 +3048,7 @@ implementation
   //---------------------------------------------------------------------------
   // THerdList: Text export
   //---------------------------------------------------------------------------
-    function THerdList.ssXml( const useProjection: boolean ): string;
+    function THerdList.ssXml( hro: THerdRandomizationOptions; const useProjection: boolean ): string;
       var
         h: THerd;
         it: THerdListIterator;
@@ -3034,9 +3074,23 @@ implementation
           begin
             h := it.current();
 
-            if( not( h.removeFromDatabase ) ) then
-              result := result + h.ssXml( useProjection ) + endl
-            ;
+              if( not( h.removeFromDatabase ) ) then
+                begin
+                  if( hro.initInfectedRandomize ) then
+                    begin
+                      // For each herd, indicate whether the herd is eligible
+                      // to be one of the initially infected herds.
+                      if( h.meetsRandomizationCriteria( hro ) ) then
+                        result := result + h.ssXml( useProjection, HerdRNDCanBeSelected )
+                      else
+                        result := result + h.ssXML( useProjection, HerdRNDCannotBeSelected )
+                      ;
+                    end
+                  else // Write old-fashioned XML with initial state information.
+                    result := result + h.ssXml( useProjection, HerdRNDNoSelection )
+                  ;
+                end
+              ;
 
             it.incr();
           end
@@ -3053,7 +3107,7 @@ implementation
     WARNING: this function will attempt to overwrite an existing file without notice.
     FIX ME: no error checking is done.
     }
-    function THerdList.writeXMLFile( fileName: string; const useProjection: boolean; errMsg: PString = nil ): boolean;
+    function THerdList.writeXMLFile( fileName: string; hro: THerdRandomizationOptions; const useProjection: boolean; errMsg: PString = nil ): boolean;
       var
         xmlFile: TextFile;
         h: THerd;
@@ -3089,7 +3143,21 @@ implementation
               h := it.current();
 
               if( not( h.removeFromDatabase ) ) then
-                writeln( xmlFile, h.ssXML( useProjection ) );
+                begin
+                  if( hro.initInfectedRandomize ) then
+                    begin
+                      // For each herd, indicate whether the herd is eligible
+                      // to be one of the initially infected herds.
+                      if( h.meetsRandomizationCriteria( hro ) ) then
+                        writeln( xmlFile, h.ssXML( useProjection, HerdRNDCanBeSelected ) )
+                      else
+                        writeln( xmlFile, h.ssXML( useProjection, HerdRNDCannotBeSelected ) )
+                      ;
+                    end
+                  else // Write old-fashioned XML with initial state information.
+                    writeln( xmlFile, h.ssXML( useProjection, HerdRNDNoSelection ) )
+                  ;
+                end
               ;
 
               it.incr();
@@ -3474,7 +3542,7 @@ implementation
   //---------------------------------------------------------------------------
   // THerdList: Validation and debugging
   //---------------------------------------------------------------------------
-    function THerdList.isValid( err: PString = nil ): boolean;
+    function THerdList.isValid( smSim: TSMSimulationInput; err: PString = nil ): boolean;
       var
         h: THerd;
         diseaseFound: boolean;
@@ -3486,8 +3554,15 @@ implementation
           begin
             if( nil <> err ) then err^ := err^ + tr( 'There are no units in this scenario.' ) + endl;
             result := false;
+            exit
           end
-        else
+        ;
+
+        if( nil = smSim ) then
+          raise exception.create( 'smSim is nil in THerdList.isValid()' )
+        ;
+
+        if( not( smSim.herdRandomizationOptions.initInfectedRandomize ) ) then
           begin
             h := self.first();
             while( h <> nil ) do
@@ -3582,7 +3657,7 @@ implementation
   //---------------------------------------------------------------------------
   // THerdList: Simulation outputs
   //---------------------------------------------------------------------------
-    procedure THerdList.prepareForIteration( iteration: integer );
+    procedure THerdList.prepareForIteration( const iteration: integer );
       var
         it: THerdListIterator;
       begin
@@ -3590,7 +3665,7 @@ implementation
 
         while( nil <> it.current() ) do
           begin
-            it.current().prepareForIteration();
+            it.current().prepareForIteration( sim.herdRandomizationOptions.initInfectedRandomize );
             it.incr();
           end
         ;
@@ -3608,7 +3683,7 @@ implementation
 
         while( nil <> it.current() ) do
           begin
-            it.current().initializeAllOutputRecords();
+            it.current().initializeAllOutputRecords( sim.herdRandomizationOptions.initInfectedRandomize );
             it.incr();
           end
         ;

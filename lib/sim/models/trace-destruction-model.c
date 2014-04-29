@@ -182,6 +182,13 @@ handle_trace_result_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds
   else
     herd = event->exposing_herd;
 
+  /* If the identified unit is not the right production type or if it has already
+   * been destroyed, don't issue another request for destruction.
+   *
+   * In the experimental version 'Riverton', the naturally immune state is treated
+   * like "dead from disease".  There is no need to destroy them.
+  */
+
   if (local_data->production_type[herd->production_type] == FALSE
       || herd->status == Destroyed
       #ifdef RIVERTON
@@ -215,6 +222,7 @@ end:
 #if DEBUG
   g_debug ("----- EXIT handle_trace_result_event (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

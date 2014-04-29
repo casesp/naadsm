@@ -1,6 +1,7 @@
 inherited FormHerdListEditor: TFormHerdListEditor
-  Left = 61
-  Caption = 'Scenario parameters: Set up starting units'
+  Left = 508
+  Top = 267
+  Caption = 'Scenario parameters: Set up units'
   ClientWidth = 892
   PixelsPerInch = 96
   TextHeight = 13
@@ -16,7 +17,7 @@ inherited FormHerdListEditor: TFormHerdListEditor
     Width = 892
     Height = 41
     Align = alTop
-    Caption = 'Set up starting units'
+    Caption = 'Set up units'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -19
@@ -33,9 +34,9 @@ inherited FormHerdListEditor: TFormHerdListEditor
     Align = alTop
     TabOrder = 2
     object pnlButtons: TPanel
-      Left = 201
+      Left = 121
       Top = 1
-      Width = 690
+      Width = 770
       Height = 39
       Align = alClient
       TabOrder = 1
@@ -268,18 +269,42 @@ inherited FormHerdListEditor: TFormHerdListEditor
           00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FF}
         NumGlyphs = 2
       end
+      object rdoAssignedDzStateParams: TRadioButton
+        Left = 224
+        Top = 3
+        Width = 473
+        Height = 17
+        Caption = 
+          'Assign specific initial disease state parameters to a specific u' +
+          'nit or units (below)'
+        Checked = True
+        TabOrder = 7
+        TabStop = True
+        OnClick = rdoAssignedDzStateParamsClick
+      end
+      object rdoRandomizedDzStateParams: TRadioButton
+        Left = 224
+        Top = 21
+        Width = 377
+        Height = 17
+        Caption = 
+          'Randomize initially infected units based on specified criteria (' +
+          'next window)'
+        TabOrder = 8
+        OnClick = rdoAssignedDzStateParamsClick
+      end
     end
     object pnlMenu: TPanel
       Left = 1
       Top = 1
-      Width = 200
+      Width = 120
       Height = 39
       Align = alLeft
       TabOrder = 0
       object mnuMain: TActionMainMenuBar
         Left = 1
         Top = 1
-        Width = 198
+        Width = 118
         Height = 37
         UseSystemFont = False
         ActionManager = ActionManager1
@@ -313,6 +338,9 @@ inherited FormHerdListEditor: TFormHerdListEditor
       Width = 892
       inherited pnlSortControlsRight: TPanel
         Width = 546
+        inherited btnTest: TButton
+          OnClick = fraHerdListEditorbtnTestClick
+        end
       end
     end
     inherited pnlFilterControls: TPanel

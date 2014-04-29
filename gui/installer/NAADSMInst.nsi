@@ -16,7 +16,7 @@
 
 
 #Name of the Program being installed
-Name "NAADSM 3.2.19"
+Name "NAADSM 3.3.2"
 
 #NOTE: Can use the 'Icon' command to specify an icon file(.ico) for the .exe file.
 Icon installerIcon.ico
@@ -25,7 +25,7 @@ Icon installerIcon.ico
 outFile "NAADSMSetup.exe"
 
 #Default Installation Directory
-installDir "$PROGRAMFILES\NAADSM 3.2.19"
+installDir "$PROGRAMFILES\NAADSM 3.3.2"
 
 #Sets the text to be shown in the license page
 LicenseData ../license.txt
@@ -35,7 +35,7 @@ page custom startDialog "" ": Start Dialog"
  Function startDialog
  
   MessageBox MB_OKCANCEL "This application will install \
-  NAADSM version 3.2.19 on your computer. \ 
+  NAADSM version 3.3.2 on your computer. \ 
   Click OK to continue." \
   IDCANCEL NoCancelAbort 
   Abort
@@ -101,16 +101,16 @@ file "..\license.txt"
 writeUninstaller $INSTDIR\NAADSMUninstall.exe
 
 #the following 2 commands add uninstall functionality in Add/Remove Programs
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19" \
-                 "DisplayName" "NAADSM 3.2.19"
-WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19" \
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.3.2" \
+                 "DisplayName" "NAADSM 3.3.2"
+WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.3.2" \
                  "UninstallString" "$INSTDIR\NAADSMUninstall.exe"
 sectionEnd
 
 #this section can also be selectively installed by the user
 #	and it is checked by default
 section "Install Start menu shortcut"
-createShortCut "$SMPROGRAMS\NAADSM 3.2.19.lnk" "$INSTDIR\SpreadModel.exe"
+createShortCut "$SMPROGRAMS\NAADSM 3.3.2.lnk" "$INSTDIR\SpreadModel.exe"
 sectionEnd
 
 #this section can be selectively installed by the user
@@ -118,7 +118,7 @@ sectionEnd
 section /o "Install desktop shortcut"
 setOutPath $DESKTOP
 #creates a shortcut to the executable file
-createShortCut "$DESKTOP\NAADSM 3.2.19.lnk" "$INSTDIR\SpreadModel.exe"
+createShortCut "$DESKTOP\NAADSM 3.3.2.lnk" "$INSTDIR\SpreadModel.exe"
 sectionEnd
 
 #brings up the uninstall confirmation page before uninstalling
@@ -156,20 +156,20 @@ section "Uninstall"
   Delete "$INSTDIR\ZipDll.dll"
   Delete "$INSTDIR\spreadmodel.ini"
 
-  ifFileExists "$SMPROGRAMS\NAADSM 3.2.19.lnk" DeleteSMlink DoNothingSM
+  ifFileExists "$SMPROGRAMS\NAADSM 3.3.2.lnk" DeleteSMlink DoNothingSM
   DeleteSMlink:
-  Delete "$SMPROGRAMS\NAADSM 3.2.19.lnk"
+  Delete "$SMPROGRAMS\NAADSM 3.3.2.lnk"
   
   DoNothingSM:
 
-  ifFileExists "$DESKTOP\NAADSM 3.2.19.lnk" DeleteDesktopLink DoNothingDESK
+  ifFileExists "$DESKTOP\NAADSM 3.3.2.lnk" DeleteDesktopLink DoNothingDESK
   DeleteDesktopLink:
-  Delete "$DESKTOP\NAADSM 3.2.19.lnk"
+  Delete "$DESKTOP\NAADSM 3.3.2.lnk"
 
   DoNothingDESK:
 
   RMDir $INSTDIR
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.2.19"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\NAADSM3.3.2"
 
 sectionEnd

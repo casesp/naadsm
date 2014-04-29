@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -43,12 +43,14 @@ interface
     DB,
     ExtCtrls,
     REEdit,
+    Menus,
+    ActnPopupCtrl,
 
     // Inherited classes
     FormSMWizardBase,
 
     // Application-specific data structures
-    SMDatabase, Menus, ActnPopupCtrl
+    SMDatabase
   ;
 
   type TFormGeneralParams = class( TFormSMWizardBase )

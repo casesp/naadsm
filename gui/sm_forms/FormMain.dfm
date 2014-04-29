@@ -39,7 +39,6 @@ object FormMain: TFormMain
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentShowHint = False
-    PersistentHotKeys = True
     ShowHint = False
     Spacing = 0
   end
@@ -300,9 +299,14 @@ object FormMain: TFormMain
                 ImageIndex = 8
               end
               item
-                Items.HideUnused = False
-                Items = <>
-                Action = ActionHerdListEditor
+                Items = <
+                  item
+                    Action = ActionHerdListEditor
+                  end
+                  item
+                    Action = ActionInitialUnitOptions
+                  end>
+                Action = ActionUnitsMenu
                 ImageIndex = 50
               end
               item
@@ -443,7 +447,7 @@ object FormMain: TFormMain
                     Caption = '&Define custom outputs'
                   end>
                 Action = ActionCustomOutputMenu
-                Caption = 'C&ustom outputs'
+                Caption = 'Custo&m outputs'
                 ImageIndex = 24
               end
               item
@@ -669,11 +673,21 @@ object FormMain: TFormMain
       ImageIndex = 8
       OnExecute = ActionScenarioParamExecute
     end
+    object ActionUnitsMenu: TAction
+      Category = 'Parameters'
+      Caption = '&Units'
+      ImageIndex = 50
+      OnExecute = ActionScenarioParamExecute
+    end
+    object ActionInitialUnitOptions: TAction
+      Category = 'Parameters'
+      Caption = '&Initial unit options'
+      OnExecute = ActionScenarioParamExecute
+    end
     object ActionHerdListEditor: TAction
       Tag = 3
       Category = 'Parameters'
-      Caption = 'S&et up starting units'
-      ImageIndex = 50
+      Caption = 'S&et up units'
       OnExecute = ActionScenarioParamExecute
     end
     object ActionAbout: TAction

@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2012 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -101,6 +101,8 @@ interface
       //----------------------------------
       ActionGeneralParams: TAction;
       ActionProdType: TAction;
+      ActionUnitsMenu: TAction;
+      ActionInitialUnitOptions: TAction;
       ActionHerdListEditor: TAction;
 
       ActionDiseaseMenu: TAction;
@@ -212,6 +214,7 @@ interface
       // For trivial testing
       //---------------------
     	btnTest: TButton;
+
 
       // File menu commands
       //--------------------
@@ -701,7 +704,7 @@ implementation
           ActionExit.Caption := tr( 'E&xit' );
           ActionGeneralParams.Caption := tr( '&Start setup' );
           ActionProdType.Caption := tr( '&Production type(s)' );
-          ActionHerdListEditor.Caption := tr( 'S&et up starting units' );
+          ActionHerdListEditor.Caption := tr( 'Se&t up units' );
           ActionAbout.Caption := tr( '&About NAADSM...' );
           ActionOpen.Caption := tr( '&Open scenario file...' );
           ActionDiseaseMenu.Caption := tr( '&Disease' );
@@ -2259,9 +2262,9 @@ implementation
 
       Screen.Cursor := crHourGlass;
 
-      if( _smScenario.simInput.isValid( false, @errMsg ) ) then
+      if( _smScenario.simInput.isValid( false, _smScenario.herdList, @errMsg ) ) then
         begin
-          if( _smScenario.herdList.isValid( @errMsg ) ) then
+          if( _smScenario.herdList.isValid( _smScenario.simInput, @errMsg ) ) then
             begin
               Screen.Cursor := crDefault;
 
@@ -2341,6 +2344,7 @@ implementation
 
           // The herd population
           append( 'TFormHerdListEditor' );
+          append( 'TFormInitialUnitOptions' );
 
           // Disease parameters
           append( 'TFormYesNoPrevalence' );
@@ -2735,7 +2739,7 @@ implementation
 
         if( clearOutput ) then
           begin
-            dbcout( '*** Herds should be restored to their initial condition, and database will be cleared.', DBSHOWMSG );
+            dbcout( '*** Herds should be restored to their initial condition, and database will be cleared.', true );
 
             _smdb.initializeAllOutputRecords();
             _smScenario.herdList.initializeAllOutputRecords();
@@ -2790,6 +2794,7 @@ implementation
     begin
       if( senderName = 'ActionGeneralParams' ) then result := 'TFormGeneralParams'
       else if( senderName = 'ActionProdType' ) then result := 'TFormProdType'
+      else if( senderName = 'ActionInitialUnitOptions' ) then result := 'TFormInitialUnitOptions'
       else if( senderName = 'ActionHerdListEditor' ) then result := 'TFormHerdListEditor'
 
       // Disease submenu
@@ -3766,6 +3771,9 @@ implementation
 
       ActionGeneralParams.Enabled := paramsEnabled;
       ActionProdType.Enabled := paramsEnabled;
+
+      ActionUnitsMenu.Enabled := paramsEnabled;
+      ActionInitialUnitOptions.Enabled := paramsEnabled;
       ActionHerdListEditor.Enabled  := paramsEnabled;
 
       ActionDiseaseMenu.Enabled := paramsEnabled;

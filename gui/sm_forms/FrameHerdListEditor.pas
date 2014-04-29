@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -170,6 +170,13 @@ interface
       procedure stgHerdsMouseWheel(Sender: TObject; Shift: TShiftState; MousePos: TPoint; var Handled: Boolean);
 
     protected
+      // Store width of columns that may eventually be
+      // hidden, in case they need to be shown again later.
+      //---------------------------------------------------
+      _colStatusWidth: integer;
+      _colDaysInStateWidth: integer;
+      _colDaysLeftWidth: integer;
+
       // Housekeeping function pointers
       //-------------------------------
       _fnUpdateDisplay: TUpdateDisplayEvent;
@@ -297,6 +304,9 @@ interface
       procedure removeSelectedHerds();
       procedure selectAllHerds();
 
+      procedure hideDiseaseStateColumns();
+      procedure showDiseaseStateColumns();
+
       // Function pointers/event handlers
       //---------------------------------
       property onUpdateDisplay: TUpdateDisplayEvent read _fnUpdateDisplay write _fnUpdateDisplay;
@@ -372,7 +382,7 @@ implementation
     begin
       inherited create( AOwner );
       translateUI();
-      
+
       fixPanelColors( self );
 
       _llForm := TFormLatLonRange.create( self );
@@ -457,7 +467,7 @@ implementation
 
       stgHerds.DefaultRowHeight := cboProdType.Height;
       cboProdType.Visible := False;
-      
+
       //Code to fix TStringGrid last column scrolling bug. DO NOT REMOVE!
       // AR 6/23/11: Which bug does this comment refer to?
 
@@ -2668,9 +2678,17 @@ end;
 
 
   procedure TFrameHerdListEditor.btnTestClick(Sender: TObject);
-    var
-      myRect: TGridRect;
+    //var
+      //myRect: TGridRect;
     begin
+      if( 0 = stgHerds.ColWidths[3] ) then
+        stgHerds.ColWidths[3] := 50
+      else
+        stgHerds.ColWidths[3] := 0
+      ;
+
+
+      (*
       // Show the Lat/Lon form.
       if( mrOK <> _llForm.ShowModal() ) then
         exit
@@ -2728,6 +2746,7 @@ end;
 
       _filterInProgress := false;
       unlockWindow();
+      *)
     end
   ;
 
@@ -3147,6 +3166,81 @@ end;
           filter();
         end
       ;
+    end
+  ;
+
+  procedure TFrameHerdListEditor.hideDiseaseStateColumns();
+    begin
+      // Reset sort and filter, if necessary
+      if
+        ( COL_STATUS = cboMainSort.ItemIndex )
+      or
+        ( COL_DAYS_IN_STATE = cboMainSort.ItemIndex )
+      or
+        ( COL_DAYS_LEFT = cboMainSort.ItemIndex )
+      then
+        begin
+          cboMainSort.ItemIndex := COL_IDX;
+          sortControlChange( nil );
+        end
+      ;
+
+      if
+        ( FILTER_STATUS = cboMainFilter.ItemIndex )
+      or
+        ( FILTER_DAYS_IN_STATE = cboMainFilter.ItemIndex )
+      or
+        ( FILTER_DAYS_LEFT = cboMainFilter.ItemIndex )
+      then
+        begin
+          cboMainFilter.ItemIndex := FILTER_NONE;
+          cboMainFilterChange( nil );
+        end
+      ;
+    
+      // Hide these columns
+      if( -1 <> stgHerds.ColWidths[COL_STATUS] ) then
+        begin
+          _colStatusWidth := stgHerds.ColWidths[COL_STATUS];
+          _colDaysInStateWidth := stgHerds.ColWidths[COL_DAYS_IN_STATE];
+          _colDaysLeftWidth := stgHerds.ColWidths[COL_DAYS_LEFT];
+
+          stgHerds.ColWidths[COL_STATUS] := -1;
+          stgHerds.ColWidths[COL_DAYS_IN_STATE] := -1;
+          stgHerds.ColWidths[COL_DAYS_LEFT] := -1;
+        end
+      ;
+
+      // Remove the sort and filter options
+      cboMainSort.Items.Delete( COL_DAYS_LEFT );
+      cboMainSort.Items.Delete( COL_DAYS_IN_STATE );
+      cboMainSort.Items.Delete( COL_STATUS );
+
+      cboMainFilter.Items.Delete( FILTER_DAYS_LEFT );
+      cboMainFilter.Items.Delete( FILTER_DAYS_IN_STATE );
+      cboMainFilter.Items.Delete( FILTER_STATUS );
+    end
+  ;
+
+
+  procedure TFrameHerdListEditor.showDiseaseStateColumns();
+    begin
+      if( -1 = stgHerds.ColWidths[COL_STATUS] ) then
+        begin
+          stgHerds.ColWidths[COL_STATUS] := _colStatusWidth;
+          stgHerds.ColWidths[COL_DAYS_IN_STATE] := _colDaysInStateWidth;
+          stgHerds.ColWidths[COL_DAYS_LEFT] := _colDaysLeftWidth;
+        end
+      ;
+
+      // Rebuild the sort and filter combo boxes
+      cboMainSort.Items.Add( tr( 'Status' ) );
+      cboMainSort.Items.Add( tr( 'Days in state' ) );
+      cboMainSort.Items.Add( tr( 'Days left in state' ) );
+
+      cboMainFilter.Items.Add( tr( 'Status' ) );
+      cboMainFilter.Items.Add( tr( 'Days in state' ) );
+      cboMainFilter.Items.Add( tr( 'Days left in state' ) );
     end
   ;
 

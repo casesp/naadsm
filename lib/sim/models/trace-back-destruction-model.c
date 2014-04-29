@@ -232,6 +232,7 @@ handle_record (EVT_event_t *exposure_record,
 #endif
       /* In the experimental version 'Riverton', "naturally immune" units have
        * died out and no longer exist, so they don't need to be destroyed. */
+
       if (
           trace->exposed_herd->status != Destroyed
           #ifdef RIVERTON

@@ -457,25 +457,44 @@ destroy (struct naadsm_model_t_ *self, HRD_herd_t * herd,
 
   local_data = (local_data_t *) (self->model_data);
 
-  /* Destroy the unit. */
-
-  #ifdef RIVERTON
-  /* In Riverton, if the unit is already Destroyed or NaturallyImmune, 
-   * it should not be destroyed again. */
-  g_assert ( (herd->status != Destroyed) && (herd->status != NaturallyImmune) );
-  #else
-  /* In the standard version, if the unit is already Destroyed, it should not
+  /* If the unit is already Destroyed, it should not
    * be destroyed again. */
   g_assert (herd->status != Destroyed);
-  #endif
 
 #if DEBUG
   g_debug ("destroying unit \"%s\"", herd->official_id);
 #endif
-  HRD_destroy (herd);
-  EVT_event_enqueue (queue, EVT_new_destruction_event (herd, day, reason, day_commitment_made));
-  g_hash_table_insert (local_data->destroyed_today, herd, herd);
-  local_data->nherds_destroyed_today++;
+
+  #ifdef RIVERTON
+    /* In Riverton, naturally immune units are treated as though they are dead from disease.
+     * They cannot be destroyed.
+     * Furthermore, in this version, such previously undetected units are not detected
+     * (contrast this behavior to NAADSM version 4).
+     *
+     * Ignore the request and cancel any pending vaccinations.
+     * Note that NAADSM 4 handles this in a more elegant way.
+    */
+    if( NaturallyImmune == herd->status ) {
+      /* Do nothing */
+      #if DEBUG
+        g_debug ("Unit \"%s\" has already progressed to naturally immune, and will not be destroyed.", herd->official_id);
+      #endif
+    } else {
+      /* Destroy the unit. */
+      HRD_destroy (herd);
+
+      EVT_event_enqueue (queue, EVT_new_destruction_event (herd, day, reason, day_commitment_made));
+      g_hash_table_insert (local_data->destroyed_today, herd, herd);
+      local_data->nherds_destroyed_today++;
+    }
+  #else
+    /* Destroy the unit. */
+    HRD_destroy (herd);
+
+    EVT_event_enqueue (queue, EVT_new_destruction_event (herd, day, reason, day_commitment_made));
+    g_hash_table_insert (local_data->destroyed_today, herd, herd);
+    local_data->nherds_destroyed_today++;
+  #endif
 
   /* Take the unit off the vaccination waiting list, if needed. */
   cancel_vaccination (herd, day, local_data->vaccination_status,
@@ -484,6 +503,7 @@ destroy (struct naadsm_model_t_ *self, HRD_herd_t * herd,
 #if DEBUG
   g_debug ("----- EXIT destroy (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 
@@ -676,14 +696,25 @@ vaccinate (struct naadsm_model_t_ *self, HRD_herd_t * herd,
 
   local_data = (local_data_t *) (self->model_data);
 
-  #ifdef RIVERTON
-  /* In Riverton, if the unit is Destroyed or NaturallyImmune, 
-   * it should not be vaccinated. */
-  g_assert ( (herd->status != Destroyed) && (herd->status != NaturallyImmune) );
-  #else
-  /* In the standard version, if the unit is already Destroyed, 
+  /* If the unit is already Destroyed,
    * it should not be vaccinated. */
   g_assert (herd->status != Destroyed);
+
+  #ifdef RIVERTON
+    /* In Riverton, naturally immune units are treated as though they are dead from disease.
+     * They cannot be vaccinated.
+     * Furthermore, in this version, such previously undetected units are not detected
+     * (contrast this behavior to NAADSM version 4).
+     *
+     * In this case, we should just ignore the request.
+     * Again, note that NAADSM 4 handles this in a more elegant way.
+    */
+
+    if( NaturallyImmune == herd->status ) {
+      g_debug( "unit \"%s\" has progressed to naturally immune and will not be vaccinated.", herd->official_id );
+      EVT_event_enqueue (queue, EVT_new_vaccination_canceled_event (herd, day, day_commitment_made));
+      goto end;
+    }
   #endif
 
   /* If the unit has already been vaccinated recently, we can ignore the
@@ -712,6 +743,7 @@ end:
 #if DEBUG
   g_debug ("----- EXIT vaccinate (%s)", MODEL_NAME);
 #endif
+
   return;
 }
 

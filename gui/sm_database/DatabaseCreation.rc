@@ -53,4 +53,5 @@ DBSchema3_2_5           TEXT    DBSchema3_2_5_GOLD.DDL
 DBSchema3_2_11          TEXT    DBSchema3_2_11_GOLD.DDL
 DBSchema3_2_13          TEXT    DBSchema3_2_13_GOLD.DDL
 DBSchema3_2_18          TEXT    DBSchema3_2_18_GOLD.DDL
+DBSchema3_3_0           TEXT    DBSchema3_3_0_GOLD.DDL
 

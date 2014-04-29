@@ -10,7 +10,7 @@ Project: NAADSM
 Website:
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -261,7 +261,7 @@ implementation
           if( ( it.current().removed ) and ( 0 < it.current().productionTypeID ) ) then
             begin
               _smScenarioOriginal.herdList.removeProductionType( it.current().productionTypeID );
-              _smScenarioCopy.simInput.ptpList.removeProductionType( it.current().productionTypeID );
+              _smScenarioCopy.simInput.removeProductionType( it.current().productionTypeID );
             end
           ;
 

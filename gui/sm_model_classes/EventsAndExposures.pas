@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -85,6 +85,8 @@ interface
         traceSuccess: TNAADSMSuccess = NAADSMSuccessUnspecified;
         testResult: TNAADSMTestResult = NAADSMTestUnspecified
       );
+
+      procedure debug();
 
       property eventID: integer read _eventID;
       property iteration: integer read _iteration;
@@ -229,6 +231,7 @@ implementation
     Forms, // for Application object
     Variants,
 
+    MyStrUtils,
     DebugWindow,
     QStringMaps,
     I88n
@@ -352,7 +355,7 @@ implementation
 
 
 //-----------------------------------------------------------------------------
-// TSMEvent: construction
+// TSMEvent: construction and debugging
 //-----------------------------------------------------------------------------
   constructor TSMEvent.create(
         event: integer;
@@ -365,8 +368,12 @@ implementation
         traceSuccess: TNAADSMSuccess = NAADSMSuccessUnspecified;
         testResult: TNAADSMTestResult = NAADSMTestUnspecified
       );
+    var
+      str: string;
     begin
       inherited create();
+
+      str := '';
 
       _eventID := event;
       _iteration := iteration;
@@ -381,6 +388,7 @@ implementation
             raise exception.create( 'Unspecified disease state in TSMEvent.create()' )
           ;
           _newStatus := newStatus;
+          str := 'New status: ' + naadsmDiseaseStateStr( newStatus );
         end
       ;
 
@@ -390,6 +398,7 @@ implementation
             raise exception.Create( 'Unspecified trace success in TSMEvent.create()' )
           ;
           _traceSuccess := traceSuccess;
+          str := 'Trace success: ' + naadsmSuccessStr( traceSuccess );
         end
       ;
 
@@ -399,8 +408,48 @@ implementation
             raise exception.Create( 'Unspecified test result in TSMEvent.create()' )
           ;
           _testResult := testResult;
+          str := 'Test result: ' + naadsmTestResultStr( testResult );
         end
       ;
+
+      (*
+      dbcout2( endl + '---Event created: ID ' + intToStr( _eventID ) + ', code: ' + EventsAndExposures.eventCodeString( _eventCode ) );
+      dbcout2( 'Iteration: ' + intToStr( _iteration ) + ', day: ' + intToStr( _day ) );
+      dbcout2( 'Herd ID: ' + intToStr( _herdID ) + ', zone ID: ' + intToStr( _zoneID ) );
+      if( 0 < length( str ) ) then
+        dbcout2( str )
+      ;
+      dbcout2( '---end event' );
+      *)
+    end
+  ;
+
+
+  procedure TSMEvent.debug();
+    var
+      str: string;
+    begin
+      str := '';
+
+      if( eventIsStateChange( _eventCode ) ) then
+        str := 'New status: ' + naadsmDiseaseStateStr( _newStatus )
+      ;
+
+      if( eventIsTrace( _eventCode ) ) then
+        str := 'Trace success: ' + naadsmSuccessStr( _traceSuccess )
+      ;
+
+      if( eventIsTest( eventCode ) ) then
+        str := 'Test result: ' + naadsmTestResultStr( _testResult )
+      ;
+
+      dbcout( endl + '---Event created: ID ' + intToStr( _eventID ) + ', code: ' + EventsAndExposures.eventCodeString( _eventCode ), true );
+      dbcout( 'Iteration: ' + intToStr( _iteration ) + ', day: ' + intToStr( _day ), true );
+      dbcout( 'Herd ID: ' + intToStr( _herdID ) + ', zone ID: ' + intToStr( _zoneID ), true );
+      if( 0 < length( str ) ) then
+        dbcout( str, true )
+      ;
+      dbcout( '---end event', true );
     end
   ;
 //-----------------------------------------------------------------------------
@@ -432,6 +481,8 @@ implementation
         const exposedZoneID: integer
       );
     begin
+      dbcout2( endl + '### Exposure' + endl );
+
       isExposure := true;
       _exposureID := exposureID;
       _iteration := iteration;
@@ -466,6 +517,8 @@ implementation
         const identifiedZoneID: integer
       );
     begin
+      dbcout2( endl + '### Trace' + endl );
+
       isTrace := true;
       _exposureID := exposureID;
       _iteration := iteration;

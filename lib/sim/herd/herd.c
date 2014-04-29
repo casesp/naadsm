@@ -726,6 +726,7 @@ HRD_new_herd (HRD_production_type_t production_type,
     herd->size = size;
   herd->x = x;
   herd->y = y;
+  herd->may_be_initially_infected = FALSE;
   herd->status = herd->initial_status = Susceptible;
   herd->days_in_status = 0;
   herd->days_in_initial_status = 0;
@@ -1303,6 +1304,27 @@ endElement (void *userData, const char *name)
       g_string_truncate (partial->s, 0);
     }
 
+  /* may-be-initially-infected tag */
+
+  else if ( 0 == strcmp (name, "may-be-initially-infected") )
+    {
+      char *tmp;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+#if DEBUG
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  accumulated string = \"%s\"", tmp);
+#endif
+
+      partial->herd->may_be_initially_infected = ( 0 == strcasecmp( tmp, "true" ) );
+
+      /* In this case, the actual initial status will be set elsewhere. */
+      partial->herd->status = partial->herd->initial_status = Susceptible;
+      g_free (tmp);
+      g_string_truncate (partial->s, 0);
+    }
+
+
   /* status tag */
 
   else if (strcmp (name, "status") == 0)
@@ -1322,6 +1344,7 @@ endElement (void *userData, const char *name)
         {
           g_warning ("status missing on line %lu of %s, setting to Susceptible",
                      (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+
           status = Susceptible;
         }
       else if (isdigit (tmp[0]))

@@ -1,6 +1,6 @@
 inherited FormGeneralParams: TFormGeneralParams
-  Left = 392
-  Top = 125
+  Left = 979
+  Top = 353
   Hint = 'General description of the simulation session'
   Caption = 'Scenario parameters: Start setup'
   ClientHeight = 452

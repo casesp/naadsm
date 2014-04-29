@@ -461,6 +461,7 @@ check_and_choose (int id, gpointer arg)
 #if DEBUG
   g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_choose (%s) - Optimized Version", MODEL_NAME );
 #endif
+
   return;
 }
 

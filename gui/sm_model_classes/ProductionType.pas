@@ -10,7 +10,7 @@ Project: NAADSM
 Website: http://www.naadsm.org
 Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2011 Colorado State University
+Copyright (C) 2005 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -491,7 +491,7 @@ implementation
 
       _animalCount := src._animalCount;
       _unitCount := src._unitCount;
-
+       
       // It should never be necessary to copy outputs, but the structures still need to be created.
       _outputs := TSMDailyOutput.create();
       _initialOutputs := TSMDailyOutput.create();
@@ -519,8 +519,8 @@ implementation
       _zoneParams := nil;
       _costs := nil;
 
-      _unitCount := -1;
-      _animalCount := -1;
+      _unitCount := 0;
+      _animalCount := 0;
 
       _outputs := TSMDailyOutput.create();
       _initialOutputs := TSMDailyOutput.create();
@@ -1076,7 +1076,7 @@ implementation
       if( ( result = false ) and ( err <> nil ) ) then
         begin
           msg := endl + ansiReplaceStr( tr( 'Production type xyz:' ), 'xyz', productionTypeDescr ) + endl + msg;
-          err^ := err^ + msg;
+          err^ := err^ + msg + endl;
         end
       ;
     end
@@ -1812,49 +1812,20 @@ implementation
 
   function TProductionType.getUnitCount(): longint;
     begin
-      if( -1 = _unitCount ) then
-        begin
-          raise exception.create( 'TProductionType unitCount is not set for type ' + self.productionTypeDescr );
-          result := -1;
-        end
-      else
-        result := _unitCount
-      ;
+      result := _unitCount;
     end
   ;
 
 
   function TProductionType.getAnimalCount(): longint;
     begin
-      if( -1 = _animalCount ) then
-        begin
-          raise exception.create( 'TProductionType animalCount is not setfor type ' + self.productionTypeDescr );
-          result := -1;
-        end
-      else
-        result := _animalCount
-      ;
+      result := _animalCount;
     end
   ;
 
 
   procedure TProductionType.addToCounts( animals: longint );
     begin
-      // If both _animalCount and _unitCount are -1, this is OK.
-      // It means that they haven't been set yet.
-      // If neither are -1, that's fine, too.
-      // If one but not the other is -1, however, this is a problem:
-      // this situation should never occur.
-
-      if( (-1 = _animalCount) xor (-1  = _unitCount) ) then
-        raise exception.Create( 'Something is screwy in TProductionType.addToCounts' )
-      else if( ( -1 = _animalCount ) and ( -1 = _unitCount ) ) then
-        begin
-          _animalCount := 0;
-          _unitCount := 0;
-        end
-      ;
-
       inc( _unitCount );
       inc( _animalCount, animals );
     end
@@ -2004,17 +1975,8 @@ implementation
         dbcout( endl + 'COST PARAMS ARE UNDEFINED', true )
       ;
 
-      if( -1 <> _unitCount ) then
-        dbcout( 'Units of this type: ' + intToStr( _unitCount ), true )
-      else
-        dbcout( 'UNIT COUNT IS NOT SET', true )
-      ;
-
-      if( -1 <> _animalCount ) then
-        dbcout( 'Animals of this type: ' + intToStr( _animalCount ), true )
-      else
-        dbcout( 'ANIMAL COUNT IS NOT SET', true )
-      ;
+      dbcout( 'Units of this type: ' + intToStr( _unitCount ), true );
+      dbcout( 'Animals of this type: ' + intToStr( _animalCount ), true );
 
       dbcout( '--END TPRODUCTIONTYPE DEBUG' + endl, true );
     end
