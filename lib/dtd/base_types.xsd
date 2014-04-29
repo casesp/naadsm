@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xdf="http://xml.gsfc.nasa.gov/XDF"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <import namespace="http://xml.gsfc.nasa.gov/XDF"
+          schemaLocation="http://xml.gsfc.nasa.gov/DTD/XDF_017.xsd">
+    <!-- Import the XDF (eXtensible Data Format) to supply "units" and "value"
+      structures (which offer special abilities to handle unusual data types
+      like deliberately unspecified values).
+      See http://xml.gsfc.nasa.gov/XDF/ -->
+  </import>
+
+  <!-- SI base quantity types.
+    See http://physics.nist.gov/cuu/Units/units.html -->
+
+  <complexType name="length">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="mass">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="time">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <!-- SI derived quantity types. -->
+
+  <complexType name="area">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="volume">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="velocity">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="acceleration">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <complexType name="angle">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+    <!-- Restriction of units to "rad" and value to [0, 2pi) or units to
+      "degree" and value to [0, 360) must be expressed elsewhere. -->
+  </complexType>
+
+  <complexType name="frequency">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+    <!-- Restriction of units to "Hz" or "s^-1" must be expressed elsewhere. -->
+  </complexType>
+
+  <complexType name="force">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+    <!-- Restriction of units to "N" or "kg m s^-2" must be expressed
+      elsewhere. -->
+  </complexType>
+
+  <!-- Other quantity types. -->
+
+  <simpleType name="probability">
+    <restriction base="decimal">
+      <minInclusive value="0" />
+      <maxInclusive value="1" />
+    </restriction>
+  </simpleType>
+
+  <complexType name="money">
+    <sequence>
+      <element name="value" type="xdf:valueType" />
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+    <!-- Restriction of units to ISO 4217 codes, e.g., "CAD" (Canadian dollar),
+      "USD" (US dollar), or "GBP" (UK pound sterling), must be expressed
+      elsewhere. -->
+  </complexType>
+
+  <complexType name="unitless">
+    <complexContent>
+      <extension base="xdf:valueType" />
+    </complexContent>
+  </complexType>
+
+  <!-- Probability distribution functions. -->
+
+  <complexType name="PDF">
+    <sequence>
+      <choice minOccurs="1" maxOccurs="1">
+        <element name="point" type="xdf:valueType" />
+        <element name="uniform">
+          <complexType>
+            <sequence>
+              <element name="a" type="xdf:valueType" />
+              <element name="b" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="triangular">
+          <complexType>
+            <sequence>
+              <element name="a" type="xdf:valueType" />
+              <element name="c" type="xdf:valueType" />
+              <element name="b" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="gaussian">
+          <complexType>
+            <sequence>
+              <element name="mean" type="xdf:valueType" />
+              <element name="stddev" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="poisson">
+          <complexType>
+            <sequence>
+              <element name="mean" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="beta">
+          <complexType>
+            <sequence>
+              <element name="alpha" type="xdf:valueType" />
+              <element name="beta" type="xdf:valueType" />
+              <element name="location" type="xdf:valueType" />
+              <element name="scale" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="beta-pert">
+          <complexType>
+            <sequence>
+              <element name="min" type="xdf:valueType" />
+              <element name="mode" type="xdf:valueType" />
+              <element name="max" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="gamma">
+          <complexType>
+            <sequence>
+              <element name="alpha" type="xdf:valueType" />
+              <element name="beta" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="weibull">
+          <complexType>
+            <sequence>
+              <element name="alpha" type="xdf:valueType" />
+              <element name="beta" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="exponential">
+          <complexType>
+            <sequence>
+              <element name="mean" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="piecewise">
+          <complexType>
+            <sequence maxOccurs="unbounded">
+              <element name="value" type="xdf:valueType" />
+              <element name="p" type="ergadm:probability" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="pearson5">
+          <complexType>
+            <sequence>
+              <element name="alpha" type="xdf:valueType" />
+              <element name="beta" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="logistic">
+          <complexType>
+            <sequence>
+              <element name="location" type="xdf:valueType" />
+              <element name="scale" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="loglogistic">
+          <complexType>
+            <sequence>
+              <element name="location" type="xdf:valueType" />
+              <element name="scale" type="xdf:valueType" />
+              <element name="shape" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+        <element name="lognormal">
+          <complexType>
+            <sequence>
+              <element name="zeta" type="xdf:valueType" />
+              <element name="sigma" type="xdf:valueType" />
+            </sequence>
+          </complexType>        
+        </element>
+      </choice>
+      <element name="units" type="xdf:unitsType" />
+    </sequence>
+  </complexType>
+
+  <!-- Relationship charts. -->
+
+  <complexType name="REL">
+    <sequence>
+      <sequence maxOccurs="unbounded">
+        <element name="value" type="xdf:valueType" minOccurs="2" maxOccurs="2" />
+      </sequence>
+      <element name="units" type="xdf:unitsType" minOccurs="2" maxOccurs="2" />
+    </sequence>
+  </complexType>
+
+  <!-- Miscellaneous. -->
+  
+  <simpleType name="output-variable-frequency">
+    <restriction base="string">
+      <enumeration value="never" />
+      <enumeration value="once" />
+      <enumeration value="daily" />
+      <enumeration value="weekly" />
+      <enumeration value="monthly" />
+      <enumeration value="yearly" />
+    </restriction>  
+  </simpleType>
+
+  <simpleType name="text">
+    <restriction base="string" />
+  </simpleType>
+
+</schema>

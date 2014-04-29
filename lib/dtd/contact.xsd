@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <include schemaLocation="base_types.xsd" />
+
+  <!-- Types of contact between herds. -->
+
+  <simpleType name="contact-type">
+    <restriction base="string">
+      <enumeration value="direct" />
+      <enumeration value="indirect" />
+      <enumeration value="other" />
+    </restriction>
+  </simpleType>
+
+  <complexType name="contact-spread-model-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          These parameters describe spread of the disease by direct contact
+          (movement of animals between units) or indirect contact (movement of
+          people, materials or equipment between units).
+        ]]>
+      </documentation>
+    </annotation>
+    <sequence>
+      <!-- Model parameters. -->
+      <element name="fixed-movement-rate" type="ergadm:frequency">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              A fixed integer number of shipments of animals from a unit each day 
+              (for direct contact) or a fixed integer number of movements of people,
+              materials or equipment from a unit each day (for indirect
+              contact).  Either a fixed movement rate or a mean movement rate (see below)
+              must be specified.  Fixed movement rates are primarily intended for testing:
+              most analyses should use a mean movement rate.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>     
+      <element name="movement-rate" type="ergadm:frequency">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The mean number of shipments of animals from a unit each day (for
+              direct contact) or the mean number of movements of people,
+              materials or equipment from a unit each day (for indirect
+              contact).  Either a fixed movement rate (see above) or a mean movement rate 
+              must be specified.  Fixed movement rates are primarily intended for testing:
+              most analyses should use a mean movement rate.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="distance" type="ergadm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The distance between the source of the contact and the
+              destination, given as a probability distribution.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>ergadm:length</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="delay" type="ergadm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The in-transit time between the source of the contact and the
+              destination, given as a probability distribution.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>ergadm:time</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="prob-infect" type="ergadm:probability">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The probability that a contact will result in an infection.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="movement-control" type="ergadm:REL">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              A multiplier that can be used to reduce the movement rate based
+              on the number of days since the first detection of an infected
+              unit.  This simulates applying movement controls.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>ergadm:time</x-axis-type>
+            <y-axis-type>ergadm:unitless</y-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="latent-units-can-infect" type="boolean">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether a shipment of animals from a latent unit can infect
+              another unit.  Applies only to direct contact.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="subclinical-units-can-infect" type="boolean">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether contact with a subclinical infectious unit can infect
+              another unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+    </sequence>
+    <attribute name="version" type="string" fixed="0.1" />
+    <attribute name="from-production-type" type="string" use="required" />
+    <attribute name="to-production-type" type="string" use="required" />
+    <attribute name="contact-type" type="ergadm:contact-type" use="required" />
+  </complexType>
+
+</schema>

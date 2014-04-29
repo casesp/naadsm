@@ -1,0 +1,69 @@
+set timeout 10
+#
+# expectations that clean up in case of error. Note that `$test' is
+# a purely local variable.
+#
+# The first of these is used to match any bad responses, and resynchronise
+# things by finding a prompt. The second is a timeout error, and shouldn't
+# ever be triggered.
+#
+expect_after {
+	-re "\[^\n\r\]*$prompt$" {
+		fail "$test (bad match)"
+		if { $verbose > 0 } {
+			regexp ".*\r\n(\[^\r\n\]+)(\[\r\n\])+$prompt$" \
+						$expect_out(buffer) "" output
+			send_user "\tUnmatched output: \"$output\"\n"
+		}
+	}
+	timeout {
+		fail "$test (timeout)"
+	}
+}
+
+
+
+#
+# Test that the parameters are set correctly when a uniform distribution is
+# created.
+#
+set test "create"
+send "point (1)\n"
+expect {
+	-re "<point probability distribution\[\\n\\r\]+ value=($floatpat)>.*$prompt$" {
+		set point $expect_out(1,string)
+		if { [fcmp $point 1 $epsilon] == 0 } {
+			pass "$test"
+		} else {
+			fail "$test value should be 1, not $point"
+		}
+	}
+}
+
+
+
+#
+# Test the probability density function.  Give values above, below, and at the
+# point.
+#
+set xvalues {-1 0.999 1 1.001 2}
+set answers {0 0 1 0 0}
+pdf_test $xvalues $answers
+
+
+
+#
+# Test the cumulative distribution function.  Give values above, below, and at
+# the point.
+#
+set xvalues {-1 0.999 1 1.001 2}
+set answers {0 0 1 1 1}
+cdf_test $xvalues $answers
+
+
+
+#
+# Test random number generation.
+#
+set true_answer { 0 0 0 0 1 0 0 0 0 }
+random_number_test $true_answer -3

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <include schemaLocation="base_types.xsd" />
+
+  <complexType name="vaccination-list-monitor-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          This module tracks the number of units waiting to be vaccinated.
+        ]]>
+      </documentation>
+    </annotation>    
+    <sequence>
+      <!-- No parameters. -->
+
+      <element name="output" minOccurs="0" maxOccurs="unbounded">
+        <complexType>
+          <sequence>
+            <element name="variable-name">
+              <simpleType>
+                <restriction base="string">                
+                  <enumeration value="num-units-awaiting-vaccination">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of units waiting to be vaccinated.  This
+                          variable always reports the length of the waiting
+                          list on the day of reporting, regardless of whether
+                          it is reported daily, weekly, or at some other
+                          interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-units-awaiting-vaccination-by-production-type">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of units waiting to be vaccinated, broken
+                          down by production type.  This variable always
+                          reports the length of the waiting list on the day of
+                          reporting, regardless of whether it is reported
+                          daily, weekly, or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="peak-num-units-awaiting-vaccination">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The peak number of units waiting to be vaccinated
+                          since the beginning of the simulation.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-animals-awaiting-vaccination">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of animals waiting to be vaccinated.  This
+                          variable always reports the number of animals on the
+                          waiting list on the day of reporting, regardless of
+                          whether it is reported daily, weekly, or at some
+                          other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-animals-awaiting-vaccination-by-production-type">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of animals waiting to be vaccinated,
+                          broken down by production type.  This variable always
+                          reports the number of animals on the waiting list on
+                          the day of reporting, regardless of whether it is
+                          reported daily, weekly, or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="peak-num-animals-awaiting-vaccination">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The peak number of animals waiting to be vaccinated
+                          since the beginning of the simulation.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="average-vaccination-wait-time">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The average number of days any unit was waiting to be
+                          vaccinated.  This value is based on units that have
+                          been vaccinated and units currently waiting.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="peak-vaccination-wait-time">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The peak number of days any unit was waiting to be
+                          vaccinated.  This value is based on units that have
+                          been vaccinated and units currently waiting.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                </restriction>
+              </simpleType>                   
+            </element>
+            <element name="frequency" type="ergadm:output-variable-frequency" />
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+
+    <attribute name="version" type="string" fixed="0.1" />
+  </complexType>
+
+</schema>

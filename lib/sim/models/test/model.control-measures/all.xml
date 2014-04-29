@@ -1,0 +1,3566 @@
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>no delay to start destruction program</short-name>
+
+  <description>
+    Test a scenario with no delay in starting up a destruction program and no
+    limit on the number of units that can be destroyed each day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_0</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be detected
+       and slated for destruction.
+     - On day 3 all units will be destroyed.  Their state will appear as
+       Destroyed on day 4.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>no delay to start destruction program, check reporting variables</short-name>
+
+  <description>
+    Test that the number of units destroyed, the cumulative number of units
+    destroyed, and the number of units awaiting destruction is reported 
+    correctly.  In this scenario, the same as "no delay to start destruction
+    program" above, there is no delay in starting up a destruction program and
+    no limit on the number of units that can be destroyed each day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>7 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_0_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to the test "no delay to start destruction
+    program" above.
+
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be detected
+       and slated for destruction.
+     - On day 3 all units will be destroyed.  Their state will appear as
+       Destroyed on day 4.
+  </parameter-description>
+
+  <output>
+    <tr><td>num-units-destroyed</td> <td>num-animals-destroyed</td> <td>cumulative-num-units-destroyed</td> <td>cumulative-num-animals-destroyed</td> <td>num-units-awaiting-destruction</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>0</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>4</td> <td>100</td> <td>4</td> <td>100</td> <td>0</td></tr>
+    <!-- Each herd is of size 25. -->
+    <tr><td>0</td>   <td>0</td> <td>4</td> <td>100</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>1 day to start destruction program</short-name>
+
+  <description>
+    Run again, but with a 1 day delay for setting up a destruction program.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities require 1 day to set up a destruction program before
+    beginning.  The authorities can destroy an unlimited/very large number of
+    units each day.
+    
+    There is no spread or vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be detected
+       and slated for destruction.
+     - On day 3 the destruction program has not begun.
+     - On day 4 all units will be destroyed.  Their state will appear as
+       Destroyed on day 5.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>1 day to start destruction program, check reporting variables</short-name>
+
+  <description>
+    Test that the number of units destroyed, the cumulative number of units
+    destroyed, and the number of units awaiting destruction is reported 
+    correctly.  In this scenario, the same as "1 day to start destruction
+    program" above, there is a 1 day delay for setting up a destruction
+    program.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>7 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_1_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to the test "1 day to start destruction
+    program" above.
+
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities require 1 day to set up a destruction program before
+    beginning.  The authorities can destroy an unlimited/very large number of
+    units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be detected
+       and slated for destruction.
+     - On day 3 the destruction program has not begun.
+     - On day 4 all units will be destroyed.  Their state will appear as
+       Destroyed on day 5.
+  </parameter-description>
+
+  <output>
+    <tr><td>num-units-destroyed</td> <td>num-animals-destroyed</td> <td>cumulative-num-units-destroyed</td> <td>cumulative-num-animals-destroyed</td> <td>num-units-awaiting-destruction</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>0</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>4</td> <td>100</td> <td>4</td> <td>100</td> <td>0</td></tr>
+    <!-- Each herd is of size 25. -->
+    <tr><td>0</td>   <td>0</td> <td>4</td> <td>100</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>3 days to start destruction program</short-name>
+
+  <description>
+    Run again, but with a 3 day delay for setting up a destruction program.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_3</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities can destroy an unlimited/very large number of
+    units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be
+        detected and slated for destruction.
+     - On days 3, 4, and 5 the destruction program has not begun.
+     - On day 6 all units will be destroyed.  Their state will appear
+       as Destroyed on day 7.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    Nothing to do, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>3 days to start destruction program, check reporting variables</short-name>
+
+  <description>
+    Test that the number of units destroyed, the cumulative number of units
+    destroyed, and the number of units awaiting destruction is reported 
+    correctly.  In this scenario, the same as "3 days to start destruction
+    program" above, there is a 3 day delay for setting up a destruction
+    program.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>7 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_3_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to the test "3 days to start destruction
+    program" above.
+
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities can destroy an unlimited/very large number of
+    units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 all units will be Latent.
+     - On day 2 all units will be Infectious Clinical.  They will be detected
+       and slated for destruction.
+     - On days 3, 4, and 5 the destruction program has not begun.
+     - On day 6 all units will be destroyed.  Their state will appear as
+       Destroyed on day 7.
+  </parameter-description>
+
+  <output>
+    <tr><td>num-units-destroyed</td> <td>num-animals-destroyed</td> <td>cumulative-num-units-destroyed</td> <td>cumulative-num-animals-destroyed</td> <td>num-units-awaiting-destruction</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>0</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>0</td>   <td>0</td> <td>0</td>   <td>0</td> <td>4</td></tr>
+    <tr><td>4</td> <td>100</td> <td>4</td> <td>100</td> <td>0</td></tr>
+    <!-- Each herd is of size 25. -->
+    <tr><td>0</td>   <td>0</td> <td>4</td> <td>100</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>1 unit/day destruction limit</short-name>
+
+  <description>
+    Test the destruction capacity.  Use no delay in starting up a destruction
+    program and a destruction capacity of 1 unit per day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_0_limit_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit each day.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    Nothing to do, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>2 units/day destruction limit</short-name>
+
+  <description>
+    Run again, but with a destruction capacity of 2 units per day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_0_limit_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 2 units each day.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>1 incr. to 4 units/day destruction limit</short-name>
+
+  <description>
+    Run again, but with destruction capacity increasing from 1 unit per day on
+    the first day to 4 units per day on the 4th day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_all_infected</herd-file>
+
+  <parameter-file>delay_0_limit_1-4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit on the first day.  The destruction capacity
+    increases linearly to 4 units on the fourth day.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    Nothing to do, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>3 days to start destruction program, 1 incr. to 4 units/day destruction limit</short-name>
+
+  <description>
+    Run again, but with a 3 day delay for setting up a destruction program and
+    destruction capacity increasing from 1 unit per day on the first day to 4
+    units per day on the 4th day.  This will test whether the increase is
+    marked from the day of deciding to start a destruction program (incorrect)
+    vs. the day of starting the destruction program (correct).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_all_infected</herd-file>
+
+  <parameter-file>delay_3_limit_1-4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit on the first day.  The
+    destruction capacity increases linearly to 4 units on the fourth day.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>         <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    Nothing to do, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>0 units/day (no resources for destruction)</short-name>
+
+  <description>
+    Run again, but with a destruction capacity of 0 units per day.  No units
+    should be destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>delay_0_limit_0</parameter-file>
+
+  <parameter-description>
+    The authorities can begin a destruction program immediately.  The
+    authorities have zero destruction capacity.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <!-- Nothing to do, simulation stops. -->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>no trace out</short-name>
+
+  <description>
+    Test tracing out.  In this scenario, an infected unit ships animals to a
+    neighbouring unit, then the source unit (but not the receiving unit) is
+    detected.  In this, the base test scenario, there is no tracing, so the
+    receiving unit should not be destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_0</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no trace out.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.
+     - On day 4 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out</short-name>
+
+  <description>
+    Test a scenario where an infected unit ships animals to a neighbouring
+    unit, then the source unit (but not the receiving unit) is detected.  The
+    receiving unit should be found by trace out and destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_1</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace out will find unit 0, which will also be
+       slated for destruction.
+     - On day 4 both units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, just &gt; threshold for success</short-name>
+
+  <description>
+    Test a scenario where an infected unit ships animals to a neighbouring
+    unit, then the source unit (but not the receiving unit) is detected.  The
+    receiving unit should be found by trace out and destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_success</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 0.505, which
+    will be just sufficient for success with fixed "random" numbers of 0.5.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace out will find unit 0, which will also be
+       slated for destruction.
+     - On day 4 both units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>trace out, just &gt; threshold for success, check reporting variables</short-name>
+
+  <description>
+    Check that the number of attempted and successful traces are counted
+    properly.  In this scenario, the same as "trace out, just &gt; threshold
+    for success" above, an infected unit ships animals to a neighbouring unit,
+    then the source unit (but not the receiving unit) is detected.  The
+    receiving unit should be found by trace out and destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 October 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_success_w_vars</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 0.505, which
+    will be just sufficient for success with fixed "random" numbers of 0.5.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace out will find 3 contacts with unit 0 (a
+       shipment each day on days 1, 2, and 3), so unit 0 will also be slated for
+       destruction.
+     - On day 4 both units will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-traces-attempted</td>
+      <td>num-contacts-potentially-traced:Direct Contact</td>
+      <td>num-contacts-potentially-traced:Indirect Contact</td>
+      <td>num-contacts-traced:Direct Contact</td>
+      <td>num-contacts-traced:Indirect Contact</td>
+      <td>num-units-destroyed-by-reason:reported diseased</td>
+      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>3</td>  <td>0</td>  <td>3</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>1</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, just &lt; threshold for success</short-name>
+
+  <description>
+    Test a scenario where an infected unit ships animals to a neighbouring
+    unit, then the source unit (but not the receiving unit) is detected.  The
+    receiving unit should not be found by trace out.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_failure</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 0.495, which
+    will be insufficient for success with fixed "random" numbers of 0.5.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace out will fail to discover the 3 shipments
+       to unit 0 (a shipment each day on days 1, 2, and 3).
+     - On day 4 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>trace out, just &lt; threshold for success, check reporting variables</short-name>
+
+  <description>
+    Check that the number of attempted and successful traces are counted
+    properly.  In this scenario, the same as "trace out, just &lt; threshold
+    for success" above, an infected unit ships animals to a neighbouring unit,
+    unit, then the source unit (but not the receiving unit) is detected.  The
+    receiving unit should not be found by trace out.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>13 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_failure_w_vars</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 0.495, which
+    will be insufficient for success with fixed "random" numbers of 0.5.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 1 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace out will fail to discover the 3 shipments
+       to unit 0 (a shipment each day on days 1, 2, and 3).
+     - On day 4 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-traces-attempted</td>
+      <td>num-contacts-potentially-traced:Direct Contact</td>
+      <td>num-contacts-potentially-traced:Indirect Contact</td>
+      <td>num-contacts-traced:Direct Contact</td>
+      <td>num-contacts-traced:Indirect Contact</td>
+      <td>num-units-destroyed-by-reason:reported diseased</td>
+      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>3</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace in</short-name>
+
+  <description>
+    Test tracing in.  In this scenario, an infected unit ships animals to a
+    neighbouring unit, then the receiving unit (but not the source unit) is
+    detected.  Since there is no trace in, only the receiving unit should be
+    destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_in_1</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 1), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (unit 0), the latent period
+    lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    set for movement from cattle units to pig units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased cattle vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased cattle vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  No parameters are set for
+    detecting diseased pigs, so the infection in the pigs herd will not be
+    detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 1 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 0 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Trace in will fail to discover the shipment
+       from unit 0.
+     - On day 4 unit 0 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>NaturallyImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, 2 hops</short-name>
+
+  <description>
+    Test a scenario where an infected unit ships animals to a neighbouring
+    unit, that unit in turn infects another, then the original source unit (but
+    not the others) is detected.  Since trace out goes only 1 step forward,
+    only the unit that received the first shipment should be found by trace out
+    and destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>23 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_2cattle_pigs_infected</herd-file>
+
+  <parameter-file>trace_out_2</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 2), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and immunity lasts 3 days.  For cattle (units 0 and 1), the latent
+    period lasts 1 day, infectiousness lasts 3 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The parameters for
+    movement from cattle units to cattle units are the same.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.
+    
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to and infect unit 1 (cattle).
+     - On day 2 unit 1 will be Latent.  It will ship to and infect unit 0
+       (cattle).
+     - On day 3 unit 2 (pigs) will be Infectious Clinical.  It will be detected
+       and slated for destruction.  Trace out will discover the shipment from
+       unit 2 to unit 1, and unit 1 will will also be slated for destruction.
+       Trace out will fail to discover the shipment from unit 1 to unit 0.
+     - On day 4 units 1 and 2 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>Susceptible</td>         <td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>Latent</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, &lt; time limit</short-name>
+
+  <description>
+    Test that trace out investigations can be limited to a certain number of
+    days back.  In this scenario, an infected unit ships animals to a
+    neighbouring unit, then the source unit (but not the receiving unit) is
+    detected several days later, inside the time window of interest.  The
+    receiving unit should be found by trace out and destroyed.
+
+    This test requires a third unit of a different species, which gets detected
+    early and (via movement controls) stops all animal shipments.  This allows
+    us to use the probability of detection vs. days that a unit has been
+    showing clinical signs to control the delay between the last shipment and
+    the trace out investigation.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>26 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_out_delay_2_window_3</parameter-file>
+
+  <parameter-description>
+    For sheep (unit 0), the latent period lasts 1 day, infectiousness lasts 3
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For cattle (unit 1), the latent period lasts 1 day,
+    infectiousness lasts 5 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 3 days.  For pigs (unit 2), the latent
+    period lasts 1 day, infectiousness without clinical signs lasts 1 day,
+    infectiousness with clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 1 until the public is aware of the outbreak, then it
+    immediately goes to 0, stopping further shipments.  No parameters are
+    set for movement from cattle units to pig units, or for movement to or from
+    sheep units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased sheep vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased sheep vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+    
+    The probability of detecting diseased pigs is 0 when they first show
+    clinical signs.  It increases to 1 over 3 days.  The probability of
+    detecting diseased pigs vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.  Thus, with fixed "random" numbers of
+    0.5, diseased pigs will be detected after 2 days (when probability = 2/3).
+
+    No parameters are set for detecting diseased cattle, so the infection in
+    the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 3 days back.
+    
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to unit 1 (cattle).
+     - On day 2 unit 2 (pigs) will ship to unit 1 (cattle), unit 0 (sheep) will
+       be detected and slated for destruction, and the public will become aware
+       of the outbreak.
+     - On day 3 unit 0 will destroyed.  On this day and forward, there will be
+       no shipments.
+     - On day 4 (when unit 2 has been infectious for 2 days) unit 2 (pigs) will
+       be detected and slated for destruction.  Trace out will find unit 1
+       (cattle), which last received a shipment from unit 2 two days ago, and
+       unit 1 will also be slated for destruction.
+     - On day 5 units 1 and 2 will be destroyed. 
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, = time limit</short-name>
+
+  <description>
+    Test that trace out investigations can be limited to a certain number of
+    days back.  In this scenario, an infected unit ships animals to a
+    neighbouring unit, then the source unit (but not the receiving unit) is
+    detected several days later, just inside the time window of interest.  The
+    receiving unit should be found by trace out and destroyed.
+
+    This test requires a third unit of a different species, which gets detected
+    early and (via movement controls) stops all animal shipments.  This allows
+    us to use the probability of detection vs. days that a unit has been
+    showing clinical signs to control the delay between the last shipment and
+    the trace out investigation.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>26 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_out_delay_3_window_3</parameter-file>
+
+  <parameter-description>
+    For sheep (unit 0), the latent period lasts 1 day, infectiousness lasts 3
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For cattle (unit 1), the latent period lasts 1 day,
+    infectiousness lasts 5 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 3 days.  For pigs (unit 2), the latent
+    period lasts 1 day, infectiousness without clinical signs lasts 1 day,
+    infectiousness with clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 1 until the public is aware of the outbreak, then it
+    immediately goes to 0, stopping further shipments.  No parameters are
+    set for movement from cattle units to pig units, or for movement to or from
+    sheep units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased sheep vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased sheep vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+    
+    The probability of detecting diseased pigs is 0 when they first show
+    clinical signs.  It increases to 1 over 5 days.  The probability of
+    detecting diseased pigs vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.  Thus, with fixed "random" numbers of
+    0.5, diseased pigs will be detected after 3 days (when probability = 3/5).
+
+    No parameters are set for detecting diseased cattle, so the infection in
+    the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 3 days back.
+    
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to unit 1 (cattle).
+     - On day 2 unit 2 (pigs) will ship to unit 1 (cattle), unit 0 (sheep) will
+       be detected and slated for destruction, and the public will become aware
+       of the outbreak.
+     - On day 3 unit 0 will be destroyed.  On this day and forward, there will
+       be no shipments.
+     - On day 5 (when unit 2 has been infectious for 3 days) unit 2 (pigs) will
+       be detected and slated for destruction.  Trace out will find unit 1
+       (cattle), which last received a shipment from unit 2 three days ago, and
+       unit 1 will also be slated for destruction.
+     - On day 6 units 1 and 2 will be destroyed. 
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace out, &gt; time limit</short-name>
+
+  <description>
+    Test that trace out investigations can be limited to a certain number of
+    days back.  In this scenario, an infected unit ships animals to a
+    neighbouring unit, then the source unit (but not the receiving unit) is
+    detected several days later, outside the time window of interest.  The
+    receiving unit should not be destroyed.
+
+    This test requires a third unit of a different species, which gets detected
+    early and (via movement controls) stops all animal shipments.  This allows
+    us to use the probability of detection vs. days that a unit has been
+    showing clinical signs to control the delay between the last shipment and
+    the trace out investigation.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>26 February 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_out_delay_4_window_3</parameter-file>
+
+  <parameter-description>
+    For sheep (unit 0), the latent period lasts 1 day, infectiousness lasts 3
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For cattle (unit 1), the latent period lasts 1 day,
+    infectiousness lasts 5 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 3 days.  For pigs (unit 2), the latent
+    period lasts 1 day, infectiousness without clinical signs lasts 1 day,
+    infectiousness with clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 1 until the public is aware of the outbreak, then it
+    immediately goes to 0, stopping further shipments.  No parameters are
+    set for movement from cattle units to pig units, or for movement to or from
+    sheep units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased sheep vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased sheep vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+    
+    The probability of detecting diseased pigs is 0 when they first show
+    clinical signs.  It increases to 1 over 7 days.  The probability of
+    detecting diseased pigs vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.  Thus, with fixed "random" numbers of
+    0.5, diseased pigs will be detected after 4 days (when probability = 4/7).
+
+    No parameters are set for detecting diseased cattle, so the infection in
+    the cattle herd will not be detected.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 3 days back.
+    
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to unit 1 (cattle).
+     - On day 2 unit 2 (pigs) will ship to unit 1 (cattle), unit 0 (sheep) will
+       be detected and slated for destruction, and the public will become aware
+       of the outbreak.
+     - On day 3 unit 0 will be destroyed.  On this day and forward, there will
+       be no shipments.
+     - On day 6 (when unit 2 has been infectious for 4 days) unit 2 (pigs) will
+       be detected and slated for destruction.  Trace out will find unit 1
+       (cattle), which last received a shipment from unit 2 four days ago, and
+       unit 1 will not be slated for destruction.
+     - On day 7 unit 2 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>NaturallyImmune</td>     <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace without destruction 1</short-name>
+
+  <description>
+    Test that traced contacts can be quarantined without being destroyed.  In
+    this test and the following four, there are three units of different
+    production types:
+
+    0-&gt;1&lt;-2
+
+    Units 0 and 2 are infected; the middle unit 1 is not.  Different effects
+    can be observed on unit 1 depending on whether unit 0 ships to unit 1, unit
+    2 ships to unit 1, or both units 0 and 2 ship to unit 1.  The scenario can
+    be further modified by having one of those shipments traced.
+
+    In this scenario, unit 2 does not ship to unit 1, so there is no trace to
+    unit 1, no quarantine on unit 1, and no destruction of unit 1.  Unit 0 does
+    ship to unit 1 and causes unit 1 to become infected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 Jan 2006</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_no_destroy_1</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, infectiousness
+    lasts 3 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 5 days.
+
+    The mean movement rate from sheep units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 0 until the public is aware of the outbreak, then it
+    immediately goes to 1.  (This is the opposite of what one might expect from
+    movement controls; its purpose here is to make sure any contact we see from
+    unit 0 to unit 1 happens after the trace, not before.)
+
+    There are no shipments from pig units to cattle units.
+
+    Latent units can be the source of an exposure.
+    
+    The probability of infection given exposure is 1.
+    
+    The probability of detecting diseased pig units vs. the number of days they
+    have been showing clinical signs is fixed at 1. The probability of
+    detecting diseased pig units vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  Other production types are
+    not detected.
+
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities will destroy units that are detected as
+    diseased.  The authorities will also destroy trace outs.  The probability
+    of success for a trace-out investigation is 1.  The authorities can destroy
+    an unlimited/very large number of units each day.
+
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 (sheep) and 2 (pigs) will be latent.  There will be no
+       shipments from unit 0 because the movement rate multiplier is 0.
+     - On day 2 units 0 and 2 will be Infectious Clinical.  Unit 2 (pigs) will
+       be detected and marked for destruction.  No trace outs will be found
+       from unit 2 because it has made no shipments.
+     - On day 3 (1 day after the first detection) the movement rate multiplier
+       for sheep-to-cattle movements will be 1.  Unit 0 (sheep) will ship to
+       and infect unit 1.  The destruction program will not be ready for 3 more
+       days.
+     - On day 4 unit 1 will be Latent.  The destruction program will not be
+       ready for 2 more days.
+     - On day 5 nothing new will happen.  The destruction program will not be
+       ready for 1 more day.
+     - On day 6 the destruction program will be ready to begin.  Unit 2 will be
+       destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace without destruction 2</short-name>
+
+  <description>
+    Test that traced contacts can be quarantined without being destroyed.  In
+    this test, there are three units of different production types:
+
+    0-&gt;1&lt;-2
+
+    Units 0 and 2 are infected; the middle unit 1 is not.  Different effects
+    can be observed on unit 1 depending on whether unit 0 ships to unit 1, unit
+    2 ships to unit 1, or both units 0 and 2 ship to unit 1.  The scenario can
+    be further modified by having one of those shipments traced.
+
+    In this scenario, unit 2 ships to and infects unit 1, the shipment is
+    traced and unit 1 is destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 Jan 2006</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_no_destroy_2</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, infectiousness
+    lasts 3 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 5 days.
+
+    The mean movement rate from sheep units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 0 until the public is aware of the outbreak, then it
+    immediately goes to 1.  (This is the opposite of what one might expect from
+    movement controls; its purpose here is to make sure any contact we see from
+    unit 0 to unit 1 happens after the trace, not before.)
+
+    The mean movement rate from pig units to cattle units is also 0.694 per
+    day, distance 10 km.  The movement rate is unaffected by public knowledge
+    of an outbreak.
+
+    Latent units can be the source of an exposure.
+    
+    The probability of infection given exposure is 1.
+    
+    The probability of detecting diseased pig units vs. the number of days they
+    have been showing clinical signs is fixed at 1. The probability of
+    detecting diseased pig units vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  Other production types are
+    not detected.
+
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities will destroy units that are detected as
+    diseased.  The authorities will also destroy trace outs.  The probability
+    of success for a trace-out investigation is 1.  The authorities can destroy
+    an unlimited/very large number of units each day.
+
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 (sheep) and 2 (pigs) will be latent.  There will be no
+       shipments from unit 0 because the movement rate multiplier is 0.  But
+       there will be a shipment from unit 2 to unit 1, infecting unit 1.
+     - On day 2 units 0 and 2 will be Infectious Clinical.  Unit 2 (pigs) will
+       be detected and marked for destruction.  Trace out will discover the
+       contact with unit 1, so unit 1 will also be marked for destruction.
+     - On day 3 (1 day after the first detection) the movement rate multiplier
+       for sheep-to-cattle movements will be 1.  Unit 0 (sheep) will ship to
+       unit 1, but the shipment won't have an effect because unit 1 is already
+       infected.  The destruction program will not be ready for 3 more days.
+     - On day 4 nothing new will happen.  The destruction program will not be
+       ready for 2 more days.
+     - On day 5 nothing new will happen.  The destruction program will not be
+       ready for 1 more day.
+     - On day 6 the destruction program will be ready to begin.  Units 1 and 2
+       will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace without destruction 3</short-name>
+
+  <description>
+    Test that traced contacts can be quarantined without being destroyed.  In
+    this test, there are three units of different production types:
+
+    0-&gt;1&lt;-2
+
+    Units 0 and 2 are infected; the middle unit 1 is not.  Different effects
+    can be observed on unit 1 depending on whether unit 0 ships to unit 1, unit
+    2 ships to unit 1, or both units 0 and 2 ship to unit 1.  The scenario can
+    be further modified by having one of those shipments traced.
+
+    In this scenario, unit 2 ships to unit 1, but the shipment does not result
+    in infection and is not traced.  Unit 0 ships to unit 1 and causes unit 1
+    to become infected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 Jan 2006</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_no_destroy_3</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, infectiousness
+    lasts 3 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 5 days.
+
+    The mean movement rate from sheep units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 0 until the public is aware of the outbreak, then it
+    immediately goes to 1.  (This is the opposite of what one might expect from
+    movement controls; its purpose here is to make sure any contact we see from
+    unit 0 to unit 1 happens after the trace, not before.)  Latent units can be
+    the source of an exposure, and the probability of infection given exposure
+    is 1.
+
+    The mean movement rate from pig units to cattle units is also 0.694 per
+    day, distance 10 km.  The movement rate is unaffected by public knowledge
+    of an outbreak.  Latent units can be the source of an exposure, and the
+    probability of infection given exposure is 0.
+    
+    The probability of detecting diseased pig units vs. the number of days they
+    have been showing clinical signs is fixed at 1. The probability of
+    detecting diseased pig units vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  Other production types are
+    not detected.
+
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities will destroy units that are detected as
+    diseased.  The authorities will also destroy trace outs.  The probability
+    of success for a trace-out investigation is 0.  The authorities can destroy
+    an unlimited/very large number of units each day.
+
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 (sheep) and 2 (pigs) will be latent.  There will be no
+       shipments from unit 0 because the movement rate multiplier is 0.  There
+       will be a shipment from unit 2 to unit 1, but unit 1 will not be
+       infected (the probability of infection given exposure is too low).
+     - On day 2 units 0 and 2 will be Infectious Clinical.  Unit 2 (pigs) will
+       be detected and marked for destruction.  Trace out will fail to discover
+       the contact with unit 1, so unit 1 will not be marked for destruction.
+     - On day 3 (1 day after the first detection) the movement rate multiplier
+       for sheep-to-cattle movements will be 1.  Unit 0 (sheep) will ship to
+       and infect unit 1.  The destruction program will not be ready for 3 more
+       days.
+     - On day 4 nothing new will happen.  The destruction program will not be
+       ready for 2 more days.
+     - On day 5 nothing new will happen.  The destruction program will not be
+       ready for 1 more day.
+     - On day 6 the destruction program will be ready to begin.  Unit 2 will be
+       destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace without destruction 4</short-name>
+
+  <description>
+    Test that traced contacts can be quarantined without being destroyed.  In
+    this test, there are three units of different production types:
+
+    0-&gt;1&lt;-2
+
+    Units 0 and 2 are infected; the middle unit 1 is not.  Different effects
+    can be observed on unit 1 depending on whether unit 0 ships to unit 1, unit
+    2 ships to unit 1, or both units 0 and 2 ship to unit 1.  The scenario can
+    be further modified by having one of those shipments traced.
+
+    In this scenario, unit 2 ships to unit 1; the shipment does not result in
+    infection but it is traced.  Unit 0 tries to ship to unit 1 but is blocked
+    by quarantine.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 Jan 2006</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_no_destroy_4</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, infectiousness
+    lasts 3 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 5 days.
+
+    The mean movement rate from sheep units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 0 until the public is aware of the outbreak, then it
+    immediately goes to 1.  (This is the opposite of what one might expect from
+    movement controls; its purpose here is to make sure any contact we see from
+    unit 0 to unit 1 happens after the trace, not before.)  Latent units can be
+    the source of an exposure, and the probability of infection given exposure
+    is 1.
+
+    The mean movement rate from pig units to cattle units is also 0.694 per
+    day, distance 10 km.  The movement rate is unaffected by public knowledge
+    of an outbreak.  Latent units can be the source of an exposure, and the
+    probability of infection given exposure is 0.
+    
+    The probability of detecting diseased pig units vs. the number of days they
+    have been showing clinical signs is fixed at 1. The probability of
+    detecting diseased pig units vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  Other production types are
+    not detected.
+
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities will destroy units that are detected as
+    diseased.  The authorities will also destroy trace outs.  The probability
+    of success for a trace-out investigation is 1.  The authorities can destroy
+    an unlimited/very large number of units each day.
+
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 (sheep) and 2 (pigs) will be latent.  There will be no
+       shipments from unit 0 because the movement rate multiplier is 0.  There
+       will be a shipment from unit 2 to unit 1, but unit 1 will not be
+       infected (the probability of infection given exposure is too low).
+     - On day 2 units 0 and 2 will be Infectious Clinical.  Unit 2 (pigs) will
+       be detected and marked for destruction.  Trace out will discover the
+       contact with unit 1, so unit 1 will also be marked for destruction.
+     - On day 3 (1 day after the first detection) the movement rate multiplier
+       for sheep-to-cattle movements will be 1.  Unit 0 (sheep) will attempt to
+       ship to unit 1 but will be blocked by quarantine.  The destruction
+       program will not be ready for 3 more days.
+     - On day 4 nothing new will happen.  The destruction program will not be
+       ready for 2 more days.
+     - On day 5 nothing new will happen.  The destruction program will not be
+       ready for 1 more day.
+     - On day 6 the destruction program will be ready to begin.  Units 1 and 2
+       will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Destroyed</td>    <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>trace without destruction 5</short-name>
+
+  <description>
+    Test that traced contacts can be quarantined without being destroyed.  In
+    this test, there are three units of different production types:
+
+    0-&gt;1&lt;-2
+
+    Units 0 and 2 are infected; the middle unit 1 is not.  Different effects
+    can be observed on unit 1 depending on whether unit 0 ships to unit 1, unit
+    2 ships to unit 1, or both units 0 and 2 ship to unit 1.  The scenario can
+    be further modified by having one of those shipments traced.
+
+    In this scenario, unit 2 ships to unit 1; the shipment does not result in
+    infection but it is traced.  Unit 0 tries to ship to unit 1 but is blocked
+    by quarantine.  The trace is not destroyed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 Jan 2006</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>trace_no_destroy_5</parameter-file>
+
+  <parameter-description>
+    For all production types, the latent period lasts 1 day, infectiousness
+    lasts 3 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 5 days.
+
+    The mean movement rate from sheep units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 10 km.  The movement rate
+    multiplier is 0 until the public is aware of the outbreak, then it
+    immediately goes to 1.  (This is the opposite of what one might expect from
+    movement controls; its purpose here is to make sure any contact we see from
+    unit 0 to unit 1 happens after the trace, not before.)  Latent units can be
+    the source of an exposure, and the probability of infection given exposure
+    is 1.
+
+    The mean movement rate from pig units to cattle units is also 0.694 per
+    day, distance 10 km.  The movement rate is unaffected by public knowledge
+    of an outbreak.  Latent units can be the source of an exposure, and the
+    probability of infection given exposure is 0.
+    
+    The probability of detecting diseased pig units vs. the number of days they
+    have been showing clinical signs is fixed at 1. The probability of
+    detecting diseased pig units vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.  Other production types are
+    not detected.
+
+    The authorities require 3 days to set up a destruction program before
+    beginning.  The authorities will destroy units that are detected as
+    diseased.  The authorities can destroy an unlimited/very large number of
+    units each day.  The authorities will quarantine but not destroy trace
+    outs.  The probability of success for a trace-out investigation is 1.
+
+    There is no vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 (sheep) and 2 (pigs) will be latent.  There will be no
+       shipments from unit 0 because the movement rate multiplier is 0.  There
+       will be a shipment from unit 2 to unit 1, but unit 1 will not be
+       infected (the probability of infection given exposure is too low).
+     - On day 2 units 0 and 2 will be Infectious Clinical.  Unit 2 (pigs) will
+       be detected and marked for destruction.  Trace out will discover the
+       contact with unit 1; unit 1 will be quarantined but not marked for
+       destruction.
+     - On day 3 (1 day after the first detection) the movement rate multiplier
+       for sheep-to-cattle movements will be 1.  Unit 0 (sheep) will attempt to
+       ship to unit 1 but will be blocked by quarantine.  The destruction
+       program will not be ready for 3 more days.
+     - On day 4 nothing new will happen.  The destruction program will not be
+       ready for 2 more days.
+     - On day 5 nothing new will happen.  The destruction program will not be
+       ready for 1 more day.
+     - On day 6 the destruction program will be ready to begin.  Unit 2 will be
+       destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority detected &gt; nearby &gt; trace out</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units will be marked for destruction: one because it is detected, another
+    because it received animals from the detected unit, and a third because it
+    is near the detected unit.  No unit will be marked for destruction for more
+    than one reason.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_2cattle_pigs_infected</herd-file>
+
+  <parameter-file>priority_detect_nearby_trace</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 2), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
+    and immunity lasts 3 days.  For cattle (units 0 and 1), the latent period
+    lasts 1 day, infectiousness lasts 2 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 20 km.  No parameters are
+    set for movement from cattle units to pigs units or from cattle units to
+    cattle units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit each day.  The priorities for destruction
+    are: detected units = 1, units within 10 km of a detected unit = 2, units
+    that have received animals from a detected unit = 3.
+
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 14 days back.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 2 will ship to unit 0.
+     - On day 3 unit 2 will be detected.  All 3 units will be marked for
+       destruction: unit 2 because of the detection, unit 1 because it is
+       within 10 km of unit 2, and unit 0 because of trace out.
+     - On day 4 unit 2 will be destroyed because detection has the highest
+       priority.
+     - On day 5 unit 1 will be destroyed because ring destruction has the
+       second-highest priority.
+     - On day 6 unit 0 will be destroyed because trace out has the lowest
+       priority.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Destroyed</td>    <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority nearby &gt; detected &gt; trace out</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units will be marked for destruction: one because it is detected, another
+    because it received animals from the detected unit, and a third because it
+    is near the detected unit.  No unit will be marked for destruction for more
+    than one reason.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_2cattle_pigs_infected</herd-file>
+
+  <parameter-file>priority_nearby_detect_trace</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 2), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
+    and immunity lasts 3 days.  For cattle (units 0 and 1), the latent period
+    lasts 1 day, infectiousness lasts 2 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 20 km.  No parameters are
+    set for movement from cattle units to pigs units or from cattle units to
+    cattle units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit each day.  The priorities for destruction
+    are: units within 10 km of a detected unit = 1, detected units = 2, units
+    that have received animals from a detected unit = 3.
+    
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 14 days back.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 2 will ship to unit 0.
+     - On day 3 unit 2 will be detected.  All 3 units will be marked for
+       destruction: unit 2 because of the detection, unit 1 because it is
+       within 10 km of unit 2, and unit 0 because of trace out.
+     - On day 4 unit 1 will be destroyed because ring destruction has the
+       highest priority.
+     - On day 5 unit 2 will be destroyed because detection has the
+       second-highest priority.
+     - On day 6 unit 0 will be destroyed because trace out has the lowest
+       priority.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Destroyed</td>    <td>NaturallyImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Destroyed</td>    <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority trace out &gt; detected &gt; nearby</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units will be marked for destruction: one because it is detected, another
+    because it received animals from the detected unit, and a third because it
+    is near the detected unit.  No unit will be marked for destruction for more
+    than one reason.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 April 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_2cattle_pigs_infected</herd-file>
+
+  <parameter-file>priority_trace_detect_nearby</parameter-file>
+
+  <parameter-description>
+    For pigs (unit 2), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
+    and immunity lasts 3 days.  For cattle (units 0 and 1), the latent period
+    lasts 1 day, infectiousness lasts 2 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 20 km.  No parameters are
+    set for movement from cattle units to pigs units or from cattle units to
+    cattle units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit each day.  The priorities for destruction
+    are: units that have received animals from a detected unit = 1, detected
+    units = 2, units within 10 km of a detected unit = 3.
+    
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 14 days back.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 2 will ship to unit 0.
+     - On day 3 unit 2 will be detected.  All 3 units will be marked for
+       destruction: unit 2 because of the detection, unit 1 because it is
+       within 10 km of unit 2, and unit 0 because of trace out.
+     - On day 4 unit 0 will be destroyed because trace out has the highest
+       priority.
+     - On day 5 unit 2 will be destroyed because detection has the
+       second-highest priority.
+     - On day 6 unit 1 will be destroyed because ring destruction has the
+       lowest priority.
+  </parameter-description>
+
+  <output>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>  <td>Latent</td></tr>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>NaturallyImmune</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>control-measures</category>
+  <short-name>units awaiting destruction</short-name>
+
+  <description>
+    Test that the number of units awaiting destruction is counted correctly.
+    In this scenario, three units will be marked for destruction: one because
+    it is detected, another because it received animals from the detected unit,
+    and a third because it is near the detected unit.  No unit will be marked
+    for destruction for more than one reason.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 May 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_2cattle_pigs_infected</herd-file>
+
+  <parameter-file>destruction_list_3_units_3_reasons</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to the test "priority detected &gt; nearby
+    &gt; trace out" above.
+
+    For pigs (unit 2), the latent period lasts 1 day, infectiousness without
+    clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
+    and immunity lasts 3 days.  For cattle (units 0 and 1), the latent period
+    lasts 1 day, infectiousness lasts 2 days, clinical signs accompany
+    infectiousness immediately, and immunity lasts 3 days.
+
+    The mean movement rate from pig units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 20 km.  No parameters are
+    set for movement from cattle units to pigs units or from cattle units to
+    cattle units.
+
+    Latent units can be the source of an exposure.
+
+    The probability of infection given exposure is 1.
+
+    The probability of detecting diseased pigs vs. the number of days they have
+    been showing clinical signs is fixed at 1.  The probability of detecting
+    diseased pigs vs. the number of days since a public announcement of an
+    outbreak is also fixed at 1.  No parameters are set for detecting diseased
+    cattle, so the infection in the cattle herd will not be detected.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy 1 unit each day.  The priorities for destruction
+    are: detected units = 1, units within 10 km of a detected unit = 2, units
+    that have received animals from a detected unit = 3.
+
+    The probability of success for a trace-out investigation is 1.  The period
+    of interest for a trace-out investigation is 14 days back.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 2 (pigs) will ship to and infect unit 0 (cattle).
+     - On day 2 unit 2 will ship to unit 0.
+     - On day 3 unit 2 will be detected.  All 3 units will be marked
+       for destruction: unit 2 because of the detection, unit 1 because it is
+       within 10 km of unit 2, and unit 0 because of trace out.
+     - On day 4 unit 2 will be destroyed because detection has the
+       highest priority.
+     - On day 5 unit 1 will be destroyed because ring destruction has
+       the second-highest priority.
+     - On day 6 unit 0 will be destroyed because trace out has the
+       lowest priority.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>num-units-awaiting-destruction</td>
+      <td>num-units-destroyed-by-reason:reported diseased</td>
+      <td>num-units-destroyed-by-reason:ring destruction</td>
+      <td>num-units-destroyed-by-reason:trace out-direct contact</td>
+    </tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>3</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority production type &gt; time waiting 1</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units of different production types will be detected and marked for
+    destruction on three successive days.  The destruction order will be
+    specified by production type.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_all_infected</herd-file>
+
+  <parameter-file>priority_prodtype_time_1</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 2), the latent period is 1 day longer, and for
+    sheep (unit 3), the latent period is 2 days longer.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  The priorities
+    for destruction are: production type (cattle &gt; pigs &gt; sheep) &gt;
+    reason &gt; time waiting.
+
+    There is no disease spread and no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 all 3 units will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.
+     - On day 3 unit 1 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 2 more days.
+     - On day 4 unit 2 (sheep) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       0 will be destroyed because it is cattle.
+     - On day 6 unit 1 will be destroyed because it is pigs.
+     - On day 7 unit 2 will be destroyed because it is sheep.
+
+    Note that the destruction order by production type is the
+    &lt;i&gt;same&lt;/i&gt; as it would have been by time waiting.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority production type &gt; time waiting 2</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units of different production types will be detected and marked for
+    destruction on three successive days.  The destruction order will be
+    specified by production type.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_all_infected</herd-file>
+
+  <parameter-file>priority_prodtype_time_2</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 2), the latent period is 1 day longer, and for
+    sheep (unit 3), the latent period is 2 days longer.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  The priorities
+    for destruction are: production type (sheep &gt; pigs &gt; cattle) &gt;
+    reason &gt; time waiting.
+
+    There is no disease spread and no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 all 3 units will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.
+     - On day 3 unit 1 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 2 more days.
+     - On day 4 unit 2 (sheep) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       2 will be destroyed because it is sheep.
+     - On day 6 unit 1 will be destroyed because it is pigs.
+     - On day 7 unit 0 will be destroyed because it is cattle.
+
+    Note that the destruction order by production type is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been by time waiting.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority time waiting &gt; production type</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, three
+    units of different production types will be detected and marked for
+    destruction on three successive days.  The destruction order will be
+    specified by time waiting.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_all_infected</herd-file>
+
+  <parameter-file>priority_time_prodtype</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 2), the latent period is 1 day longer, and for
+    sheep (unit 3), the latent period is 2 days longer.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  The priorities
+    for destruction are: time waiting &gt; production type (sheep &gt; pigs
+    &gt; cattle) &gt; reason.
+
+    There is no disease spread and no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 all 3 units will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.
+     - On day 3 unit 1 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 2 more days.
+     - On day 4 unit 2 (sheep) will be infectious clinical.  It will
+       be detected and marked for destruction.  The destruction program will
+       not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       0 will be destroyed because it has been waiting for the longest.
+     - On day 6 unit 1 will be destroyed because it has been waiting
+       the longest (out of the 2 left).
+     - On day 7 unit 0 will be destroyed.
+
+    Note that the destruction order by time waiting is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been by production type.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority production type &gt; reason &gt; time waiting</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, two
+    units with the same production type will be marked for destruction on
+    different days and for different reasons.  The destruction order will be
+    specified by reason for destruction.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_4</herd-file>
+
+  <parameter-file>priority_prodtype_reason_time</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 3), the latent period is 1 day longer, and for
+    sheep (units 1 and 2), the latent period is 2 days longer.
+
+    The mean movement rate from pig units to sheep units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.
+
+    The probability of detecting diseased cattle and pig units vs. the number
+    of days they have been showing clinical signs is fixed at 1.  The
+    probability of detecting diseased cattle and pig units vs. the number of
+    days since a public announcement of an outbreak is also fixed at 1.  No
+    parameters are set for detecting diseased sheep.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  Direct contacts
+    will be traced and destroyed; the probability of success for a trace-out
+    investigation is 1.  Units within 1 km of a detected unit will also be
+    destroyed.  The priorities for destruction are: production type (pigs &gt;
+    cattle &gt; sheep) &gt; reason (basic &gt; trace &gt; ring) &gt; time
+    waiting.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 (cattle) and unit 3 (pigs) will be latent.
+       Unit 3 will ship to unit 2 (sheep) and infect it.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 1 (sheep) will also be
+       marked for destruction because it is inside a 1 km ring.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 2 (sheep) will also be
+       marked for destruction because it received animals from unit 3.  The
+       destruction program will not be ready for 2 more days.
+     - On day 4 nothing new will happen.  The destruction program
+       will not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       3 will be destroyed because it is pigs.
+     - On day 6 unit 0 will be destroyed because it is cattle.
+     - On day 7 the units remaining to be destroyed (1 and 2) are both
+       sheep, so the reason for destruction will be used to prioritize them.
+       Unit 2 will be destroyed because trace back has priority over ring
+       destruction.
+     - On day 8 unit 1 will be destroyed.
+
+    Note that the destruction order is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been
+    if time waiting had priority over reason for destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>Destroyed</td>           <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority production type &gt; time waiting &gt; reason</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, two
+    units with the same production type will be marked for destruction on
+    different days and for different reasons.  The destruction order will be
+    specified by time waiting.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_4</herd-file>
+
+  <parameter-file>priority_prodtype_time_reason</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 3), the latent period is 1 day longer, and for
+    sheep (units 1 and 2), the latent period is 2 days longer.
+
+    The mean movement rate from pig units to sheep units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.
+
+    The probability of detecting diseased cattle and pig units vs. the number
+    of days they have been showing clinical signs is fixed at 1.  The
+    probability of detecting diseased cattle and pig units vs. the number of
+    days since a public announcement of an outbreak is also fixed at 1.  No
+    parameters are set for detecting diseased sheep.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  Direct contacts
+    will be traced and destroyed; the probability of success for a trace-out
+    investigation is 1.  Units within 1 km of a detected unit will also be
+    destroyed.  The priorities for destruction are: production type (pigs &gt;
+    cattle &gt; sheep) &gt; time waiting &gt; reason (basic &gt; trace &gt;
+    ring).
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 (cattle) and unit 3 (pigs) will be latent.
+       Unit 3 will ship to unit 2 (sheep) and infect it.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 1 (sheep) will also be
+       marked for destruction because it is inside a 1 km ring.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 2 (sheep) will also be
+       marked for destruction because it received animals from unit 3.  The
+       destruction program will not be ready for 2 more days.
+     - On day 4 nothing new will happen.  The destruction program
+       will not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       3 will be destroyed because it is pigs.
+     - On day 6 unit 0 will be destroyed because it is cattle.
+     - On day 7 the units remaining to be destroyed (1 and 2) are both
+       sheep, so time waiting will be used to prioritize them.  Unit 1 will be
+       destroyed because it has been waiting since day 2 (unit 2 was marked
+       for destruction a day later).
+     - On day 8 unit 2 will be destroyed.
+
+    Note that the destruction order is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been
+    if reason had priority over time waiting.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>InfectiousClinical</td>  <td>Destroyed</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority production type &gt; time waiting &gt; reason, -1 production type</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, one
+    production type is left out of destruction entirely.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_4</herd-file>
+
+  <parameter-file>priority_prodtype-1_time_reason</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 3), the latent period is 1 day longer, and for
+    sheep (units 1 and 2), the latent period is 2 days longer.
+
+    The mean movement rate from pig units to sheep units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.
+
+    The probability of detecting diseased cattle and pig units vs. the number
+    of days they have been showing clinical signs is fixed at 1.  The
+    probability of detecting diseased cattle and pig units vs. the number of
+    days since a public announcement of an outbreak is also fixed at 1.  No
+    parameters are set for detecting diseased sheep.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  Direct contacts
+    will be traced and destroyed; the probability of success for a trace-out
+    investigation is 1.  Units within 1 km of a detected unit will also be
+    destroyed.  The priorities for destruction are: production type (cattle
+    &gt; sheep) &gt; time waiting &gt; reason (basic &gt; trace &gt; ring).
+    Pigs are not destroyed.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 (cattle) and unit 3 (pigs) will be latent.
+       Unit 3 will ship to unit 2 (sheep) and infect it.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 1 (sheep) will also be
+       marked for destruction because it is inside a 1 km ring.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 2 (sheep) will also be
+       marked for destruction because it received animals from unit 3.  The
+       destruction program will not be ready for 2 more days.
+     - On day 4 nothing new will happen.  The destruction program
+       will not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       0 will be destroyed because it is cattle.
+     - On day 6 the units remaining to be destroyed (1 and 2) are both
+       sheep, so time waiting will be used to prioritize them.  Unit 1 will be
+       destroyed because it has been waiting since day 2 (unit 2 was marked
+       for destruction a day later).
+     - On day 7 unit 2 will be destroyed.
+
+    Unit 3 (pigs) is never destroyed.  The simulation ends when unit 3 ceases
+    to be infectious.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>NaturallyImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>priority reason &gt; time waiting &gt; production type, -1 production type</short-name>
+
+  <description>
+    Test that destruction priorities are respected.  In this scenario, one
+    production type is left out of destruction entirely.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_4</herd-file>
+
+  <parameter-file>priority_reason_time_prodtype-1</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 10
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 5 days. For pigs (unit 3), the latent period is 1 day longer, and for
+    sheep (units 1 and 2), the latent period is 2 days longer.
+
+    The mean movement rate from pig units to sheep units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.
+
+    The probability of detecting diseased cattle and pig units vs. the number
+    of days they have been showing clinical signs is fixed at 1.  The
+    probability of detecting diseased cattle and pig units vs. the number of
+    days since a public announcement of an outbreak is also fixed at 1.  No
+    parameters are set for detecting diseased sheep.
+
+    The authorities require 2 days to set up a destruction program before
+    beginning.  The authorities can destroy 1 unit each day.  Direct contacts
+    will be traced and destroyed; the probability of success for a trace-out
+    investigation is 1.  Units within 1 km of a detected unit will also be
+    destroyed.  The priorities for destruction are: reason (basic &gt; trace
+    &gt; ring) &gt; time waiting &gt; production type (cattle &gt; sheep).
+    Pigs are not destroyed.
+
+    There is no vaccination.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 (cattle) and unit 3 (pigs) will be latent.
+       Unit 3 will ship to unit 2 (sheep) and infect it.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 1 (sheep) will also be
+       marked for destruction because it is inside a 1 km ring.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and marked for destruction.  Unit 2 (sheep) will also be
+       marked for destruction because it received animals from unit 3.  The
+       destruction program will not be ready for 2 more days.
+     - On day 4 nothing new will happen.  The destruction program
+       will not be ready for 1 more day.
+     - On day 5 the destruction program will be ready to begin.  Unit
+       0 will be destroyed because it was detected as diseased (basic
+       destruction).
+     - On day 6 unit 2 will be destroyed because trace back has
+       priority over ring destruction.
+     - On day 7 unit 1 will be destroyed.
+
+    Unit 3 (pigs) is never destroyed.  The simulation ends when unit 3 ceases
+    to be infectious.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Susceptible</td>  <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>    <td>Destroyed</td>           <td>NaturallyImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination priority production type &gt; time waiting 1</short-name>
+
+  <description>
+    Test that vaccination priorities are respected.  In this scenario, two
+    units of different production types will be detected and marked for
+    vaccination on two successive days.  The vaccination order will be
+    specified by production type.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_3</herd-file>
+
+  <parameter-file>vacc_priority_prodtype_time_1</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0, initially infected), the latent period lasts 1 day,
+    infectiousness lasts 10 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 5 days. For pigs (unit 3, initially
+    infected), the latent period is 1 day longer.  For sheep and goats (units
+    1 and 2), the duration of the disease stages are irrelevant but vaccine
+    immunity lasts 5 days.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  Herds within 1 km of
+    a detection will be vaccinated.  For the first two days, there is no
+    capacity to vaccinate; after that, the authorities can vaccinate 1 herd per
+    day.  The priorities for destruction are: production type (sheep &gt;
+    goats &gt; cattle &gt; pigs) &gt; reason &gt; time waiting.
+    
+    The vaccine produces immunity immediately, and the immunity lasts 5 days.
+
+    There is no disease spread and no destruction.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 and 3 will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and nearby unit 1 (sheep) will be marked for vaccination.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and nearby unit 2 (goats) will be marked for vaccination.
+     - On day 4 nothing new will happen.
+     - On day 5 (3 days after the first detection) the vaccination
+       capacity will come on-line.  Unit 1 will be vaccinated because it
+       is sheep.
+     - On day 6 unit 2 will be vaccinated because it is goats.
+
+    Note that the vaccination order by production type is the
+    &lt;i&gt;same&lt;/i&gt; as it would have been by time waiting.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>InfectiousClinical</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination priority production type &gt; time waiting 2</short-name>
+
+  <description>
+    Test that vaccination priorities are respected.  In this scenario, two
+    units of different production types will be detected and marked for
+    vaccination on two successive days.  The vaccination order will be
+    specified by production type.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_3</herd-file>
+
+  <parameter-file>vacc_priority_prodtype_time_2</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0, initially infected), the latent period lasts 1 day,
+    infectiousness lasts 10 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 5 days. For pigs (unit 3, initially
+    infected), the latent period is 1 day longer.  For sheep and goats (units
+    1 and 2), the duration of the disease stages are irrelevant but vaccine
+    immunity lasts 5 days.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  Herds within 1 km of
+    a detection will be vaccinated.  For the first two days, there is no
+    capacity to vaccinate; after that, the authorities can vaccinate 1 herd per
+    day.  The priorities for destruction are: production type (goats &gt;
+    sheep &gt; cattle &gt; pigs) &gt; reason &gt; time waiting.
+    
+    The vaccine produces immunity immediately, and the immunity lasts 5 days.
+
+    There is no disease spread and no destruction.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 and 3 will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and nearby unit 1 (sheep) will be marked for vaccination.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and nearby unit 2 (goats) will be marked for vaccination.
+     - On day 4 nothing new will happen.
+     - On day 5 (3 days after the first detection) the vaccination
+       capacity will come on-line.  Unit 2 will be vaccinated because it
+       is goats.
+     - On day 6 unit 2 will be vaccinated because it is sheep.
+
+    Note that the vaccination order by production type is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been by time waiting.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>VaccineImmune</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>InfectiousClinical</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination priority time waiting &gt; production type</short-name>
+
+  <description>
+    Test that vaccination priorities are respected.  In this scenario, two
+    units of different production types will be detected and marked for
+    vaccination on two successive days.  The vaccination order will be
+    specified by time waiting.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 March 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>4herds_line_3</herd-file>
+
+  <parameter-file>vacc_priority_time_prodtype</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0, initially infected), the latent period lasts 1 day,
+    infectiousness lasts 10 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 5 days. For pigs (unit 3, initially
+    infected), the latent period is 1 day longer.  For sheep and goats (units
+    1 and 2), the duration of the disease stages are irrelevant but vaccine
+    immunity lasts 5 days.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  Herds within 1 km of
+    a detection will be vaccinated.  For the first two days, there is no
+    capacity to vaccinate; after that, the authorities can vaccinate 1 herd per
+    day.  The priorities for destruction are: time waiting &gt; production type
+    (goats &gt; sheep &gt; cattle &gt; pigs) &gt; reason.
+    
+    The vaccine produces immunity immediately, and the immunity lasts 5 days.
+
+    There is no disease spread and no destruction.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 and 3 will be latent.
+     - On day 2 unit 0 (cattle) will be infectious clinical.  It will
+       be detected and nearby unit 1 (sheep) will be marked for vaccination.
+     - On day 3 unit 3 (pigs) will be infectious clinical.  It will
+       be detected and nearby unit 2 (goats) will be marked for vaccination.
+     - On day 4 nothing new will happen.
+     - On day 5 (3 days after the first detection) the vaccination
+       capacity will come on-line.  Unit 1 will be vaccinated because it
+       has been waiting the longest.
+     - On day 6 unit 2 will be vaccinated.
+
+    Note that the vaccination order by production type is the
+    &lt;i&gt;opposite&lt;/i&gt; of what it would have been by production type.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>Susceptible</td>    <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>InfectiousClinical</td></tr>
+  </output>
+</deterministic-test>
+
+<stochastic-variable-test>
+  <category>control-measures</category>
+  <short-name>destruction vs. vaccination on same day</short-name>
+
+  <description>
+    Test the choice of whether destruction or vaccination happens first when
+    both come up on the same day.  Destruction should always happen and
+    an unnecessary vaccination should not happen.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
+
+  <parameter-file>vacc_dest_same_day</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day,  infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    Units within 15 km of a detection will be destroyed.  The authorities can
+    begin a destruction program immediately.  The authorities can destroy an
+    unlimited/very large number of units each day.
+
+    A vaccination program begins at the first detection.  Units within 15 km of
+    a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    There is no disease spread.
+    
+    Recapping what should happen as a result of all this:
+     - On day 1 units 0 and 2 will be latent.
+     - On day 2 units 0 and 2 will be infectious clinical.  They will
+       be detected and nearby unit 1 will be marked for both destruction and
+       vaccination.
+     - On day 3 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output probability="1.0">
+    <tr>
+      <td>num-units-destroyed</td>
+      <td>num-units-vaccinated</td>
+    </tr>
+    <tr><td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td></tr>
+    <tr><td>1</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td></tr>
+  </output>
+</stochastic-variable-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 1 detection, no vaccination</short-name>
+
+  <description>
+    Test the vaccination program threshold.  In this baseline scenario, there
+    is no vaccination.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows</herd-file>
+
+  <parameter-file>vacc_threshold_0</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 1 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the first detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities have no capacity to
+    vaccinate.  The vaccine produces immunity immediately, and the immunity
+    lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 1, 1 to 2, and 2 to 3 on
+       successive days.  
+     - Unit 0 will be detected and marked for destruction on day 2
+       (when it goes infectious clinical) and destroyed on day 3.  Similarly,
+       unit 1 will be destroyed on day 4, unit 2 on day 5, and unit 3 on day 6.
+     - No units will be vaccinated because of the lack of vaccination
+       resources.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 1 detection</short-name>
+
+  <description>
+    Test the vaccination program threshold.  In this scenario, ring vaccination
+    begins with the first detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows</herd-file>
+
+  <parameter-file>vacc_threshold_1</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 1 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the first detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 1, 1 to 2, and 2 to 3 on
+       successive days.  
+     - Unit 0 will be detected and marked for destruction on day 2
+       (when it goes infectious clinical) and destroyed on day 3.  Similarly,
+       unit 1 will be destroyed on day 4, unit 2 on day 5, and unit 3 on day 6.
+     - Unit 4 (just above unit 0) will be marked for vaccination on
+       the day unit 0 is detected, day 2.  It will be vaccinated on day 3.
+       Similarly, unit 5 will be vaccinated on day 4, unit 6 on day 5, and
+       unit 7 on day 6.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>VaccineImmune</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 2 detections</short-name>
+
+  <description>
+    Test the vaccination program threshold.  In this scenario, ring vaccination
+    begins with the second detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows</herd-file>
+
+  <parameter-file>vacc_threshold_2</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 1 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the second detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 1, 1 to 2, and 2 to 3 on
+       successive days.  
+     - Unit 0 will be detected and marked for destruction on day 2
+       (when it goes infectious clinical) and destroyed on day 3.  Similarly,
+       unit 1 will be destroyed on day 4, unit 2 on day 5, and unit 3 on day 6.
+     - Unit 0 is detected on day 2, but this will not trigger
+       vaccinations because the threshold of 2 detections has not been
+       reached.  Unit 5 (just above unit 1) will be marked for vaccination on
+       the day unit 1 is detected, day 3.  It will be vaccinated on day 4.
+       Similarly, unit 6 will be vaccinated on day 5, and unit 7 on day 6.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 3 detections</short-name>
+
+  <description>
+    Test the vaccination program threshold.  In this scenario, ring vaccination
+    begins with the third detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>17 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows</herd-file>
+
+  <parameter-file>vacc_threshold_3</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 1 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the third detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 1, 1 to 2, and 2 to 3 on
+       successive days.  
+     - Unit 0 will be detected and marked for destruction on day 2
+       (when it goes infectious clinical) and destroyed on day 3.  Similarly,
+       unit 1 will be destroyed on day 4, unit 2 on day 5, and unit 3 on day 6.
+     - Unit 0 is detected on day 2, but this will not trigger
+       vaccinations because the threshold of 3 detections has not been
+       reached.  Unit 1 is detected on day 3, but this will not trigger
+       vaccinations because the threshold of 3 detections still has not been
+       reached.  Unit 6 (just above unit 2) will be marked for vaccination on
+       the day unit 2 is detected, day 4.  It will be vaccinated on day 5.
+       Similarly, unit 7 will be vaccinated on day 6.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 3 detections, 3rd + 4th on same day</short-name>
+
+  <description>
+    Test that detections that do not pass the vaccination program threshold,
+    but occur on the same day as the detection that does, still trigger
+    vaccinations.  In this baseline scenario, there is no "backtracking"
+    needed; the detection that passes the threshold is the first detection on
+    that day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>18 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows_2</herd-file>
+
+  <parameter-file>vacc_threshold_3_backtrack</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the third detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 2 and from unit 1 to 3 on day 1.
+     - Units 0 and 1 will be detected and marked for destruction on day 2 (when
+       they go infectious clinical) and destroyed on day 3.  Similarly, units 2
+       and 3 will be destroyed on day 4.
+     - Units 0 and 1 are detected on day 2, but this will not trigger
+       vaccinations because the threshold of 3 detections has not been reached.
+       Unit 2 is detected on day 3 and, being the third detection, will cause
+       unit 6 (just above unit 2) to be marked for vaccination.  Unit 3 is also
+       detected on day 3 and causes unit 7 (just above unit 3) to be marked for
+       vaccination.  Units 6 and 7 will be vaccinated on day 4.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>vaccination threshold 4 detections, 3rd + 4th on same day</short-name>
+
+  <description>
+    Test that detections that do not pass the vaccination program threshold,
+    but occur on the same day as the detection that does, still trigger
+    vaccinations.  In this scenario, the detection that passes the threshold is
+    the second detection on that day, so we need to "backtrack" and also
+    vaccinate herds surrounding the first detection on that day.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>18 October 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>8herds_2rows_2</herd-file>
+
+  <parameter-file>vacc_threshold_4_backtrack</parameter-file>
+
+  <parameter-description>
+    For both cattle and pigs, the latent period lasts 1 day,  infectiousness
+    lasts 2 days, clinical signs accompany infectiousness immediately, and
+    natural immunity lasts 3 days.
+
+    The mean movement rate from cattle units to cattle units is 0.694 per day,
+    which will give 1 shipment each day when used with fixed "random" numbers
+    of 0.5.  The distance of shipments is fixed at 2 km.  Latent units can be
+    the source of an exposure.  The probability of infection given exposure is
+    1.  There are no shipments from cattle units to pig units, pig units to
+    cattle units, or pig units to pig units.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    A vaccination program begins at the fourth detection.  Units within 0.75 km
+    of a detection will be vaccinated.  The authorities can vaccinate an
+    unlimited/very large number of units each day.  The vaccine produces
+    immunity immediately, and the immunity lasts 5 days.
+    
+    Recapping what should happen as a result of all this:
+     - Infection will spread from unit 0 to 2 and from unit 1 to 3 on day 1.
+     - Units 0 and 1 will be detected and marked for destruction on day 2 (when
+       they go infectious clinical) and destroyed on day 3.  Similarly, units 2
+       and 3 will be detected on day 3 and destroyed on day 4.
+     - Units 0 and 1 are detected on day 2, but this will not trigger
+       vaccinations because the threshold of 3 detections has not been
+       reached.  Unit 2 is detected on day 3, but this will not trigger
+       vaccinations because the threshold of 3 detections still has not been]
+       reached.  Unit 3 is also detected on days 3 and, being the fourth
+       detection, will cause unit 7 (just above unit 3) to be marked for
+       vaccination.  Because unit 2 was detected earlier on the same day, unit
+       6 (just above unit 2) will also be marked for vaccination.  Units 6 and
+       7 will be vaccinated on day 4.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Latent</td>              <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Susceptible</td>  <td>Susceptible</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>destruction vs. vaccination, vaccination resources, no destruction</short-name>
+
+  <description>
+    This is one of a set of 3 tests that check whether a vaccination that is
+    cancelled due to destruction coming up on the same day still counts against
+    vaccination resources (it should not).
+
+    In this scenario, there is no destruction, so we simply see the result of
+    having limited vaccination resources.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>14 September 2007</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>7herds</herd-file>
+
+  <parameter-file>vacc_dest_same_day_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 2 days, infectiousness with clinical signs lasts 1
+    day, and natural immunity lasts 1 day.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    Units detected as diseased will be destroyed.  The authorities require 3
+    days to set up a destruction program before beginning.  The destruction
+    capacity is zero, so no units will ever actually be destroyed.
+
+    A vaccination program begins at the fourth detection.  Units within 3/4 of
+    a km of a detection will be vaccinated.  The authorities can vaccinate 3
+    units each day.  The vaccine produces immunity immediately, and the
+    immunity lasts 2 days.
+
+    There is no disease spread.
+    
+    What should happen:
+     - On day 1 units 1, 2, and 3 will be Infectious Clinical (they start out
+       that way).  They will be detected and slated for destruction.
+     - On day 3 unit 0 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Because it is the 4th detection, it will start
+       a vaccination program.  Units 3, 4, 5, and 6 will be slated for
+       vaccination.
+     - On day 4, three of the units will be vaccinated.
+     - Day 5 would be the first day destruction is possible (days 2, 3, and 4
+       were the 3-day setup delay).  But the destruction capacity is zero, so
+       no units will be destroyed.  However, three of the vaccinated units will
+       be Vaccine Immune on this day, and the remaining one will be vaccinated.
+  </parameter-description>
+
+  <diagram>7herds_w_ring</diagram>
+
+  <output>
+    <tr><td>Latent</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Latent</td>              <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>VaccineImmune</td>       <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>Susceptible</td></tr>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>VaccineImmune</td>       <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>destruction vs. vaccination, vaccination resources, destruction 1 day later</short-name>
+
+  <description>
+    This is one of a set of 3 tests that check whether a vaccination that is
+    cancelled due to destruction coming up on the same day still counts against
+    vaccination resources (it should not).
+
+    In this scenario, destruction happens 1 day after vaccination, so it does
+    not cancel any vaccinations.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>14 September 2007</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>7herds</herd-file>
+
+  <parameter-file>vacc_dest_same_day_3</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 2 days, infectiousness with clinical signs lasts 1
+    day, and natural immunity lasts 1 day.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    Units detected as diseased will be destroyed.  The authorities require 3
+    days to set up a destruction program before beginning.  The authorities can
+    destroy an umlimited/very large number of units each day.
+
+    A vaccination program begins at the fourth detection.  Units within 3/4 of
+    a km of a detection will be vaccinated.  The authorities can vaccinate 3
+    units each day.  The vaccine produces immunity immediately, and the
+    immunity lasts 2 days.
+
+    There is no disease spread.
+    
+    What should happen:
+     - On day 1 units 1, 2, and 3 will be Infectious Clinical (they start out
+       that way).  They will be detected and slated for destruction.
+     - On day 3 unit 0 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Because it is the 4th detection, it will start
+       a vaccination program.  Units 3, 4, 5, and 6 will be slated for
+       vaccination.
+     - On day 4, three of the units will be vaccinated.
+     - On day 5 destruction can begin (days 2, 3, and 4 were the 3-day setup
+       delay).  Units 0, 1, 2, and 3 will be destroyed.  Three of the
+       vaccinated units will be Vaccine Immune on this day, and the remaining
+       one will be vaccinated.
+  </parameter-description>
+
+  <diagram>7herds_w_ring</diagram>
+
+  <output>
+    <tr><td>Latent</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Latent</td>              <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>VaccineImmune</td>       <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>control-measures</category>
+  <short-name>destruction vs. vaccination, vaccination resources, destruction same day</short-name>
+
+  <description>
+    This is one of a set of 3 tests that check whether a vaccination that is
+    cancelled due to destruction coming up on the same day still counts against
+    vaccination resources (it should not).
+
+    In this scenario, destruction happens the same day as vaccination, so it
+    should cancel a vaccination.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>14 September 2007</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>7herds</herd-file>
+
+  <parameter-file>vacc_dest_same_day_4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 2 days, infectiousness with clinical signs lasts 1
+    day, and natural immunity lasts 1 day.
+
+    The probability of detecting diseased units vs. the number of days they
+    have been showing clinical signs is fixed at 1.  The probability of
+    detecting diseased units vs. the number of days since a public announcement
+    of an outbreak is also fixed at 1.
+
+    Units detected as diseased will be destroyed.  The authorities require 2
+    days to set up a destruction program before beginning.  The authorities can
+    destroy an umlimited/very large number of units each day.
+
+    A vaccination program begins at the fourth detection.  Units within 3/4 of
+    a km of a detection will be vaccinated.  The authorities can vaccinate 3
+    units each day.  The vaccine produces immunity immediately, and the
+    immunity lasts 2 days.
+
+    There is no disease spread.
+    
+    What should happen:
+     - On day 1 units 1, 2, and 3 will be Infectious Clinical (they start out
+       that way).  They will be detected and slated for destruction.
+     - On day 3 unit 0 will be Infectious Clinical.  It will be detected and
+       slated for destruction.  Because it is the 4th detection, it will start
+       a vaccination program.  Units 3, 4, 5, and 6 will be slated for
+       vaccination.
+     - On day 4 destruction can begin (days 2 and 3 were the 2-day setup delay).
+       Units 0, 1, 2, and 3 will be destroyed.  This is also the day that
+       vaccinations begin, and since one of the units slated for vaccination is
+       being destroyed, the remaining three can all be vaccinated today.
+     - On day 5 the three vaccinated units will be Vaccine Immune.
+  </parameter-description>
+
+  <diagram>7herds_w_ring</diagram>
+
+  <output>
+    <tr><td>Latent</td>              <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>InfectiousClinical</td>  <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Latent</td>              <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>NaturallyImmune</td>     <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>         <td>Susceptible</td>    <td>Susceptible</td>    <td>Susceptible</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>Destroyed</td>           <td>VaccineImmune</td>  <td>VaccineImmune</td>  <td>VaccineImmune</td></tr>
+  </output>
+</deterministic-test>

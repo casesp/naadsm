@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <include schemaLocation="base_types.xsd" />
+
+  <complexType name="zone-monitor-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          This module tracks zones.  It can record the shape and area of zones,
+          the number of units in each zone, and the number of "animal-days" in
+          each zone.
+        ]]>
+      </documentation>
+    </annotation>    
+    <sequence>
+      <!-- No parameters. -->
+
+      <element name="output" minOccurs="0" maxOccurs="unbounded">
+        <complexType>
+          <sequence>
+            <element name="variable-name">
+              <simpleType>
+                <restriction base="string">
+                  <enumeration value="zone-shape">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The shape of the zone, which may include two or more
+                          physically separated areas.  The shape is given as a
+                          polygon in OpenGIS WKT (Well-Known Text) format.
+                          This variable always reports the shape on the day of
+                          reporting, regardless of whether it is reported
+                          daily, weekly, or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="zone-area">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The area covered by the zone, in square kilometers.
+                          For the "background" zone, the value will be zero.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-separate-areas">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of physically separated areas making up
+                          the zone.  This variable always reports the count on
+                          the day of reporting, regardless of whether it is
+                          reported daily, weekly, or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-units-in-zone">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of units in the zone.  This variable always
+                          reports the count on the day of reporting, regardless
+                          of whether it is reported daily, weekly, or at some
+                          other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-animal-days-in-zone-by-production-type">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of "animal days" in the zone.  This is
+                          defined as the number of days a non-Destroyed unit
+                          spends in a zone times the number of animals in the
+                          unit.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                </restriction>
+              </simpleType>
+            </element>
+            <element name="frequency" type="ergadm:output-variable-frequency" />
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+
+    <attribute name="version" type="string" fixed="0.1" />
+  </complexType>
+
+</schema>

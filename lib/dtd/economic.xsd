@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <include schemaLocation="base_types.xsd" />
+
+  <complexType name="economic-model-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          This module tallies costs of an outbreak.
+        ]]>
+      </documentation>
+    </annotation>
+    <sequence>
+      <!-- Model parameters. -->
+      <element name="appraisal" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of appraisal per unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="euthanasia" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of euthanasia per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="indemnification" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of indemnification per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="carcass-disposal" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of carcass disposal per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="cleaning-disinfecting" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of cleaning and disinfecting per unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="visiting" type="ergadm:REL">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of a surveillance visit to a unit, based on the number
+              of animals in the unit.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>ergadm:unitless</x-axis-type>
+            <y-axis-type>ergadm:money</y-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="testing" type="ergadm:REL">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of testing a unit, based on the number of animals in the
+              unit.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>ergadm:unitless</x-axis-type>
+            <y-axis-type>ergadm:money</y-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="vaccination-fixed" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The fixed setup cost for vaccinating a unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="vaccination" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of vaccinating an animal.  This parameter and the
+              the vaccination-fixed parameter above are used together to give
+              the total cost of vaccinating a unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="baseline-vaccination-capacity" type="ergadm:unitless">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The number of animals that can be vaccinated before the cost
+              increases.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="additional-vaccination" type="ergadm:money">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The additional cost of vaccinating an animal once the baseline
+              capacity has been exceeded.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+
+      <element name="output" minOccurs="0" maxOccurs="unbounded">
+        <complexType>
+          <sequence>
+            <element name="variable-name">
+              <simpleType>
+                <restriction base="string">                
+                  <enumeration value="total-cost" />
+                  <enumeration value="appraisal-cost" />
+                  <enumeration value="euthanasia-cost" />
+                  <enumeration value="indemnification-cost" />
+                  <enumeration value="carcass-disposal-cost" />
+                  <enumeration value="cleaning-and-disinfecting-cost" />
+                  <enumeration value="vaccination-cost" />
+                  <enumeration value="cumulative-total-cost" />
+                  <enumeration value="cumulative-appraisal-cost" />
+                  <enumeration value="cumulative-euthanasia-cost" />
+                  <enumeration value="cumulative-indemnification-cost" />
+                  <enumeration value="cumulative-carcass-disposal-cost" />
+                  <enumeration value="cumulative-cleaning-and-disinfecting-cost" />
+                  <enumeration value="cumulative-vaccination-cost" />
+                </restriction>
+              </simpleType>                   
+            </element>
+            <element name="frequency" type="ergadm:output-variable-frequency" />
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+    <attribute name="version" type="string" fixed="0.1" />
+    <attribute name="production-type" type="string" use="required" />
+  </complexType>
+
+</schema>

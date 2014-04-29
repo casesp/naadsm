@@ -1,0 +1,6 @@
+# libtool's .m4 files are in /usr/share/aclocal.
+aclocal -I /usr/share/aclocal/ -I .
+libtoolize --ltdl --force --copy
+autoheader
+automake --add-missing --copy
+autoconf

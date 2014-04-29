@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:xml="http://www.w3.org/XML/1998/namespace"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+
+  <include schemaLocation="disease.xsd" />
+  <include schemaLocation="contact.xsd" />
+  <include schemaLocation="airborne.xsd" />
+  <include schemaLocation="detection.xsd" />
+  <include schemaLocation="detection-on-given-day.xsd" />
+  <include schemaLocation="vaccine.xsd" />
+  <include schemaLocation="resources-and-implementation-of-controls.xsd" />
+  <include schemaLocation="quarantine.xsd" />
+  <include schemaLocation="basic-destruction.xsd" />
+  <include schemaLocation="ring-destruction.xsd" />
+  <include schemaLocation="trace-back-destruction.xsd" />
+  <include schemaLocation="ring-vaccination.xsd" />
+  <include schemaLocation="zone.xsd" />
+  <include schemaLocation="basic-zone-focus.xsd" />
+  <include schemaLocation="trace-back-zone-focus.xsd" />
+  <include schemaLocation="economic.xsd" />
+  <include schemaLocation="destruction-monitor.xsd" />
+  <include schemaLocation="destruction-list-monitor.xsd" />
+  <include schemaLocation="trace-back-monitor.xsd" />
+  <include schemaLocation="vaccination-monitor.xsd" />
+  <include schemaLocation="vaccination-list-monitor.xsd" />
+  <include schemaLocation="detection-monitor.xsd" />
+  <include schemaLocation="exposure-monitor.xsd" />
+  <include schemaLocation="infection-monitor.xsd" />
+  <include schemaLocation="zone-monitor.xsd" />
+  <include schemaLocation="conflict-resolver.xsd" />
+
+  <annotation>
+    <documentation xml:lang="en">
+      <![CDATA[
+        This file defines parameters for a disease simulation.
+
+        Neil Harvey and Greg Klotz  
+        Grid Computing Research Group
+        Department of Computing & Information Science, University of Guelph
+        Guelph, ON N1G 2W1
+        CANADA
+        (nharvey|glotz)@uoguelph.ca
+
+        Copyright (c) 2003-2007 University of Guelph.
+      ]]>
+    </documentation>
+  </annotation>
+
+  <element name="disease-simulation" type="ergadm:disease-simulation-type"/>
+
+  <complexType name="disease-simulation-type">
+    <sequence>
+      <element name="description" type="string" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              A short description of the scenario being simulated.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="num-days" type="positiveInteger">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The maximum number of days in a simulation run.  A simulation run
+              may end earlier, if there are no latent or infectious animals and
+              no sub-model has pending actions to complete.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="num-runs" type="positiveInteger">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The number of simulations to run.  This number will be divided
+              among the available computers.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="models">
+        <!-- Include parameters from all known sub-models. -->
+        <complexType>
+          <choice minOccurs="1" maxOccurs="unbounded">
+            <element name="disease-model" type="ergadm:disease-model-type" />
+            <element name="contact-spread-model" type="ergadm:contact-spread-model-type" />
+            <element name="airborne-spread-model" type="ergadm:airborne-spread-model-type" />
+            <element name="detection-model" type="ergadm:detection-model-type" />
+            <element name="detection-on-given-day-model" type="ergadm:detection-on-given-day-model-type" />
+            <element name="vaccine-model" type="ergadm:vaccine-model-type" />
+            <element name="resources-and-implementation-of-controls-model" type="ergadm:resources-and-implementation-of-controls-model-type" />
+            <element name="quarantine-model" type="ergadm:quarantine-model-type" />
+            <element name="basic-destruction-model" type="ergadm:basic-destruction-model-type" />
+            <element name="ring-destruction-model" type="ergadm:ring-destruction-model-type" />
+            <element name="trace-back-destruction-model" type="ergadm:trace-back-destruction-model-type" />
+            <element name="ring-vaccination-model" type="ergadm:ring-vaccination-model-type" />
+            <element name="economic-model" type="ergadm:economic-model-type" />
+            <element name="destruction-monitor" type="ergadm:destruction-monitor-type" />
+            <element name="destruction-list-monitor" type="ergadm:destruction-list-monitor-type" />
+            <element name="trace-back-monitor" type="ergadm:trace-back-monitor-type" />
+            <element name="vaccination-monitor" type="ergadm:vaccination-monitor-type" />
+            <element name="vaccination-list-monitor" type="ergadm:vaccination-list-monitor-type" />
+            <element name="detection-monitor" type="ergadm:detection-monitor-type" />
+            <element name="exposure-monitor" type="ergadm:exposure-monitor-type" />
+            <element name="infection-monitor" type="ergadm:infection-monitor-type" />
+            <element name="zone-monitor" type="ergadm:zone-monitor-type" />
+            <element name="conflict-resolver" type="ergadm:conflict-resolver-type" />
+          </choice>
+        </complexType>
+      </element>
+
+      <element name="output" minOccurs="0" maxOccurs="unbounded">
+        <!-- Outputs. -->
+        <complexType>
+          <sequence>
+            <element name="variable-name">
+              <simpleType>
+                <restriction base="string">                
+                  <enumeration value="all-units-states">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          This variable outputs a numeric code for the state of
+                          every unit on the day of reporting.  This variable is
+                          needed for creating map output.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-units-in-each-state">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of units in each state.  This variable
+                          always reports the counts on the day of reporting,
+                          regardless of whether it is reported daily, weekly,
+                          or at some other interval.  This variable is needed
+                          to create a plot of the states over time.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-units-in-each-state-by-production-type">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of units in each state, broken down by
+                          production type.  This variable always reports the
+                          counts on the day of reporting, regardless of whether
+                          it is reported daily, weekly, or at some other
+                          interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-animals-in-each-state">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of animals in each state.  This variable
+                          always reports the counts on the day of reporting,
+                          regardless of whether it is reported daily, weekly,
+                          or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="num-animals-in-each-state-by-production-type">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of animals in each state, broken down by
+                          production type.  This variable always reports the
+                          counts on the day of reporting, regardless of whether
+                          it is reported daily, weekly, or at some other interval.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="time-to-end-of-outbreak">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The day on which there were no more Latent or
+                          Infectious units.  A value of 0 means that the
+                          simulation ended with Latent or Infectious units
+                          remaining.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="clock-time">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The number of seconds the simulation took to run.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                </restriction>
+              </simpleType>
+            </element>
+            <element name="frequency" type="ergadm:output-variable-frequency" />
+          </sequence>
+        </complexType>
+      </element>
+    </sequence>
+
+    <attribute name="version" type="string" fixed="0.1" />
+    <attribute name="date" type="date" fixed="2003-02-01" />
+  </complexType>
+
+</schema>

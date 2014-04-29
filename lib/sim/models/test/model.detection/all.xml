@@ -1,0 +1,995 @@
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection of clinical signs, detected on 1st day</short-name>
+
+  <description>
+    Test a scenario where the disease is detected the day the unit first shows
+    clinical signs and the authorities can immediately destroy the unit.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>25 November 2003</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>detected_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 5 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.
+     - On day 2 the unit will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 3 the unit will be destroyed.  Its state will appear as Destroyed
+       on day 4.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>detection</category>
+  <short-name>detection of clinical signs, detected on 1st day, check reporting variables</short-name>
+
+  <description>
+    Test that the number of units detected, the cumulative number of units
+    detected, and the day of the first detection is reported correctly.  In
+    this scenario, the same as "detected on 1st day" above, the disease is
+    detected the day the unit first shows clinical signs and the authorities
+    can immediately destroy the unit.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>10 August 2004</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>detected_1_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to the test "detected on 1st day" above.
+
+    The latent period lasts 1 day, infectiousness lasts 5 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The probability of detection vs. the number of days a unit has been showing
+    clinical signs is fixed at 1.  The probability of detection vs. the number
+    of days since a public announcement of an outbreak is also fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.
+     - On day 2 the unit will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 3 the unit will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>time-to-first-detection</td> <td>num-units-detected</td> <td>cumulative-num-units-detected</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>1</td> <td>1</td></tr>
+    <tr><td>2</td> <td>0</td> <td>1</td></tr>
+    <tr><td>2</td> <td>0</td> <td>1</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection of clinical signs, never detected (p fixed low)</short-name>
+
+  <description>
+    Test a scenario where the disease is not detected because the probability
+    of detection vs. days clinical is fixed below 0.5.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>25 November 2003</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>undetected_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 5 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The probability of detection is 0.2 when the unit has been showing clinical
+    signs for 1 day.  It increases linearly to 0.4 by the third day the unit
+    has been showing clinical signs.  The probability of detection vs. the
+    number of days since a public announcement of an outbreak is fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.
+     - On days 2-6 (5 days) the unit will be Infectious Clinical.  It will not
+       be detected because with "fixed" random numbers of 0.5, the probability
+       of detection will always be too low.
+     - On day 7 the unit will be immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection of clinical signs, detected on 2nd day (p too low until day 2)</short-name>
+
+  <description>
+    Test a scenario where the disease is not detected until the second day the
+    unit is showing clinical signs.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>25 November 2003</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>detected_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 5 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The probability of detection is 0.4 when the unit first shows clinical
+    signs.  It increases linearly to 0.6 after one day.  The probability of
+    detection vs. the number of days since a public announcement of an
+    outbreak is fixed at 1.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.
+     - On day 2 the unit will be Infectious Clinical.  It will not be detected
+       because with "fixed" random numbers of 0.5, the probability of detection
+       is too low (0.4).
+     - On day 3 the probability of detection will be 0.6.  The unit will be
+       detected and marked for destruction.
+     - On day 4 the unit will be destroyed.  Its state will show as Destroyed
+       on day 5.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness 0</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  In this baseline scenario, the probability of detection vs.
+    days since the 1st detection is constant.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_0</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 1 day, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+    
+    For both cattle and pigs, the probability of detection vs. the number of
+    days a unit has been showing clinical signs is fixed at 1.  The probability
+    of detection vs. the number of days since a public announcement of an
+    outbreak is fixed at 0.55.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 (pigs) will be Infectious
+       Clinical.  The probability of detection = the value for 1 day since the
+       1st detection (0.55) times the value for day 1 of the clinical period
+       (1.0) = 0.55.  Unit 1 will be detected and marked for destruction.
+     - On day 4 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, p too low for unit 1</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  In this scenario, the probability of detection vs. days
+    since the 1st detection is constant.  The probability of detection vs. days
+    showing clinical signs is also constant; it is high enough for detection
+    for unit 0 but too low for detection for unit 1.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_low1</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 1 day, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+    
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is fixed at
+    0.55.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 (pigs) will be Infectious
+       Clinical.  The probability of detection = the value for 1 day since the
+       1st detection (0.55) times the value for day 1 of the clinical period
+       (0.6) = 0.33.  With "fixed" random numbers of 0.5, this is too low for
+       detection.  Unit 1 will not be detected.
+     - On days 4-7 unit 1 will be Infectious Clinical, but the probability of
+       detection will always be too low.
+     - On day 8 unit 1 will be immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>NaturallyImmune</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, p high enough for unit 1 1 day after 1st detection</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  In this two-unit scenario, the probability of detection vs.
+    days since the 1st detection starts low and increases 1 day after the first
+    detection.  The probability of detection vs. days showing clinical signs is
+    constant for both production types.  For unit 0, this probability is high
+    enough to trigger a detection with the baseline (pre-1st detection)
+    probability.  For unit 1, the probability of detection vs. days showing
+    clinical signs is low enough that it requires the increase in public
+    awareness to push the combined probability over the threshold for
+    detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_1daypast</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 1 day, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+    
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is 0.55 on
+    "day 0" (the baseline before the 1st detection) and 1.0 on day 1 (the day
+    after the 1st detection) and later.
+    
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+    
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 (pigs) will be Infectious
+       Clinical.  The probability of detection = the value for 1 day since the
+       1st detection (1.0) times the value for day 1 of the clinical period
+       (0.6) = 0.6.  With "fixed" random numbers of 0.5, unit 1 will be
+       detected and marked for destruction.
+     - On day 4 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, p high enough for unit 1 2 days after 1st detection</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  In this two-unit scenario, the probability of detection vs.
+    days since the 1st detection starts low and increases 1 day after the first
+    detection.  The probability of detection vs. days showing clinical signs is
+    constant for both production types.  For unit 0, this probability is high
+    enough to trigger a detection with the baseline (pre-1st detection)
+    probability.  For unit 1, the probability of detection vs. days showing
+    clinical signs is low enough that it requires the increase in public
+    awareness to push the combined probability over the threshold for
+    detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_2dayspast</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 1 day, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is 0.55 on
+    "day 0" (the baseline before the 1st detection) and day 1 (the day after
+    the 1st detection), then is 1.0 on day 2 and later.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 (pigs) will be Infectious
+       Clinical.  The probability of detection = the value for 1 day since the
+       1st detection (0.55) times the value for day 1 of the clinical period
+       (0.6) = 0.33.  With "fixed" random numbers of 0.5, this is too low for
+       detection.  Unit 1 will not be detected.
+     - On day 4 the probability of detection for unit 1 (pigs) = the value for
+       2 days since the 1st detection (1.0) times the value for day 2 of the
+       clinical period (0.6) = 0.6.  Unit 1 will be detected and marked for
+       destruction.
+     - On day 5 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, p high enough for unit 1 3 days after 1st detection</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  In this two-unit scenario, the probability of detection vs.
+    days since the 1st detection starts low and increases 1 day after the first
+    detection.  The probability of detection vs. days showing clinical signs is
+    constant for both production types.  For unit 0, this probability is high
+    enough to trigger a detection with the baseline (pre-1st detection)
+    probability.  For unit 1, the probability of detection vs. days showing
+    clinical signs is low enough that it requires the increase in public
+    awareness to push the combined probability over the threshold for
+    detection.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_3dayspast</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 1 day, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is 0.55 on
+    "day 0" (the baseline before the 1st detection), day 1 (the day after the
+    1st detection), and day 2, then is 1.0 on day 3 and later.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 (pigs) will be Infectious
+       Clinical.  The probability of detection = the value for 1 day since the
+       1st detection (0.55) times the value for day 1 of the clinical period
+       (0.6) = 0.33.  With "fixed" random numbers of 0.5, this is too low for
+       detection.  Unit 1 will not be detected.
+     - On day 4 the probability of detection for unit 1 (pigs) = the value for
+       2 days since the 1st detection (0.55) times the value for day 2 of the
+       clinical period (0.6) = 0.33.  Unit 1 will not be detected.
+     - On day 5 the probability of detection for unit 1 (pigs) = the value for
+       3 days since the 1st detection (1.0) times the value for day 3 of the
+       clinical period (0.6) = 0.6.  Unit 1 will be detected and marked for
+       destruction.
+     - On day 6 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, subclinical period shorter</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  This scenario is identical to "detection vs. public
+    awareness, p high enough for unit 1 2 days after 1st detection" above,
+    except the subclinical period for unit 1 is 1 day shorter.  The outcome of
+    the scenario should be the same as for the earlier test, because it is the
+    number of days since the 1st detection, not the number of days into the
+    clinical period, that should determine when unit 1 is detected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_2dayspast_2</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness lasts 5 days, clinical signs accompany infectiousness
+    immediately, and immunity lasts 3 days.
+
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is 0.55 on
+    "day 0" (the baseline before the 1st detection) and day 1 (the day after
+    the 1st detection), then is 1.0 on day 2 and later.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 units 0 (cattle) and 1 (pigs) will be Infectious Clinical.  For
+       unit 0, the probability of detection = the baseline before the 1st
+       detection (0.55) times the value for day 1 of the clinical period
+       (1.0) = 0.55.  Unit 0 will be detected and marked for destruction.  For
+       unit 1, the probability of detection = the baseline before the 1st
+       detection (0.55) times the value for day 1 of the clinical period
+       (0.6) = 0.33.  With "fixed" random numbers of 0.5, this is too low for
+       detection.  Unit 1 will not be detected.
+     - On day 3 unit 0 will be destroyed.  The probability of detection for
+       unit 1 = the value for 1 day since the 1st detection (0.55) times the
+       value for day 2 of the clinical period (0.6) = 0.33.  Unit 1 will not be
+       detected.
+     - On day 4 the probability of detection for unit 1 = the value for 2 days
+       since the 1st detection (1.0) times the value for day 3 of the clinical
+       period (0.6) = 0.6.  Unit 1 will be detected and marked for destruction.
+     - On day 5 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>detection vs. public awareness, subclinical period longer</short-name>
+
+  <description>
+    Test that the probability of detection can be influenced by days since the
+    1st detection.  This scenario is identical to "detection vs. public
+    awareness, p high enough for unit 1 2 days after 1st detection" above,
+    except the subclinical period for unit 1 is 1 day longer.  The outcome of
+    the scenario should be the same as for the earlier test, because it is the
+    number of days since the 1st detection, not the number of days into the
+    clinical period, that should determine when unit 1 is detected.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 December 2005</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_all_infected</herd-file>
+
+  <parameter-file>days_awareness_2dayspast_3</parameter-file>
+
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day, infectiousness lasts 5
+    days, clinical signs accompany infectiousness immediately, and immunity
+    lasts 3 days.  For pigs (unit 1), the latent period lasts 1 day,
+    infectiousness without clinical signs lasts 2 days, infectiousness with
+    clinical signs lasts 5 days, and immunity lasts 3 days.
+
+    For cattle, the probability of detection vs. the number of days a unit has
+    been showing clinical signs is fixed at 1.  For pigs, the probability of
+    detection vs. the number of days a unit has been showing clinical signs is
+    fixed at 0.6.  The probability of detection vs. the number of days since a
+    public announcement of an outbreak (for both production types) is 0.55 on
+    "day 0" (the baseline before the 1st detection) and day 1 (the day after
+    the 1st detection), then is 1.0 on day 2 and later.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day.
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 both units will be Latent.
+     - On day 2 unit 0 (cattle) will be Infectious Clinical.  The probability
+       of detection = the baseline before the 1st detection (0.55) times the
+       value for day 1 of the clinical period (1.0) = 0.55.  Unit 0 will be
+       detected and marked for destruction.  Unit 1 will be Infectious
+       Subclinical.
+     - On day 3 unit 0 will be destroyed.  Unit 1 will still be Infectious
+       Subclinical.
+     - On day 4 unit 1 will be Infectious Clinical.  The probability of
+       detection for unit 1 = the value for 2 days since the 1st detection
+       (1.0) times the value for day 1 of the clinical period (0.6) = 0.6.
+       Unit 1 will be detected and marked for destruction.
+     - On day 5 unit 1 will be destroyed.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Latent</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>           <td>Destroyed</td></tr>
+<!--
+    No infectious units, simulation stops.
+-->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>fixed detection day, 1st day of clinical signs</short-name>
+
+  <description>
+    Test a scenario where one diseased unit is detected the first day it shows
+    clinical signs.
+
+    NOTE: This is a test of a feature (fixing the day of first detection) that
+    is not in the model specification but was requested for special purpose
+    use.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 January 2005</creation-date>
+  <model-version>3.1 (potentially)</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>fixed_detect_0</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness without clinical signs lasts
+    1 day, infectiousness with clinical signs lasts 4 days, and immunity lasts
+    1 day.
+    
+    The fixed day of first detection is 0, so a unit will be detected on the
+    first day that any units show clinical signs.  The "regular" detection
+    probabilities (probability of detection vs. the number of days a unit has
+    been showing clinical signs, and probability of detection vs. the number of
+    days since a public announcement of an outbreak) are set to 0 so as not to
+    cause detections.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day. 
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.  There will be no detections because
+       there are no units showing clinical signs yet.
+     - On day 2 the unit will be Infectious Subclinical.  There will be no
+       detections because there are no units showing clinical signs yet.
+     - On day 3 the unit will be Infectious Clinical.  It will be detected and
+       marked for destruction.
+     - On day 4 the unit will be destroyed.  Its state will appear as Destroyed
+       on day 5.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>fixed detection day 4</short-name>
+
+  <description>
+    Test a scenario where one diseased unit is detected on a fixed day.
+
+    NOTE: This is a test of a feature (fixing the day of first detection) that
+    is not in the model specification but was requested for special purpose
+    use.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 January 2005</creation-date>
+  <model-version>3.1 (potentially)</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>fixed_detect_4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness without clinical signs lasts
+    1 day, infectiousness with clinical signs lasts 4 days, and immunity lasts
+    1 day.
+    
+    The fixed day of first detection is 4, so a unit will be detected on that
+    day and destroyed on the next.  The "regular" detection probabilities
+    (probability of detection vs. the number of days a unit has been showing
+    clinical signs, and probability of detection vs. the number of days since a
+    public announcement of an outbreak) are set to 0 so as not to cause
+    detections.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day. 
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.  There will be no detections because
+       the fixed day of first detection has not been reached.
+     - On day 2 the unit will be Infectious Subclinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - On day 3 the unit will be Infectious Clinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - Day 4 is the fixed day of first detection.  There is one unit showing
+       clinical signs, so it will be detected and marked for destruction.
+     - On day 5 the unit will be destroyed.  Its state will appear as Destroyed
+       on day 6.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>detection</category>
+  <short-name>fixed detection day 5</short-name>
+
+  <description>
+    Test a scenario where one diseased unit is detected on a fixed day.
+
+    NOTE: This is a test of a feature (fixing the day of first detection) that
+    is not in the model specification but was requested for special purpose
+    use.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 January 2005</creation-date>
+  <model-version>3.1 (potentially)</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>fixed_detect_5</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness without clinical signs lasts
+    1 day, infectiousness with clinical signs lasts 4 days, and immunity lasts
+    1 day.
+    
+    The fixed day of first detection is 5, so a unit will be detected on that
+    day and destroyed on the next.  The "regular" detection probabilities
+    (probability of detection vs. the number of days a unit has been showing
+    clinical signs, and probability of detection vs. the number of days since a
+    public announcement of an outbreak) are set to 0 so as not to cause
+    detections.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day. 
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 the unit will be Latent.  There will be no detections because
+       the fixed day of first detection has not been reached.
+     - On day 2 the unit will be Infectious Subclinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - On day 3 the unit will be Infectious Clinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - On day 4 there will be no detections because the fixed day of first
+       detection has not been reached.
+     - Day 5 is the fixed day of first detection.  There is one unit showing
+       clinical signs, so it will be detected and marked for destruction.
+     - On day 6 the unit will be destroyed.  Its state will appear as Destroyed
+       on day 7.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td></tr>
+  </output>
+</deterministic-test>
+
+<stochastic-test>
+  <category>detection</category>
+  <short-name>fixed detection, choice among units</short-name>
+
+  <description>
+    Test the choice of a unit for detection when more than one diseased unit
+    exists on the fixed day of detection.  The units should be chosen with
+    equal probability.
+
+    NOTE: This is a test of a feature (fixing the day of first detection) that
+    is not in the model specification but was requested for special purpose
+    use.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 January 2005</creation-date>
+  <model-version>3.1 (potentially)</model-version>
+
+  <herd-file>4herds_all_infected</herd-file>
+
+  <parameter-file>fixed_detect_4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness without clinical signs lasts
+    1 day, infectiousness with clinical signs lasts 4 days, and immunity lasts
+    1 day.
+    
+    The fixed day of first detection is 4, so a unit will be detected on that
+    day and destroyed on the next.  The "regular" detection probabilities
+    (probability of detection vs. the number of days a unit has been showing
+    clinical signs, and probability of detection vs. the number of days since a
+    public announcement of an outbreak) are set to 0 so as not to cause
+    detections.
+
+    The authorities can begin a destruction program immediately.  The
+    authorities can destroy an unlimited/very large number of units each day. 
+
+    There is no spread or vaccination.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 all four units will be Latent.  There will be no detections
+       because the fixed day of first detection has not been reached.
+     - On day 2 the units will be Infectious Subclinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - On day 3 the units will be Infectious Clinical.  There will be no
+       detections because the fixed day of first detection has not been
+       reached.
+     - Day 4 is the fixed day of first detection.  There are four units showing
+       clinical signs, so one of them will be detected and marked for
+       destruction.
+     - On day 5 the chosen unit will be destroyed.  Its state will appear as
+       Destroyed on day 6.
+  </parameter-description>
+
+  <output probability="0.25">
+    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>              <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>Destroyed</td>              <td>NaturallyImmune</td>        <td>NaturallyImmune</td>        <td>NaturallyImmune</td></tr>
+  </output>
+
+  <output probability="0.25">
+    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>Destroyed</td>              <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>        <td>Destroyed</td>              <td>NaturallyImmune</td>        <td>NaturallyImmune</td></tr>
+  </output>
+
+  <output probability="0.25">
+    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>Destroyed</td>              <td>InfectiousClinical</td></tr>
+    <tr><td>NaturallyImmune</td>        <td>NaturallyImmune</td>        <td>Destroyed</td>              <td>NaturallyImmune</td></tr>
+  </output>
+
+  <output probability="0.25">
+    <tr><td>Latent</td>                 <td>Latent</td>                 <td>Latent</td>                 <td>Latent</td></tr>
+    <tr><td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td>  <td>InfectiousSubclinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>InfectiousClinical</td>     <td>Destroyed</td></tr>
+    <tr><td>NaturallyImmune</td>        <td>NaturallyImmune</td>        <td>NaturallyImmune</td>        <td>Destroyed</td></tr>
+  </output>
+</stochastic-test>

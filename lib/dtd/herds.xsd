@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+        xmlns="http://www.w3.org/2001/XMLSchema"
+        xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM">
+
+  <complexType name="herd-type">
+    <sequence>
+      <element name="id" type="string" minOccurs="0" />
+      <element name="production-type" type="string" />
+      <element name="size" type="nonNegativeInteger" />
+      <element name="location">
+        <complexType>
+          <sequence>
+            <element name="latitude">
+              <simpleType>
+                <restriction base="decimal">
+                  <minInclusive value="-180" />
+                  <maxInclusive value="180" />
+                </restriction>
+              </simpleType>
+            </element>
+            <element name="longitude">
+              <simpleType>
+                <restriction base="decimal">
+                  <minInclusive value="-90" />
+                  <maxInclusive value="90" />
+                </restriction>
+              </simpleType>
+            </element>
+          </sequence>
+        </complexType>
+      </element>
+      <element name="status">
+        <simpleType>
+          <restriction base="string">
+            <pattern value="[0-5]" />
+            <pattern value="[Ss]usceptible" />
+            <pattern value="[Ii]ncubating|[Ll]atent" />
+            <pattern value="[Ii]nfectious ?[Ss]ub[Cc]linical" />
+            <pattern value="[Ii]napparent ?[Ss]hedding" />
+            <pattern value="[Ss]ub[Cc]linical ?[Ss]hedding" />
+            <pattern value="[Ii]nfectious ?[Cc]linical" />
+            <pattern value="[Nn]aturally ?[Ii]mmune" />
+            <pattern value="[Vv]accine ?[Ii]mmune" />
+            <pattern value="[Dd]ead|[Dd]estroyed" />
+          </restriction>  
+        </simpleType>
+      </element>
+      <element name="days-left-in-status" type="nonNegativeInteger" />
+    </sequence>
+    
+  </complexType>
+  
+  <complexType name="herds-type">
+    <sequence>
+      <element name="herd" type="ergadm:herd-type" minOccurs="1" maxOccurs="unbounded" />
+    </sequence>
+  </complexType>
+
+</schema>

@@ -1,0 +1,30 @@
+[Hooked Modules]
+SpreadModel.exe=T
+[Non-Hooked Modules]
+appHelp.dll=T
+ATL.DLL=T
+browseui.dll=T
+CLBCATQ.DLL=T
+COMRes.dll=T
+CSCDLL.dll=T
+cscui.dll=T
+dao360.dll=T
+expsrv.dll=T
+midimap.dll=T
+MSACM32.dll=T
+msacm32.drv=T
+MSJET40.DLL=T
+msjtes40.dll=T
+MSVCRT.DLL=T
+mswstr10.dll=T
+ntshrui.dll=T
+OLE32.DLL=T
+oleaut32.dll=T
+olepro32.dll=T
+SETUPAPI.dll=T
+shdocvw.dll=T
+SXS.DLL=T
+USERENV.dll=T
+uxtheme.dll=T
+vbajet32.dll=T
+wdmaud.drv=T

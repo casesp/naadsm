@@ -1,0 +1,302 @@
+inherited FrameDailyStatusByProdType: TFrameDailyStatusByProdType
+  Width = 523
+  object pnlChartOptions: TPanel
+    Left = 0
+    Top = 215
+    Width = 523
+    Height = 25
+    Align = alBottom
+    TabOrder = 0
+    object cbxThreeD: TCheckBox
+      Left = 8
+      Top = 4
+      Width = 73
+      Height = 17
+      Caption = '3-D View'
+      TabOrder = 0
+    end
+  end
+  object chtOutputs: TChart
+    Left = 0
+    Top = 0
+    Width = 523
+    Height = 215
+    BackWall.Brush.Color = clWhite
+    BackWall.Brush.Style = bsClear
+    Title.Text.Strings = (
+      '')
+    BottomAxis.Title.Caption = 'Day of simulation'
+    LeftAxis.Title.Caption = 'Proportion of units X 100%'
+    Legend.Alignment = laBottom
+    Legend.Color = clSilver
+    Align = alClient
+    TabOrder = 1
+    object SeriesSusc: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clBlack
+      Title = 'Susceptible'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesLatent: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clYellow
+      Title = 'Latent'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesSubClinical: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clFuchsia
+      Title = 'Subclinical'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesClinical: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clRed
+      Title = 'Clinical'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesNatImmune: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clLime
+      Title = 'NatImmune'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesVacImmune: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clBlue
+      Title = 'VacImmune'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesDestroyed: TLineSeries
+      Marks.ArrowLength = 0
+      Marks.Frame.Visible = False
+      Marks.Transparent = True
+      Marks.Visible = False
+      SeriesColor = clGray
+      Title = 'Destroyed'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesDetected: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clGreen
+      Title = 'Detected'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesTraceDir: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clNavy
+      Title = 'Traced - Direct'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesTraceInd: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clPurple
+      Title = 'Traced - Indirect'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesVaccinated: TLineSeries
+      Marks.ArrowLength = 8
+      Marks.Visible = False
+      SeriesColor = clAqua
+      Title = 'Vaccinated'
+      Pointer.InflateMargins = True
+      Pointer.Style = psRectangle
+      Pointer.Visible = False
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesPDetection: TPointSeries
+      Marks.ArrowLength = 0
+      Marks.Frame.Visible = False
+      Marks.Transparent = True
+      Marks.Visible = False
+      SeriesColor = clTeal
+      Title = 'First Detection'
+      Pointer.HorizSize = 2
+      Pointer.InflateMargins = False
+      Pointer.Style = psCircle
+      Pointer.VertSize = 5
+      Pointer.Visible = True
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesPDestroy: TPointSeries
+      Marks.ArrowLength = 0
+      Marks.Visible = False
+      SeriesColor = clGrayText
+      Title = 'First destruction'
+      Pointer.HorizSize = 2
+      Pointer.InflateMargins = True
+      Pointer.Style = psCircle
+      Pointer.VertSize = 5
+      Pointer.Visible = True
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesPVaccination: TPointSeries
+      Marks.ArrowLength = 0
+      Marks.Visible = False
+      SeriesColor = clBlue
+      Title = 'First vaccination'
+      Pointer.HorizSize = 2
+      Pointer.InflateMargins = True
+      Pointer.Style = psCircle
+      Pointer.VertSize = 5
+      Pointer.Visible = True
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+    object SeriesPOver: TPointSeries
+      Marks.ArrowLength = 0
+      Marks.Visible = False
+      SeriesColor = clRed
+      Title = 'Outbreak over'
+      Pointer.HorizSize = 2
+      Pointer.InflateMargins = True
+      Pointer.Style = psCircle
+      Pointer.VertSize = 5
+      Pointer.Visible = True
+      XValues.DateTime = False
+      XValues.Name = 'X'
+      XValues.Multiplier = 1.000000000000000000
+      XValues.Order = loAscending
+      YValues.DateTime = False
+      YValues.Name = 'Y'
+      YValues.Multiplier = 1.000000000000000000
+      YValues.Order = loNone
+    end
+  end
+end
