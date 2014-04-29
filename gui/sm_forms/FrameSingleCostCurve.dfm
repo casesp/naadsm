@@ -1,12 +1,12 @@
 inherited FrameSingleCostCurve: TFrameSingleCostCurve
-  Width = 570
-  Height = 350
+  Width = 685
+  Height = 526
   Constraints.MinHeight = 350
   Constraints.MinWidth = 570
   object pnlCumulCosts: TPanel
     Left = 0
     Top = 0
-    Width = 570
+    Width = 685
     Height = 25
     Align = alTop
     BevelOuter = bvLowered
@@ -14,14 +14,14 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     object cbxCumulCosts: TCheckBox
       Left = 8
       Top = 4
-      Width = 145
+      Width = 185
       Height = 17
       Caption = 'Show cumulative costs'
       TabOrder = 0
       OnClick = cbxCumulCostsClick
     end
     object cbx3D: TCheckBox
-      Left = 168
+      Left = 200
       Top = 4
       Width = 121
       Height = 17
@@ -33,16 +33,16 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
   object pnlChart: TPanel
     Left = 0
     Top = 25
-    Width = 570
-    Height = 230
+    Width = 685
+    Height = 389
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     object chtCosts: TChart
       Left = 0
       Top = 0
-      Width = 570
-      Height = 230
+      Width = 685
+      Height = 389
       BackWall.Brush.Color = clWhite
       BackWall.Brush.Style = bsClear
       Title.Text.Strings = (
@@ -230,15 +230,15 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
   end
   object pnlCostCategories: TPanel
     Left = 0
-    Top = 255
-    Width = 570
-    Height = 95
+    Top = 414
+    Width = 685
+    Height = 112
     Align = alBottom
     BevelOuter = bvLowered
     TabOrder = 1
     object lblDestrCosts: TLabel
       Left = 8
-      Top = 4
+      Top = 6
       Width = 149
       Height = 13
       Caption = 'Itemized destruction costs'
@@ -251,10 +251,37 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lblVaccCosts: TLabel
       Left = 8
-      Top = 36
+      Top = 42
       Width = 152
       Height = 13
       Caption = 'Itemized vaccination costs'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+    object lblInvisible: TLabel
+      Left = 360
+      Top = 52
+      Width = 48
+      Height = 13
+      Caption = 'lblInvisible'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = []
+      ParentFont = False
+      Visible = False
+    end
+    object Label1: TLabel
+      Left = 8
+      Top = 78
+      Width = 36
+      Height = 13
+      Caption = 'Totals'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clWindowText
       Font.Height = -11
@@ -309,7 +336,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object cbxDestrSubtotal: TCheckBox
       Left = 8
-      Top = 72
+      Top = 92
       Width = 145
       Height = 17
       Caption = 'Destruction subtotal'
@@ -318,7 +345,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
-      Font.Style = [fsBold]
+      Font.Style = []
       ParentFont = False
       State = cbChecked
       TabOrder = 5
@@ -326,8 +353,8 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object cbxVaccSetup: TCheckBox
       Left = 8
-      Top = 52
-      Width = 129
+      Top = 56
+      Width = 201
       Height = 17
       Caption = 'Site setup'
       TabOrder = 6
@@ -335,7 +362,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object cbxVacc: TCheckBox
       Left = 152
-      Top = 52
+      Top = 56
       Width = 113
       Height = 17
       Caption = 'Vaccination'
@@ -344,7 +371,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object cbxVaccSubtotal: TCheckBox
       Left = 152
-      Top = 72
+      Top = 92
       Width = 145
       Height = 17
       Caption = 'Vaccination subtotal'
@@ -353,7 +380,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
-      Font.Style = [fsBold]
+      Font.Style = []
       ParentFont = False
       State = cbChecked
       TabOrder = 8
@@ -361,7 +388,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object cbxTotal: TCheckBox
       Left = 304
-      Top = 72
+      Top = 92
       Width = 113
       Height = 17
       Caption = 'Total costs'
@@ -370,7 +397,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
       Font.Color = clWindowText
       Font.Height = -11
       Font.Name = 'MS Sans Serif'
-      Font.Style = [fsBold]
+      Font.Style = []
       ParentFont = False
       State = cbChecked
       TabOrder = 9
@@ -378,8 +405,8 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lineDestrSubtotal: TPanel
       Left = 24
-      Top = 86
-      Width = 121
+      Top = 106
+      Width = 100
       Height = 2
       BevelOuter = bvNone
       Color = clGreen
@@ -387,8 +414,8 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lineVaccSubtotal: TPanel
       Left = 168
-      Top = 86
-      Width = 121
+      Top = 106
+      Width = 104
       Height = 2
       BevelOuter = bvNone
       Color = clYellow
@@ -396,8 +423,8 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lineTotal: TPanel
       Left = 320
-      Top = 86
-      Width = 65
+      Top = 106
+      Width = 60
       Height = 2
       BevelOuter = bvNone
       Color = clRed
@@ -450,7 +477,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lineVaccSetup: TPanel
       Left = 24
-      Top = 66
+      Top = 70
       Width = 54
       Height = 2
       BevelOuter = bvNone
@@ -459,7 +486,7 @@ inherited FrameSingleCostCurve: TFrameSingleCostCurve
     end
     object lineVacc: TPanel
       Left = 168
-      Top = 66
+      Top = 70
       Width = 65
       Height = 2
       BevelOuter = bvNone

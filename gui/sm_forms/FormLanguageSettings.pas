@@ -4,11 +4,11 @@ unit FormLanguageSettings;
 FormLanguageSettings.pas/dfm
 ----------------------------
 Begin: 2007/03/08
-Last revision: $Date$ $Author$
-Version number: $Revision$
+Last revision: $Date: 2008-03-12 22:10:52 $ $Author: areeves $
+Version number: $Revision: 1.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2008 Animal Population Health Institute, Colorado State University
 

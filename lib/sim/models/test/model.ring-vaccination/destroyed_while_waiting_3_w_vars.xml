@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>25</num-days>
@@ -30,16 +30,16 @@
     <!-- With both probabilities at 1.0, a diseased herd will be detected the
       instant it shows clinical signs. -->
     <detection-model production-type="Beef Cattle">
-      <prob-report-vs-time-clinical>
+      <prob-detect-vs-time-clinical>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-clinical>
-      <prob-report-vs-time-since-outbreak>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-since-outbreak>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
     </detection-model>
 
     <resources-and-implementation-of-controls-model>
@@ -108,42 +108,44 @@
 
     <destruction-monitor>
       <output>
-	<variable-name>num-units-destroyed</variable-name>
+	<variable-name>desnU</variable-name>
 	<frequency>daily</frequency>
       </output>
     </destruction-monitor>
 
     <destruction-list-monitor>
       <output>
-	<variable-name>num-units-awaiting-destruction</variable-name>
+	<variable-name>deswU</variable-name>
 	<frequency>daily</frequency>
       </output>
     </destruction-list-monitor>
 
     <vaccination-monitor>
       <output>
-	<variable-name>num-units-vaccinated</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacnU</variable-name>
+        <frequency>daily</frequency>
       </output>
     </vaccination-monitor>
 
     <vaccination-list-monitor>
       <output>
-	<variable-name>num-units-awaiting-vaccination</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacwU</variable-name>
+        <frequency>daily</frequency>
       </output>
       <output>
-	<variable-name>peak-num-units-awaiting-vaccination</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacwUMax</variable-name>
+        <frequency>daily</frequency>
       </output>
       <output>
-	<variable-name>peak-vaccination-wait-time</variable-name>
-	<frequency>daily</frequency>
+        <variable-name>vacwUTimeMax</variable-name>
+        <frequency>daily</frequency>
       </output>
     </vaccination-list-monitor>
 
     <conflict-resolver></conflict-resolver>
 
+    <full-table-writer />
+
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

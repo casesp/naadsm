@@ -4,13 +4,13 @@ unit FrameCredits;
 FrameCredits.pas/dfm
 --------------------
 Begin: 2006/10/11
-Last revision: $Date: 2008/04/21 19:26:19 $ $Author: areeves $
-Version: $Revision: 1.7 $
+Last revision: $Date: 2012-10-23 22:29:20 $ $Author: areeves $
+Version: $Revision: 1.9.10.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2012 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -30,101 +30,36 @@ interface
     Forms,
     Dialogs,
     StdCtrls,
-    ExtCtrls
+    ExtCtrls,
+
+    QLists
   ;
 
   type TFrameCredits = class(TFrame)
+    pnlCurrentMembers: TPanel;
       Panel1: TPanel;
-      Panel2: TPanel;
-      Panel3: TPanel;
-      lblContactUS: TLabel;
-      lblAffiliationCorso: TLabel;
-      lblAddress1Corso: TLabel;
-      lblAddress2Corso: TLabel;
-    lblEmailFordeFolle: TLabel;
-      Panel4: TPanel;
-      lblContactCAN: TLabel;
-      lblDube: TLabel;
-      lblDubeAffiliation: TLabel;
-      lblAddress1Dube: TLabel;
-      lblAddress2Dube: TLabel;
-      lblEmailDube: TLabel;
-      Panel5: TPanel;
-      Panel6: TPanel;
-      lblSupportPC: TLabel;
-      lblReeves: TLabel;
-      lblEmailReeves: TLabel;
-      Panel7: TPanel;
-      lblSupportParallel: TLabel;
-      lblHarvey: TLabel;
-      lblEmailHarvey: TLabel;
-      Panel9: TPanel;
-      Panel10: TPanel;
-      Panel11: TPanel;
-      lblHill: TLabel;
-      Panel12: TPanel;
-      Panel13: TPanel;
-      lblSeitzinger: TLabel;
-      Panel14: TPanel;
-      Panel15: TPanel;
-      Panel16: TPanel;
-      lblMcNab: TLabel;
-      Panel17: TPanel;
-      lblSalman: TLabel;
-      lblStacey: TLabel;
-      Label1: TLabel;
-      Label4: TLabel;
-      Label5: TLabel;
-      Label7: TLabel;
-      Label8: TLabel;
-      Label9: TLabel;
-      Label10: TLabel;
-      Label2: TLabel;
-      Label11: TLabel;
-      Label3: TLabel;
-      Label12: TLabel;
-      Label13: TLabel;
-      Label14: TLabel;
-      Label15: TLabel;
-      Panel8: TPanel;
-      Panel23: TPanel;
-      Panel24: TPanel;
-      Label18: TLabel;
-      Label19: TLabel;
-      Label23: TLabel;
-      Panel25: TPanel;
-      Label20: TLabel;
-      Label21: TLabel;
-      Label22: TLabel;
-      Panel18: TPanel;
-      Panel19: TPanel;
-      Panel20: TPanel;
-      lblSchoenbaum: TLabel;
-      Label6: TLabel;
-      Panel21: TPanel;
-      lblZagmutt: TLabel;
-      Label16: TLabel;
-      Label17: TLabel;
     Panel22: TPanel;
-    Panel26: TPanel;
-    Panel27: TPanel;
-    Label24: TLabel;
-    Panel28: TPanel;
-    Label26: TLabel;
-    Label27: TLabel;
-    Label28: TLabel;
-    Label25: TLabel;
-    Label29: TLabel;
-    lblCorso: TLabel;
-    lblFordeFolle: TLabel;
+    pnlFormerMembers: TPanel;
 
-      procedure mailtoClick(Sender: TObject);
-      
     protected
-      procedure translateUI();   
-     
+      procedure translateUI();
+      procedure addPanel( name, dept, inst: string; pnlPair: TPanel; al: TAlign );
+      procedure populateCreditsPanel( pnlCreds: TPanel; list: TQObjectList );
+
     public
       constructor create( AOwner: TComponent ); override;
+    end
+  ;
+
+  type TPerson = class
+    protected
+      _name: string;
+      _dept: string;
+      _inst: string;
+
+    public
+      constructor create( name, dept, inst: string );
+      destructor destroy(); override;
     end
   ;
 
@@ -134,13 +69,18 @@ implementation
 
   uses
     ShellAPI,
-    I88n
+    Math,
+    
+    I88n,
+    ControlUtils,
+
+    StringConsts
   ;
 
   constructor TFrameCredits.create( AOwner: TComponent );
       procedure setPanelProperties( ctrl: TWinControl );
         var
-    	    i: integer;
+          i: integer;
           wc: TPanel;
         begin
           for i := 0 to ctrl.controlCount - 1 do
@@ -157,101 +97,154 @@ implementation
           ;
         end
       ;
+    var
+      list, list2: TQObjectList;
     begin
       inherited create( AOwner );
       translateUI();
-      
+
+      list := TQObjectList.create();
+
+      list.append( TPerson.create( 'Neil Harvey', 'Department of Computing and Information Science', 'University of Guelph' ) );
+      list.append( TPerson.create( 'Aaron Reeves', 'Department of Clinical Sciences', 'Colorado State University' ) );
+      list.append( TPerson.create( 'Caroline Dubé', 'Animal Health and Production Division', 'Canadian Food Inspection Agency' ) );
+      list.append( TPerson.create( 'W. Bruce McNab', 'Ministry of Agriculture, Food, and Rural Affairs', 'Province of Ontario' ) );
+      list.append( TPerson.create( 'Kelly A. Patyk', 'APHIS-VS-CEAH', 'United States Department of Agriculture' ) );
+      list.append( TPerson.create( 'Ann H. Seitzinger', 'APHIS-VS-CEAH', 'United States Department of Agriculture' ) );
+
+      list2 := TQObjectList.create();
+
+      list2.append( TPerson.create( 'Celia Antognoli', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Shaun Case', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Barbara Corso', 'APHIS-VS-CEAH', 'United States Department of Agriculture' ) );
+      list2.append( TPerson.create( 'Conrad Estrada', 'APHIS-VS-NCAHEM', 'United States Department of Agriculture' ) );
+      list2.append( TPerson.create( 'Kim N. Forde-Folle', 'APHIS-VS-NCAHEM', 'United States Department of Agriculture' ) );
+      list2.append( TPerson.create( 'Ashley E. Hill', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Ric Hupalo', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Emery Leger', 'Canadian Food Inspection Agency', '' ) );
+      list2.append( TPerson.create( 'Dustin Pendell', 'Dept. of Agricultural and Resource Economics', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Noa Roman-Muniz', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Mo D. Salman', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Javier Sanchez', 'Animal Health Risk Assessment Unit', 'Canadian Food Inspection Agency' ) );
+      list2.append( TPerson.create( 'Mark A. Schoenbaum', 'APHIS-VS-WRO', 'United States Department of Agriculture' ) );
+      list2.append( TPerson.create( 'Anthony "Drew" Schwickerath', 'Animal Population Health Institute', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Snehal Shetye', 'Department of Mechanical Engineering', 'Colorado State University' ) );
+      list2.append( TPerson.create( 'Francisco Zagmutt-Vergara', 'Animal Population Health Institute', 'Colorado State University' ) );
+
+      populateCreditsPanel( pnlCurrentMembers, list );
+      populateCreditsPanel( pnlFormerMembers, list2 );
+
       setPanelProperties( self );
-    end
-  ;
 
+      list.freeAllValues();
+      list.free();
 
-  procedure TFrameCredits.mailtoClick(Sender: TObject);
-    begin
-      if( Sender is TLabel ) then
-        ShellExecute(
-          Application.Handle,
-          PChar( 'open' ),
-          PChar( 'mailto: ' + (Sender as TLabel).Hint ),
-          PChar( 0 ),
-          nil,
-          SW_NORMAL
-        )
-      ;
+      list2.freeAllValues();
+      list2.free();
     end
   ;
 
 
   procedure TFrameCredits.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:53 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FrameCredits.dfm
-      // File date: Mon Oct 30 19:41:36 2006
+      Panel1.Caption := tr( 'The NAADSM Development Team' );
+    end
+  ;
 
-      // Set Caption, Hint, Text, and Filter properties
-      with self do
+
+  procedure TFrameCredits.addPanel( name, dept, inst: string; pnlPair: TPanel; al: TAlign );
+    var
+      pnl: TPanel;
+      lblName, lblDept, lblInst: TLabel;
+    begin
+      pnl := TPanel.create( self );
+      pnl.Height := 52;
+      pnl.Width := 250;
+      pnl.Parent := pnlPair;
+      pnl.Align := al;
+      pnl.Visible := True;
+
+      lblName := TLabel.Create( self );
+      lblName.Parent := pnl;
+      lblName.Left := 8;
+      lblName.Top := 3;
+      lblName.Align := alNone;
+      lblName.Caption := name;
+      lblName.Visible := True;
+
+      lblDept := TLabel.Create( self );
+      lblDept.Parent := pnl;
+      lblDept.Left := 8;
+      lblDept.Top := 18;
+      lblDept.Align := alNone;
+      lblDept.Caption := dept;
+      lblDept.Visible := True;
+
+      lblInst := TLabel.Create( self );
+      lblInst.Parent := pnl;
+      lblInst.Left := 8;
+      lblInst.Top := 33;
+      lblInst.Align := alNone;
+      lblInst.Caption := inst;
+      lblInst.Visible := True;
+    end
+  ;
+
+
+  constructor TPerson.create( name, dept, inst: string );
+    begin
+      inherited create();
+      _name := name;
+      _dept := dept;
+      _inst := inst;
+    end
+  ;
+
+
+  destructor TPerson.destroy();
+    begin
+      inherited destroy();
+    end
+  ;
+
+
+  procedure TFrameCredits.populateCreditsPanel( pnlCreds: TPanel; list: TQObjectList );
+    var
+      pnlPair: TPanel;
+      nPairs: integer;
+
+      i, j: integer;
+      person: TPerson;
+    begin
+      nPairs := ceil( list.count / 2 );
+
+      pnlCreds.Height := nPairs * 52;
+
+      j := 0;
+
+      for i := 0 to nPairs - 1 do
         begin
-          Panel1.Caption := tr( 'NAADSM model development team:' );
-          lblContactUS.Caption := tr( 'Primary contact (US):' );
-          lblCorso.Caption := tr( 'Barbara A. Corso' );
-          lblAffiliationCorso.Caption := tr( 'USDA-APHIS-VS-CEAH' );
-          lblAddress1Corso.Caption := tr( '2150 Centre Ave., Bldg. B, Mail Stop 2W4' );
-          lblAddress2Corso.Caption := tr( 'Fort Collins, CO 80526-8117' );
-          lblEmailFordeFolle.Caption := tr( 'Kim.N.Forde-Folle@aphis.usda.gov' );
-          lblEmailFordeFolle.Hint := tr( 'Kim.N.Forde-Folle@aphis.usda.gov' );
-          lblContactCAN.Caption := tr( 'Primary contact (Canada):' );
-          lblDube.Caption := tr( 'Caroline Dubé' );
-          lblDubeAffiliation.Caption := tr( 'CFIA-Animal Health and Production Division' );
-          lblAddress1Dube.Caption := tr( '59 Camelot' );
-          lblAddress2Dube.Caption := tr( 'Ottawa, ON K1A 0Y9' );
-          lblEmailDube.Caption := tr( 'dubecm@inspection.gc.ca' );
-          lblEmailDube.Hint := tr( 'dubecm@inspection.gc.ca' );
-          lblSupportPC.Caption := tr( 'Technical support (Windows/PC):' );
-          lblReeves.Caption := tr( 'Aaron Reeves' );
-          lblEmailReeves.Caption := tr( 'Aaron.Reeves@colostate.edu' );
-          lblEmailReeves.Hint := tr( 'Aaron.Reeves@colostate.edu' );
-          Label7.Caption := tr( 'Animal Population Health Institute' );
-          Label8.Caption := tr( 'Colorado State University' );
-          lblSupportParallel.Caption := tr( 'Technical support (Parallel processing):' );
-          lblHarvey.Caption := tr( 'Neil Harvey' );
-          lblEmailHarvey.Caption := tr( 'nharvey@uoguelph.ca' );
-          lblEmailHarvey.Hint := tr( 'nharvey@uoguelph.ca' );
-          Label9.Caption := tr( 'Department of Computing && Information Science' );
-          Label10.Caption := tr( 'University of Guelph' );
-          Label1.Caption := tr( 'USDA-APHIS-VS-CEAH' );
-          lblFordeFolle.Caption := tr( 'Kim N. Forde-Folle' );
-          lblHill.Caption := tr( 'Ashley E. Hill' );
-          Label2.Caption := tr( 'Animal Population Health Institute' );
-          Label11.Caption := tr( 'Colorado State University' );
-          lblSeitzinger.Caption := tr( 'Ann H. Seitzinger' );
-          Label4.Caption := tr( 'USDA-APHIS-VS-CEAH-NCAHS-NAHMS' );
-          lblStacey.Caption := tr( 'Deborah A. Stacey' );
-          Label5.Caption := tr( 'University of Guelph' );
-          Label15.Caption := tr( 'Department of Computing && Information Science' );
-          lblMcNab.Caption := tr( 'W. Bruce McNab' );
-          Label13.Caption := tr( 'Ministry of Agriculture Food and Rural Affairs' );
-          Label14.Caption := tr( 'Province of Ontario' );
-          lblSalman.Caption := tr( 'M.D. Salman' );
-          Label3.Caption := tr( 'Colorado State University' );
-          Label12.Caption := tr( 'Animal Population Health Institute' );
-          Panel8.Caption := tr( 'Additional programming:' );
-          Label18.Caption := tr( 'Shaun P. Case' );
-          Label19.Caption := tr( 'Department of Computer Science' );
-          Label23.Caption := tr( 'Colorado State University' );
-          Label20.Caption := tr( 'Snehal Shetye' );
-          Label21.Caption := tr( 'Department of Mechanical Engineering' );
-          Label22.Caption := tr( 'Colorado State University' );
-          Panel22.Caption := tr( 'Former development team members:' );
-          lblSchoenbaum.Caption := tr( 'Mark A. Schoenbaum' );
-          Label6.Caption := tr( 'USDA-APHIS-VS-WRO' );
-          lblZagmutt.Caption := tr( 'Francisco Zagmutt-Vergara' );
-          Label16.Caption := tr( 'Animal Population Health Institute' );
-          Label17.Caption := tr( 'Colorado State University' );
-          Panel18.Caption := tr( 'Spanish translation:' );
+          pnlPair := TPanel.Create( self );
+          pnlPair.Parent := pnlCreds;
+          pnlPair.Height := 52;
+          pnlPair.Align := alTop;
+          pnlPair.Caption := 'pnlPair' + intToStr( i );
+          pnlPair.Color := clRed;
+          pnlPair.Visible := True;
+
+          person := list.at( j ) as TPerson;
+          addPanel( person._name, person._dept, person._inst, pnlPair, alLeft );
+
+          inc( j );
+          if( j < list.count ) then
+            begin
+              person := list.at( j ) as TPerson;
+              addPanel( person._name, person._dept, person._inst, pnlPair, alRight );
+              inc( j );
+            end
+          ;
         end
       ;
-
     end
   ;
 

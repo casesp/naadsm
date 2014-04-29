@@ -4,13 +4,13 @@ unit FormMain;
 FormMain.pas/dfm
 ----------------
 Begin: 2005/05/10
-Last revision: $Date: 2008/10/22 17:32:13 $ $Author: areeves $
-Version: $Revision: 1.100 $
+Last revision: $Date: 2013-04-01 18:58:52 $ $Author: areeves $
+Version: $Revision: 1.125.6.25 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -24,7 +24,7 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
-  	// Standard Delphi units
+    // Standard Delphi units
     Windows,
     Messages,
     SysUtils,
@@ -47,11 +47,15 @@ interface
     Buttons,
     ComCtrls,
     Grids,
+    ActnPopupCtrl,
 
     // General-purpose units
     CStringList,
     IniHandler,  // For *.ini settings
     CmdLine,
+
+    // APHI modeling library
+    ModelDatabase,
 
     // Application-specific data structures
     SMScenario,
@@ -59,28 +63,19 @@ interface
     SMDatabase,
     Herd,
     ProductionType,
-    ReadXMLInput,
-
-    // Application-specific widgets
-    {$IF Defined( CHEYENNE ) }
-      FormSplashCheyenne,
-    {$ELSEIF Defined( LARAMIE ) }
-      FormSplashLaramie,
-    {$ELSE}
-      FormSplash,
-    {$IFEND}
+    SMI88nSettings,
+    StatusEnums,
 
     // Needed here for "next form" constants
-		FormSMWizardBase,
+    FormSMWizardBase,
 
-		// Used for interaction with the SHARCSpread-derived DLL
-    ModelImplementation,
+    // Used for interaction with the NAADSM DLL
+    NAADSMLibrary,
 
     // Application-specific constants
-    StringConsts, ActnPopupCtrl
+    StringConsts
   ;
 
-  type ScenarioPTR = ^TSMScenario;
 
   type TFormMain = class( TForm )
       // Main menu-associated controls
@@ -117,14 +112,17 @@ interface
       ActionProdTypePairs: TAction;
       ActionContactSpread: TAction;
       ActionAirborneSpread: TAction;
+      ActionLocalAreaSpread: TAction;
 
       ActionDetectionMenu: TAction;
       ActionYesNoDetection: TAction;
       ActionDetection: TAction;
 
-      ActionTracing: TAction;
-      ActionTracingOptions: TAction;
       ActionTracingMenu: TAction;
+      ActionTracingOptions: TAction;
+      ActionTracing: TAction;
+      ActionTracingHerdExam: TAction;
+      ActionTracingTesting: TAction;
 
       ActionZonesMenu: TAction;
       ActionZonesOptions: TAction;
@@ -147,7 +145,7 @@ interface
       ActionCostsVacc: TAction;
       ActionCostsZones: TAction;
 
-			ActionOutputOptions: TAction;
+      ActionOutputOptions: TAction;
 
       ActionCustomOutputMenu: TAction;
       ActionCustomOutputOptions: TAction;
@@ -167,6 +165,7 @@ interface
       ActionCompareStats: TAction;
       ActionEvents: TAction;
       ActionExposures: TAction;
+      ActionSummary: TAction;
 
       ActionCascade: TAction;
       ActionArrange: TAction;
@@ -182,17 +181,22 @@ interface
       // Tools menu actions
       //-------------------
       acnLanguageSettings: TAction;
+      acnRegionalSettings: TAction;
 
       // Help menu actions
       //------------------
       ActionAbout: TAction;
       ActionWebsite: TAction;
+      ActionForums: TAction;
 
       // Other components
       //------------------
       OpenDialog1: TOpenDialog;
       SaveDialog1: TSaveDialog;
+      DatabaseActivityTimer: TTimer;
 
+      // Status panel
+      //-------------
       pnlRunStatus: TPanel;
       pbrIterations: TProgressBar;
       pbrIterationDays: TProgressBar;
@@ -202,26 +206,13 @@ interface
       lblRunMessage: TLabel;
       btnStopSim: TSpeedButton;
       ActionStop: TAction;
+      pnlCounters: TPanel;
+      pnlProgressBars: TPanel;
+      pnlStop: TPanel;
 
       // For trivial testing
       //---------------------
-    	btnTest: TButton;
-
-      pnlCounters: TPanel;
-      pnlProgressBars: TPanel;
-      pnlStop: TPanel; // FIX ME: what is this??
-
-      ActionVUnits: TAction;
-
-      // Scenario parameters items not (yet?) (re)implemented
-
-        ActionHelp: TAction;
-        ActionAppendOutput: TAction;
-        ActionInteractive: TAction;
-
-        ActionSummary: TAction;
-
-        Timer1: TTimer;
+      btnTest: TButton;
 
       // File menu commands
       //--------------------
@@ -259,35 +250,37 @@ interface
       // Tools menu commands
       //--------------------
       procedure ActionLanguageSettingsExecute( Sender: TObject );
+      procedure acnRegionalSettingsExecute( Sender: TObject );
 
       // Help menu commands
       //--------------------
       procedure ActionAboutExecute(Sender: TObject);
       procedure ActionWebsiteExecute(Sender: TObject);
+      procedure ActionSupportForumsExecute(Sender: TObject);
 
       // Form events
       //--------------
       procedure FormCreate( Sender: TObject );
       procedure FormClose(Sender: TObject; var Action: TCloseAction);
 
+      // Other controls
+      //---------------
+      procedure DatabaseActivityTimerTimer(Sender: TObject);
+
       // For trivial testing
       //---------------------
-  		procedure BtnTestClick(Sender: TObject);
-      procedure Timer1Timer(Sender: TObject);
-    
+      procedure BtnTestClick(Sender: TObject);
+
     protected
-    	// Files
+      // Files
       //-------
       _smdb: TSMDatabase;
       _ini: TIniHandler;
 
-      // Last Iteration displayed
-      // in summary forms...keeps them all in sync with each other
-      _displayedIteration: Integer;
-
       // Data structures
       //----------------
       _smScenario: TSMScenario;
+      _i88nSettings: TSMI88nSettings;
 
       // File handling
       //--------------
@@ -297,9 +290,12 @@ interface
       //-----------
       _userStop: integer;
       _simIsRunning: boolean;
-      _stopReason: TStopReason;
+      _displayedIteration: integer; /// Last Iteration displayed in summary forms...keeps them all in sync with each other
+      _iterationInProgress: integer; /// ID number of the currently running iteration, if there is one.
 
       _showOutputWarning: boolean;
+
+      _perimeterColors: TColorArray;
 
       // For input screens
       //-------------------
@@ -313,6 +309,7 @@ interface
       _showApplyToAllWarning: boolean;
       _selectedProdTypeIndex: integer;
       _selectedProdTypePairIndex: integer;
+      _selectedZoneIndex: integer;
 
       // For output screens
       //--------------------
@@ -332,7 +329,7 @@ interface
       procedure translateUIManual();
 
       procedure WMNCActivate( var Msg: TWMNCActivate ); message WM_NCACTIVATE;
-      
+
       procedure initialize();
 
       procedure handleAppUpdateMessage( success: boolean; updateMessage: string );
@@ -345,8 +342,9 @@ interface
       function selectScenarioFile( var fileName: string ): boolean;
       function getSaveScenarioName( var fileName: string ): boolean;
       function getUntitledMDB( path: string ): string;
-      function getScenario():TSMScenarioPTR;
+      function getScenario(): TSMScenario;
       function getsmDB():TSMDatabase;
+      procedure clearScenarioOutput();
 
       // Functions for input screens
       //-----------------------------
@@ -377,9 +375,9 @@ interface
       procedure closeCumulativeOutputWindows();
       procedure closeIterationOutputWindows();
       procedure frmMapToggle();
-  		procedure frmDailyStatusByProdTypeToggle();
-  		procedure frmDailyZoneStatusByProdTypeToggle();
-			procedure frmIterationSummaryToggle();
+      procedure frmDailyStatusByProdTypeToggle();
+      procedure frmDailyZoneStatusByProdTypeToggle();
+      procedure frmIterationSummaryToggle();
       procedure frmOutputStatsToggle();
       procedure frmCompareStatsToggle();
       procedure frmEpiCurveToggle();
@@ -393,9 +391,12 @@ interface
       function getFirstOverallDetection(): integer;
       function getFirstOverallDestruction(): integer;
 
-      function getDisplayedIteration():Integer;
-      procedure setDisplayedIteration( _iteration: Integer );
+      function getDisplayedIteration(): integer;
+      procedure setDisplayedIteration( _iteration: integer );
 
+      function getIterationInProgress(): integer;
+
+      function getSimStatusStr(): string;
     public
       // Construction/destruction
       //--------------------------
@@ -431,16 +432,15 @@ interface
       function paramFormIndex( const paramFormName: string ): integer;
 
       // For DLL interaction
-			//---------------------
+      //---------------------
       procedure simStart();
       procedure iterationStart( it: integer );
       procedure dayStart( day: integer );
 
       procedure changeHerdState( h: THerd );
-      procedure infectHerd( h: THerd );
-      procedure exposeHerd( h: THerd );
-      procedure attemptTraceHerd( h: THerd );
       procedure traceHerd( h: THerd );
+      procedure examineHerd( h: THerd );
+      procedure quarantineHerd( h: THerd );
 
       procedure detectHerd( h: THerd; wasFirstEventForProdType: boolean; day: integer );
       procedure destroyHerd( h: THerd; wasFirstEventForProdType: boolean; day: integer );
@@ -454,31 +454,27 @@ interface
       // Properties
       //------------
       property scenarioIsOpen: boolean read getScenarioIsopen;
-      property Scenario: TSMScenarioPTR read getScenario;
+      property Scenario: TSMScenario read getScenario;
       property smDB:TSMDatabase read getsmDB;
 
+      property simStatusStr: string read getSimStatusStr;
       property simIsRunning: boolean read _simIsRunning;
+      property iterationInProgress: integer read getIterationInProgress;
       property userStop: integer read _userStop;
 
       property firstOverallVaccination: integer read getFirstOverallVaccination;
       property firstOverallDetection: integer read getFirstOverallDetection;
       property firstOverallDestruction: integer read getFirstOverallDestruction;
       property displayedIteration: integer read getDisplayedIteration write setDisplayedIteration;
-
-      function ZoneColors(): TColorArray;
     end
   ;
-
-	const
-  	DBFORMMAIN: boolean = false; // set to true to show debugging messages for this unit.
-    DBFORMMAINOUTPUTS: boolean = false; // set to true to enable output debugging messages.
 
   var
     frmMain: TFormMain;
 
 implementation
 
-	{$R *.dfm}
+  {$R *.dfm}
 
   uses
     // Standard Delphi units
@@ -489,7 +485,6 @@ implementation
 
     // General-purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     SqlClasses,
     WindowsUtils,
@@ -497,7 +492,6 @@ implementation
     RegExpDefs,
     ZipFunctions,
     ARMath,
-    CsvParser,
     NetworkUtils,
     ControlUtils,
     I88n,
@@ -509,23 +503,21 @@ implementation
     // Application-specific data structures
     ChartFunction,
     ProbDensityFunctions,
-    StatusEnums,
+    NAADSMLibraryTypes,
+    SMExceptionHandler,
 
     // Various application-specific forms and dialogs
     FormImport,
     FormExport,
 
-    {$IF Defined( Cheyenne ) }
-      FormAboutCheyenne,
-    {$ELSEIF Defined( Laramie ) }
-      FormAboutLaramie,
-    {$ELSE}
-      FormAbout,
-    {$IFEND}
-    
+    FormAboutExperimental,
+    FormAbout,
+    FormSplashExperimental,
+    FormSplash,
     FormAppUpdate,
     FormRegistration,
     FormLanguageSettings,
+    FormRegionalSettings,
 
     // Output forms
     FormIterationSummary,
@@ -543,10 +535,12 @@ implementation
     DialogLongMessage
 
     // for testing
-    , sdew
+    , RelFunction
   ;
 
 
+  const
+    DBSHOWMSG: boolean = false; // set to true to show debugging messages for this unit.
 
 // ----------------------------------------------------------------------------
 // Creation/initialization/destruction
@@ -574,10 +568,25 @@ implementation
 
       initialize();
 
-      Timer1.Interval := 1000 * 60 * 10; // 10 minutes
-      Timer1.Enabled := true;
+      Application.Title := MASTERCAPTION;
+
+      _i88nSettings := TSMI88nSettings.create();
+      i88nSetSettings( _i88nSettings );
+
+      DatabaseActivityTimer.Interval := 1000 * 60 * 10; // 10 minutes
+      DatabaseActivityTimer.Enabled := true;
 
       ActionImport.Visible := true;
+
+      {$IFDEF DEBUG}
+        ActionCustomOutputOptions.visible := true;
+        ActionCustomOutputMenu.visible := true;
+        ActionCustomOutputDefinitions.visible := true;
+      {$ELSE}
+        ActionCustomOutputOptions.visible := false;
+        ActionCustomOutputMenu.visible := false;
+        ActionCustomOutputDefinitions.visible := false;
+      {$ENDIF}
 
       _windowsLocked := false;
       _openWindows := 0;
@@ -595,10 +604,13 @@ implementation
       updateCaption();
 
       lblRunMessage.Caption := '';
-      btnTest.visible := {$IFDEF TEST_FEATURE} true {$ELSE} false {$ENDIF};
+      btnTest.visible := {$IFDEF DEBUG} true {$ELSE} false {$ENDIF};
 
       updateMenuItems( false );
 
+      {$IFDEF ENGLISHONLY}
+        acnLanguageSettings.Visible := false;
+      {$ENDIF}
 
       // Setup parameter wizard windows/forms
       //-------------------------------------
@@ -637,7 +649,7 @@ implementation
         begin
           frmRegistration := TFormRegistration.create( self );
           // The form shows itself...
-          frmRegistration.free();
+          frmRegistration.Release();
         end
       ;
 
@@ -685,10 +697,12 @@ implementation
       // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FormMain.dfm
       // File date: Mon Sep 24 12:04:52 2007
 
+      // Manually updated on 4/28/08 to include new parameter forms.
+
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          Caption := tr( 'NAADSM 3.1' );
+          Caption := tr( 'NAADSM 4.0 BETA 2' );
           Hint := tr( 'Open a file to start a new session' );
           ActionMainMenuBar1.Caption := tr( 'ActionMainMenuBar1' );
           lblIterationCounter.Caption := tr( 'lblIterationCounter' );
@@ -705,17 +719,20 @@ implementation
           ActionDiseaseMenu.Caption := tr( '&Disease' );
           ActionDiseaseOptions.Caption := tr( '&Disease options' );
           ActionDisease.Caption := tr( '&Production type settings for disease' );
-          ActionSpreadMenu.Caption := tr( 'Disease Sp&read' );
+          ActionSpreadMenu.Caption := tr( 'Disease sp&read' );
           ActionSpreadOptions.Caption := tr( '&Spread options' );
           ActionProdTypePairs.Caption := tr( '&Production type combinations' );
           ActionContactSpread.Caption := tr( '&Contact spread' );
-          ActionAirborneSpread.Caption := tr( '&Airborne Spread' );
+          ActionAirborneSpread.Caption := tr( '&Airborne spread' );
+          ActionLocalAreaSpread.Caption := tr( '&Local area spread' );
           ActionDetectionMenu.Caption := tr( 'Detect&ion' );
           ActionYesNoDetection.Caption := tr( '&Detection options' );
           ActionDetection.Caption := tr( '&Production type settings for detection' );
           ActionTracingMenu.Caption := tr( 'Trac&ing' );
           ActionTracingOptions.Caption := tr( '&Global tracing options' );
           ActionTracing.Caption := tr( '&Production type settings for tracing' );
+          ActionTracingHerdExam.Caption := tr( '&Examination of traced units' );
+          ActionTracingTesting.Caption := tr( '&Diagnostic testing of traced units' );
           ActionDestructionMenu.Caption := tr( 'Destructio&n' );
           ActionDestrGlobal.Caption := tr( '&Global destruction options' );
           ActionDestrPriority.Caption := tr( '&Destruction priorities' );
@@ -729,29 +746,24 @@ implementation
           ActionCostsDestr.Caption := tr( 'Production type settings for &destruction costs' );
           ActionCostsVacc.Caption := tr( 'Production type settings for &vaccination costs' );
           ActionCostsZones.Caption := tr( 'Production type settings for &zone surveillance costs' );
-          ActionInteractive.Caption := tr( '&Interactive/advanced' );
           ActionMap.Caption := tr( '&Map of units for 1 iteration' );
           ActionOutChart.Caption := tr( '&Daily unit status for 1 iteration' );
-          ActionEvents.Caption := tr( '&Events by day' );
+          ActionEvents.Caption := tr( '&Events for 1 iteration' );
           ActionSummary.Caption := tr( '&Summary of 1 iteration' );
-          ActionHelp.Caption := tr( 'Help' );
-          ActionHelp.Hint := tr( 'Opens the help file' );
           ActionOutputStats.Caption := tr( 'Output statistics' );
           ActionEpiCurve.Caption := tr( 'Summary epidemic curves' );
           ActionRunUntilDay.Caption := tr( 'Start and run until specified day...' );
           ActionRunUntilDetection.Caption := tr( 'Start and run until first detection(s)' );
           ActionRunUntilDiseaseEnd.Caption := tr( 'Start and run to the end of active disease phase(s)' );
           ActionRunUntilOutbreakEnd.Caption := tr( 'Start and run until end of outbreak(s)' );
-          ActionExposures.Caption := tr( 'Contact-exposure events by day' );
+          ActionExposures.Caption := tr( 'Exposures and traces for 1 iteration' );
           ActionCascade.Caption := tr( '&Cascade' );
           ActionArrange.Caption := tr( '&Arrange' );
-          ActionVUnits.Caption := tr( 'View current units' );
           ActionStop.Caption := tr( 'S&top simulation' );
           ActionCloseWindows.Caption := tr( 'Close all &windows' );
           ActionNew.Caption := tr( '&New scenario file' );
           ActionSave.Caption := tr( '&Save scenario file' );
           ActionSaveAs.Caption := tr( 'Sa&ve As...' );
-          ActionAppendOutput.Caption := tr( 'Append output' );
           ActionImport.Caption := tr( '&Import scenario...' );
           ActionClose.Caption := tr( '&Close scenario file' );
           ActionExport.Caption := tr( '&Export scenario...' );
@@ -773,6 +785,7 @@ implementation
           ActionCompareStats.Caption := tr( 'Com&pare to another scenario...' );
           ActionOutZoneChart.Caption := tr( 'Da&ily zone status for 1 iteration' );
           acnLanguageSettings.Caption := tr( '&Language settings...' );
+          acnRegionalSettings.Caption := tr( '&Regional settings...' );
           OpenDialog1.Filter := tr( 'NAADSM scenario databases (*.mdb)|*.mdb|All files (*.*)|*.*' );
           SaveDialog1.Filter := tr( 'NAADSM scenario databases (*.mdb)|*.mdb|All files (*.*)|*.*' );
         end
@@ -803,7 +816,7 @@ implementation
           //ActionOutChart.Caption := tr( '&Daily unit status for 1 iteration' );
           //ActionOutZoneChart.Caption := tr( 'Da&ily zone status for 1 iteration' );
           //ActionSummary.Caption := tr( '&Summary of 1 iteration' );
-          ActionExposures.Caption := tr( 'C&ontact-exposure events by day' );
+          ActionExposures.Caption := tr( 'E&xposures and traces for 1 iteration' );
           ActionOutputStats.Caption := tr( 'O&utput statistics' );
           ActionEpiCurve.Caption := tr( 'Summa&ry epidemic curves' );
         end
@@ -829,52 +842,38 @@ implementation
       ;
     end
   ;
-  
 
-  function TFormMain.ZoneColors(): TColorArray;
-    var
-      ret_val: TColorArray;
+
+  procedure TFormMain.FormCreate(Sender: TObject);
     begin
-      if not assigned( frmMap ) then
-        ret_val := nil
-      else
-        ret_val := frmMap.zoneColors;
-
-      result := ret_val;
-    end
-  ;
-
-
- 	procedure TFormMain.FormCreate(Sender: TObject);
- 		begin
       Assert(not Scaled, 'You should set Scaled property of Form to False!');
 
       if( Screen.PixelsPerInch <> 96 ) then
-       ScaleBy( Screen.PixelsPerInch, 96 )
+        ScaleBy( Screen.PixelsPerInch, 96 )
       ;
- 		end
-	;
+    end
+  ;
 
 
   procedure TFormMain.handleAppUpdateMessage( success: boolean; updateMessage: string );
     var
       frmAppUpdate: TFormAppUpdate;
+      splashScreen: TForm;
     begin
       if( success ) then
         begin
           if( 0 < length( updateMessage ) ) then
             begin
-              dbcout2( updateMessage );
-
-              dbcout2( 'Creating the app update form...' );
-              frmAppUpdate := TFormAppUpdate.create( self, updateMessage, MAJORVERSIONNUMBER, MINORVERSIONNUMBER, frmSplash );
+              if( IS_EXPERIMENTAL ) then
+                splashScreen := frmSplashExperimental
+              else
+                splashScreen := frmSplash
+              ;
+              frmAppUpdate := TFormAppUpdate.create( self, updateMessage, MAJORVERSIONNUMBER, MINORVERSIONNUMBER, splashScreen );
 
               // The form shows itself...
-              frmAppUpdate.Free();
-              //dbcout2( 'Done!' );
+              frmAppUpdate.Release();
             end
-          else
-            dbcout2( 'No update message.' )
           ;
         end
       ;
@@ -886,8 +885,18 @@ implementation
     begin
       _selectedProdTypeIndex := 0;
       _selectedProdTypePairIndex := 0;
+      _selectedZoneIndex := 0;
       
       _displayedIteration := -1;
+      _iterationInProgress := -1;
+      _simIsRunning := false;
+
+      // These will be used by other output windows
+      setLength( _perimeterColors, 4 );
+      _perimeterColors[0] := clMaroon;
+      _perimeterColors[1] := clTeal;
+      _perimeterColors[2] := clNavy;
+      _perimeterColors[3] := clOlive;
     end
   ;
 
@@ -896,6 +905,8 @@ implementation
     begin
       freeAndNil( _ini );
       freeAndNil( _paramFormList );
+      freeAndNil( _i88nSettings );
+
       if( _smdb <> nil ) then freeAndNil( _smdb );
 
       inherited destroy();
@@ -958,6 +969,7 @@ implementation
     end
   ;
 
+  
   procedure TFormMain.showMap();
     begin
       if( nil <> _smdb )  then
@@ -973,13 +985,17 @@ implementation
   function TFormMain.getsmDB():TSMDatabase;
     begin
       result := _smdb;
-    end;
+    end
+  ;
 
-  function TFormMain.getScenario():TSMScenarioPTR;
+
+  function TFormMain.getScenario(): TSMScenario;
     begin
-      result := @_smScenario;
-    end;
+      result := _smScenario;
+    end
+  ;
 
+  
   procedure TFormMain.setInitialWindowPosition();
     const
       MINWINDOWWIDTH: integer = 700;
@@ -1148,17 +1164,17 @@ implementation
         end
       ;
 
-    	SaveDialog1.Title := tr( 'Create sample model scenario database with the file name...' );
+      SaveDialog1.Title := tr( 'Create sample model scenario database with the file name...' );
 
       if( _ini.hasKey( 'LastSaveDirectory' ) ) then
-      	SaveDialog1.InitialDir := _ini.val( 'LastSaveDirectory' )
+        SaveDialog1.InitialDir := _ini.val( 'LastSaveDirectory' )
       ;
 
       SaveDialog1.FileName := tr( 'SampleScenario.mdb' );
 
       if( SaveDialog1.Execute() ) then
-      	begin
-      		fileName := SaveDialog1.FileName;
+        begin
+          fileName := SaveDialog1.FileName;
 
           if( ansiLowerCase( rightStr( fileName, 4 ) ) <> '.mdb' ) then
             fileName := fileName + '.mdb'
@@ -1167,7 +1183,15 @@ implementation
           _ini.update( 'LastSaveDirectory', directory( fileName ) );
 
           if( TSMDatabase.makeSampleDatabase( fileName, @errCode, @msg ) ) then
-            openScenario( fileName )
+            begin
+              msgOK(
+                tr( 'A sample scenario file has been created.  Please note that this is an example only, and that the parameters in this file do not represent any actual disease or situation.' ),
+                tr( 'Sample scenario created' ),
+                IMGInformation,
+                self
+              );
+              openScenario( fileName );
+            end
           else
             msgOK(
               tr( 'The sample scenario could not be created.' )
@@ -1190,40 +1214,41 @@ implementation
     begin
       // FIX ME: check to see if a database is currently open
 
-      try try
-      	Screen.Cursor:=crHourGlass;
-        fileName := getUntitledMDB( currentDir() );
-        _ini.update( 'LastOpenDirectory', currentDir() );
-        _smdb := TSMDatabase.create( fileName, DBCreate, PChar( errMsg ), self );
+      try
+        try
+          Screen.Cursor := crHourGlass;
+          fileName := getUntitledMDB( currentDir() );
+          _ini.update( 'LastOpenDirectory', currentDir() );
+          _smdb := TSMDatabase.create( fileName, DBCreate, PChar( errMsg ), self );
 
-        if( createSimObjects() ) then
-          begin
-            Screen.Cursor := crDefault;
-            msgOK(
-              tr( 'An empty scenario file has been created. Use the "Scenario parameters" menu to set up the scenario.' ),
-              tr( 'Scenario file created' ),
-              IMGSuccess,
-              self )
-            ;
-          end
-        ;
+          if( createSimObjects() ) then
+            begin
+              Screen.Cursor := crDefault;
+              msgOK(
+                tr( 'An empty scenario file has been created. Use the "Scenario parameters" menu to set up the scenario.' ),
+                tr( 'Scenario file created' ),
+                IMGSuccess,
+                self )
+              ;
+            end
+          ;
 
-      except
-        on e: exception do
-        	begin
-      			freeAndNil( _smdb );
+        except
+          on e: exception do
+            begin
+              freeAndNil( _smdb );
 
-            msgExceptionOK(
-              tr( 'NAADSM is unable to create a new scenario file. You may need to check your available hard disk space.' )
-                + endl + endl,
-            	e, self )
-            ;
-          end
-        ;
-      end;  
+              msgExceptionOK(
+                tr( 'NAADSM is unable to create a new scenario file. You may need to check your available hard disk space.' )
+                  + endl + endl,
+                e, self )
+              ;
+            end
+          ;
+        end;
       finally
       	updateDisplay();
-        Screen.Cursor:=crDefault;
+        Screen.Cursor := crDefault;
       end;
 
     end
@@ -1234,8 +1259,8 @@ implementation
     var
       success: boolean;
     begin
-    	if( not( _smdb.dbSaved ) ) then
-      	actionSaveAsExecute( sender )
+      if( not( _smdb.dbSaved ) ) then
+        actionSaveAsExecute( sender )
       else
         begin
           screen.cursor := crHourGlass;
@@ -1264,11 +1289,11 @@ implementation
 
 
   procedure TFormMain.ActionSaveAsExecute(Sender: TObject);
-  	var
-    	saveFileName: string;
+    var
+      saveFileName: string;
     begin
-    	if( getSaveScenarioName( saveFileName ) ) then
-      	begin
+      if( getSaveScenarioName( saveFileName ) ) then
+        begin
           screen.cursor := crHourGlass;
 
           if( not( _smdb.save( saveFileName ) ) ) then
@@ -1289,7 +1314,7 @@ implementation
           updateDisplay();
         end
       else
-      	_saveCanceled := true
+        _saveCanceled := true
       ;
     end
   ;
@@ -1297,17 +1322,17 @@ implementation
 
   function TFormMain.getSaveScenarioName( var fileName: string ): boolean;
     begin
-    	SaveDialog1.Title := tr( 'Save model scenario database as...' );
+      SaveDialog1.Title := tr( 'Save model scenario database as...' );
 
       if( _ini.hasKey( 'LastSaveDirectory' ) ) then
-      	SaveDialog1.InitialDir := _ini.val( 'LastSaveDirectory' )
+        SaveDialog1.InitialDir := _ini.val( 'LastSaveDirectory' )
       ;
 
       SaveDialog1.FileName := _smdb.permanentDBFileName;
 
       if( SaveDialog1.Execute() ) then
-      	begin
-      		fileName := SaveDialog1.FileName;
+        begin
+          fileName := SaveDialog1.FileName;
 
           if( ansiLowerCase( rightStr( fileName, 4 ) ) <> '.mdb' ) then
             fileName := fileName + '.mdb'
@@ -1317,7 +1342,7 @@ implementation
           result := true;
         end
       else
-      	result := false
+        result := false
       ;
     end
   ;
@@ -1325,7 +1350,7 @@ implementation
 
   function TFormMain.selectScenarioFile( var fileName: string ): boolean;
     begin
-      OpenDialog1.Title := 'Open a model scenario database';
+      OpenDialog1.Title := tr( 'Open a model scenario database' );
 
       if( _ini.hasKey( 'LastOpenDirectory' ) ) then
         OpenDialog1.initialDir := _ini.val( 'LastOpenDirectory' )
@@ -1374,14 +1399,14 @@ implementation
 
   procedure TFormMain.FormClose(Sender: TObject; var Action: TCloseAction);
     begin
-    	if( _smdb <> nil ) then
-      	begin
-      		if( _smdb.workingDBHasChanged ) then
-          	ActionCloseExecute( nil )
-					else
-          	begin
+      if( _smdb <> nil ) then
+        begin
+          if( _smdb.workingDBHasChanged ) then
+            ActionCloseExecute( nil )
+          else
+            begin
               closeOutputWindows();
-          		closeDB();
+              closeDB();
             end
           ;
         end
@@ -1389,35 +1414,49 @@ implementation
 
       if ( true = _saveCanceled ) then Action := caNone;
       updateIniSettings();
-			// Bye bye!
+      // Bye bye!
     end
   ;
 
 
   procedure TFormMain.ActionImportExecute( Sender: TObject );
     var
-    	frm: TFormImport;
+      frm: TFormImport;
     begin
 
-    	// This check shouldn't really be necessary: file->import should be disabled
+      // This check shouldn't really be necessary: file->import should be disabled
       // whenever a database is open.
       if( _smdb <> nil ) then
-      	begin
-        	msgOK(
-          	tr( 'Please close the current scenario file first.' ),
+        begin
+          msgOK(
+            tr( 'Please close the current scenario file first.' ),
             tr( 'File is open' ),
             IMGWarning,
             self
           );
-        	exit;
+          exit;
         end
       ;
 
-    	frm := TFormImport.create( self, _ini );
+      frm := TFormImport.create( self, _ini );
       frm.showModal();
       _smdb := frm.database;
-      freeAndNil( frm );
-      updateDisplay();
+      _smScenario := frm.scenario;
+
+      // If problems occurred during import then frm.database will have been set to nil.
+      if( nil <> _smdb ) then
+        begin
+          updateDisplay();
+          if( not( assigned( frmMap ) ) ) then
+            frmMapToggle()
+          ;
+        end
+      ;
+
+      // There is no need here for any dialog boxes.
+      // Dialogs for both success and failure are handled on the form itself.
+
+      frm.Release();
     end
   ;
 
@@ -1441,29 +1480,29 @@ implementation
 
 
   procedure TFormMain.ActionExportExecute( Sender: TObject );
-  	var
+    var
       frm: TFormExport;
     begin
-    	dbcout( 'Creating form', DBFORMMAIN );
+      dbcout( 'Creating form', DBSHOWMSG );
       frm := TFormExport.create( self, _smScenario, _ini );
-      dbcout( 'Showing form', DBFORMMAIN );
-			frm.showModal();
-      dbcout( 'Freeing form', DBFORMMAIN );
-      freeAndNil( frm );
+      dbcout( 'Showing form', DBSHOWMSG );
+      frm.showModal();
+      dbcout( 'Freeing form', DBSHOWMSG );
+      frm.Release();
     end
   ;
 
   
-	procedure TFormMain.ActionCloseExecute( Sender: TObject );
-  	var
-    	response: integer;
-		begin
-      dbcout( 'Closing db', DBFORMMAIN );
+  procedure TFormMain.ActionCloseExecute( Sender: TObject );
+    var
+      response: integer;
+    begin
+      dbcout( 'Closing db', DBSHOWMSG );
 
-			if( _smdb = nil ) then
-      	exit
+      if( _smdb = nil ) then
+        exit
       else
-      	begin
+        begin
           _saveCanceled := false;
 
           if( _smdb.workingDBHasChanged ) then // New file that hasn't been permanently saved or existing permanent file needs to be updated
@@ -1479,9 +1518,9 @@ implementation
                 mrYes: actionSaveExecute( nil );
                 mrNo: _saveCanceled := false;
                 mrCancel:
-                	begin
-                 		_saveCanceled := true;
-                  	exit;
+                  begin
+                    _saveCanceled := true;
+                    exit;
                   end
                 ;
               end;
@@ -1495,16 +1534,16 @@ implementation
         end
       ;
 
-      dbcout( 'Done closing db', DBFORMMAIN );
-		end
-	;
+      dbcout( 'Done closing db', DBSHOWMSG );
+    end
+  ;
 
 
   procedure TFormMain.closeScenarioFile();
     begin
       closeDB();
 
-      dbcout( 'Destroying _smScenario', DBFORMMAIN );
+      dbcout( 'Destroying _smScenario', DBSHOWMSG );
       try
         _smScenario.Free();
       except
@@ -1512,21 +1551,21 @@ implementation
           msgOK( 'Can''t destroy _smScenario' );
         {$ENDIF}
       end;
-      dbcout( 'Done destroying _smScenario', DBFORMMAIN );
+      dbcout( 'Done destroying _smScenario', DBSHOWMSG );
 
       _smScenario := nil;
-      dbcout( 'Closing output windows', DBFORMMAIN );
+      dbcout( 'Closing output windows', DBSHOWMSG );
       closeOutputWindows();
-      dbcout( 'Done closing output windows', DBFORMMAIN );
-      dbcout( 'Updating display', DBFORMMAIN );
+      dbcout( 'Done closing output windows', DBSHOWMSG );
+      dbcout( 'Updating display', DBSHOWMSG );
       updateDisplay();
-      dbcout( 'Done updating display', DBFORMMAIN );
+      dbcout( 'Done updating display', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormMain.closeDB();
-  	begin
+    begin
       _smdb.close();
       // Freeing TSMDatabase will automatically delete the temporary file.
       freeAndNil( _smdb );
@@ -1582,7 +1621,7 @@ implementation
       hList: THerdList;
       mathFunctionsOK: boolean;
     begin
-      dbcout( '--- TFormMain.createSimObjects', DBFORMMAIN );
+      dbcout( '--- TFormMain.createSimObjects', DBSHOWMSG );
       
       screen.Cursor := crHourGlass;
       updateMenuItems( true );
@@ -1598,19 +1637,19 @@ implementation
 
           if( nil <> _smScenario ) then freeAndNil( _smScenario );
 
-          dbcout( 'Creating sim', DBFORMMAIN );
+          dbcout( 'Creating sim', DBSHOWMSG );
           sim := TSMSimulationInput.create( _smdb, fn, @mathFunctionsOK );
-          dbcout( 'Done creating sim', DBFORMMAIN );
+          dbcout( 'Done creating sim', DBSHOWMSG );
 
           frm.setSecondary( 50 );
           frm.setPrimary( 0 );
           frm.setMessage( tr( 'Loading units...' ) );
 
-          dbcout( 'Creating hList', DBFORMMAIN );
+          dbcout( 'Creating hList', DBSHOWMSG );
           hList := THerdList.create( _smdb, sim, fn );
-          dbcout( 'Done creating hList', DBFORMMAIN );
+          dbcout( 'Done creating hList', DBSHOWMSG );
 
-          dbcout( 'HERD LIST IS UPDATED: ' + uiBoolToText( hList.updated ), DBFORMMAIN );
+          dbcout( 'HERD LIST IS UPDATED: ' + uiBoolToText( hList.updated ), DBSHOWMSG );
 
           _smScenario := TSMScenario.create( sim, hList );
 
@@ -1622,7 +1661,7 @@ implementation
               msgOK(
                 tr( 'An error occurred while loading at least one relational or probability density function.' ) + ' '
                   + tr( 'This may have occurred if the scenario database was changed with an application other than NAADSM.' ) + ' '
-                  + tr( 'NAADSM attempts to automatically correct this situation, but some problems may still exist.' ) + ' '
+                  + tr( 'NAADSM will attempt to automatically correct this situation, but some problems may still exist.' ) + ' '
                   + tr( 'Please double-check your parameters before running this scenario.' ),
                 tr( 'Database error' ),
                 IMGWarning,
@@ -1659,7 +1698,7 @@ implementation
 
       finally
         frm.Close();
-        frm.Free();
+        frm.Release();
         self.SetFocus();
         screen.Cursor := crDefault;
         updateMenuItems( false );
@@ -1675,16 +1714,18 @@ implementation
       dbCheckResult: TDBCheckResult;
 
       response: integer;
-      indexCheck: boolean;
+      dbCheck: boolean;
+      errMsg: string;
+      msg: string;
     begin
-      dbcout( 'TFormMain.openScenario', DBFORMMAIN );
+      dbcout( 'TFormMain.openScenario', DBSHOWMSG );
 
       // Before doing anything else, see if the file exists.
       //----------------------------------------------------
       if( not( fileExists( fileName ) ) ) then
         begin
           msgOK(
-            ansiReplaceStr( tr( 'The selected scenario file xyz' ), 'xyz', abbrevPath( fileName ) ) + ' ' + tr( 'does not exist.' )
+            ansiReplaceStr( tr( 'The selected scenario file xyz does not exist.' ), 'xyz', abbrevPath( fileName ) )
               + endl + endl + tr( 'Please select another scenario file.' ),
             tr( 'Cannot open scenario file' ),
             IMGCritical,
@@ -1707,7 +1748,7 @@ implementation
           if( not( _smdb.isOpen ) ) then
             begin
               msgOK(
-                ansiReplaceStr( tr( 'The selected scenario file xyz' ), 'xyz', abbrevPath( fileName ) ) + ' ' + tr( 'cannot be opened.' )
+                ansiReplaceStr( tr( 'The selected scenario file xyz cannot be opened.' ), 'xyz', abbrevPath( fileName ) )
                   + endl + endl + tr( 'Please double-check the file format.' ),
                 tr( 'Cannot open scenario file' ),
                 IMGCritical,
@@ -1744,36 +1785,6 @@ implementation
             end
           ;
 
-          // Make sure that the database has all required indices.
-          //------------------------------------------------------
-          // Right now, there is only one required index, but some day, there may be more.
-          indexCheck := _smdb.indexExists( 'dynHerd_PK', 'dynHerd' );
-
-          if( not( indexCheck ) ) then
-            begin
-              response := msgYesNo(
-                tr( 'The schema of this scenario database has been altered.  Some output will not be recorded correctly, and some features may not be available or will not work properly. Unless you are an expert user, it is suggested that you do not continue.' )
-                  + endl + endl
-                  + tr( '(Technical information: index "dynHerd_PK" does not exist on table "dynHerd".)' )
-                  + endl + endl
-                  + tr( 'Continue opening the current file?' ),
-                tr( 'Altered database schema detected' ),
-                IMGWarning,
-                Self )
-              ;
-
-              if( mrYes <> response ) then
-                begin
-                  // Delete the copy
-                  _smdb.close();
-                  deleteFile( _smdb.workingDBFileName );
-                  freeAndNil( _smdb );
-                  exit;
-                end
-              ;
-            end
-          ;
-
           // Check the version.
           //-------------------
           dbCheckResult := _smdb.checkVersion( updateReason );
@@ -1781,14 +1792,115 @@ implementation
           case dbCheckResult of
             DBVersionCurrent, DBVersionUpdated:
               begin
-                if( processUpdates( updateReason ) ) then
+                // Make sure that the herd table is properly specified.
+                //-----------------------------------------------------
+                dbCheck := _smdb.tablesOK( @errMsg );
+
+                if( not( dbCheck ) ) then
+                  begin
+                    msgOK(
+                      tr( 'The contents of this scenario database appear to have been altered by some mechanism outside of NAADSM, and the scenario cannot be opened.' )
+                        + '  ' + tr( 'Please contact the developers for more information.' )
+                        + endl + endl
+                        + tr( 'Technical information:' ) + endl
+                        + errMsg,
+                      tr( 'Altered database schema detected' ),
+                      IMGCritical,
+                      Self )
+                    ;
+
+                    // Delete the copy
+                    _smdb.close();
+                    deleteFile( _smdb.workingDBFileName );
+                    freeAndNil( _smdb );
+                    exit;
+                  end
+                ;
+
+                // Make sure that the database has all required indices.
+                //------------------------------------------------------
+                // Right now, there is only one required index, but some day, there may be more.
+                dbCheck := _smdb.indexExists( 'dynHerd_PK', 'dynHerd' );
+
+                if( not( dbCheck ) ) then
+                  begin
+                    response := msgYesNo(
+                      tr( 'The schema of this scenario database has been altered.  Some output will not be recorded correctly, and some features may not be available or will not work properly. Unless you are an expert user, it is suggested that you do not continue.' )
+                        + endl + endl
+                        + tr( '(Technical information: index "dynHerd_PK" does not exist on table "dynHerd".)' )
+                        + endl + endl
+                        + tr( 'Continue opening the current file?' ),
+                      tr( 'Altered database schema detected' ),
+                      IMGWarning,
+                      Self )
+                    ;
+
+                    if( mrYes <> response ) then
+                      begin
+                        // Delete the copy
+                        _smdb.close();
+                        deleteFile( _smdb.workingDBFileName );
+                        freeAndNil( _smdb );
+                        exit;
+                      end
+                    ;
+                  end
+                ;
+
+                // Update the database as necessary
+                //---------------------------------
+                dbCheck := processUpdates( updateReason );
+                if( dbCheck ) then
                   begin
                     if( createSimObjects() ) then
                       begin
-                        checkForIncompleteIteration();
+                        if( not( _smdb.containsValidOutput ) ) then
+                          begin
+                            msg := tr( 'This file contains apparently invalid output.  The number of iteration records does not match the number of iterations run.' )
+                              + ' ' + tr( 'If you proceed, output will be deleted, and the scenario will need to be run again.' )
+                              + ' ' + tr( 'Continue?' )
+                            ;
+
+                            if( mrYes = msgYesNo( msg, tr( 'Invalid output detected' ), IMGWarning, self ) ) then
+                              clearScenarioOutput()
+                            else
+                              begin
+                                // Delete the copy
+                                _smdb.close();
+                                deleteFile( _smdb.workingDBFileName );
+                                freeAndNil( _smdb );
+                                freeAndNil( _smScenario );
+                                exit;
+                              end
+                            ;
+                          end
+                        else
+                          checkForIncompleteIteration()
+                        ;
+
                         if( not( Assigned( frmMap ) ) ) then frmMapToggle();
                       end
                     ;
+                  end
+                else // processUpdates() failed
+                  begin
+                    msgOK(
+                      tr( 'This scenario database cannot be opened.' )
+                        + '  ' + tr( 'Please contact the developers for more information.' ),
+                      tr( 'Unexpected problem opening scenario database' ),
+                      IMGCritical,
+                      Self )
+                    ;
+
+                    if( nil <> _smdb ) then
+                      begin
+                        // Delete the copy
+                        _smdb.close();
+                        deleteFile( _smdb.workingDBFileName );
+                        freeAndNil( _smdb );
+                      end
+                    ;
+                    exit;
                   end
                 ;
               end
@@ -1826,6 +1938,7 @@ implementation
               end
             ;
           end;
+
         except
           on e: exception do
             begin
@@ -1872,7 +1985,7 @@ implementation
       // First, check the version of the application that
       // created any outputs stored in the database.
       //--------------------------------------------------
-      vUpdateReason := versionUpdateReason( _smdb, @oldVersion );
+      vUpdateReason := _smdb.versionUpdateReason( @oldVersion );
       case vUpdateReason of
         VERSBug:
           begin
@@ -1978,7 +2091,7 @@ implementation
                       + tr( 'Some outputs reported by this version were not recorded in the file, but those that were are still valid.' )
                       + endl + endl
                       + tr( 'The scenario must be run again if you want to generate the new outputs.' )
-                      + ' ' + ansiReplaceStr( tr( 'Please visit the NAADSM website (xyz) for information about these changes.' ), '(xyz)', endl + '(' + WEBSITE + ')' + endl )
+                      + ' ' + ansiReplaceStr( tr( 'Please visit the NAADSM website (xyz) for information about these changes.' ), '(xyz)', (*endl +*) '(' + WEBSITE + ')' (*+ endl*) )
                       + endl + endl
                       + tr( 'If you continue now, existing outputs will be unchanged.  Continue?' ),
                     tr( 'Scenario file is out of date' ),
@@ -2032,7 +2145,7 @@ implementation
                 + tr( 'If you wish to keep the old version, select File -> Save As... now to save the updated scenario file with a new name, or File -> Close to discard the changes.' )
               ;
 
-              dbcout( 'Should show scenario file updated message', DBFORMMAIN );
+              dbcout( 'Should show scenario file updated message', DBSHOWMSG );
               if( schemaUpdated ) then
                 msgOK( updateMsg, tr( 'Scenario file updated' ), IMGSuccess, self )
               ;
@@ -2109,6 +2222,26 @@ implementation
   ;
 
 
+  procedure TFormMain.clearScenarioOutput();
+    begin
+      screen.Cursor := crHourglass;
+      _smdb.initializeAllOutputRecords();
+      _smScenario.herdList.prepareForIteration( 0 );
+
+      _firstOverallDet := -1;
+      _firstOverallDestr := -1;
+      _firstOverallVacc := -1;
+
+      _displayedIteration := -1;
+      _iterationInProgress := -1;
+
+      updateOutputWindows( true );
+      updateDisplay();
+      screen.Cursor := crDefault;
+    end
+  ;
+
+
   procedure TFormMain.ActionClearOutputExecute(Sender: TObject);
     var
       reply: integer;
@@ -2141,21 +2274,7 @@ implementation
               );
 
               if( mrYes = reply ) then
-                begin
-                 screen.Cursor := crHourglass;
-                  _smdb.initializeAllOutputRecords();
-                  _smScenario.herdList.prepareForIteration( 0 );
-
-                  _firstOverallDet := -1;
-                  _firstOverallDestr := -1;
-                  _firstOverallVacc := -1;
-
-                  _displayedIteration := -1;
-
-                  updateOutputWindows( true );
-                  updateDisplay();
-                  screen.Cursor := crDefault;
-                end
+                clearScenarioOutput()
               ;
             end
           ;
@@ -2181,17 +2300,25 @@ implementation
         end
       ;
 
+      Screen.Cursor := crHourGlass;
+
       if( _smScenario.simInput.isValid( false, @errMsg ) ) then
         begin
-          if( _smScenario.herdList.isValid( @errMsg ) ) then  // FIX ME: changed from simInput???
-            msgOK( 
-              tr( 'No problems were detected in this scenario.' ), 
-              tr( 'Scenario OK' ), 
-              IMGSuccess, 
-              self
-            )
+          if( _smScenario.herdList.isValid( @errMsg ) ) then
+            begin
+              Screen.Cursor := crDefault;
+
+              msgOK(
+                tr( 'No problems were detected in this scenario.' ),
+                tr( 'Scenario OK' ),
+                IMGSuccess,
+                self
+              );
+            end
           else
             begin
+              Screen.Cursor := crDefault;
+
               dlg := TDialogLongMessage.create(
                 self,
                 tr( 'Problems found' ),
@@ -2199,12 +2326,14 @@ implementation
                 errMsg
               );
               dlg.showModal();
-              dlg.free();
+              dlg.Release();
             end
           ;
         end
       else
         begin
+          Screen.Cursor := crDefault;
+
           dlg := TDialogLongMessage.create(
             self,
             tr( 'Problems found' ),
@@ -2212,9 +2341,12 @@ implementation
             errMsg
           );
           dlg.showModal();
-          dlg.free();
+          dlg.Release();
         end
       ;
+      Screen.Cursor := crDefault;
+
+      updateCaption();
     end
   ;
 // ----------------------------------------------------------------------------
@@ -2239,13 +2371,13 @@ implementation
   each individual form to determine if it needs to be shown, based on
   parameters set previously.
   }
-	procedure TFormMain.fillParamFormList();
-  	begin
-    	// Remember to make sure classes listed here are registered!
-    	with _paramFormList do
-      	begin
+  procedure TFormMain.fillParamFormList();
+    begin
+      // Remember to make sure classes listed here are registered!
+      with _paramFormList do
+        begin
           // General parameters
-      		append( 'TFormGeneralParams' );
+          append( 'TFormGeneralParams' );
 
           // Basic production type parameters
           append( 'TFormProdType' );
@@ -2258,11 +2390,12 @@ implementation
           append( 'TFormDisease' );
           
           // Spread parameters
-					append( 'TFormSpreadOptions' );
+          append( 'TFormSpreadOptions' );
           append( 'TFormProdTypePairs' );
           append( 'TFormContactSpread' );
+          append( 'TFormLocalAreaSpread' );
           append( 'TFormAirborneSpread' );
-           
+
           // Detection parameters
           append( 'TFormYesNoDetection' );
           append( 'TFormDetection' );
@@ -2270,6 +2403,8 @@ implementation
           // Tracing parameters
           append( 'TFormTracingGlobal' );
           append( 'TFormTracing' );
+          append( 'TFormTracingHerdExam' );
+          append( 'TFormTracingTesting' );
 
           // Zone parameters
           append( 'TFormYesNoZones' );
@@ -2278,14 +2413,14 @@ implementation
 
           // Destruction parameters
           append( 'TFormDestrGlobal' );
-          append( 'TFormDestrPriority' );
           append( 'TFormDestruction' );
-
+          append( 'TFormDestrPriority' );
+          
           // Vaccination parameters
           append( 'TFormVaccGlobal' );
-          append( 'TFormVaccPriority' );
           append( 'TFormVaccination' );
-          
+          append( 'TFormVaccPriority' );
+
           // Cost parameters
           append( 'TFormCostOptions' );
           append( 'TFormCostsZones' );
@@ -2298,7 +2433,7 @@ implementation
           // Custom outputs
           append( 'TFormYesNoCustomOutputs' );
           append( 'TFormCustomOutputs' );
-				end
+        end
       ;
     end
   ;
@@ -2401,7 +2536,8 @@ implementation
             end
           ;
 
-          freeAndNil( _lastParamForm );
+          _lastParamForm.Release();
+          _lastParamForm := nil;
         end
       ;
 
@@ -2411,6 +2547,7 @@ implementation
         begin
           frmMap.borderDisabled := false;
           unlockWindow( frmMap );
+          frmMap.updateCaption();
         end
       ;
       if( assigned( frmDailyStatusByProdType ) ) then
@@ -2483,10 +2620,10 @@ implementation
         frmLeft: integer = -1;
         frmTop: integer = -1
       );
-  	var
-  		aClass: TPersistentClass;
-  		aFormClass: TFormClass;
-    	frm: TFormSMWizardBase;
+    var
+      aClass: TPersistentClass;
+      aFormClass: TFormClass;
+      frm: TFormSMWizardBase;
       formType: PChar;
 
       frmCorner: TPoint;
@@ -2498,7 +2635,7 @@ implementation
       formType := _paramFormList.at( formIndex );
 
       if( formType <> nil ) then
-      	begin
+        begin
           aClass := FindClass( formType );
           aFormClass := TFormClass( aClass );
 
@@ -2513,21 +2650,24 @@ implementation
           frm.iniHandler := _ini;
           frm.setContextMenuItems( self.ActionMainMenuBar1.ActionClient.Items[1] );
 
-          dbcout( 'Setting indices: ' + intToStr(_selectedProdTypeIndex) + ', ' + intToStr(_selectedProdTypePairIndex), DBFORMMAIN );
+          dbcout( 'Setting indices: ' + intToStr(_selectedProdTypeIndex) + ', ' + intToStr(_selectedProdTypePairIndex), DBSHOWMSG );
 
           frm.selectedProdTypeIndex := _selectedProdTypeIndex;
           frm.selectedProdTypePairIndex := _selectedProdTypePairIndex;
-          if( formIndex = 0 ) then frm.btnBack.Enabled := false;
-          if( formIndex = _paramFormList.Count-1 ) then frm.btnNext.Enabled := false;
+          frm.selectedZoneIndex := _selectedZoneIndex;
+          if( formIndex = 0 ) then
+            frm.btnBack.Enabled := false
+          ;
+          if( formIndex = _paramFormList.Count-1 ) then
+            frm.btnNext.Enabled := false
+          ;
 
-          dbcout('', DBFORMMAIN);
-          dbcout( '&&& Setting params.  UseExponentialDecay: ' + uiBoolToText( _smScenario.simInput.useAirborneExponentialDecay ), DBFORMMAIN );
           frm.setParams( _smScenario );
 
           // Lock all output windows until the parameter form is shown.
           // Once the form is displayed, drawing will be re-enabled:
           // see TFormSMWizardBase.FormShow().
-          //dbcout2( 'Locking windows from TFormMain.showParamForm()' );
+          dbcout( 'Locking windows from TFormMain.showParamForm()', DBSHOWMSG );
           lockWindows();
 
           frmCorner := clientToScreen( point( frmLeft, frmTop ) );
@@ -2548,17 +2688,18 @@ implementation
           _showApplyToAllWarning := frm.showApplyToAllWarning;
           _selectedProdTypePairIndex := frm.selectedProdTypePairIndex;
           _selectedProdTypeIndex := frm.selectedProdTypeIndex;
+          _selectedZoneIndex := frm.selectedZoneIndex;
 
           clearOutput := frm.outputCleared;
 
           if( frmDisplayed ) then // The form was displayed, and should be freed as soon as the next form is shown.
             _lastParamForm := frm
           else // The form was created, but never shown.  Free it now.
-            freeAndNil( frm )
+            frm.Release()
           ;
 
           case nextFormIndex of
-          	NF_NONE: begin {dbcout2( 'Unlocking windows from NFNone' );} unlockWindows(); end;
+            NF_NONE: begin dbcout( 'Unlocking windows from NFNone', DBSHOWMSG ); unlockWindows(); end;
             NF_BACK: showParamForm( formIndex - 1, clearOutput, NF_BACK, frmLeft, frmTop );
             NF_NEXT: showParamForm( formIndex + 1, clearOutput, NF_NEXT, frmLeft, frmTop );
             else showParamForm( nextFormIndex, clearOutput, NF_NEXT, frmLeft, frmTop );
@@ -2566,7 +2707,7 @@ implementation
         end
       ;
     end
-	;
+  ;
 
 
   {*
@@ -2582,13 +2723,13 @@ implementation
   @param name A string containing the name of the "wizard" form to show.
   }
   procedure TFormMain.showParamForm( name: string );
-  	var
+    var
       response: integer;
       tmpBool: boolean;
 
-    	i: integer;
+      i: integer;
       clearOutput: boolean;
-  	begin
+    begin
       try
         if( _showOutputWarning and _smdb.containsOutput ) then
           begin
@@ -2611,7 +2752,7 @@ implementation
           end
         ;
 
-        Screen.Cursor:=crHourGlass;
+        Screen.Cursor := crHourGlass;
 
         // Lock all windows
         // Disable the Redraw flag for the specified window
@@ -2628,14 +2769,17 @@ implementation
         // for this function to display it.
         i := _paramFormList.indexOf( name );
 
-        dbcout( 'Showing param form ''' + name + '''', DBFORMMAIN );
+        dbcout( 'Showing param form ''' + name + '''', DBSHOWMSG );
 
         // The value of 'clearOutput' may be changed by the form when it is shown.
-        if( i <> -1 ) then showParamForm( i, clearOutput );
+
+        if( i <> -1 ) then
+          showParamForm( i, clearOutput )
+        ;
 
         if( clearOutput ) then
           begin
-            dbcout( '*** Herds should be restored to their initial condition, and database will be cleared.', DBFORMMAIN );
+            dbcout( '*** Herds should be restored to their initial condition, and database will be cleared.', DBSHOWMSG );
 
             _smdb.initializeAllOutputRecords();
             _smScenario.herdList.initializeAllOutputRecords();
@@ -2643,7 +2787,7 @@ implementation
           end
         ;
         
-        dbcout( 'Done with showParamForm', DBFORMMAIN );
+        dbcout( 'Done with showParamForm', DBSHOWMSG );
       finally
         // Unlock all windows
         // Disable the Redraw flag for the specified window
@@ -2657,7 +2801,7 @@ implementation
         screen.Cursor := crDefault;
       end;
 
-      dbcout( 'HERD LIST IS UPDATED: ' + uiBoolToText( _smScenario.herdList.updated ), DBFORMMAIN );
+      dbcout( 'HERD LIST IS UPDATED: ' + uiBoolToText( _smScenario.herdList.updated ), DBSHOWMSG );
     end
   ;
 
@@ -2701,6 +2845,7 @@ implementation
       else if( senderName = 'ActionProdTypePairs' ) then result := 'TFormProdTypePairs'
       else if( senderName = 'ActionContactSpread' ) then result := 'TFormContactSpread'
       else if( senderName = 'ActionAirborneSpread' ) then result := 'TFormAirborneSpread'
+      else if( senderName = 'ActionLocalAreaSpread' ) then result := 'TFormLocalAreaSpread'
 
       // Detection submenu
       else if( senderName = 'ActionYesNoDetection' ) then result := 'TFormYesNoDetection'
@@ -2709,6 +2854,8 @@ implementation
       // Tracing submenu
       else if( senderName = 'ActionTracingOptions' ) then result := 'TFormTracingGlobal'
       else if( senderName = 'ActionTracing' ) then result := 'TFormTracing'
+      else if( senderName = 'ActionTracingHerdExam' ) then result := 'TFormTracingHerdExam'
+      else if( senderName = 'ActionTracingTesting' ) then result := 'TFormTracingTesting'
 
       // Zones submenu
       else if( senderName = 'ActionZonesOptions' ) then result := 'TFormYesNoZones'
@@ -2787,20 +2934,20 @@ implementation
 // ----------------------------------------------------------------------------
   procedure TFormMain.ActionRunExecute( Sender: TObject );
     var
-      //isAddingIterations: boolean; // Legacy holdover, currently unused. Keep for now anyway.
-      //isFinishingIteration: boolean; // Legacy holdover, currently unused. Keep for now anyway.
-      //nrOutputIterationsLastRun : longint; // Legacy holdover, currently unused. Keep for now anyway.
       errorMessage: string;
       runResult: integer;
+      {$IFNDEF EUREKALOG}
       dlgException: TDialogRunSimException;
+      {$ENDIF}
       dlgLongMessage: TDialogLongMessage;
       days: integer;
+      stopReason: TStopReason;
     begin
-      dbcout( 'Prepping to run simulation...', DBFORMMAIN );
+      dbcout( 'Prepping to run simulation...', DBSHOWMSG );
 
       // The RUN menu should be disabled if the sim library could not be loaded,
       // so this is probably an unnecessary check.
-      if( not( sssimLoaded ) ) then
+      if( not( naadsmLibLoaded ) ) then
         begin
           msgOK(
             tr( 'A required program library cannot be found or is out of date.' ) + ' '
@@ -2815,15 +2962,15 @@ implementation
         end
       ;
 
-    	errorMessage := '';
+      errorMessage := '';
 
-      _stopReason := TStopReason( (Sender as TAction).tag );
+      stopReason := TStopReason( (Sender as TAction).tag );
 
-      dbcout( '_stopReason: ' + stopReasonToString( _stopReason ), DBFORMMAIN );
+      dbcout( 'stopReason: ' + stopReasonToString( stopReason ), DBSHOWMSG );
 
-      if( ssStartAndStopAtSpecificDay = _stopReason ) then
+      if( ssStopAtSpecificDay = stopReason ) then
         begin
-          dbcout( '### Stop at specified day', DBFORMMAIN );
+          dbcout( '### Stop at specified day', DBSHOWMSG );
           days := myStrToInt(
             msgInput(
               tr( 'Please specify the number of days for each iteration:' ),
@@ -2840,18 +2987,18 @@ implementation
         end
       else
         begin
-          dbcout( 'Some other stop reason', DBFORMMAIN );
+          dbcout( 'Some other stop reason', DBSHOWMSG );
           days := 32767;
         end
       ;
 
       // Record the number of days specified and the reason for stopping the simulation
       _smdb.simDays := days;
-      _smdb.simStopReason := _stopReason;
+      _smdb.simStopReason := stopReason;
       _smScenario.simInput.simDays := days;
-      _smScenario.simInput.simStopReason := _stopReason;
+      _smScenario.simInput.simStopReason := stopReason;
 
-    	lblRunMessage.Caption := tr( 'Preparing to run simulation...' );
+      lblRunMessage.Caption := tr( 'Preparing to run simulation...' );
 
       // The map will be set to its initial state when the first iteration begins.
       // It isn't necessary or desirable to do so here.
@@ -2867,7 +3014,7 @@ implementation
       updateMenuItems( false );
       repaint(); // forces pnlRunStatus to be updated.
 
-      dbcout( 'starting sim...', DBFORMMAIN );
+      dbcout( 'starting sim...', DBSHOWMSG );
       runResult := startSim(
         _smScenario.simInput,
         _smScenario.herdList,
@@ -2877,27 +3024,29 @@ implementation
 
       case runResult of
         ERRRUNSIMEXCEPTION:
-        	begin
-            dlgException := TDialogRunSimException.create( self, errorMessage );
-            dlgException.ShowModal();
-            dlgException.Free();
+          begin
+            {$IFNDEF EUREKALOG}
+              dlgException := TDialogRunSimException.create( self, errorMessage );
+              dlgException.ShowModal();
+              dlgException.Release();
+            {$ENDIF}
           end
         ;
         ERRINVALIDSCENARIO:
-        	begin
-          	dlgLongMessage := TDialogLongMessage.create(
-            	self,
+          begin
+            dlgLongMessage := TDialogLongMessage.create(
+              self,
               SHORTERMASTERCAPTION,
               tr( 'Problems were found with this scenario.  These problems must be corrected before this scenario can be run:' ),
               errorMessage
             );
             dlgLongMessage.showModal();
-            dlgLongMessage.free();
+            dlgLongMessage.Release();
           end
         ;
         ERRCANNOTWRITEFILES:
-        	begin
-          	msgOK(
+          begin
+            msgOK(
               tr( 'Temporary files required to launch this simulation were not written.' ) + '  ' 
                 + tr( 'Please ensure that you have adequate hard disk space and sufficient permissions to write files to your hard disk.' ) + '  '  
                 + tr( 'For further assistance, please contact the developers.' ),
@@ -2908,13 +3057,13 @@ implementation
           end
         ;
         ERRNONE:
-        	begin
-          	// FIX ME: ignore this?
+          begin
+            // FIX ME: ignore this?
           end
         ;
         ERRNOTSET:
-        	begin
-          	// ignore this.
+          begin
+            // ignore this.
           end
         ;
       end;
@@ -2943,7 +3092,7 @@ implementation
 // ----------------------------------------------------------------------------
   procedure TFormMain.frmMapToggle();
     begin
-    	// Close the map if it showing.  If it isn't showing, then show it.
+      // Close the map if it showing.  If it isn't showing, then show it.
       if assigned( frmMap ) then
         begin
           frmMap.Close();
@@ -2962,7 +3111,7 @@ implementation
 
   procedure TFormMain.frmDailyStatusByProdTypeToggle();
     begin
-    	// Close the form if it is showing.  If it isn't showing, then show it.
+      // Close the form if it is showing.  If it isn't showing, then show it.
       if assigned( frmDailyStatusByProdType ) then
         begin
           frmDailyStatusByProdType.Close();
@@ -2970,7 +3119,7 @@ implementation
         end
       else
         begin
-        	frmDailyStatusByProdType := TFormDailyStatusByProdType.create( self, _smScenario.simInput, _smdb );
+          frmDailyStatusByProdType := TFormDailyStatusByProdType.create( self, _smScenario.simInput, _smdb );
           ActionOutChart.Checked := True;
           setOpenWindows( _openWindows + 1 );
         end
@@ -2980,7 +3129,7 @@ implementation
 
   procedure TFormMain.frmDailyZoneStatusByProdTypeToggle();
     begin
-    	// Close the form if it is showing.  If it isn't showing, then show it.
+      // Close the form if it is showing.  If it isn't showing, then show it.
       if assigned( frmDailyZoneStatusByProdType ) then
         begin
           frmDailyZoneStatusByProdType.Close();
@@ -2988,7 +3137,7 @@ implementation
         end
       else
         begin
-        	frmDailyZoneStatusByProdType := TFormDailyZoneStatusByProdType.create( self, _smScenario.simInput, _smdb );
+          frmDailyZoneStatusByProdType := TFormDailyZoneStatusByProdType.create( self, _smScenario.simInput, _smdb );
           ActionOutZoneChart.Checked := True;
           setOpenWindows( _openWindows + 1 );
         end
@@ -2996,38 +3145,38 @@ implementation
     end
   ;
 
-	procedure TFormMain.frmIterationSummaryToggle();
-		begin
+  procedure TFormMain.frmIterationSummaryToggle();
+    begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmIterationSummary ) then
+      if Assigned( frmIterationSummary ) then
         begin
           frmIterationSummary.Close();
           uncheckWindowMenuItem( 'FormIterationSummary' );
         end
-			else
-			begin
-				frmIterationSummary := TFormIterationSummary.Create( self, _smScenario.simInput, _smdb );
-				ActionSummary.Checked := True;
+      else
+      begin
+        frmIterationSummary := TFormIterationSummary.Create( self, _smScenario.simInput, _smdb );
+        ActionSummary.Checked := True;
         setOpenWindows( _openWindows + 1 );
-			end;
-		end
-	;
+      end;
+    end
+  ;
 
 
   procedure TFormMain.frmOutputEventsToggle();
     begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmOutputEvents ) then
+      if Assigned( frmOutputEvents ) then
         begin
           frmOutputEvents.Close();
           uncheckWindowMenuItem( 'FormOutputEvents' );
         end
-			else
-			begin
-				frmOutputEvents := TFormOutputEvents.Create( self, _smScenario.simInput, _smdb );
-				ActionEvents.Checked := True;
+      else
+      begin
+        frmOutputEvents := TFormOutputEvents.Create( self, _smScenario.simInput, _smdb );
+        ActionEvents.Checked := True;
         setOpenWindows( _openWindows + 1 );
-			end;
+      end;
     end
   ;
 
@@ -3035,40 +3184,40 @@ implementation
   procedure TFormMain.frmOutputExposuresToggle();
     begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmOutputExposures ) then
+      if Assigned( frmOutputExposures ) then
         begin
           frmOutputExposures.Close();
           uncheckWindowMenuItem( 'FormOutputExposures' );
         end
-			else
-			begin
-				frmOutputExposures := TFormOutputExposures.Create( self, _smScenario.simInput, _smdb );
-				ActionExposures.Checked := True;
+      else
+      begin
+        frmOutputExposures := TFormOutputExposures.Create( self, _smScenario.simInput, _smdb );
+        ActionExposures.Checked := True;
         setOpenWindows( _openWindows + 1 );
-			end;
+      end;
     end
   ;
 
 
-	procedure TFormMain.frmOutputStatsToggle();
-		begin
+  procedure TFormMain.frmOutputStatsToggle();
+    begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmOutputStats ) then
+      if Assigned( frmOutputStats ) then
         begin
-          dbcout( 'Beginning to close output stats window...', DBFORMMAIN );
+          dbcout( 'Beginning to close output stats window...', DBSHOWMSG );
           frmOutputStats.Close();
           uncheckWindowMenuItem( 'FormOutputStats' );
-          dbcout( 'Output stats window closed.', DBFORMMAIN );
+          dbcout( 'Output stats window closed.', DBSHOWMSG );
         end
-			else
-			begin
-        dbcout( 'Creating frmOutputStats', DBFORMMAIN );
-				frmOutputStats := TFormOutputStats.Create( self, _smScenario.simInput, _smdb );
+      else
+      begin
+        dbcout( 'Creating frmOutputStats', DBSHOWMSG );
+        frmOutputStats := TFormOutputStats.Create( self, _smScenario.simInput, _smdb );
         ActionOutputStats.Checked := True;
         setOpenWindows( _openWindows + 1 );
-			end;
-		end
-	;
+      end;
+    end
+  ;
 
 
   procedure TFormMain.frmCompareStatsToggle();
@@ -3077,15 +3226,15 @@ implementation
       updateReason: TDBSchemaUpdateReason;
     begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmCompareStats ) then
+      if Assigned( frmCompareStats ) then
         begin
-          dbcout( 'Beginning to close output stats window...', DBFORMMAIN );
+          dbcout( 'Beginning to close output stats window...', DBSHOWMSG );
           frmCompareStats.Close();
           uncheckWindowMenuItem( 'FormScenarioComparison' );
-          dbcout( 'Output stats window closed.', DBFORMMAIN );
+          dbcout( 'Output stats window closed.', DBSHOWMSG );
         end
-			else
-			begin
+      else
+      begin
         updateReason := DBUpdateUnspecified;
 
         OpenDialog1.Title := 'Select a model scenario database to compare';
@@ -3097,12 +3246,12 @@ implementation
         if OpenDialog1.Execute() then
           begin
             _ini.update( 'LastOpenDirectory', directory( OpenDialog1.FileName ) );
-            dbcout( 'Creating frmCompareStats', DBFORMMAIN );
+            dbcout( 'Creating frmCompareStats', DBSHOWMSG );
 
             // Load the second database file, and
             // do the major error checking here.
             //-----------------------------------
-            dbcout( 'Creating database B...', DBFORMMAIN );
+            dbcout( 'Creating database B...', DBSHOWMSG );
 
             // OpenDialog1 checks for the existence of the file.
             // It isn't necessary to check again.
@@ -3219,48 +3368,29 @@ implementation
             setOpenWindows( _openWindows + 1 );
           end
         ;
-			end;
+      end;
     end
   ;
 
 
-	procedure TFormMain.frmEpiCurveToggle();
-		begin
+  procedure TFormMain.frmEpiCurveToggle();
+    begin
       // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmEpiCurve ) then
+      if Assigned( frmEpiCurve ) then
         begin
           frmEpiCurve.Close();
           uncheckWindowMenuItem( 'FormSummaryEpiCurves' );
         end
-			else
-			begin
-        dbcout( 'Creating frmEpiCurve', DBFORMMAIN );
-				frmEpiCurve := TFormSummaryEpiCurves.Create( self, _smScenario.simInput, _smdb );
-				ActionEpiCurve.Checked := True;
+      else
+      begin
+        dbcout( 'Creating frmEpiCurve', DBSHOWMSG );
+        frmEpiCurve := TFormSummaryEpiCurves.Create( self, _smScenario.simInput, _smdb );
+        ActionEpiCurve.Checked := True;
         setOpenWindows( _openWindows + 1 );
-			end;
-		end
-	;
-
-  (*
-  procedure TFormMain.frmScenarioComparisonToggle();
-    begin
-      // Close the form if it is showing.  If it isn't showing, then show it.
-			if Assigned( frmScenarioComparison ) then
-        begin
-          frmScenarioComparison.Close();
-          uncheckWindowMenuItem( 'FormScenarioComparison' );
-        end
-			else
-			begin
-        dbcout( 'Creating frmEpiCurve', DBFORMMAIN );
-				frmScenarioComparison := TFormScenarioComparison.Create( self, _smScenario.simInput, _smdb );
-				ActionScenarioComparison.Checked := True;
-        setOpenWindows( _openWindows + 1 );
-			end;
+      end;
     end
   ;
-  *)
+
 
   procedure TFormMain.setOpenWindows( val: integer );
     begin
@@ -3302,7 +3432,7 @@ implementation
       Spacing := Self.Height - Self.ClientHeight;
       Calculate(Spacing, BaseH, Ow, StandardH);
 
-      if Assigned(frmMap) then AdjustFormPosition(FNo, Spacing, frmMap);
+      if Assigned(frmMap) then AdjustFormPosition( FNo, Spacing, frmMap );
       if Assigned(frmDailyStatusByProdType) then AdjustFormPosition( FNo, Spacing, frmDailyStatusByProdType );
       if Assigned(frmDailyZoneStatusByProdType) then AdjustFormPosition( FNo, Spacing, frmDailyZoneStatusByProdType );
       if Assigned(frmIterationSummary) then AdjustFormPosition( FNo, Spacing, frmIterationSummary );
@@ -3370,23 +3500,23 @@ implementation
   ;
 
 
-	procedure TFormMain.updateDisplay();
-  	begin
-    	updateCaption();
+  procedure TFormMain.updateDisplay();
+    begin
+      updateCaption();
       updateMenuItems( false );
     end
   ;
 
 
-	procedure TFormMain.updateCaption();
-  	var
-    	str: string;
-  	begin
-    	str := MASTERCAPTION;
+  procedure TFormMain.updateCaption();
+    var
+      str: string;
+    begin
+      str := MASTERCAPTION;
       
       if( nil <> _smdb ) then
-      	begin
-        	str := str + ' [' + shortFileName( _smdb.permanentDBFileName );
+        begin
+          str := str + ' [' + shortFileName( _smdb.permanentDBFileName );
 
           if( _smdb.isReadOnly ) then
             str := str + ' (Read only)]'
@@ -3405,7 +3535,7 @@ implementation
 
   procedure TFormMain.updateOutputWindows( const clearOutput: boolean );
     begin
-    	dbcout( 'Updating output windows', DBFORMMAIN );
+      dbcout( '-- TFormMain.updateOutputWindows()', DBSHOWMSG );
 
       if( nil = _smdb ) then
         closeOutputWindows()
@@ -3465,6 +3595,7 @@ implementation
           ;
         end
       ;
+      dbcout( '-- Done TFormMain.updateOutputWindows()', DBSHOWMSG );
     end
   ;
 
@@ -3563,7 +3694,7 @@ implementation
 
   procedure TFormMain.closeIterationOutputWindows();
     begin
-    	if( assigned( frmMap ) ) then
+      if( assigned( frmMap ) ) then
         begin
           frmMap.Close();
           uncheckWindowMenuItem( 'FormMap' );
@@ -3609,7 +3740,7 @@ implementation
 
 
   procedure TFormMain.closeOutputWindows();
-  	begin
+    begin
       closeIterationOutputWindows();
       closeCumulativeOutputWindows();
       setOpenWindows( 0 );
@@ -3629,8 +3760,11 @@ implementation
       useSpread: boolean;
       useContactSpread: boolean;
       useAirborneSpread: boolean;
+      useLocalAreaSpread: boolean;
       useDetection: boolean;
       useTracing: boolean;
+      useTracingHerdExam: boolean;
+      useTracingTesting: boolean;
       useZones: boolean;
       useDestruction: boolean;
       useVaccination: boolean;
@@ -3644,8 +3778,11 @@ implementation
           useSpread := false;
           useContactSpread := false;
           useAirborneSpread := false;
+          useLocalAreaSpread := false;
           useDetection := false;
           useTracing := false;
+          useTracingHerdExam := false;
+          useTracingTesting := false;
           useZones := false;
           useDestruction := false;
           useVaccination := false;
@@ -3656,11 +3793,21 @@ implementation
         end
       else
         begin
-          useSpread := _smScenario.simInput.includeAirborneSpreadGlobal or _smScenario.simInput.includeContactSpreadGlobal;
+          useSpread :=
+            _smScenario.simInput.includeAirborneSpreadGlobal
+          or
+            _smScenario.simInput.includeContactSpreadGlobal
+          or
+            _smScenario.simInput.includeLocalAreaSpreadGlobal
+          ;
           useContactSpread := _smScenario.simInput.includeContactSpreadGlobal;
           useAirborneSpread := _smScenario.simInput.includeAirborneSpreadGlobal;
+          useLocalAreaSpread := _smScenario.simInput.includeLocalAreaSpreadGlobal;
           useDetection := _smScenario.simInput.includeDetectionGlobal;
           useTracing := _smScenario.simInput.includeTracingGlobal;
+          useTracingHerdExam := _smScenario.simInput.includeTracingGlobal and _smScenario.simInput.includeTracingHerdExamGlobal;
+          useTracingTesting := _smScenario.simInput.includeTracingGlobal and _smScenario.simInput.includeTracingTestingGlobal;
+
           useZones := _smScenario.simInput.includeZonesGlobal;
           useDestruction := _smScenario.simInput.includeDestructionGlobal;
           useVaccination := _smScenario.simInput.includeVaccinationGlobal;
@@ -3684,35 +3831,42 @@ implementation
       ActionProdTypePairs.Enabled := useSpread and paramsEnabled;
       ActionContactSpread.Enabled := useContactSpread and paramsEnabled;
       ActionAirborneSpread.Enabled := useAirborneSpread and paramsEnabled;
+      ActionLocalAreaSpread.Enabled := useLocalAreaSpread and paramsEnabled;
 
       ActionDetectionMenu.Enabled := paramsEnabled;
       ActionYesNoDetection.Enabled := paramsEnabled;
       ActionDetection.Enabled := useDetection and paramsEnabled;
 
-      ActionTracingMenu.Enabled := paramsEnabled;
+      // if detection is not used then accessing all control measures is disabled
+      //-----------------------------------------------------------------------
+      ActionTracingMenu.Enabled := paramsEnabled and useDetection;
       ActionTracingOptions.Enabled := paramsEnabled;
       ActionTracing.Enabled := useTracing and paramsEnabled;
+      ActionTracingHerdExam.Enabled := useTracing and useTracingHerdExam and paramsEnabled;
+      ActionTracingTesting.Enabled := useTracing and useTracingTesting and paramsEnabled;
 
-      ActionZonesMenu.Enabled := paramsEnabled;
+      ActionZonesMenu.Enabled := paramsEnabled and useDetection;
       ActionZonesOptions.enabled := paramsEnabled;
       ActionZonesDefinition.enabled := useZones and paramsEnabled;
       ActionZones.Enabled := useZones and paramsEnabled;
 
-      ActionDestructionMenu.Enabled := paramsEnabled;
+      ActionDestructionMenu.Enabled := paramsEnabled and useDetection;
       ActionDestrGlobal.Enabled := paramsEnabled;
       ActionDestrPriority.Enabled := useDestruction and paramsEnabled;
       ActionDestruction.Enabled := useDestruction and paramsEnabled;
 
-      ActionVaccinationMenu.Enabled := paramsEnabled;
+      ActionVaccinationMenu.Enabled := paramsEnabled and useDetection;
       ActionVaccGlobal.Enabled := paramsEnabled;
       ActionVaccPriority.Enabled := useVaccination and paramsEnabled;
       ActionVaccination.Enabled := useVaccination and paramsEnabled;
 
-      ActionCostMenu.Enabled := paramsEnabled;
-      ActionCostOptions.Enabled := paramsEnabled;
+      ActionCostMenu.Enabled := paramsEnabled and useDetection;
+     // The option to include costs is only provided if one of the control measures is modeled
+      ActionCostOptions.Enabled := paramsEnabled and ( useZones or useDestruction or useVaccination );
       ActionCostsZones.Enabled := useCostsZones and useZones and paramsEnabled;
       ActionCostsDestr.Enabled := useCostsDestr and useDestruction and paramsEnabled;
       ActionCostsVacc.Enabled := useCostsVacc and useVaccination and paramsEnabled;
+      //-----------------------------------------------------------------------
 
       ActionOutputOptions.Enabled :=  paramsEnabled;
 
@@ -3731,6 +3885,7 @@ implementation
       readOnlyScenario: boolean;
       outputDataExists: boolean;
       paramsEnabled: boolean;
+      useDetection: boolean;
     begin
       if( disableAll ) then
         begin
@@ -3748,14 +3903,16 @@ implementation
           useZones := false;
           readOnlyScenario := false;
           outputDataExists := false;
+          useDetection := false;
         end
       else
         begin
           useEvents := _smScenario.simInput.outputOptions.saveDailyEvents;
-          useExposures := _smScenario.simInput.outputOptions.saveDailyExposures;
+          useExposures := _smScenario.simInput.outputOptions.saveDailyExposuresAndTraces;
           useZones := _smScenario.simInput.includeZonesGlobal;
           readOnlyScenario := _smdb.isReadOnly;
           outputDataExists := _smdb.containsOutput;
+          useDetection := _smScenario.simInput.includeDetectionGlobal;
         end
       ;
 
@@ -3784,12 +3941,9 @@ implementation
       ActionClose.Enabled := scenarioIsOpen and not simIsRunning and not _paramChangesInProgress;
       ActionExit.Enabled := not simIsRunning and not _paramChangesInProgress;
 
-      // Tools submenu.  See log book, p. 4.117.
-      ActionAppendOutput.Enabled := false; //FIX ME: restore when ready
-
       // Scenario parameters menu
       //--------------------------
-      dbcout( 'Updating setup menu items', DBFORMMAIN );
+      dbcout( 'Updating setup menu items', DBSHOWMSG );
       updateScenarioParamsMenuItems( paramsEnabled );
 
       ActionVerifyScenario.Enabled := scenarioIsOpen and not simIsRunning and not _paramChangesInProgress;
@@ -3798,17 +3952,17 @@ implementation
 
       // Run menu (startup actions for runs)
       //------------------------------------
-      dbcout( 'Updating run menu items', DBFORMMAIN );
-      ActionRunUntilOutbreakEnd.Enabled := sssimLoaded and paramsEnabled;
-      ActionRunUntilDetection.Enabled := sssimLoaded and paramsEnabled;
-      ActionRunUntilDay.Enabled := sssimLoaded and paramsEnabled;
-      ActionRunUntilDiseaseEnd.Enabled := sssimLoaded and paramsEnabled;
+      dbcout( 'Updating run menu items', DBSHOWMSG );
+      ActionRunUntilOutbreakEnd.Enabled := naadsmLibLoaded and paramsEnabled;
+      ActionRunUntilDetection.Enabled := naadsmLibLoaded and paramsEnabled and useDetection;  //rbh: 20100216 added useDetection
+      ActionRunUntilDay.Enabled := naadsmLibLoaded and paramsEnabled;
+      ActionRunUntilDiseaseEnd.Enabled := naadsmLibLoaded and paramsEnabled;
 
       ActionStop.Enabled := scenarioIsOpen and simIsRunning and not _paramChangesInProgress;
 
       // Output/windows menu
       //---------------------
-      dbcout( 'Updating output menu items', DBFORMMAIN );
+      dbcout( 'Updating output menu items', DBSHOWMSG );
       ActionMap.Enabled := scenarioIsOpen and not _paramChangesInProgress; // TFormMap
       ActionOutChart.Enabled := scenarioIsOpen and not _paramChangesInProgress; // TFormDailyStatusByProdType
       ActionOutZoneChart.Enabled := scenarioIsOpen and useZones and not _paramChangesInProgress; // TFormDailyZoneStatusByProdType
@@ -3853,20 +4007,10 @@ implementation
       ActionArrange.Enabled := ( 0 < _openWindows );
       ActionCascade.Enabled :=  ( 0 < _openWindows );
 
-      // Help menu
-      //----------
-      ActionHelp.Enabled := true;
-
       // Other crap
       //------------
-      dbcout( 'Updating everything else', DBFORMMAIN );
+      dbcout( 'Updating everything else', DBSHOWMSG );
 
-      // Not sure where these belong.
-      ActionVUnits.Enabled :=  false; //FIX ME: restore when ready //ConnectedNotRunning;
-      ActionInteractive.Enabled := false; //FIX ME: restore when ready //ConnectedNotRunning;
-
-      // Additional items related to running a scenario FIX ME: restore when ready
-      //UpdateActionsForContinuingARun( ConnectedNotRunning );
     end
   ;
 
@@ -3877,31 +4021,48 @@ implementation
     begin
       frm := TFormLanguageSettings.Create( self, true, true );
       frm.ShowModal();
-      frm.free();
+      frm.Release();
+    end
+  ;
+
+
+  procedure TFormMain.acnRegionalSettingsExecute(Sender: TObject);
+    var
+      frm: TFormRegionalSettings;
+    begin
+      frm := TFormRegionalSettings.Create( self, _i88nSettings );
+      frm.ShowModal();
+      frm.Release();
     end
   ;
 
 
   procedure TFormMain.ActionAboutExecute(Sender: TObject);
     var
-      {$IF Defined( CHEYENNE ) }
-        frm: TFormAboutCheyenne;
-      {$ELSEIF Defined( LARAMIE ) }
-        frm: TFormAboutLaramie;
-      {$ELSE}
-        frm: TFormAbout;
-      {$IFEND}
+      frmExp: TFormAboutExperimental;
+      frm: TFormAbout;
     begin
-      {$IF Defined( CHEYENNE ) }
-        frm := TFormAboutCheyenne.create( self );
-      {$ELSEIF Defined( LARAMIE ) }
-        frm := TFormAboutLaramie.create( self );
-      {$ELSE}
-        frm := TFormAbout.create( self );
-      {$IFEND}
+      if( IS_EXPERIMENTAL ) then
+        begin
+          frmExp := TFormAboutExperimental.create( self );
+          frmExp.showModal();
+          frmExp.Release();
 
-      frm.showModal();
-      frm.free();
+          // This silliness prevents the display of a meaningless hint.
+          frm := nil;
+          freeAndNil( frm );
+        end
+      else
+        begin
+          frm := TFormAbout.create( self );
+          frm.showModal();
+          frm.Release();
+
+          // Ditto.
+          frmExp := nil;
+          freeAndNil( frmExp );
+        end
+      ;
     end
   ;
 
@@ -3909,13 +4070,27 @@ implementation
   procedure TFormMain.ActionWebsiteExecute(Sender: TObject);
     begin
       ShellExecute(
-          Application.Handle,
-          PChar( 'open' ),
-          PChar( WEBSITE ),
-          PChar( 0 ),
-          nil,
-          SW_NORMAL
-        );
+        Application.Handle,
+        PChar( 'open' ),
+        PChar( WEBSITE ),
+        PChar( 0 ),
+        nil,
+        SW_NORMAL
+      );
+    end
+  ;
+
+
+  procedure TFormMain.ActionSupportForumsExecute(Sender: TObject);
+    begin
+      ShellExecute(
+        Application.Handle,
+        PChar( 'open' ),
+        PChar( WEBSITE_SUPPORT_FORUMS ),
+        PChar( 0 ),
+        nil,
+        SW_NORMAL
+      );
     end
   ;
 // ----------------------------------------------------------------------------
@@ -3925,14 +4100,14 @@ implementation
 // ----------------------------------------------------------------------------
 //  Properties
 // ----------------------------------------------------------------------------
-	function TFormMain.getScenarioIsOpen(): boolean;
-  	begin
+  function TFormMain.getScenarioIsOpen(): boolean;
+    begin
       if( nil <> _smdb ) then
         result := true
       else
         result := false
       ;
-  	end
+    end
   ;
 
   function TFormMain.getFirstOverallVaccination(): integer; begin result := _firstOverallVacc; end;
@@ -3952,6 +4127,44 @@ implementation
       if ( assigned( frmOutputExposures ) ) then frmOutputExposures.resetIteration( _iteration );
     end
   ;
+
+
+  function TFormMain.getIterationInProgress(): integer;
+    begin
+      if( not _simIsRunning ) then
+        _iterationInProgress := -1
+      ;
+
+      result := _iterationInProgress;
+    end
+  ;
+
+
+  function TFormMain.getSimStatusStr(): string;
+    begin
+      result := tr( 'Unknown' );
+
+      if( _simIsRunning ) then
+        result := tr( 'Simulation in progress' )
+      else if( nil = _smdb ) then
+        // FIX ME: This is probably an error...
+      else
+        begin
+          if( _smdb.containsOutput ) then
+            begin
+              if( _smdb.containsIncompleteIterations() ) then
+                result := tr( 'Simulation aborted' )
+              else
+                result := tr( 'Simulation complete' )
+              ;
+            end
+          else
+            result := tr( 'Initial conditions' )
+          ;
+        end
+      ;
+    end
+  ;
 // ----------------------------------------------------------------------------
 
 
@@ -3959,25 +4172,38 @@ implementation
 // ----------------------------------------------------------------------------
 //  Functions for DLL interaction
 // ----------------------------------------------------------------------------
-	procedure TFormMain.simStart();
-  	begin
-   		lblRunMessage.caption := '';
+  procedure TFormMain.simStart();
+    begin
+      lblRunMessage.caption := '';
       _displayedIteration := -1;
+      _iterationInProgress := -1;
 
       if( assigned( frmMap ) ) then
-        frmMap.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList, true )
+        begin
+          frmMap.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList, true );
+          //frmMap.updateSimStarted(); // frmMap doesn't inherit from TFormSMOutputBase here.
+        end
       ;
 
       if( assigned( frmDailyStatusByProdType ) ) then
-        frmDailyStatusByProdType.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList)
+        begin
+          frmDailyStatusByProdType.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList );
+          frmDailyStatusByProdType.updateSimStarted();
+        end
       ;
 
       if( assigned( frmDailyZoneStatusByProdType ) ) then
-        frmDailyZoneStatusByProdType.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList)
+        begin
+          frmDailyZoneStatusByProdType.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList );
+          frmDailyZoneStatusByProdType.updateSimStarted();
+        end
       ;
 
       if( assigned( frmIterationSummary ) ) then
-        frmIterationSummary.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList )
+        begin
+          frmIterationSummary.resetSim( _smdb, _smScenario.simInput, _smScenario.herdList );
+          frmIterationSummary.updateSimStarted();
+        end
       ;
 
       if( assigned( frmOutputEvents ) ) then
@@ -4000,18 +4226,20 @@ implementation
 
 
   procedure TFormMain.iterationStart( it: integer );
-  	begin
+    begin
       // FIX ME: if a herd's initial state is destroyed or vaccinated, one or more of these should be 0
       _firstOverallDet := -1;
       _firstOverallDestr := -1;
       _firstOverallVacc := -1;
+
+      _iterationInProgress := it + 1;
 
       _userStop := NO_STOP;
 
       lblIterationCounter.Caption := tr( 'Iteration' ) + ' ' + intToStr( it + 1 ) + ' ' +  tr( 'of' ) + ' ' + intToStr( _smScenario.simInput.simIterations );
       lblDayCounter.Caption := tr( 'Day 1' );
 
-    	if( assigned( frmMap ) ) then frmMap.drawAllUnits();
+      if( assigned( frmMap ) ) then frmMap.drawAllUnits();
       if( assigned( frmDailyStatusByProdType ) ) then frmDailyStatusByProdType.reset();
       if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.reset();
       if( assigned( frmIterationSummary ) ) then frmIterationSummary.reset();
@@ -4020,50 +4248,45 @@ implementation
 
 
   procedure TFormMain.dayStart( day: integer );
-  	begin
-    	lblDayCounter.Caption := tr( 'Day' ) + ' ' + intToStr( day );
-			_simDayStartTime := timeStampToMSecs( dateTimeToTimeStamp( time() ) );
+    begin
+      lblDayCounter.Caption := tr( 'Day' ) + ' ' + intToStr( day );
+      _simDayStartTime := timeStampToMSecs( dateTimeToTimeStamp( time() ) );
     end
   ;
 
 
   procedure TFormMain.changeHerdState( h: THerd );
-  	begin
-    	if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
-    end
-  ;
-
-
-	procedure TFormMain.exposeHerd( h: THerd );
     begin
-
-    end
-  ;
-  
-
-	procedure TFormMain.infectHerd( h: THerd );
-  	begin
-
-    end
-  ;
-
-
-  procedure TFormMain.attemptTraceHerd( h: THerd );
-    begin
-
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
     end
   ;
 
 
   procedure TFormMain.traceHerd( h: THerd );
     begin
-
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
     end
   ;
 
 
+  procedure TFormMain.examineHerd( h: THerd );
+    begin
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
+    end
+  ;
+
+
+  procedure TFormMain.quarantineHerd( h: THerd );
+    begin
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
+    end
+  ;
+  
+
   procedure TFormMain.detectHerd( h: THerd; wasFirstEventForProdType: boolean; day: integer );
     begin
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
+
       if( -1 = _firstOverallDet ) then _firstOverallDet := day;
 
       if( wasFirstEventForProdType and assigned( frmDailyStatusByProdType ) ) then
@@ -4077,6 +4300,8 @@ implementation
 
   procedure TFormMain.destroyHerd( h: THerd; wasFirstEventForProdType: boolean; day: integer );
     begin
+      // Map will be updated by changeState
+
       if( -1 = _firstOverallDestr ) then _firstOverallDestr := day;
 
       if( wasFirstEventForProdType and assigned( frmDailyStatusByProdType ) ) then
@@ -4088,6 +4313,8 @@ implementation
 
   procedure TFormMain.vaccinateHerd( h: THerd; wasFirstEventForProdType: boolean; day: integer );
     begin
+      if( assigned( frmMap ) ) then frmMap.drawThisUnit( h );
+
       if( -1 = _firstOverallVacc ) then _firstOverallVacc := day;
 
       if( wasFirstEventForProdType and assigned( frmDailyStatusByProdType ) ) then
@@ -4097,42 +4324,42 @@ implementation
   ;
 
 
-	procedure TFormMain.outbreakEnd( day: integer );
-  	begin
-			if( assigned( frmDailyStatusByProdType ) ) then frmDailyStatusByProdType.outbreakEnd( day );
- 			if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.outbreakEnd( day );
+  procedure TFormMain.outbreakEnd( day: integer );
+    begin
+      if( assigned( frmDailyStatusByProdType ) ) then frmDailyStatusByProdType.outbreakEnd( day );
+      if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.outbreakEnd( day );
     end
   ;
 
 
   procedure TFormMain.dayComplete( day: integer );
-  	const
-    	delay: integer = 1000; // in milliseconds
-  	begin
+    const
+      delay: integer = 1000; // in milliseconds
+    begin
       //------------------------------------------------
       // This block can be used to cause a delay,
       // if the simulation is running too fast
       // (Delay could be dynamically set with a widget)
       //------------------------------------------------
-    	(*
-    	while( timeStampToMSecs( dateTimeToTimeStamp( time() ) ) < _simDayStartTime + delay ) do
-    		Application.ProcessMessages()
+      (*
+      while( timeStampToMSecs( dateTimeToTimeStamp( time() ) ) < _simDayStartTime + delay ) do
+        Application.ProcessMessages()
       ;
       *)
       //------------------------------------------------
 
-      dbcout( '*** TFormMain.dayComplete...', DBFORMMAIN );
+      dbcout( '*** TFormMain.dayComplete...', DBSHOWMSG );
       if( assigned( frmDailyStatusByProdType ) ) then frmDailyStatusByProdType.updateForDay( day );
       if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.updateForDay( day );
       if( assigned( frmIterationSummary ) ) then frmIterationSummary.updateForDay( day );
 
-      dbcout( '*** TFormMain.dayComplete', DBFORMMAIN );
+      dbcout( '*** TFormMain.dayComplete', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormMain.iterationComplete( it: integer );
-  	begin
+    begin
       pbrIterations.Position := it + 1;
        if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.iterationComplete();
     end
@@ -4140,18 +4367,26 @@ implementation
 
 
   procedure TFormMain.simComplete( success: boolean );
-  	begin
-    	pnlRunStatus.Hide();
+    begin
+      pnlRunStatus.Hide();
 
       _simIsRunning := false;
 
+      _iterationInProgress := -1;
+
+      // These forms are updated dynamically, and should be informed when a simulation ends.
+      if( assigned( frmMap ) ) then frmMap.updateSimComplete();
       if( assigned( frmDailyStatusByProdType ) ) then frmDailyStatusByProdType.updateSimComplete();
       if( assigned( frmDailyZoneStatusByProdType ) ) then frmDailyZoneStatusByProdType.updateSimComplete();
       if( assigned( frmIterationSummary ) ) then frmIterationSummary.updateSimComplete();
+
+      // NOTE: Currently, these two forms should never be open when a simulation is in progress,
+      // as they are not updated dynamically.
+      // Bad things will happen if the updateSimComplete() events are called!
       if( assigned( frmOutputEvents ) ) then frmOutputEvents.updateSimComplete();
       if( assigned( frmOutputExposures ) ) then frmOutputExposures.updateSimComplete();
 
-    	if( success ) then
+      if( success ) then
         msgOK(
           tr( 'Simulation is complete!' ),
           SHORTMASTERCAPTION,
@@ -4159,8 +4394,8 @@ implementation
           self
         )
       else
-      	msgOK(
-        	tr( 'Simulation interrupted by user.' ),
+        msgOK(
+          tr( 'Simulation interrupted by user.' ),
           SHORTMASTERCAPTION,
           IMGInformation,
           self
@@ -4176,22 +4411,20 @@ implementation
 // Trivial testing functions
 //-----------------------------------------------------------------------------
   procedure TFormMain.BtnTestClick(Sender: TObject);
-    (*
     var
-      sdew: TSdew;
-    *)
+      rel: TRelFunction;
+      i: integer;
     begin
-      (*
-      sdew := TSdew.createFromFile( 'test.xml' );
+      rel := TRelFunction.create();
 
-      dbcout( sdew.LibLoaded, true );
+      rel.addPoint( 1, 1 );
+      rel.addPoint( 4, 6 );
 
-      sdew.debug();
+      for i := 0 to 7 do
+        dbcout2( intToStr( i ) + ', ' + usFloatToStr( rel.y( i ) ) );
+      ;
 
-      sdew.Free();
-      *)
-
-      _smScenario.simInput.selectDailyOutputs.debug();
+      rel.Free();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -4201,13 +4434,13 @@ implementation
       if( not _windowsLocked ) then
         inherited
       else
-        dbcout2( 'Windows are locked: nonclient will not be activated. ***********' )
+        dbcout( 'Windows are locked: nonclient will not be activated. ***********', DBSHOWMSG )
       ;
     end
   ;
 
 
-  procedure TFormMain.Timer1Timer(Sender: TObject);
+  procedure TFormMain.DatabaseActivityTimerTimer(Sender: TObject);
     begin
       // Ping the database every few minutes, in an ugly but hopefully
       // successful attempt to prevent the application from freezing up
@@ -4222,6 +4455,7 @@ implementation
       ;
     end
   ;
+
 
 
 

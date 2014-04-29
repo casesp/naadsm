@@ -80,7 +80,7 @@ UnsafeType=0
 UnsafeCode=0
 UnsafeCast=0
 [Linker]
-MapFile=0
+MapFile=3
 OutputObjs=0
 ConsoleApp=1
 DebugInfo=0
@@ -112,10 +112,10 @@ RootDir=
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=0
-MajorVer=3
-MinorVer=1
-Release=19
-Build=1
+MajorVer=4
+MinorVer=0
+Release=13
+Build=0
 Debug=0
 PreRelease=0
 Special=0
@@ -124,18 +124,16 @@ DLL=0
 Locale=1033
 CodePage=1252
 [Version Info Keys]
-CompanyName=Colorado State University and University of Guelph
+CompanyName=NAADSM Development Team
 FileDescription=
-FileVersion=3.1.19.1
+FileVersion=4.0.13.0
 InternalName=NAADSM
-LegalCopyright=Copyright 2003 - 2008 Colorado State University and University of Guelph
+LegalCopyright=Copyright 2003 - 2013 NAADSM Development Team
 LegalTrademarks=
 OriginalFilename=SpreadModel.exe
 ProductName=NAADSM
-ProductVersion=3.1.19
-Comments=Build 081116
-[Excluded Packages]
-c:\program files\borland\delphi7\Bin\DBWEBXPRT.BPL=Borland Web Wizard Package
+ProductVersion=4.0.13
+Comments=Build 20130702
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;

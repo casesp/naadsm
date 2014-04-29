@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Update existing table `outIteration`.
 create table `outIteration_IM0` ( 
 	`iteration` INTEGER,
 	`diseaseEnded` BIT,
@@ -29,14 +26,6 @@ insert into `outIteration_IM0` (`iteration`, `diseaseEnded`, `diseaseEndDay`, `o
 
 drop table `outIteration`; 
 
-
--- `outIteration` : Table of outIteration
--- 	`iteration` : The iteration during which the outputs in this record were generated.  The first iteration is iteration number 1.
--- 	`diseaseEnded` : diseaseEnded is of outIteration
--- 	`diseaseEndDay` : diseaseEndDay is of outIteration
--- 	`outbreakEnded` : Indicates whether the simulated outbreak ended before the end of the iteration: see Section B2.
--- 	`outbreakEndDay` : The duration in days of the outbreak simulated in the specified iteration.
--- 	`zoneFociCreated` : zoneFociCreated is of outIteration  
 create table `outIteration` ( 
 	`iteration` INTEGER,
 	`diseaseEnded` BIT,
@@ -44,13 +33,6 @@ create table `outIteration` (
 	`outbreakEnded` BIT,
 	`outbreakEndDay` INTEGER,
 	`zoneFociCreated` BIT); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIteration`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIteration' :
--- 	`iteration`
-
 
 insert into `outIteration` (`iteration`, `diseaseEnded`, `diseaseEndDay`, `outbreakEnded`, `outbreakEndDay`) 
     select `outIteration_IM0`.`iteration`, 
@@ -66,7 +48,3 @@ drop table `outIteration_IM0`;
 
 alter table `outIteration`
 	add constraint `outIteration_PK` primary key (`iteration`) ; 
-
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

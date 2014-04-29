@@ -4,11 +4,11 @@ unit SMFunctionPointers;
 SMFunctionPointers.pas
 ----------------------
 Begin: 2005/05/25
-Last revision: $Date: 2006/09/13 13:43:06 $ $Author: areeves $
-Version number: $Revision: 1.14 $
+Last revision: $Date: 2009-08-25 01:46:42 $ $Author: areeves $
+Version number: $Revision: 1.15 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2005 - 2006 Animal Population Health Institute, Colorado State University
 
@@ -191,12 +191,12 @@ implementation
 
       case state of
         tsSusceptible: result := 'susceptible';
-        tsLatent: result := 'latent';
-        tsSubClinical: result := 'subclinical';
-        tsClinical: result := 'clinical';
-        tsNaturalImmune: result := 'naturally immune';
-        tsVaccineImmune: result := 'vaccine immune';
-        tsDestroyed: result := 'destroyed';
+        NAADSMStateLatent: result := 'latent';
+        NAADSMStateSubclinical: result := 'subclinical';
+        NAADSMStateClinical: result := 'clinical';
+        NAADSMStateNaturallyImmune: result := 'naturally immune';
+        NAADSMStateVaccineImmune: result := 'vaccine immune';
+        NAADSMStateDestroyed: result := 'destroyed';
       else
       	result := 'undefined';
       end;

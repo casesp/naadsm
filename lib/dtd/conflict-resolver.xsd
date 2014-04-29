@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 

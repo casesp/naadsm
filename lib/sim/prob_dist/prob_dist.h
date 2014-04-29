@@ -17,15 +17,30 @@
  * included here as examples of how to wrap GSL distributions.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
+ * @author Shaun Case <Shaun.Case@colostate.edu><br>
+ *   Animal Population Health Institute<br>
+ *   College of Veterinary Medicine and Biomedical Sciences<br>
+ *   Colorado State University<br>
+ *   Fort Collins, CO 80523<br>
+ *   USA 
+ * @author Anthony Schwickerath <Drew.Schwickerath@colostate.edu><br>
+ *   Animal Population Health Institute<br>
+ *   Colorado State University<br>
+ *   Fort Collins, CO 80523<br>
+ *   USA
+  * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
+ *   Animal Population Health Institute<br>
+ *   Colorado State University<br>
+ *   Fort Collins, CO 80523<br>
+ *   USA
  * @version 0.1
  * @date February 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -36,7 +51,7 @@
 
 
 #if defined(DLL_EXPORTS)
-#	define DLL_API __declspec( dllexport )
+# define DLL_API __declspec( dllexport )
 #elif defined(DLL_IMPORTS)
 # define DLL_API __declspec( dllimport )
 #else
@@ -47,7 +62,6 @@
 #include <glib.h>
 #include <gsl/gsl_histogram.h>
 #include <rng.h>
-
 
 
 /**
@@ -77,7 +91,6 @@ PDF_uniform_dist_t;
  * values to speed up functions for the distribution.
  *
  * @image html triangular.png
- * @image latex triangular.eps width=5cm
  */
 typedef struct
 {
@@ -139,6 +152,18 @@ PDF_gaussian_dist_t;
 
 
 /**
+ * An inverse Gaussian probability distribution.
+ */
+typedef struct
+{
+  double mu; /**< mean */
+  double lambda; /**< mu^3/variance */
+}
+PDF_inverse_gaussian_dist_t;
+
+
+
+/**
  * A Poisson probability distribution.
  */
 typedef struct
@@ -189,7 +214,7 @@ PDF_weibull_dist_t;
  */
 typedef struct
 {
-  double mean;
+  double mean; /* Beta, Beta > 0 */
 }
 PDF_exponential_dist_t;
 
@@ -211,7 +236,7 @@ PDF_pearson5_dist_t;
  */
 typedef struct
 {
-  double location, scale;
+  double location /* alpha */, scale /* Beta */;
 }
 PDF_logistic_dist_t;
 
@@ -222,7 +247,7 @@ PDF_logistic_dist_t;
  */
 typedef struct
 {
-  double location, scale, shape;
+  double location /* gamma */, scale /* Beta */, shape /* alpha */;
   double shape_over_scale;
 }
 PDF_loglogistic_dist_t;
@@ -240,12 +265,84 @@ PDF_lognormal_dist_t;
 
 
 
+/**
+ * A negative binomial probability distribution.
+ */
+typedef struct
+{
+  double s, p;
+}
+PDF_negative_binomial_dist_t;
+
+
+
+/**
+ * A Pareto (power law) distribution.
+ */
+typedef struct
+{
+  double theta; /* theta > 0 */
+  double a; /* a > 0 */
+}
+PDF_pareto_dist_t;
+
+
+
+/**
+ * A Bernoulli probability distribution.
+ */
+typedef struct
+{
+  double p;
+}
+PDF_bernoulli_dist_t;
+
+
+
+/**
+ * A binomial probability distribution.
+ */
+typedef struct
+{
+  int n;
+  double p;
+}
+PDF_binomial_dist_t;
+
+
+
+/**
+ * A discrete uniform probability distribution.
+ */
+typedef struct
+{
+  int min, max;
+}
+PDF_discrete_uniform_dist_t;
+
+
+
+/**
+ * A hypergeometric probability distribution.
+ */
+typedef struct
+{
+  int n1, n2; /* D = n1, M = n1 + n2 */
+  int t; /* n = t */
+}
+PDF_hypergeometric_dist_t;
+
+
+
 /** Probability distributions in this module. */
 typedef enum
 {
   PDF_Point, PDF_Uniform, PDF_Triangular, PDF_Piecewise, PDF_Histogram,
   PDF_Gaussian, PDF_Poisson, PDF_Beta, PDF_Gamma, PDF_Weibull, PDF_Exponential,
-  PDF_Pearson5, PDF_Logistic, PDF_LogLogistic, PDF_Lognormal
+  PDF_Pearson5, PDF_Logistic, PDF_LogLogistic, PDF_Lognormal,
+  PDF_NegativeBinomial, PDF_Pareto,
+  PDF_Bernoulli, PDF_Binomial, PDF_Discrete_Uniform, PDF_Hypergeometric,
+  PDF_Inverse_Gaussian
 }
 PDF_dist_type_t;
 
@@ -263,6 +360,7 @@ typedef struct
     PDF_piecewise_dist_t piecewise;
     PDF_histogram_dist_t histogram;
     PDF_gaussian_dist_t gaussian;
+    PDF_inverse_gaussian_dist_t inverse_gaussian;
     PDF_poisson_dist_t poisson;
     PDF_beta_dist_t beta;
     PDF_gamma_dist_t gamma;
@@ -272,8 +370,15 @@ typedef struct
     PDF_logistic_dist_t logistic;
     PDF_loglogistic_dist_t loglogistic;
     PDF_lognormal_dist_t lognormal;
+    PDF_negative_binomial_dist_t negative_binomial;
+    PDF_pareto_dist_t pareto;
+    PDF_bernoulli_dist_t bernoulli;
+    PDF_binomial_dist_t binomial;
+    PDF_discrete_uniform_dist_t discrete_uniform;
+    PDF_hypergeometric_dist_t hypergeometric;
   }
   u;
+  gboolean discrete;
   gboolean has_inf_lower_tail, has_inf_upper_tail;
 }
 PDF_dist_t;
@@ -287,6 +392,7 @@ PDF_dist_t *PDF_new_triangular_dist (double a, double c, double b);
 PDF_dist_t *PDF_new_piecewise_dist (unsigned int, double *xy);
 PDF_dist_t *PDF_new_histogram_dist (gsl_histogram *);
 PDF_dist_t *PDF_new_gaussian_dist (double mu, double sigma);
+PDF_dist_t *PDF_new_inverse_gaussian_dist (double mu, double lambda);
 PDF_dist_t *PDF_new_poisson_dist (double mu);
 PDF_dist_t *PDF_new_beta_dist (double alpha, double beta, double location, double scale);
 PDF_dist_t *PDF_new_beta_pert_dist (double min, double mode, double max);
@@ -297,6 +403,12 @@ PDF_dist_t *PDF_new_pearson5_dist (double alpha, double beta);
 PDF_dist_t *PDF_new_logistic_dist (double location, double scale);
 PDF_dist_t *PDF_new_loglogistic_dist (double location, double scale, double shape);
 PDF_dist_t *PDF_new_lognormal_dist (double zeta, double sigma);
+PDF_dist_t *PDF_new_negative_binomial_dist (double s, double p);
+PDF_dist_t *PDF_new_pareto_dist (double theta, double a);
+PDF_dist_t *PDF_new_bernoulli_dist (double p);
+PDF_dist_t *PDF_new_binomial_dist (unsigned int n, double p);
+PDF_dist_t *PDF_new_discrete_uniform_dist (int min, int max);
+PDF_dist_t *PDF_new_hypergeometric_dist (unsigned int n1, unsigned int n2, unsigned int t);
 
 void PDF_free_dist (PDF_dist_t *);
 PDF_dist_t *PDF_clone_dist (PDF_dist_t *);
@@ -306,36 +418,74 @@ int PDF_fprintf_dist (FILE *, PDF_dist_t *);
 #define PDF_printf_dist(D) PDF_fprintf_dist(stdout,D)
 
 double PDF_random (PDF_dist_t *, RAN_gen_t * rng);
+double PDF_random_non_neg (PDF_dist_t *, RAN_gen_t * rng);
+double PDF_random_pos (PDF_dist_t *, RAN_gen_t * rng);
+int PDF_random_int (PDF_dist_t *, RAN_gen_t * rng);
+int PDF_random_non_neg_int (PDF_dist_t *, RAN_gen_t * rng);
+guint PDF_random_pos_int( PDF_dist_t *, RAN_gen_t * rng );
 double PDF_pdf (double, PDF_dist_t *);
 double PDF_cdf (double, PDF_dist_t *);
 double PDF_inverse_cdf (double, PDF_dist_t *);
 
+gboolean PDF_has_min (PDF_dist_t *);
+gboolean PDF_has_max (PDF_dist_t *);
+double PDF_min (PDF_dist_t *);
+double PDF_max (PDF_dist_t *);
+gboolean PDF_has_mean (PDF_dist_t *);
+double PDF_mean (PDF_dist_t *);
+gboolean PDF_has_variance (PDF_dist_t *);
+double PDF_variance (PDF_dist_t *);
 
-/* These functions may be called from a library to calculate various values from different distributions */
-DLL_API double ar_triangular_pdf (double x, double min, double mode, double max);
-DLL_API double ar_triangular_cdf (double x, double min, double mode, double max);
-DLL_API double ar_triangular_inverse_cdf (double area, double min, double mode, double max);
 
-DLL_API double ar_poisson_pdf (double x, double mean);
-DLL_API double ar_poisson_cdf (double x, double mean);
+unsigned int * ran_multivariate_hypergeometric
+(unsigned int m[], /* class counts */
+ unsigned int c, /* number of classes */
+ unsigned int t, /* number to draw */
+ RAN_gen_t *rng);
 
-DLL_API double ar_beta_pdf (double x, double alpha, double beta, double location, double scale);
-DLL_API double ar_beta_cdf (double x, double alpha, double beta, double location, double scale);
-DLL_API double ar_beta_inverse_cdf (double area, double alpha, double beta, double location,
-                                    double scale);
 
-DLL_API double ar_beta_pert_pdf (double x, double min, double mode, double max);
-DLL_API double ar_beta_pert_cdf (double x, double min, double mode, double max);
-DLL_API double ar_beta_pert_inverse_cdf (double area, double min, double mode, double max);
+#ifdef WIN_DLL  /* These are not needed in the SC versions of code, and could generate errors because of pointer conversion issues... */
 
-DLL_API double ar_pearson5_pdf (double x, double alpha, double beta);
-DLL_API double ar_pearson5_cdf (double x, double alpha, double beta);
-DLL_API double ar_pearson5_inverse_cdf (double area, double alpha, double beta);
+/* These functions are called from a library to calculate various values from different distributions */
+DLL_API double aphi_inverse_gaussian_pdf (double x, double mu, double lambda);
+DLL_API double aphi_inverse_gaussian_cdf (double x, double mu, double lambda);
+DLL_API double aphi_inverse_gaussian_inverse_cdf (double area, double mu, double lambda);
 
-DLL_API double ar_loglogistic_pdf (double x, double location, double scale, double shape);
-DLL_API double ar_loglogistic_cdf (double x, double location, double scale, double shape);
-DLL_API double ar_loglogistic_inverse_cdf (double area, double location, double scale,
-                                           double shape);
+DLL_API double aphi_beta_pdf( double x, double alpha, double beta, double location, double scale );
+DLL_API double aphi_beta_cdf( double x, double alpha, double beta, double location, double scale );
+DLL_API double aphi_beta_inverse_cdf( double area, double alpha1, double alpha2, double min, double max );
+DLL_API double aphi_beta_rand( int unsigned rng, double alpha1, double alpha2, double min, double max );
 
+DLL_API double aphi_beta_pert_pdf( double x, double min, double mode, double max );
+DLL_API double aphi_beta_pert_cdf( double x, double min, double mode, double max );
+DLL_API double aphi_beta_pert_inverse_cdf( double area, double min, double mode, double max );
+DLL_API double aphi_beta_pert_rand( int unsigned rng, double min, double mode, double max );
+
+DLL_API double aphi_loglogistic_pdf( double x, double location, double scale, double shape );
+DLL_API double aphi_loglogistic_cdf( double x, double location, double scale, double shape );
+DLL_API double aphi_loglogistic_inverse_cdf( double area, double location, double scale, double shape );
+DLL_API double aphi_loglogistic_rand( int unsigned rng, double location, double scale, double shape );
+
+DLL_API double aphi_pearson5_pdf( double x, double alpha, double beta );
+DLL_API double aphi_pearson5_cdf( double x, double alpha, double beta );
+DLL_API double aphi_pearson5_inverse_cdf( double area, double alpha, double beta );
+DLL_API double aphi_pearson5_rand( int unsigned rng, double alpha, double beta );
+
+DLL_API double aphi_poisson_pdf( double x, double mean );
+DLL_API double aphi_poisson_cdf( double x, double mean );
+
+DLL_API double aphi_triangular_pdf( double x, double min, double mode, double max );
+DLL_API double aphi_triangular_cdf( double x, double min, double mode, double max );
+DLL_API double aphi_triangular_inverse_cdf( double area, double min, double mode, double max );
+DLL_API double aphi_triangular_rand( int unsigned rng, double min, double mode, double max );
+
+DLL_API gsl_histogram* aphi_create_histogram( int size, double ranges[], double bin_vals[] );
+DLL_API void aphi_free_histogram( int unsigned hist );
+DLL_API double aphi_histogram_pdf( double x, int unsigned hist );
+DLL_API double aphi_histogram_cdf( double x, int unsigned hist ); 
+DLL_API double aphi_histogram_inverse_cdf( double area, int unsigned hist );
+DLL_API double aphi_histogram_rand( int unsigned rng, int unsigned hist ); 
+DLL_API double aphi_histogram_mean( int unsigned hist ); 
+#endif
 
 #endif /* !PROB_DIST_H */

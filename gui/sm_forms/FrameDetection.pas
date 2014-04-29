@@ -4,13 +4,13 @@ unit FrameDetection;
 FrameDetection.pas/dfm
 -----------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version: $Revision: 1.15 $
+Last revision: $Date: 2011-03-31 22:06:48 $ $Author: areeves $
+Version: $Revision: 1.19.2.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -37,16 +37,22 @@ interface
   ;
 
   type TFrameDetection = class( TFrame )
-    pnlParams: TPanel;
-    pnlUseDetection: TPanel;
-    pnlDetectionParams: TPanel;
-    cbxDetect: TCheckBox;
-    lblReportVsDaysInfectious: TLabel;
-    lblProbReportVsFirstDetection: TLabel;
-    smrProbReportVsDaysInfectious: TFrameSMFunctionEditor;
-    smrProbVsFirstDetection: TFrameSMFunctionEditor;
-    imgRel1: TImage;
-    imgRel2: TImage;
+      pnlParams: TPanel;
+      pnlUseDetection: TPanel;
+      pnlDetectionParams: TPanel;
+      cbxDetect: TCheckBox;
+      lblObsVsDaysInfectious: TLabel;
+      lblProbReportClinVsFirstDetection: TLabel;
+      smrProbObsVsDaysInfectious: TFrameSMFunctionEditor;
+      smrProbReportClinVsFirstDetection: TFrameSMFunctionEditor;
+      imgRel1: TImage;
+      imgRel3: TImage;
+      smrProbObsVsDaysDead: TFrameSMFunctionEditor;
+      imgRel2: TImage;
+      lblObsVsDaysDead: TLabel;
+      imgRel4: TImage;
+      lblProbReportDeadVsFirstDetection: TLabel;
+      smrProbReportDeadVsFirstDetection: TFrameSMFunctionEditor;
 
     protected
       procedure translateUI();
@@ -64,34 +70,53 @@ implementation
 
 	uses
     MyStrUtils,
-    GuiStrUtils,
     I88n,
-    
-    FormSMWizardBase,
-    ChartFunction
+
+    ChartFunction,
+
+    FunctionEnums,
+    FormSMWizardBase
   ;
 
 	constructor TFrameDetection.create( AOwner: TComponent );
   	begin
       inherited create( AOwner );
       translateUI();
-      
-      smrProbReportVsDaysInfectious.setForm( AOwner as TFormSMWizardBase );
-      smrProbReportVsDaysInfectious.chartType := CTRel;
-      smrProbReportVsDaysInfectious.minY := 0.0;
-      smrProbReportVsDaysInfectious.maxY := 0.0; // there is no maximum
-      smrProbReportVsDaysInfectious.xUnits := UnitsDays;
-      smrProbReportVsDaysInfectious.yUnits := UnitsPercent;
 
-      smrProbVsFirstDetection.setForm( AOwner as TFormSMWizardBase );
-      smrProbVsFirstDetection.chartType := CTRel;
-      smrProbVsFirstDetection.minY := 0.0;
-      smrProbVsFirstDetection.maxY := 0.0; // there is no maximum
-      smrProbVsFirstDetection.xUnits := UnitsDays;
-      smrProbVsFirstDetection.yUnits := UnitsPercent;
+      smrProbObsVsDaysInfectious.setForm( AOwner as TFormSMWizardBase );
+      smrProbObsVsDaysInfectious.chartType := CTRel;
+      smrProbObsVsDaysInfectious.minY := 0.0;
+      smrProbObsVsDaysInfectious.maxY := 0.0; // there is no maximum
+      smrProbObsVsDaysInfectious.xUnits := UDays;
+      smrProbObsVsDaysInfectious.yUnits := UPercentProbability;
+      smrProbObsVsDaysInfectious.setChartField( DetProbObsVsTimeClinical );
+
+      smrProbObsVsDaysDead.setForm( AOwner as TFormSMWizardBase );
+      smrProbObsVsDaysDead.chartType := CTRel;
+      smrProbObsVsDaysDead.minY := 0.0;
+      smrProbObsVsDaysDead.maxY := 0.0; // there is no maximum
+      smrProbObsVsDaysDead.xUnits := UDays;
+      smrProbObsVsDaysDead.yUnits := UPercentProbability;
+      smrProbObsVsDaysDead.setChartField( DetProbObsVsTimeDead );
+
+      smrProbReportClinVsFirstDetection.setForm( AOwner as TFormSMWizardBase );
+      smrProbReportClinVsFirstDetection.chartType := CTRel;
+      smrProbReportClinVsFirstDetection.minY := 0.0;
+      smrProbReportClinVsFirstDetection.maxY := 0.0; // there is no maximum
+      smrProbReportClinVsFirstDetection.xUnits := UDays;
+      smrProbReportClinVsFirstDetection.yUnits := UPercentProbability;
+      smrProbReportClinVsFirstDetection.setChartField( DetProbReportClinVsFirstDetection );
+
+      smrProbReportDeadVsFirstDetection.setForm( AOwner as TFormSMWizardBase );
+      smrProbReportDeadVsFirstDetection.chartType := CTRel;
+      smrProbReportDeadVsFirstDetection.minY := 0.0;
+      smrProbReportDeadVsFirstDetection.maxY := 0.0; // there is no maximum
+      smrProbReportDeadVsFirstDetection.xUnits := UDays;
+      smrProbReportDeadVsFirstDetection.yUnits := UPercentProbability;
+      smrProbReportDeadVsFirstDetection.setChartField( DetProbReportDeadVsFirstDetection );
     end
   ;
-  
+
   
   procedure TFrameDetection.translateUI();
     begin
@@ -104,13 +129,16 @@ implementation
       with self do
         begin
           cbxDetect.Caption := tr( 'Model disease detection in this production type' );
-          lblReportVsDaysInfectious.Caption := tr( 'Probability of observing clinical signs, given the number of days that a unit is clinically infectious:' );
-          lblProbReportVsFirstDetection.Caption := tr( 'Probability of reporting an observed clinical unit, given the number of days since disease was first detected in any unit:' );
+          lblObsVsDaysInfectious.Caption := tr( 'Probability of observing clinical signs, given the number of days that a unit is clinically infectious:' );
+          lblObsVsDaysDead.Caption := tr( 'Probability of observing death from disease, given the number of days that a unit has been dead from disease:' );
+          lblProbReportClinVsFirstDetection.Caption := tr( 'Probability of reporting a unit with observed clinical signs, given the number of days since disease was first detected in any unit:' );
+          lblProbReportDeadVsFirstDetection.Caption := tr( 'Probability of reporting a unit that is dead from disease, given the number of days since disease was first detected in any unit:' );
           imgRel1.Hint := tr( 'This parameter is a relational function' );
           imgRel2.Hint := tr( 'This parameter is a relational function' );
+          imgRel3.Hint := tr( 'This parameter is a relational function' );
+          imgRel4.Hint := tr( 'This parameter is a relational function' );
         end
       ;
-
     end
   ;
 

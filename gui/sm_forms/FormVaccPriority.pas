@@ -4,13 +4,13 @@ unit FormVaccPriority;
 FormVaccPriority.pas/dfm
 -------------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.20 $
+Last revision: $Date: 2010-09-09 14:34:02 $ $Author: rhupalo $
+Version: $Revision: 1.26.10.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -68,8 +68,6 @@ implementation
     SqlClasses,
     CStringList,
     MyStrUtils,
-    GuiStrUtils,
-    QStringMaps,
     QIntegerMaps,
     I88n
   ;
@@ -81,8 +79,6 @@ implementation
       translateUI();
 
       ReasonForActivity := tr( 'Reason for vaccination' );
-      //sortOrder := OrderVaccPriority;
-      //prodTypePriorityColumn := 'vaccPriority';
     end
   ;
 
@@ -99,6 +95,8 @@ implementation
         begin
           Caption := tr( 'Scenario parameters: Vaccination priorities' );
           pnlCaption.Caption := tr( 'Vaccination priorities' );
+          lblNoProdTypes.Caption := tr( '(Vaccination is not used with any production type)' );
+          lblNoReasons.Caption := tr( '(Vaccination is never used)' );
         end
       ;
 
@@ -110,6 +108,8 @@ implementation
     var
       list: TCStringList;
       str: pchar;
+      it: TProductionTypeListIterator;
+      nRing: integer;
     begin
       if( length( _smScenarioCopy.simInput.controlParams.vaccPriorityOrder ) > 0 ) then
       	begin
@@ -138,59 +138,141 @@ implementation
         end
       ;
 
-      lbxReason.AddItem( tr( 'Ring' ), nil );
+      // Before filling in the reasons list box, determine which reasons are actually used.
+      // Show only these reasons in use.
+      nRing := 0;
+
+      it := TProductionTypeListIterator.create( _ptList );
+
+      it.toFirst();
+      while( nil <> it.current() ) do
+        begin
+          if( nil = it.current().vaccinationParams ) then
+            raise exception.Create( 'pt.vaccinationParams is nil in TFormVaccPriority.fillReasons()' )
+          ;
+
+          if( it.current().vaccinationParams.useVaccination ) then
+            inc( nRing )
+          ;
+          it.incr();
+        end
+      ;
+
+      it.Free();
+
+      // Now fill in the reasons list box.
+      if( length( _smScenarioCopy.simInput.controlParams.vaccReasonOrder ) > 0 ) then
+      	begin
+      		// figure out the previously specified order
+          list := TCStringList.create( _smScenarioCopy.simInput.controlParams.vaccReasonOrder, ',' );
+
+          str := list.first();
+          while( nil <> str ) do
+          	begin
+              if( ( 0 < nRing ) and ( 'ring' = str ) ) then
+                lbxReason.AddItem( tr( 'Ring' ), nil )
+              ;
+            	str := list.next();
+            end
+          ;
+          list.free();
+        end
+      else
+      	begin
+        	// use default order
+          if( 0 < nRing ) then
+            lbxReason.AddItem( tr( 'Ring' ), nil )
+          ;
+        end
+      ;
+
+      if( 0 = lbxReason.Count ) then
+        begin
+          lbxReason.Hide();
+          lblNoReasons.show();
+        end
+      ;
     end
   ;
 
 
   procedure TFormVaccPriority.fillProdTypes();
-  	var
-    	it: TProductionTypeListIterator;
-      orderList: Array of String;
-      str: String;
-      Index: Integer;
-
-      maxIdx: integer;
+    var
+      dm: TProductionType;
+      it: TProductionTypeListIterator;
+      map: TQIntegerObjectMap;
+      i: integer;
     begin
-      maxIdx := -1;
-			_ptList := _smScenarioCopy.simInput.ptList;
-      setLength( orderList, _ptList.Count );
-      str := 'ring';
+      _ptList := _smScenarioCopy.simInput.ptList;
 
+      map := TQIntegerObjectMap.create();
       it := TProductionTypeListIterator.create( _ptList );
+
+      // Loop over all production types to determine which ones already have a valid priority value.
+      // Store those that do have a valid value in the map.
       it.toFirst();
-
-      while ( nil <> it.current() ) do
+      while( nil <> it.current() ) do
         begin
-          Index := (_smScenarioCopy.simInput.controlParams.ssVaccPriorities.Item[ it.current().productionTypeDescr + '+' + str ] - 1);
+          dm := it.current();
 
-          if( index > maxIdx ) then
-            maxIdx := index
+          // All production types should have ringVaccParams, whether units are vaccinated or not.
+          if( nil = dm.ringVaccParams ) then
+            raise exception.Create( 'dm.ringVaccParams is nil in TFormVaccPriority.fillProdTypes()' )
           ;
-          // This ensures that newly added production types are tacked on to the end of the
-          // priority list.
-          if( -1 = index ) or ( -2 = index ) then
+
+          if( dm.isVaccTarget ) then
             begin
-              inc( maxIdx );
-              index := maxIdx;
-              _smScenarioCopy.simInput.controlParams.ssVaccPriorities[it.current().productionTypeDescr + '+' + str] := index;
-              it.current().ringVaccParams.updated := true;
+              // If the priority value is a zero or a negative number, it is invalid: don't save it in the map.
+              if( 0 >= dm.ringVaccParams.vaccPriority ) then
+                begin
+                  // Do nothing
+                end
+              // If the map already contains the priority value, then it is a duplicate that must be fixed: don't save it in the map.
+              else if( map.contains( dm.ringVaccParams.vaccPriority ) ) then
+                dm.ringVaccParams.vaccPriority := -1
+              // If neither of these conditions are met, then add an item to the map.
+              else
+                map.insert( dm.ringVaccParams.vaccPriority, dm )
+              ;
             end
           ;
 
-          orderList[Index] := it.current().productionTypeDescr;
           it.incr();
-        end;
-
-      for Index := 0 to length( orderList ) - 1 do
-      	begin
-          lbxProdType.AddItem( orderList[Index], nil );
         end
       ;
 
-      it.free();
+      // Once we have the map, we can use it to fill in the production type selection box.
+      // Production types that have valid priority values should be listed first, in priority order,
+      // followed by any other production types that are targets of vaccination.
+
+      // Recall that items stored in a QMap are sorted by key. It won't matter if priority
+      // values aren't sequential, ptroduction types will still be listed in the right order.
+      for i := 0 to map.count - 1 do
+        begin
+          dm := map.itemAtIndex( i ) as TProductionType;
+          lbxProdType.AddItem( dm.productionTypeDescr, nil );
+        end
+      ;
+
+      map.Free();
+
+      // Now we can append the remaining production types that are vaccination targets but don't (yet) have
+      // a valid priority value.
+      it.toFirst();
+      while( nil <> it.current() ) do
+        begin
+          dm := it.current();
+          if( ( dm.isVaccTarget ) and ( 0 >= dm.ringVaccParams.vaccPriority ) ) then
+            lbxProdType.AddItem( dm.productionTypeDescr, nil )
+          ;
+          it.incr();
+        end
+      ;
+
+      it.Free();
     end
   ;
+
 
   procedure TFormVaccPriority.updateScenarioData();
     var
@@ -198,7 +280,6 @@ implementation
       reasonList: TCStringList;
       reason: pchar;
       i,j: integer;
-      vaccOrderList:TQStringLongIntMap;
       vaccReasonOrder:String;
       vaccPriorityOrder:String;
     begin
@@ -206,8 +287,6 @@ implementation
 
       vaccReasonOrder := 'ring'; //_smScenarioCopy.simInput.controlParams.vaccReasonOrder;
       vaccPriorityOrder :=_smScenarioCopy.simInput.controlParams.vaccPriorityOrder;
-
-      vaccOrderList := TQStringLongIntMap.create();
 
       reasonList := TCStringList.create( vaccReasonOrder, ',' );
 
@@ -226,7 +305,7 @@ implementation
                 	reason := reasonList.first();
                   while( nil <> reason ) do
                   	begin
-    									vaccOrderList[ pt.productionTypeDescr + '+' + reason ] := i;
+                      _smScenarioCopy.simInput.controlParams.ssVaccPriorities[ pt.productionTypeDescr + '+' + reason ] := i;
                     	inc( i );
                   		reason := reasonList.next();
                     end
@@ -248,7 +327,7 @@ implementation
                   pt := _ptList.findProdType( lbxProdType.Items.Strings[j] );
                   if ( nil <> pt ) then
                     begin
-                    	vaccOrderList[ pt.productionTypeDescr + '+' + reason ] := i;
+                      _smScenarioCopy.simInput.controlParams.ssVaccPriorities[ pt.productionTypeDescr + '+' + reason ] := i;
                     	inc( i );
                       pt.ringVaccParams.vaccPriority := j + 1;
                     end;
@@ -259,7 +338,7 @@ implementation
           ;
         end
       ;
-      _smScenarioCopy.simInput.controlParams.ssVaccPriorities := vaccOrderList;
+
       freeAndNil( reasonList );
       inherited updateScenarioData();
     end
@@ -268,7 +347,8 @@ implementation
 
 	function TFormVaccPriority.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.includeVaccinationGlobal ) then
+    	// need detection of disease in order to conduct vaccination campaign
+      if (( _smScenarioCopy.simInput.includeVaccinationGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin

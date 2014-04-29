@@ -4,35 +4,52 @@ unit Herd;
 Herd.pas
 ---------
 Begin: 2005/01/21
-Last revision: $Date: 2008/10/15 16:23:43 $ $Author: areeves $
-Version number: $Revision: 1.62 $
+Last revision: $Date: 2013-04-02 19:47:37 $ $Author: areeves $
+Version number: $Revision: 1.86.2.18 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 *)
 
+{$INCLUDE Defs.inc}
+
 interface
 
 	uses
+    // Standard Delphi units
   	Contnrs,
     SysUtils,
+    Graphics,
 
+    // QClasses for Delphi
+    QStringMaps,
+    QVectors,
+
+    // APHI General Purpose Delphi library
     SqlClasses,
     FunctionPointers,
 
+    // Proj.4 Delphi wrapper
+    Proj4,
+
+    // Simple Delphi Expat Wrapper
+    Sdew,
+
+    // Application-specific units
+    NAADSMLibraryTypes,
     SMDatabase,
+    SMSimulationInput,
     ProductionType,
     StatusEnums,
-    Graphics
+    HerdControlActivities
   ;
 
-  type TColorArray = array of TColor;
   type THerdList = class; // forward declaration, for the benefit of THerd
 
 	{type} THerd = class( TObject )
@@ -50,27 +67,30 @@ interface
         _initialSize: integer;
 				_lat: double;
 				_lon: double;
+        _y: double; // y coordinate (latitude) in the projected coordinate system
+        _x: double; // x coordinate( longitude) in the projected coordinate system
+
+        _daysInInitialState: integer;
         _daysLeftInInitialState: integer;
-        _initialStatus: TTransitionState;
-        _simulatedStatus: TTransitionState;
-        _apparentStatus: TApparentStatus;
+        _initialStatus: TNAADSMDiseaseState;
+        _diseaseStatus: TNAADSMDiseaseState;
+        _controlStatus: TControlStatus; // Don't set this directly except during initalization!
+        _detectionStatus: TDetectionStatus; // Don't set this directly except during initialization!
+        
+        _hasBeenInfected: boolean; // Don't set this directly except during initialization!
+        _hasBeenDetected: boolean; // Don't set this directly except during initialization!
+        
         _zoneLevel: integer;
+
+        _diedInDestrQueue: boolean;
 
         // Advanced properties
       	_sim: TObject;
         _pt: TProductionType;
         _prodTypeID: integer;
 
-        // Outputs
-        _itInfections: integer;
-        _itDetections: integer;
-        _itDestructions: integer;
-        _itVaccinations: integer;
-
-        _simVaccinations: integer;
-        _simInfections: integer;
-        _simDetections: integer;
-        _simDestructions: integer;
+        // Output properties
+        _ctrlActivities: THerdControlActivities;
 
         // Useful protected functions
         procedure initialize();
@@ -97,22 +117,28 @@ interface
         procedure setInitialSize( val: integer );
         function getInitialSize(): integer;
 
+        procedure setDaysInInitialState( val: integer );
+        function getDaysInInitialState(): integer;
+
         procedure setDaysLeftInInitialState( val: integer );
         function getDaysLeftInInitialState(): integer;
 
 				function getLat(): double;
 				function getLon(): double;
 
-				procedure setLat( val: double );
-				procedure setLon( val: double );
+        function getY(): double;
+        function getX(): double;
 
-        procedure setInitialStatus( val: TTransitionState );
-        function getInitialStatus(): TTransitionState;
+        procedure setInitialStatus( val: TNAADSMDiseaseState );
+        function getInitialStatus(): TNAADSMDiseaseState;
 
-        function getSimulatedStatus(): TTransitionState;
+        function getDiseaseStatus(): TNAADSMDiseaseState;
 
-        procedure setApparentStatus( val: TApparentStatus );
-        function getApparentStatus(): TApparentStatus;
+        procedure setControlStatus( val: TControlStatus );
+        function getControlStatus(): TControlStatus;
+
+        procedure setDetectionStatus( const val: TDetectionStatus );
+        function getDetectionStatus(): TDetectionStatus;
 
         procedure setZoneLevel( val: integer );
         function getZoneLevel(): integer;
@@ -126,31 +152,26 @@ interface
         //procedure setProdType( pt: TProductionType );  // This function is public: see below.
         function getProdType(): TProductionType;
 
-        // Outputs
-        function getCumVaccinations(): integer;
-        function getCumInfections(): integer;
-        function getCumDetections(): integer;
-        function getCumDestructions(): integer;
-
-        procedure setCumVaccinations( val: integer );
-        procedure setCumInfections( val: integer );
-        procedure setCumDetections( val: integer );
-        procedure setCumDestructions( val: integer );
-
     	public
         // Construction/destruction
         //--------------------------
       	constructor create( list: THerdList ); overload;
         constructor create( const src: THerd; const list: THerdList = nil; const resetToInitialState: boolean = false ); overload;
+        constructor create( list: THerdList; sim: TObject; sdew: TSdew; element: pointer; ptDict: TQStringObjectMap; errMsg: pstring = nil; conductInvProj: boolean = false ); overload;
 
         destructor destroy(); override;
 
         procedure assign( const src: THerd; const list: THerdList = nil; const resetToInitialState: boolean = false );
 
+        // Cartographic projection
+        //------------------------
+        { Projects all herd lat/lon coordinates to the specified projection system. }
+        function project(): boolean;
+
         // Text export
         //------------
-        function ssXml(): string;
-        function csvText( const separator: string; writeProdTypeName: boolean; writeInitialStateChar: boolean ): string;
+        function ssXml( const useProjection: boolean ): string;
+        function csvText( const writeProdTypeName, writeInitialStateChar, useProjection: boolean ): string;
 
         // GIS "properties"
         //----------------
@@ -169,33 +190,41 @@ interface
         procedure prepareForIteration(); // at iteration start
         procedure prepareForDay(); // at day start
 
-        procedure infectByMechanism( infMech: string; day: integer );
-        procedure exposeByMechanism( mechanism: string );
-        procedure attemptTraceForReason( mechanism: string );
-        procedure traceForReason( mechanism: string );
-        function detect( day: integer ): boolean;
-        function destroyForReason( reason: string; day:integer ): boolean;
-        function vaccinateForReason( reason: string; day: integer ): boolean;
-
-        //procedure setDailyOutput();
-
-        procedure setSimulatedStatus(
-          val: TTransitionState;
-          updatePTOutputCounts: boolean
-        );
+        procedure changeHerdState( const val: TNAADSMDiseaseState; const day: integer );
+        procedure infect( const r: THRDInfect );
+        procedure expose( const e: THRDExpose );
+        procedure attemptTraceForReason( const t: THRDTrace );
+        procedure traceForReason( const t: THRDTrace );
+        procedure recordTraceOrigin( const t: THRDTrace );
+        procedure conductHerdExam( const e: THRDExam );
+        procedure conductDiagnosticTest( const t: THRDTest );
+        function detect( const d: THRDDetect; day: integer ): boolean;
+        procedure queueForDestruction( day: integer );
+        procedure queueForVaccination( day: integer );
+        function destroyForReason( const r: THRDControl; day:integer ): boolean;
+        function vaccinateForReason( const r: THRDControl; day: integer ): boolean;
+        procedure cancelVaccination( const r: THRDControl; day: integer );
+        procedure cancelDestruction( const r: THRDControl; day: integer );
 
         procedure processIterationRecords( iterationJustCompleted: integer );
 
-        // Properties
-        //------------
         // Housekeeping properties
+        //------------------------
         property updated: boolean read getUpdated;
         property isInDatabase: boolean read getIsInDatabase write setIsInDatabase;
         property removeFromDatabase: boolean read getRemoveFromDatabase;
         property outputUpdated: boolean read getOutputUpdated;
 
         // Simple properties
+        //------------------
         property id: integer read getID write setID;
+
+        // lat/lon are set as a pair to allow proper cartographic projection.
+        procedure setLatLon( lat, lon: double );
+				property lat: double read getLat;
+				property lon: double read getLon;
+        property y: double read getY;
+        property x: double read getX;
 
         property prodTypeName: string read getProdTypeName write setProdTypeName;
         property xmlProdTypeName: string read _xmlProdTypeName;
@@ -204,28 +233,26 @@ interface
         property actualProdTypeName: string read _prodTypeName;
 
         property initialSize: integer read getInitialSize write setInitialSize;
+        property daysInInitialState: integer read getDaysInInitialState write setDaysInInitialState;
         property daysLeftInInitialState: integer read getDaysLeftInInitialState write setDaysLeftInInitialState;
 
-				property lat: double read getLat write setLat;
-				property lon: double read getLon write setLon;
-
-        property initialStatus: TTransitionState read getInitialStatus write setInitialStatus;
-        property simulatedStatus: TTransitionState read getSimulatedStatus;
-        property apparentStatus: TApparentStatus read getApparentStatus write setApparentStatus;
+        property initialStatus: TNAADSMDiseaseState read getInitialStatus write setInitialStatus;
+        property diseaseStatus: TNAADSMDiseaseState read getDiseaseStatus;
+        property controlStatus: TControlStatus read getControlStatus;
+        property detectionStatus: TDetectionStatus read getDetectionStatus;
 
         property zoneLevel: integer read getZoneLevel write setZoneLevel;
 
+        property diedInDestrQueue: boolean read _diedInDestrQueue;
+
         // Advanced properties
+        //--------------------
        	property simParams: TObject write setSimParams;
         procedure setProdType( pt: TProductionType );
         property prodTypeID: integer read getProdTypeID;
         property prodType: TProductionType read getProdType;
 
-        // Outputs
-        property cumVaccinations: integer read getCumVaccinations;
-        property cumInfections: integer read getCumInfections;
-        property cumDetections: integer read getCumDetections;
-        property cumDestructions: integer read getCumDestructions;
+        property ctrlActivities: THerdControlActivities read _ctrlActivities;
     end
   ;
 
@@ -236,18 +263,20 @@ interface
       _currentIndex: integer;
 
       // Housekeeping
+      _proj: TProj4;
       _updated: boolean;
       _removedCount: integer;
+      _projected: boolean;
 
       _smdb: TSMDatabase;
+      _sim: TSMSimulationInput;
 
       // Simple properties
-      _minLat: double;
-      _maxLat: double;
-      _minLon: double;
-      _maxLon: double;
-      _eastLon: double;
-      _westLon: double;
+      _minLat, _maxLat: double;
+      _minLon, _maxLon: double;
+      _eastLon, _westLon: double;
+      _minX, _maxX: double;
+      _minY, _maxY: double;
 
       // Basic list operations
       procedure setObject( index: integer; item: THerd );
@@ -268,13 +297,27 @@ interface
       function getMinLon(): double;
       function getMaxLon(): double;
 
+      function getMinX(): double;
+      function getMaxX(): double;
+      function getMinY(): double;
+      function getMaxY(): double;
+
       function getEastLon(): double;
       function getWestLon(): double;
+
+      { Projects all herd lat/lon coordinates to the specified projection system. }
+      function project(): boolean;
 
       procedure setMinMaxLL(); // This function should only rarely be used.
 
       // Most of the time, the min and max will be set directly from the database.
       procedure setMinMaxLLFromDB();
+
+      // Calculates min and max projected coordinates based on provided min/max lat/lons.
+      procedure setMinMaxXY();
+
+      // Determines which extreme longitude is "east" and which is "west"
+      procedure setEastAndWest();
 
     public
       // Construction/destruction
@@ -282,6 +325,14 @@ interface
     	constructor create(); overload;
       constructor create( db: TSMDatabase; sim: TObject; fn: TObjFnBool1Int = nil ); overload;
       constructor create( const src: THerdList; const resetHerdsToInitalState: boolean = false ); overload;
+      constructor create(
+        const xmlFileName: string;
+        db: TSMDatabase;
+        sim: TObject;
+        errMsg: pstring = nil;
+        fnPrimaryProgress: TObjFnBool1Int = nil;
+        fnProgressMessage: TObjFnVoid1String = nil
+      ); overload;
 
       destructor destroy(); override;
 
@@ -301,15 +352,30 @@ interface
       property objects[ index: integer]: THerd read getObject write setObject; default;
       property currentPosition: integer read getCurrentIndex;
 
+      // Cartographic projection
+      //------------------------
+      { Sets up the projection specified by the string for cartographic projection. }
+      function setProjection( const projParams: string; projectHerds: boolean = true ): boolean;
+
+      { Sets up the default system to be used for cartographic projection. }
+      class function defaultProjection( const minLat, minLon, maxLat, maxLon: double ): string;
+
+      { Projects all herd lat/lon coordinates to the specified projection system after resetting min and max lat/lons to current values. }
+      function reproject(): boolean;
+
       // Text export
       //------------
-      //function ssXml(): string;  // This function produces a potentially huge string, and is currently unused.  If a file is to be written, writeXMLFile() is more efficient.
-      function writeXMLFile( fileName: string; errMsg: PString = nil ): boolean;
+      // This function produces a potentially huge string, and is currently unused.
+      // If a file is to be written, writeXMLFile() is more efficient.
+      function ssXml( const useProjection: boolean ): string;
+
+      function writeXMLFile( fileName: string; const useProjection: boolean; errMsg: PString = nil ): boolean;
 
       function writeCSVFile(
         fileName: string;
-        writeProdTypeName: boolean;
-        writeInitialStateChar: boolean;
+        const writeProdTypeName: boolean;
+        const writeInitialStateChar: boolean;
+        const useProjection: boolean;
         errMsg: PString = nil
       ): boolean;
 
@@ -318,30 +384,42 @@ interface
       function importFromFile(
         fileName: string;
         fileFormat: integer;
+        errMsg: pstring = nil;
         fnPrimaryProgress: TObjFnBool1Int = nil;
         fnSecondaryProgress: TObjFnBool1Int = nil;
         fnProgressMessage: TObjFnVoid1String = nil;
-        progressStepPercent: integer = 0
+        populateDB: boolean = true;
+        ids: TQIntegerVector = nil
       ): boolean;
 
       function importCSV(
         fileName: string;
+        errMsg: pstring = nil;
         fnPrimaryProgress: TObjFnBool1Int = nil;
         fnSecondaryProgress: TObjFnBool1Int = nil;
         fnProgressMessage: TObjFnVoid1String = nil;
-        progressStepPercent: integer = 0
+        ids: TQIntegerVector = nil
       ): boolean;
 
-      function importXML( const herdFileName: string ): boolean;
+      function importXML(
+        const herdFileName: string;
+        errMsg: pstring = nil;
+        fnPrimaryProgress: TObjFnBool1Int = nil;
+        fnProgressMessage: TObjFnVoid1String = nil;
+        populateDB: boolean = true;
+        ids: TQIntegerVector = nil
+      ): boolean;
 
       // Database population
       //--------------------
-      procedure populateDatabase( db: TSMDatabase; fnProgress: TObjFnBool1Int = nil );
+      // Returns true on success, otherwise false.
+      function populateDatabase( db: TSMDatabase; fnProgress: TObjFnBool1Int = nil; errMsg: pstring = nil ): boolean;
 
       // Validation and debugging
       //--------------------------
       function isValid( err: PString = nil ): boolean;
       procedure debug();
+      procedure invProjectDebug(); /// Used to double-check that inverse cartographic projection is OK.
 
       // Housekeeping
       //-------------
@@ -351,6 +429,11 @@ interface
 
       procedure setDB( db: TSMDatabase );
 
+      //This is not the same as resetSim.
+     //  It only sets the herdlist's internal storage of the sim object for use by the list only!
+      procedure setSim( sim: TSMSimulationInput );
+
+
       { Indicated herd will be removed from list the next time the database is populated. }
       procedure scheduleHerdRemoval( herdIndex: integer );
 
@@ -358,14 +441,15 @@ interface
       //-----------------------
       procedure initializeAllOutputRecords(); // upon sim start
       procedure prepareForIteration( iteration: integer ); // upon iteration start
-      procedure prepareForDay( day: integer ); // upon day start
-      //procedure processDailyRecords(); // Upon day end
+      procedure prepareForDay( day: integer ); // upon day start.  There is nothing to do on day end.
       procedure processIterationRecords( db: TSMDatabase; iterationJustCompleted: integer ); // upon iteration end
 
       // Housekeeping properties
       //------------------------
       property updated: boolean read getUpdated write setUpdated;
       property removedCount: integer read _removedCount;
+      property projection: TProj4 read _proj;
+      property isProjected: boolean read _projected; /// Did cartographic projection occur properly?
 
       // Simple properties
       //------------------
@@ -373,6 +457,11 @@ interface
       property maxLat: double read getMaxLat;
       property minLon: double read getMinLon;
       property maxLon: double read getMaxLon;
+
+      property minX: double read getMinX;
+      property maxX: double read getMaxX;
+      property minY: double read getMinY;
+      property maxY: double read getMaxY;
 
       property northLat: double read getMaxLat;
       property southLat: double read getMinLat;
@@ -422,27 +511,34 @@ interface
 implementation
 
 	uses
+    // Standard Delphi units
     StrUtils,
   	Classes,
     Variants,
     Forms, // for Application.ProcessMessages()
     Math,
 
+    // APHI General Purpose Delphi library
     MyStrUtils,
-    USStrUtils,
     MyDialogs,
     DebugWindow,
     WindowsUtils,
-    QStringMaps,
+    QLists,
     CStringList,
     CsvParser,
     BasicGIS,
     I88n,
     UnicodeDev,
+    Points,
 
-    ReadXMLInput,
-    SMScenario,
-    SMSimulationInput
+    // Application-specific units
+
+    SMScenario
+
+    {$IFNDEF CONSOLEAPP}
+    ,
+    FormProgress
+    {$ENDIF}
   ;
 
 //*****************************************************************************
@@ -453,9 +549,10 @@ implementation
   // --------------------------------------------------------------------------
     constructor THerd.create( list: THerdList );
       begin
-        inherited create();
-        _myList := list;
         dbcout( 'Creating empty herd', DBHERD );
+        inherited create();
+        _ctrlActivities := THerdControlActivities.create();
+        _myList := list;
         initialize();
       end
     ;
@@ -463,15 +560,175 @@ implementation
 
     constructor THerd.create( const src: THerd; const list: THerdList = nil; const resetToInitialState: boolean = false );
       begin
-        inherited create();
         dbcout( 'Creating copy of herd' , DBHERD );
+        inherited create();
+        _ctrlActivities := THerdControlActivities.create();
         assign( src, list, resetToInitialState );
+      end
+    ;
+
+    constructor THerd.create(
+      list: THerdList;
+      sim: TObject;
+      sdew: TSdew;
+      element: pointer;
+      ptDict: TQStringObjectMap;
+      errMsg: pstring = nil;
+      conductInvProj: boolean = false
+    );
+      var
+        e, ee: pointer;
+        lat, lon, x, y: double;
+        prodTypeName: string;
+        pt: TProductionType;
+        llr: RLatLon;
+      begin
+        
+        inherited create();
+        _myList := list;
+        initialize();
+
+        self.isInDatabase := false;
+        lat := LAT_LON_UNDEFINED;
+        lon := LAT_LON_UNDEFINED;
+        x := NaN;
+        y := NaN;
+
+        // Don't use the property here: it has unpleasant side effects.
+        // FIX ME: the getSim/setSim mechanism should be reviewed.  It's not very efficient, and may not even be necessary any more.
+        _sim := sim;
+        //self.simParams := sim;
+
+
+         e := sdew.GetElementByName( element, 'id' );
+        if( nil <> e ) then
+          id := myStrToInt( sdew.GetElementContents( e ), -1 )
+        ;
+
+        // Herd spatial coordinates
+        //----------------------------------------------------------------------
+        e := sdew.GetElementByName( element, 'location' );
+        if( nil <> e ) then
+          begin
+            if ( not conductInvProj ) then // typical case, the coordinates are geographic
+              begin
+                ee := sdew.GetElementByName( e, 'latitude' );
+                if( nil <> ee ) then
+                  begin
+                    lat := usStrToFloat( sdew.GetElementContents( ee ), LAT_LON_UNDEFINED );
+                    if not gisValidLat(lat) then
+                      begin
+                        appendToPString( errMsg, ansiReplaceStr( tr( 'Unit list XML Herd ID '  + intToStr(id)
+                        + ' contains an invalid latitude: "xyz"' ), 'xyz', sdew.GetElementContents( ee )));
+                        lat := LAT_LON_UNDEFINED;
+                      end
+                    ;
+                  end
+                ;
+
+                ee := sdew.GetElementByName( e, 'longitude' );
+                if( nil <> ee ) then
+                  begin
+                    lon := usStrToFloat( sdew.GetElementContents( ee ), LAT_LON_UNDEFINED );
+                    if not gisValidLon(lon) then
+                      begin
+                        appendToPString( errMsg, ansiReplaceStr( tr( 'Unit list XML Herd ID '  + intToStr(id)
+                        + ' contains an invalid longitude: "xyz"' ), 'xyz', sdew.GetElementContents( ee )));
+                        lon := LAT_LON_UNDEFINED;
+                      end
+                    ;
+                  end
+                ;
+              end
+            else  // coordinates are projected (such as when a error log is generated)
+              begin
+                ee := sdew.GetElementByName( e, 'x' );
+                if( nil <> ee ) then
+                  x := usStrToFloat( sdew.GetElementContents( ee ), NaN )
+                ;
+                
+                ee := sdew.GetElementByName( e, 'y' );
+                if( nil <> ee ) then
+                  y := usStrToFloat( sdew.GetElementContents( ee ), NaN )
+                ;
+
+                if( nil <> _myList ) then
+                  begin
+                    if( nil <> _myList.projection ) then
+                      begin
+                        { Projection object instantiated and params set in THerdList.importXML.
+                          Inverse the projected coordinates to obtain geographic coordinates,
+                          the imported x and y (projected) values are not retained. }
+                        try
+                          llr := _myList.projection.pjInv( x, y );
+                          lon := double(llr.lon); // inverse of x
+                          lat := double(llr.lat); // inverse of y
+                        except
+                          lon := LAT_LON_UNDEFINED;
+                          lat := LAT_LON_UNDEFINED;
+                          appendToPString( errMsg, tr( 'Unit list XML Herd ID '  + intToStr(id) + ' contains invalid x,y coordinates'));
+                        end;
+                      end
+                    ;
+                  end
+                ;
+              end
+            ;
+
+            self.setLatLon( lat, lon );
+          end
+        ;
+        //----------------------------------------------------------------------
+
+
+        e := sdew.GetElementByName( element, 'production-type' );
+        if( nil <> e ) then
+          begin
+            prodTypeName := sdew.GetElementContents( e );
+            pt := ptDict.value( prodTypeName ) as TProductionType;
+            if( nil = pt ) then
+              appendToPString( errMsg, ansiReplaceStr( tr( 'Unit list XML contains an unrecognized production type: "xyz"' ), 'xyz', prodTypeName ) )
+            else
+              setProdType( pt )
+            ;
+          end
+        ;
+
+        e := sdew.GetElementByName( element, 'size' );
+        if( nil <> e ) then
+          initialSize := myStrToInt( sdew.GetElementContents( e ), -1 )
+        ;
+        if (0 >= initialSize ) then
+          appendToPString( errMsg, ansiReplaceStr( tr( 'Unit list XML Herd ID '  + intToStr(id)
+          + ' contains an invalid size: "xyz"' ), 'xyz', intToStr( initialSize )))
+        ;
+
+        e := sdew.GetElementByName( element, 'status' );
+        if( nil <> e ) then
+          initialStatus := naadsmDiseaseStateFromString( sdew.GetElementContents( e ) )
+        ;
+        if ( initialStatus = NAADSMStateUnspecified ) then
+          appendToPString( errMsg, ansiReplaceStr( tr( 'Unit list XML Herd ID '  + intToStr(id)
+          + ' contains an invalid state code: "xyz"' ), 'xyz', sdew.GetElementContents( e )))
+        ;
+
+        e := sdew.GetElementByName( element, 'days-in-status' );
+        if( nil <> e ) then
+          daysInInitialState := myStrToInt( Sdew.GetElementContents( e ), -1 ) // -1 is a valid default
+        ;
+
+        e := Sdew.GetElementByName( element, 'days-left-in-status' );
+        if( nil <> e ) then
+          daysLeftInInitialState := myStrToInt( sdew.GetElementContents( e ), -1 ) // -1 is a valid default
+        ;
       end
     ;
 
 
     destructor THerd.destroy();
       begin
+        _ctrlActivities.free();
+
         inherited destroy();
       end
     ;
@@ -485,25 +742,29 @@ implementation
         setInitialSize( -1 );
         _lat := LAT_LON_UNDEFINED;
         _lon := LAT_LON_UNDEFINED;
-        _initialStatus := tsUnspecified;
+        _y := NaN;
+        _x := NaN;
+        _initialStatus := NAADSMStateUnspecified;
+        setDaysInInitialState( -1 );
         setDaysLeftInInitialState( -1 );
-        _apparentStatus := asUnspecified;
+        _diseaseStatus := NAADSMStateUnspecified;
+        _controlStatus := asUnspecified;
+        _detectionStatus := dsNoStatus;
+
+        _hasBeenInfected := false;
+        _hasBeenDetected := false;
+        
         _zoneLevel := -1;
+
+        _diedInDestrQueue := false;
 
         // Advanced properties
         _sim := nil;
         _pt := nil;
 
-        // Outputs
-        _itInfections := 0;
-        _itDetections := 0;
-        _itDestructions := 0;
-        _itVaccinations := 0;
 
-        _simVaccinations := 0;
-        _simInfections := 0;
-        _simDetections := 0;
-        _simDestructions := 0;
+        // Output
+        _ctrlActivities := THerdControlActivities.create();
 
         // Housekeeping
         setIsInDatabase( false );
@@ -516,47 +777,16 @@ implementation
     procedure THerd.assign( const src: THerd; const list: THerdList = nil; const resetToInitialState: boolean = false );
       begin
         // Advanced properties
+
+        
         _myList := list;
 
-        // Simple properties
-        _id := src._id;
-        _initialSize := src._initialSize;
-        _lat := src._lat;
-        _lon := src._lon;
-
-        _initialStatus := src._initialStatus;
-        _daysLeftInInitialState := src._daysLeftInInitialState;
-
-        if( resetToInitialState ) then
-          begin
-            prepareForIteration();
-
-            _simVaccinations := 0;
-            _simInfections := 0;
-            _simDetections := 0;
-            _simDestructions := 0;
-          end
-        else
-          begin
-            _simulatedStatus := src._simulatedStatus;
-            _apparentStatus := src._apparentStatus;
-            _zoneLevel := src._zoneLevel;
-
-            _itInfections := src._itInfections;
-            _itDetections := src._itDetections;
-            _itDestructions := src._itDestructions;
-            _itVaccinations := src._itVaccinations;
-
-            _simVaccinations := src._simVaccinations;
-            _simInfections := src._simInfections;
-            _simDetections := src._simDetections;
-            _simDestructions := src._simDestructions;
-          end
+        if( nil = src.prodType ) then
+          dbcout2( 'src._pt is nil in THerd.assign()', DBHERD )
         ;
 
-        // Some more advanced properties
-        if( nil = src.prodType ) then
-          dbcout( 'src._pt is nil!', DBHERD )
+        if( nil = src._sim ) then
+          dbcout2( 'src_sim is nil in THerd.assign()', DBHERD )
         ;
 
         _sim := src._sim;
@@ -565,6 +795,34 @@ implementation
         //setProdTypeName( src._prodTypeName ); // automatically taken care of by setProdType
         //setProdTypeID( src._prodTypeID ); // automatically taken care of by setProdType
 
+        // Simple properties
+        _id := src._id;
+        _initialSize := src._initialSize;
+        _lat := src._lat;
+        _lon := src._lon;
+        _y := src._y;
+        _x := src._x;
+
+        _initialStatus := src._initialStatus;
+        _daysInInitialState := src._daysInInitialState;
+        _daysLeftInInitialState := src._daysLeftInInitialState;
+
+        if( resetToInitialState ) then
+          initializeAllOutputRecords()
+        else
+          begin
+            _diseaseStatus := src._diseaseStatus;
+            _controlStatus := src._controlStatus;
+            _detectionStatus := src._detectionStatus;
+            
+            _hasBeenInfected := src._hasBeenInfected;
+            _hasBeenDetected := src._hasBeenDetected;
+            
+            _zoneLevel := src._zoneLevel;
+
+            _ctrlActivities.assign( src._ctrlActivities );
+          end
+        ;
 
         // Housekeeping properties
         _updated := src._updated;
@@ -575,11 +833,85 @@ implementation
   //---------------------------------------------------------------------------
 
 
+  //---------------------------------------------------------------------------
+  // THerd: Cartographic projection
+  //---------------------------------------------------------------------------
+    {*
+      Projects all herd lat/lon coordinates to the specified projection system.
+
+      @return true if projection was successful.
+    }
+    function THerd.project(): boolean;
+      var
+        p: RPoint;
+      begin
+        result := false;
+
+        if( nil <> _myList ) then
+          begin
+            if( nil <> _myList.projection ) then
+              begin
+                p := _myList.projection.pjFwd( self.lon, self.lat );
+
+                if( not( _myList.projection.error ) ) then
+                  begin
+                    _x := p.x;
+                    _y := p.y;
+
+                    _myList._minX := min( _myList._minX, _x );
+                    _myList._maxX := max( _myList._maxX, _x );
+                    _myList._minY := min( _myList._minY, _y );
+                    _myList._maxY := max( _myList._maxY, _y );
+
+                    result := true;
+                  end
+                ;
+              end
+            ;
+          end
+        ;
+
+        if( false = result ) then
+          begin
+            _x := NaN;
+            _y := NaN;
+          end
+        ;
+      end
+    ;
+
+
+    procedure THerd.setLatLon( lat, lon: double );
+      begin
+        // FIX ME: Should we be this generous about allowing invalid lat and lon values?
+        if( -90.0 > lat ) then
+          _lat := -90.0
+        else if( 90.0 < lat ) then
+          _lat := 90.0
+        else
+          _lat := lat
+        ;
+
+        while( -180.0 > lon ) do
+          lon := lon + 360.0
+        ;
+        while( 180.0 < lon ) do
+          lon := lon - 360.0
+        ;
+        _lon := lon;
+
+        project();
+        setUpdated( true );
+      end
+    ;
+  //---------------------------------------------------------------------------
+
+
 
   //---------------------------------------------------------------------------
   // THerd: Text export
   //---------------------------------------------------------------------------
-    function THerd.ssXML(): string;
+    function THerd.ssXML( const useProjection: boolean ): string;
       begin
         result := '';
         result := result + '  <herd>' + endl;
@@ -587,10 +919,25 @@ implementation
         result := result + '    <production-type>' + xmlProdTypeName + '</production-type>' + endl;
         result := result + '    <size>' + intToStr( initialSize ) + '</size>' + endl;
         result := result + '    <location>' + endl;
-        result := result + '      <latitude>' + usFloatToStr( lat, LAT_LON_PRECISION ) + '</latitude>' + endl;
-        result := result + '      <longitude>' + usFloatToStr( lon, LAT_LON_PRECISION ) + '</longitude>' + endl;
+
+        if( useProjection ) then
+          begin
+            result := result + '      <x>' + usFloatToStr( x, LAT_LON_PRECISION ) + '</x>' + endl;
+            result := result + '      <y>' + usFloatToStr( y, LAT_LON_PRECISION ) + '</y>' + endl;
+          end
+        else
+          begin
+            result := result + '      <latitude>' + usFloatToStr( lat, LAT_LON_PRECISION ) + '</latitude>' + endl;
+            result := result + '      <longitude>' + usFloatToStr( lon, LAT_LON_PRECISION ) + '</longitude>' + endl;
+          end
+        ;
+        
         result := result + '    </location>' + endl;
-        result := result + '    <status>' + xmlTransitionStateString( self.initialStatus ) + '</status>' + endl;
+        result := result + '    <status>' + naadsmDiseaseStateXml( self.initialStatus ) + '</status>' + endl;
+
+        if( -1 < daysInInitialState ) then
+          result := result + '    <days-in-status>' + intToStr( daysInInitialState ) + '</days-in-status>' + endl
+        ;
 
         if( -1 < daysLeftInInitialState ) then
           result := result + '    <days-left-in-status>' + intToStr( daysLeftInInitialState ) + '</days-left-in-status>' + endl
@@ -601,28 +948,38 @@ implementation
     ;
 
 
-    function THerd.csvText( const separator: string; writeProdTypeName: boolean; writeInitialStateChar: boolean ): string;
+    function THerd.csvText( const writeProdTypeName, writeInitialStateChar, useProjection: boolean ): string;
       begin
         result := '';
-        result := result + intToStr( self.id ) + separator;
+        result := result + intToStr( self.id ) + csvListSep;
 
         if( writeProdTypeName ) then
-          result := result + '"' + self.prodTypeName + '"' + separator
+          result := result + '"' + self.prodTypeName + '"' + csvListSep
         else
-          result := result + intToStr( self.prodTypeID )  + separator
+          result := result + intToStr( self.prodTypeID )  + csvListSep
         ;
 
-        result := result + intToStr( self.initialSize ) + separator;
+        result := result + intToStr( self.initialSize ) + csvListSep;
 
-        result := result + usFloatToStr( self.lat ) + separator;
-        result := result + usFloatToStr( self.lon ) + separator;
+        if( useProjection ) then
+          begin
+            result := result + csvFloatToStr( self.x ) + csvListSep;
+            result := result + csvFloatToStr( self.y ) + csvListSep;
+          end
+        else
+          begin
+            result := result + csvFloatToStr( self.lat ) + csvListSep;
+            result := result + csvFloatToStr( self.lon ) + csvListSep;
+          end
+        ;
 
         if( writeInitialStateChar ) then
-          result := result + transitionStateCode( self._initialStatus ) + separator
+          result := result + naadsmDiseaseStateCode( self._initialStatus ) + csvListSep
         else
-          result := result + intToStr( ord( self._initialStatus ) ) + separator
+          result := result + intToStr( ord( self._initialStatus ) ) + csvListSep
         ;
 
+        result := result + intToStr( self.daysInInitialState ) + csvListSep;
         result := result + intToStr( self.daysLeftInInitialState );
       end
     ;
@@ -704,7 +1061,7 @@ implementation
         ;
 
 
-        if( tsUnspecified = initialStatus ) then
+        if( NAADSMStateUnspecified = initialStatus ) then
           begin
             if( err <> nil ) then msg := msg + '  ' + tr( 'Initial disease status is not set.' ) + endl;
             result := false;
@@ -722,9 +1079,9 @@ implementation
         // Strange things happen when a herd has an initial disease state other than susceptible
         // if the herd's production type is not set to undergo disease state transitions.
         if
-          ( tsSusceptible <> initialStatus )
+          ( NAADSMStateSusceptible <> initialStatus )
         and
-          ( not( self.prodType.simulateTransition ) )
+          ( not( self.prodType.useDisease ) )
         then
           begin
             if( err <> nil ) then msg := msg + '  ' + tr( 'Disease transitions are not simulated for units of this type, but an initial disease status is specified.' );
@@ -753,7 +1110,15 @@ implementation
 
         dbcout( 'Size: ' + intToStr(self.initialSize), true );
         dbcout( 'Location: ' + usFloatToStr( lat ) + ' latitude, ' + usFloatToStr( lon ) + ' longitude', true );
-        dbcout( 'Status: ' + transitionStateString( self.initialStatus ) + ' (' + intToStr( ord( initialStatus ) ) + ')', true );
+        dbcout( 'Projected: ' + usFloatToStr( y ) + ' y, ' + usFloatToStr( x ) + ' x', true );
+        dbcout( 'Initial disease status: ' + naadsmDiseaseStateStr( self.initialStatus ) + ' (' + intToStr( ord( self.initialStatus ) ) + ')', true );
+        dbcout( 'Current disease status: ' + naadsmDiseaseStateStr( self.diseaseStatus ) + ' (' + intToStr( ord( self.diseaseStatus ) ) + ')', true );
+
+        if( -1 = daysInInitialState ) then
+          dbcout( 'Days in initial state: (unspecified)', true )
+        else
+          dbcout( 'Days in initial state: ' + intToStr( daysInInitialState ), true )
+        ;
 
         if( -1 = daysLeftInInitialState ) then
           dbcout( 'Days left in initial state: (unspecified)', true )
@@ -761,7 +1126,10 @@ implementation
           dbcout( 'Days left in initial state: ' + intToStr( daysLeftInInitialState ), true )
         ;
 
-        dbcout( 'Updated: ' + boolToStr( updated ), true );
+        dbcout( 'Control status: ' + ' ' + controlStatusString( self.controlStatus ), true );
+        dbcout( 'Detection status: ' + ' ' + detectionStatusString( self.detectionStatus ), true );
+
+        dbcout( 'Updated: ' + usBoolToText( updated ), true );
         dbcout( endl, true );
       end
     ;
@@ -770,12 +1138,13 @@ implementation
     function THerd.briefInfo(): string;
       begin
         result :=
-          'Unit ' + intToStr( id ) + ': '
-          + 'Type: ' + self.prodTypeName + '  '
-          + 'Location: Lat ' + usFloatToStr( lat ) + ', Lon ' + usFloatToStr( lon ) + endl
-          + 'Size: ' + intToStr( initialSize ) + '  '
-          + 'Disease state: ' + transitionStateString( self.simulatedStatus ) + '  '
-          + 'Apparent status: ' + apparentStatusString( self.apparentStatus )
+          tr( 'Unit' ) + ' ' + intToStr( id ) + ': '
+          + tr( 'Type:' ) + ' ' + self.prodTypeName + '  '
+          + tr( 'Location:' ) + ' Lat ' + usFloatToStr( lat ) + ', Lon ' + usFloatToStr( lon ) + endl
+          + tr( 'Size:' ) + ' ' + intToStr( initialSize ) + '  '
+          + tr( 'Disease state:' ) + ' ' + naadsmDiseaseStateStr( self.diseaseStatus ) + '  '
+          + tr( 'Control status:' ) + ' ' + controlStatusString( self.controlStatus ) + '  '
+          + tr( 'Detection status:' ) + ' ' + detectionStatusString( self.detectionStatus )
         ;
       end
     ;
@@ -788,30 +1157,42 @@ implementation
   //---------------------------------------------------------------------------
     procedure THerd.initializeAllOutputRecords(); // at start of simulation
       begin
-        self.prodType.setInitialDailyRecords( initialSize, initialStatus );
-        _simInfections := 0;
-        _simDetections := 0;
-        _simDestructions := 0;
-        _simVaccinations := 0;
+        {$IFDEF TORRINGTON}
+          self.prodType.setInitialDailyRecords( initialSize, NAADSMStateSusceptible );
+        {$ELSE}
+          self.prodType.setInitialDailyRecords( initialSize, initialStatus );
+        {$ENDIF}
+
+        _ctrlActivities.initializeAllOutputRecords();
+
+        prepareForIteration();
       end
     ;
 
 
     procedure THerd.prepareForIteration(); // at start of each iteration
       begin
-        _simulatedStatus := self.initialStatus;
-        _zoneLevel := -1;
+        {$IFDEF TORRINGTON}
+          _diseaseStatus := NAADSMStateSusceptible;
+        {$ELSE}
+          _diseaseStatus := self.initialStatus;
+        {$ENDIF}
 
-        _itInfections := 0;
-        _itDetections := 0;
-        _itDestructions := 0;
-        _itVaccinations := 0;
+        _zoneLevel := -1;
+        _diedInDestrQueue := false;
+
+        _ctrlActivities.prepareForIteration();
 
         case self.initialStatus of
-          tsDestroyed: self.apparentStatus := asDestroyed;
-          tsVaccineImmune: self.apparentStatus := asVaccinated;
-          else self.apparentStatus := asUnknown;
+          NAADSMStateDestroyed: _controlStatus := asDestroyed;
+          NAADSMStateVaccineImmune: _controlStatus := asVaccinated;
+          else _controlStatus := asNoControl;
         end;
+
+        _detectionStatus := dsNoStatus;
+        
+        _hasBeenInfected := false;
+        _hasBeenDetected := false;
       end
     ;
 
@@ -823,137 +1204,343 @@ implementation
     ;
 
 
-    procedure THerd.setSimulatedStatus(
-          val: TTransitionState;
-          updatePTOutputCounts: boolean
-        );
+    procedure THerd.changeHerdState( const val: TNAADSMDiseaseState; const day: integer );
       begin
-        if( updatePTOutputCounts ) then
+        // Don't record initial states as changes.
+        // Note, though, that herd states can change on day 1.
+        if
+          ( 1 = day )
+        and
+          ( self.diseaseStatus = val )
+        then
           begin
-            self.prodType.updateDailyRecordsProdType(
-              initialSize,
-              _simulatedStatus,
-              val
-            );
+            dbcout( 'Herd ' + intToStr( self.id ) + ' has change state on day ' + intToStr( day ) + ': state is now ' + naadsmDiseaseStateStr( val ), DBHERD );
+            exit;
           end
         ;
 
-        _simulatedStatus := val;
-      end
-    ;
+        self.prodType.updateDailyRecordsProdType(
+          initialSize,                      // Number of animals
+          _diseaseStatus,                   // current state
+          val,                              // new state
+          ctrlActivities.isQueuedForDestr,
+          day                               // simulation day
 
-  
-    procedure THerd.infectByMechanism( infMech: string; day: integer );
-      begin
-        // Since initial infection occurs before day 0, remember to
-        // treat initial infection differently...
-        if( 'initially infected' = infMech ) then
-          inc( _simInfections )
-        else
-          inc( _itInfections )
+        );
+
+        // _controlStatus does not change
+        _diseaseStatus := val;
+
+        if( ( NAADSMStateDeadFromDisease = val ) and ( asInDestructionQueue = controlStatus ) ) then
+          _diedInDestrQueue := true
         ;
 
-        self.prodType.addInfectedByMechanism( initialSize, infMech, day );
-
-        //----------------------------
-        // Debugging code
-        //----------------------------
-        //if( 20 <= self.id ) and ( 69 >= self.id ) then dbcout( 'Herd ' + intToStr( self.id ) + ' was infected' );
-        //----------------------------
+        // When a herd is infected, it counts as undetected until it is something happens to detect it.
+        // It's theoretically possible for a herd to become naturally immune immediately upon infection,
+        // so that possibility needs to be accounted for here.
+        if
+          ( naadsmIsInfectedState( val ) )
+        or
+          ( NAADSMStateNaturallyImmune = val )
+        or
+          ( NAADSMStateDeadFromDisease = val )
+        then
+          setDetectionStatus( dsInfectedUndetected )
+        else if( NAADSMStateDestroyed = val ) then
+          setDetectionStatus( dsDestroyed )
+        else
+          // Don't change _detectionStatus for any other reason
+        ;
       end
     ;
 
 
-    procedure THerd.exposeByMechanism( mechanism: string );
+    procedure THerd.infect( const r: THRDInfect );
       begin
-        self.prodType.addExposedByMechanism( initialSize, mechanism );
+        // _diseaseStatus will be updated by a call to changeHerdState from the NAADSM library
+        // _controlStatus does not change
+        // _detectionStatus will be updated by a call to changeHerdState from the NAADSM library
+
+        // Initial infection occurs on day 1. Remember to treat it differently...
+        _ctrlActivities.infectHerd( ( 1 = r.day ) );
+
+        self.prodType.addInfectionEvent( initialSize, r );
       end
     ;
 
 
-    function THerd.detect( day: integer ): boolean;
+    procedure THerd.expose( const e: THRDExpose );
       begin
-        _apparentStatus := asDetected;
-        inc( _itDetections );
-        result := self.prodType.addDetection( initialSize, day );
+        self.prodType.addExposureEvent( initialSize, e );
       end
     ;
 
 
-    function THerd.destroyForReason( reason: string; day: integer ): boolean;
+    function THerd.detect( const d: THRDDetect; day: integer ): boolean;
       begin
-        dbcout( '--- Destroying herd ' + intToStr( self.id) + ' for ' + reason, DBHERD );
+        // _diseaseStatus does not change
 
-        if( asDetected = _apparentStatus ) then
+        // Don't reset the control status of a herd that has been destroyed.
+        // For all other cases, set the herd's control status to "detected".
+        if( asDestroyed <> self.controlStatus ) then
+          setControlStatus( asDetected )
+        ;
+
+        // Set the detection status based on the reason for detection.
+        // This is only for purposes of the map display: it does not affect the
+        // output stored by the simulation.
+        if( asDestroyed = self.controlStatus ) then
+          setDetectionStatus( dsDestroyed )
+        else
+          begin
+            case d.reason of
+              NAADSMDetectionClinicalSigns:
+                setDetectionStatus( dsDetectedClinical )
+              ;
+              NAADSMDetectionDeadFromDisease:
+                setDetectionStatus( dsDetectedDeadFromDisease )
+              ;
+              //AR:deadDV
+              NAADSMDetectionDeadFromDiseaseByDestructionTeam:
+                setDetectionStatus( dsDetectedDeadFromDisease )
+              ;
+              NAADSMDetectionDeadFromDiseaseByVaccinationTeam:
+                setDetectionStatus( dsDetectedDeadFromDisease )
+              ;
+
+              NAADSMDetectionDiagnosticTest:
+                begin
+                  case d.testResult of
+                    NAADSMTestTruePositive: setDetectionStatus( dsTestTruePos );
+                    NAADSMTestFalsePositive: setDetectionStatus( dsTestFalsePos );
+                    else
+                      begin
+                        // Negative test results are taken care of elsewhere
+                        raise exception.create( 'Unrecognized or unexpected test result (' + intToStr( ord( d.testResult ) ) + ') in THerd.detect()' );
+                      end
+                    ;
+                  end;
+                end
+              ;
+              else
+                raise exception.create( 'Unrecognized detection reason in THerd.detect()' )
+              ;
+            end;
+          end
+        ;
+
+        // Record the unit as a detection.
+        // Record the cause of detection regardless, but only count a
+        // new detection if the herd had not been previously detected.
+        if( not( _hasBeenDetected ) ) then
+          _ctrlActivities.detectHerd()
+        ;
+        result := self.prodType.addDetectionEvent( initialSize, d, day,  not( _hasBeenDetected ) );
+
+        // This unit has now been detected.
+        // Other detection activities may occur, but they won't be counted as unique detections.
+        _hasBeenDetected := true;
+      end
+    ;
+
+
+    procedure THerd.queueForDestruction( day: integer );
+      begin
+        // _diseaseStatus does not change
+        setControlStatus( asInDestructionQueue );
+        // _detectionStatus does not change
+
+        _ctrlActivities.queueForDestruction( day );
+        self.prodType.addDestructionQueueEvent( self, day );
+      end
+    ;
+
+
+    function THerd.destroyForReason( const r: THRDControl; day: integer ): boolean;
+      begin
+        if( asDetected = _controlStatus ) then
           self.prodType.decrementApparentInfectiousUnits()
         ;
 
-        _apparentStatus := asDestroyed;
-        inc( _itDestructions );
+        // Initially destroyed herds should not count in the queue outputs or in the cumulative herd outputs,
+        // but they should count in the appropriate production type outputs.
+        if( NAADSMControlInitialState <> r.reason ) then
+          _ctrlActivities.destroyHerd( day, r.dayCommitmentMade )
+        ;
+        result := self.prodType.addDestructionEvent( self, r, day );
 
-        if( 1 < _itDestructions ) then
-          raise exception.Create( 'Herd ' + intToStr( self.id) + ' has been destroyed multiple times during an iteration.' )
+        // _diseaseStatus will be set by a direct call to changeHerdState from the NAADSM library
+        setControlStatus( asDestroyed );
+        setDetectionStatus( dsDestroyed );
+
+        (*
+        dbcout(
+          '--- Herd at index ' + intToStr( r.herdIndex ) + ' with ID ' + intToStr( self.id )
+            + ' was destroyed for ' + naadsmControlActivityStr( r.reason )
+            + ' on day ' + intToStr( day )
+            + ' after ' + intToStr( day - r.dayCommitmentMade ) + ' days in queue'
+          , DBHERD
+        );
+        *)
+      end
+    ;
+
+
+    procedure THerd.queueForVaccination( day: integer );
+      begin
+        // Disease status does not change
+        // Control status does not change
+        // Detection status does not change
+        
+        _ctrlActivities.queueForVaccination( day );
+        self.prodType.addVaccinationQueueEvent( self, day );
+      end
+    ;
+
+
+    function THerd.vaccinateForReason( const r: THRDControl; day: integer ): boolean;
+      begin
+        // _diseaseStatus does not change
+        setControlStatus( asVaccinated );
+        // _detectionStatus does not change
+
+        // Initially vaccinated herds should not count in the queue outputs or in the cumulative herd outputs,
+        // but they should count in the appropriate production type outputs.
+        if( NAADSMControlInitialState <> r.reason ) then
+          _ctrlActivities.vaccinateHerd( day, r.dayCommitmentMade )
+        ;
+        result := self.prodType.addVaccinationEvent( self, r, day );
+      end
+    ;
+
+
+    procedure THerd.cancelVaccination( const r: THRDControl; day: integer );
+      begin
+        // Disease status does not change
+        // Control status does not change
+        // Detection status does not change
+
+        _ctrlActivities.cancelHerdVaccination( r.dayCommitmentMade );
+        self.prodType.subtractVaccinationQueueEvent( self );
+      end
+    ;
+
+
+  procedure THerd.cancelDestruction( const r: THRDControl; day: integer );
+    begin
+        // Disease status does not change
+        // Control status does not change
+        // Detection status does not change
+
+        _ctrlActivities.cancelHerdDestruction( r.dayCommitmentMade );
+        self.prodType.subtractDestructionQueueEvent( self );
+    end
+  ;
+
+
+    procedure THerd.attemptTraceForReason( const t: THRDTrace );
+      begin
+        self.prodType.addAttemptedTraceEvent( initialSize, t );
+      end
+    ;
+
+
+    procedure THerd.conductHerdExam( const e: THRDExam );
+      begin
+        // _diseaseStatus does not change
+        // _controlStatus does not change
+
+        // Don't override a previous clinical or dead detection
+        if( not( self.detectionStatus in [ dsDetectedClinical, dsDetectedDeadFromDisease ] ) ) then
+          setDetectionStatus( dsExamined )
         ;
 
-        result := self.prodType.addDestructionEvent( initialSize, reason, day );
+        if( NAADSMStateDestroyed = self.diseaseStatus ) then
+          raise exception.create( 'Attempting to examine a destroyed herd in THerd.conductHerdExam' )
+        else
+          self.prodType.addHerdExamEvent( initialSize, e )
+        ;
       end
     ;
 
 
-    function THerd.vaccinateForReason( reason: string; day: integer ): boolean;
+    procedure THerd.conductDiagnosticTest( const t: THRDTest );
       begin
-        _apparentStatus := asVaccinated;
-        inc( _itVaccinations );
-        result := self.prodType.addVaccinationEvent( initialSize, reason, day );
+        // _diseaseStatus does not change
+        // _controlStatus does not change
+        // If the test was negative, change _detectionStatus here.
+        // (Positive tests are reported by THerd.detect())
+
+        //dbcout2( '--- THerd.conductDiagnosticTest() with result ' + naadsmTestResultStr( t.testResult ) );
+
+        if( self.detectionStatus in [ dsDetectedClinical, dsDetectedDeadFromDisease, dsDestroyed ] ) then
+          // Do nothing: a test result will not override these states
+        else
+          begin
+            case t.testResult of
+              NAADSMTestTrueNegative: setDetectionStatus( dsTestTrueNeg );
+              NAADSMTestFalseNegative: setDetectionStatus( dsTestFalseNeg );
+            end;
+          end
+        ;
+
+        // Count the test for tracking purposes, regardless of the herd's detection status.
+        self.prodType.addDiagnosticTestEvent( initialSize, t );
       end
     ;
 
 
-    procedure THerd.attemptTraceForReason( mechanism: string );
+    procedure THerd.traceForReason( const t: THRDTrace );
       begin
-        self.prodType.addAttemptedTraceEvent( initialSize, mechanism );
-      end
-    ;
+        // _diseaseStatus does not change
+        // _detectionStatus does not change
+        // _controlStatus changes according to the rules below
 
-
-    procedure THerd.traceForReason( mechanism: string );
-      begin
-        mechanism := fixup( mechanism );
-
-        if( asDestroyed = _apparentStatus ) then
+        if( self.controlStatus in [ asDetected, asDestroyed ] ) then
           // don't change it
         else
           begin
-            if( 'direct contact' = mechanism ) then
-              _apparentStatus := asTracedDirect
-            else if( 'indirect contact' = mechanism ) then
-              _apparentStatus := asTracedIndirect
+            if( NAADSMDirectContact = t.contactType ) then
+              begin
+                case t.traceType of
+                  NAADSMTraceForwardOrOut: setControlStatus( asTracedDirectFwd );
+                  NAADSMTraceBackOrIn: setControlStatus( asTracedDirectBack );
+                  else raise exception.Create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in THerd.traceForReason' );
+                end;
+              end
+            else if( NAADSMIndirectContact = t.contactType ) then
+              begin
+                case t.traceType of
+                  NAADSMTraceForwardOrOut: setControlStatus( asTracedIndirectFwd );
+                  NAADSMTraceBackOrIn: setControlStatus( asTracedIndirectBack );
+                  else raise exception.Create( 'Unrecognized trace type (' + intToStr( cardinal( t.traceType ) ) + ') in THerd.traceForReason' );
+                end;
+              end
             else
-              raise exception.Create( 'Unrecognized trace reason in THerd.traceForReason' )
+              raise exception.Create( 'Unrecognized contact type (' + intToStr( cardinal( t.contactType ) ) + ') in THerd.traceForReason' )
             ;
           end
         ;
 
-        self.prodType.addTraceEvent( initialSize, mechanism );
+        self.prodType.addTraceEvent( initialSize, t );
       end
     ;
 
-    
-    (*
-    procedure THerd.setDailyOutput();
+
+    procedure THerd.recordTraceOrigin( const t: THRDTrace );
       begin
-        self.prodType.updateDailyRecords( initialSize, simulatedStatus );
+        // _diseaseStatus does not change
+        // _detectionStatus does not change
+        // _controlStatus does not change
+
+        self.prodType.addTraceOrigin( t );
       end
     ;
-    *)
 
 
     procedure THerd.processIterationRecords( iterationJustCompleted: integer );
       begin
-        inc( _simInfections, _itInfections );
-        inc( _simDetections, _itDetections );
-        inc( _simVaccinations, _itVaccinations );
-        inc( _simDestructions, _itDestructions );
+        _ctrlActivities.processIterationRecords();
       end
     ;
   //---------------------------------------------------------------------------
@@ -1085,39 +1672,27 @@ implementation
     procedure THerd.setID( val: integer ); begin _id := val; setUpdated( true ); end;
     function THerd.getID(): integer; begin Result := _id; end;
 
-
-    procedure THerd.setLat( val: double );
-      begin
-        if( -90.0 > val ) then
-          _lat := -90.0
-        else if( 90.0 < val ) then
-          _lat := 90.0
-        else
-          _lat := val
-        ;
-
-        setUpdated( true );
-      end
-    ;
-
-
-    procedure THerd.setLon( val: double );
-      begin
-        while( -180.0 > val ) do
-          val := val + 360.0
-        ;
-        while( 180.0 < val ) do
-          val := val - 360.0
-        ;
-        _lon := val;
-
-        setUpdated( true );
-      end
-    ;
-
-
     function THerd.getLat(): double; begin assert( gisValidLat( _lat ) ); Result := _lat; end;
     function THerd.getLon(): double; begin assert( gisValidLon( _lon ) ); Result := _lon; end;
+
+    function THerd.getY(): double;
+      begin
+        if( isNaN( _y ) ) then
+          project()
+        ;
+        result := _y;
+      end
+    ;
+
+
+    function THerd.getX(): double;
+      begin
+        if( isNaN( _x ) ) then
+          project()
+        ;
+        result := _x;
+      end
+    ;
 
     procedure THerd.setProdTypeName( val: string ); begin _prodTypeName := val; _xmlProdTypeName := encodeXml( val ); setUpdated( true ); end;
     function THerd.getProdTypeName(): string; begin Result := _prodTypeName; end;
@@ -1125,15 +1700,30 @@ implementation
     procedure THerd.setInitialSize( val: integer ); begin _initialSize := val; setUpdated( true ); end;
     function THerd.getInitialSize(): integer; begin Result := _initialSize; end;
 
-    procedure THerd.setInitialStatus( val: TTransitionState ); begin _initialStatus := val; setUpdated( true ); end;
-    procedure THerd.setApparentStatus( val: TApparentStatus ); begin _apparentStatus := val; setUpdated( true ); end;
+    procedure THerd.setInitialStatus( val: TNAADSMDiseaseState ); begin _initialStatus := val; setUpdated( true ); end;
+    procedure THerd.setControlStatus( val: TControlStatus ); begin _controlStatus := val; setUpdated( true ); end;
 
-    function THerd.getInitialStatus(): TTransitionState; begin Result := _initialStatus; end;
-    function THerd.getSimulatedStatus(): TTransitionState; begin result := _simulatedStatus; end;
-    function THerd.getApparentStatus(): TApparentStatus; begin result := _apparentStatus; end;
+    function THerd.getInitialStatus(): TNAADSMDiseaseState; begin Result := _initialStatus; end;
+    function THerd.getDiseaseStatus(): TNAADSMDiseaseState; begin result := _diseaseStatus; end;
+    function THerd.getControlStatus(): TControlStatus; begin result := _controlStatus; end;
+    function THerd.getDetectionStatus(): TDetectionStatus; begin result := _detectionStatus; end;
+
+    procedure THerd.setDetectionStatus( const val: TDetectionStatus );
+      begin
+        if( val > self.detectionStatus ) then
+          begin
+            _detectionStatus := val;
+            setUpdated( true );
+          end
+        ;
+      end
+    ;
 
     procedure THerd.setDaysLeftInInitialState( val: integer ); begin _daysLeftInInitialState := val; setUpdated( true ); end;
     function THerd.getDaysLeftInInitialState(): integer; begin result := _daysLeftInInitialState; end;
+
+    procedure THerd.setDaysInInitialState( val: integer ); begin _daysInInitialState := val; setUpdated( true ); end;
+    function THerd.getDaysInInitialState(): integer; begin result := _daysInInitialState; end;
 
     procedure THerd.setZoneLevel( val: integer ); begin _zoneLevel := val; {DO NOT set updated flag!} end;
     function THerd.getZoneLevel(): integer; begin result := _zoneLevel; end;
@@ -1169,32 +1759,13 @@ implementation
 
     function THerd.getOutputUpdated(): boolean;
       begin
-        result :=
-             ( 0 <> _itInfections )
-          or ( 0 <> _itDetections )
-          or ( 0 <> _itDestructions )
-          or ( 0 <> _itVaccinations )
-          or ( _simulatedStatus <> _initialStatus )
-          or ( _apparentStatus <> asUnknown )
+        result := _ctrlActivities.updated
+          or ( _diseaseStatus <> _initialStatus )
+          or ( _controlStatus <> asNoControl )
+          or ( _detectionStatus <> dsNoStatus )
         ;
       end
     ;
-  //---------------------------------------------------------------------------
-
-
-
-  //---------------------------------------------------------------------------
-  // THerd: output properties
-  //---------------------------------------------------------------------------
-    procedure THerd.setCumVaccinations( val: integer ); begin _simVaccinations := val; end;
-    procedure THerd.setCumInfections( val: integer ); begin _simInfections := val; end;
-    procedure THerd.setCumDetections( val: integer ); begin _simDetections := val; end;
-    procedure THerd.setCumDestructions( val: integer ); begin _simDestructions := val; end;
-
-    function THerd.getCumVaccinations(): integer; begin result := _simVaccinations; end;
-    function THerd.getCumInfections(): integer; begin result := _simInfections; end;
-    function THerd.getCumDetections(): integer; begin result := _simDetections; end;
-    function THerd.getCumDestructions(): integer; begin result := _simDestructions; end;
   //---------------------------------------------------------------------------
 //*****************************************************************************
 
@@ -1211,6 +1782,9 @@ implementation
       begin
         inherited create( true );
         initialize();
+
+        // This is no projection system and nothing to project.
+        // So don't bother trying.
       end
     ;
 
@@ -1228,11 +1802,12 @@ implementation
         percentComplete: extended;
         percentCompleteInt: integer;
       begin
-        _smdb := db;
-
         dbcout( 'Starting to create herd list', DBHERDLIST );
         inherited create( true );
         initialize();
+
+        _smdb := db;
+        _sim := sim as TSMSimulationInput;
 
         // Create the basic herd list first
         //----------------------------------
@@ -1245,14 +1820,16 @@ implementation
             + ' dynHerd.latitude AS latitude,'
             + ' dynHerd.longitude AS longitude,'
             + ' dynHerd.initialStateCode AS initialStateCode,'
+            + ' dynHerd.daysInInitialState AS daysInInitialState,'
             + ' dynHerd.daysLeftInInitialState AS daysLeftInInitialState,'
             + ' dynHerd.initialSize AS initialSize,'
             + ' dynHerd.finalStateCode AS finalStateCode,'
-            + ' dynHerd.finalApparentStateCode AS finalApparentStateCode,'
-            + ' dynHerd.cumInfected AS cumInfected,'
-            + ' dynHerd.cumDetected AS cumDetected,'
-            + ' dynHerd.cumDestroyed AS cumDestroyed,'
-            + ' dynHerd.cumVaccinated AS cumVaccinated'
+            + ' dynHerd.finalControlStateCode AS finalControlStateCode,'
+            + ' dynHerd.finalDetectionStateCode AS finalDetectionStateCode,'
+            + ' dynHerd.cumulInfected AS cumulInfected,'
+            + ' dynHerd.cumulDetected AS cumulDetected,'
+            + ' dynHerd.cumulDestroyed AS cumulDestroyed,'
+            + ' dynHerd.cumulVaccinated AS cumulVaccinated'
           + ' FROM'
             + ' dynHerd'
           + ' LEFT JOIN'
@@ -1278,33 +1855,57 @@ implementation
             h.simParams := sim;
             h.initialSize := row.field('initialSize');
             h.id := row.field('herdID');
-            h.lat := row.field('latitude');
-            h.lon := row.field('longitude');
+            h.setLatLon( row.field('latitude'), row.field('longitude') );
 
-            h.initialStatus :=  transitionStateFromCode( row.field('initialStateCode') );
+            h.initialStatus :=  naadsmDiseaseStateFromCode( charAt( string( row.field('initialStateCode') ), 0 ) );
 
             if( null <> row.field( 'finalStateCode' ) ) then
-              h.setSimulatedStatus( transitionStateFromCode( row.field('finalStateCode' ) ), false )
+              h._diseaseStatus := naadsmDiseaseStateFromCode( charAt( string( row.field('finalStateCode' ) ), 0 ) )
             else
-              h.setSimulatedStatus( h.initialStatus, false )
+              {$IFDEF TORRINGTON}
+                h._diseaseStatus := NAADSMStateSusceptible
+              {$ELSE}
+                h._diseaseStatus := h.initialStatus
+              {$ENDIF}
             ;
 
-            if( null <> row.field('daysLeftInInitialState') ) then
-              h.daysLeftInInitialState := integer( row.field('daysLeftInInitialState') )
+            if( NAADSMStateSusceptible = h.initialStatus ) then
+              begin
+                h.daysInInitialState := -1;
+                h.daysLeftInInitialState := -1;
+              end
             else
-              h.daysLeftInInitialState := -1
+              begin
+                if( null <> row.field('daysInInitialState') ) then
+                  h.daysInInitialState := integer( row.field('daysInInitialState') )
+                else
+                  h.daysInInitialState := -1
+                ;
+
+                if( null <> row.field('daysLeftInInitialState') ) then
+                  h.daysLeftInInitialState := integer( row.field('daysLeftInInitialState') )
+                else
+                  h.daysLeftInInitialState := -1
+                ;
+              end
             ;
 
-            if( null <> row.field('finalApparentStateCode') ) then
-              h.apparentStatus := apparentStatusFromCode( charAt( row.field('finalApparentStateCode'), 0 ) )
+            if( null <> row.field('finalControlStateCode') ) then
+              h._controlStatus := controlStatusFromCode( charAt( row.field('finalControlStateCode'), 0 ) )
             else
-              h.apparentStatus := asUnknown
+              h._controlStatus := asNoControl
             ;
 
-            if( null <> row.field('cumInfected') ) then h.setCumInfections( row.field('cumInfected') );
-            if( null <> row.field('cumDetected') ) then h.setCumDetections( row.field('cumDetected') );
-            if( null <> row.field('cumDestroyed') ) then h.setCumDestructions( row.field('cumDestroyed') );
-            if( null <> row.field('cumVaccinated') ) then h.setCumVaccinations( row.field('cumVaccinated') );
+            if( null <> row.field('finalDetectionStateCode') ) then
+              h._detectionStatus := detectionStatusFromCode( charAt( row.field('finalDetectionStateCode'), 0 ) )
+            else
+              h._detectionStatus := dsNoStatus
+            ;
+
+            if( null <> row.field('cumulInfected') ) then h.ctrlActivities.cumulInfections := row.field('cumulInfected');
+            if( null <> row.field('cumulDetected') ) then h.ctrlActivities.cumulDetections := row.field('cumulDetected');
+            if( null <> row.field('cumulDestroyed') ) then h.ctrlActivities.cumulDestructions := row.field('cumulDestroyed');
+            if( null <> row.field('cumulVaccinated') ) then h.ctrlActivities.cumulVaccinations := row.field('cumulVaccinated');
 
             h.setUpdated( false );
 
@@ -1340,13 +1941,20 @@ implementation
         //-------------------------------------------
         setMinMaxLLFromDB();
 
+        // Project herd lat/lons
+        //----------------------
+        //  NOTE:  setProjection() calls project(), if the projection set was valid.
+        //         no valid reason to call it twice...
+        setProjection( defaultProjection( minLat, minLon, maxLat, maxLon ) );
+        //  project();
+
         // Clean up
         //----------
         res.Free();
 
         _updated := false;
 
-        dbcout( 'Herd list created from database updated: ' + boolToStr( updated ), DBHERDLIST );
+        dbcout( 'Herd list created from database updated: ' + usBoolToText( updated ), DBHERDLIST );
         dbcout( 'Done creating herd list', DBHERDLIST );
 
         (sim as TSMSimulationInput).ptList.recountUnits( self );
@@ -1359,9 +1967,35 @@ implementation
     constructor THerdList.create( const src: THerdList; const resetHerdsToInitalState: boolean = false );
       begin
         inherited create( true );
+        initialize();
+        
         assign( src, resetHerdsToInitalState );
 
+        // It isn't necessary to project herd locations here:
+        // x/y coordinates and the projection system are handled by
+        // assign() and by THerd's copy constructor.
+
         dbcout( 'Herd list created from previous list updated: ' + usBoolToText( updated ), DBHERDLIST );
+      end
+    ;
+
+
+    constructor THerdList.create(
+            const xmlFileName: string;
+            db: TSMDatabase;
+            sim: TObject;
+            errMsg: pstring = nil;
+            fnPrimaryProgress: TObjFnBool1Int = nil;
+            fnProgressMessage: TObjFnVoid1String = nil
+          );
+      begin
+        inherited create( true );
+        initialize();
+
+        _smdb := db;
+        _sim := sim as TSMSimulationInput;
+
+        importXml( xmlFileName, errMsg, fnPrimaryProgress, fnProgressMessage );
       end
     ;
 
@@ -1375,14 +2009,25 @@ implementation
         _westLon := LAT_LON_UNDEFINED;
         _eastLon := LAT_LON_UNDEFINED;
 
+        _minX := MaxDouble;
+        _maxX := MinDouble;
+        _minY := MaxDouble;
+        _maxY := MinDouble;
+
+        _proj := nil;
+        _projected := false;
+
         _updated := false;
         _removedCount := 0;
+        _sim := nil;
       end
     ;
 
 
     destructor THerdList.destroy();
       begin
+        freeAndNil( _proj );
+        
         inherited destroy();
       end
     ;
@@ -1394,6 +2039,12 @@ implementation
         srcIt: THerdListIterator;
       begin
         _smdb := src._smdb;
+
+        // NOTE:  Projection should happen after the herds have been reloaded into
+        //        the new list, not before...this code change handles and fixes
+        //        a seg-fault that will occurr if the src herdlist had no proj
+        //        set, as is always the case when a new herd list is imported via
+        //        the FormHerdListEditor....
 
         srcIt := THerdListIterator.create( src );
 
@@ -1415,14 +2066,213 @@ implementation
           end
         ;
 
-        _minLat := src._minLat;
-        _maxLat := src._maxLat;
-        _minLon := src._minLon;
-        _maxLon := src._maxLon;
 
+        if ( nil <> src._proj ) then
+          begin
+            _proj := TProj4.create( src._proj );
+            _minLat := src._minLat;
+            _maxLat := src._maxLat;
+            _minLon := src._minLon;
+            _maxLon := src._maxLon;
+
+            _minX := src._minX;
+            _maxX := src._maxX;
+            _minY := src._minY;
+            _maxY := src._maxY;
+          end
+        else
+          begin
+            //  NOTE: setProjection() calls project();
+            setProjection( defaultProjection( _minLat, _minLon, _maxLat, _maxLon ) );
+          end
+        ;
+        
         _updated := src._updated;
 
         srcIt.Free();
+      end
+    ;
+  //---------------------------------------------------------------------------
+
+
+
+  //---------------------------------------------------------------------------
+  // THerdList: Cartographic projection
+  //---------------------------------------------------------------------------
+    {*
+      Sets up the default system to be used for cartographic projection,
+      which is based on the coordinates of the included herds.
+
+      In the future, the user might be able to specify his own coordinate system:
+      see function setProjection().
+    }
+    class function THerdList.defaultProjection( const minLat, minLon, maxLat, maxLon: double ): string;
+      var
+        centerLon: double;
+        latRange: double;
+        sp1, sp2: double;
+        projStr: string;
+      begin
+        // The approach used here is identical to that used in
+        // the core library: see function default_projection() in main.c
+
+        centerLon := ( minLon + maxLon ) / 2.0;
+
+        // If the latitude range is very close to the equator or contains the
+        // equator, use a cylindrical equal area projection.  Otherwise, use
+        // the Albers equal area projection.
+        //
+        // (The Albers equal area conic projection becomes the cylindrical equal
+        // area when its parallels are at the equator.)
+        if
+          ( ( minLat > -1.0 ) and ( maxLat < 1.0 ) ) // "very close to the equator"
+        or
+          ( 0.0 > minLat * maxLat ) // One of the coordinates is negative, so the equator is included
+        then
+          begin
+            projStr := ''
+              + '+ellps=WGS84'
+              + ' +units=km'
+              + ' +lon_0=' + usFloatToStr( centerLon )
+              + ' +proj=cea'
+            ;
+          end
+        else // use Albers equal area projection
+          begin
+            latRange := maxLat - minLat;
+            sp1 := minLat + latRange / 6.0;
+            sp2 := maxLat - latRange / 6.0;
+
+            projStr := ''
+              + '+ellps=WGS84'
+              + ' +units=km'
+              + ' +lon_0=' + usFloatToStr( centerLon )
+              + ' +proj=aea'
+              + ' +lat_1=' + usFloatToStr( sp1 )
+              + ' +lat_2=' + usFloatToStr( sp2 )
+            ;
+          end
+        ;
+
+        result := projStr;
+      end
+    ;
+
+
+    {*
+      Sets the projection system for the herd list based on the specified string.
+      If the projection system is valid, then herd coordinates are optionally projected.
+      Otherwise, nothing is changed.
+
+      Some day, this function might be used to let users specify their own
+      projection systems.
+
+      @param projParams Proj4 library projection parameter name and value pairs delimited by '+' characters.
+      @param projectHerds if true the coordinates of each herd are projected.
+      The default value true preserves how this function worked before the option to only set projection parameters was added.
+      @return true on success
+    }
+    function THerdList.setProjection( const projParams: string; projectHerds: boolean = true ): boolean;
+      var
+        newProj: TProj4;
+      begin
+        newProj := TProj4.create( projParams );
+
+        if( newProj.isValid ) then
+          begin
+            if( nil <> _proj ) then
+              freeAndNil( _proj )
+            ;
+            _proj := newProj;
+
+            {The "if" is necessary to use this function for importing  both
+            geographic and projected coordinates. When the coordinates are
+            already projected we do not want to iterate through the herd list
+            now because the list still has to be built. In this case we just want to
+            initialize proj4 with the imported projection parameters so conversion
+            to lat lon can be done in the herd constructor. }
+            if projectHerds then project();
+
+            result := true;
+          end
+        else
+          begin
+            freeAndNil( newProj );
+            result := false;
+          end
+        ;
+      end
+    ;
+
+    function THerdList.reproject(): boolean;
+      begin
+        setProjection( defaultProjection( minLat, minLon, maxLat, maxLon ) );
+
+        result := project();
+      end
+    ;
+
+
+    {*
+      Projects all herd lat/lon coordinates to the specified projection system.
+
+      @return true if every herd's coordinates were successfully projected, false if any one of them failed
+    }
+    function THerdList.project(): boolean;
+      var
+        it: THerdListIterator;
+      begin
+        result := false;
+        
+        _minX := MaxDouble;
+        _maxX := MinDouble;
+        _minY := MaxDouble;
+        _maxY := MinDouble;
+
+        if( nil <> _proj ) then
+          begin
+            result := true;
+            it := THerdListIterator.create( self );
+
+            { Resetting to the projected value of the first herd so that finding
+              the max and mins and mapping will occur correctly in either hemisphere.
+            }
+            if ( nil <> it.current() ) then
+              begin
+                result := it.current().project();
+                _maxX := it.current()._x;
+                _maxY := it.current()._y;
+                _minX := it.current()._x;
+                _minY := it.current()._y;
+
+                it.incr();
+              end
+            ;
+
+            while( nil <> it.current() ) do
+              begin
+                // When the herd is projected, it also updates the list's min and max x,y values
+                if( false = it.current().project() ) then
+                  result := false
+                ;
+                it.incr();
+              end
+            ;
+
+            it.Free();
+          end
+        ;
+
+        _projected := result;
+
+        if( not result ) then
+          begin
+            _minX := MaxDouble;
+            _maxX := MinDouble;
+            _minY := MaxDouble;
+            _maxY := MinDouble;
+          end
+        ;
       end
     ;
   //---------------------------------------------------------------------------
@@ -1492,6 +2342,11 @@ implementation
       end
     ;
 
+    procedure THerdList.setSim( sim: TSMSimulationInput );
+      begin
+        _sim := sim;
+      end
+    ;
 
     function THerdList.getUpdated(): boolean;
       begin
@@ -1502,7 +2357,7 @@ implementation
 
     procedure THerdList.setUpdated( val: boolean );
       begin
-        //dbcout( 'Setting THerdList.updated to ' + boolToStr( val ) );
+        //dbcout( 'Setting THerdList.updated to ' + usBoolToText( val ) );
         _updated := val;
       end
     ;
@@ -1528,23 +2383,40 @@ implementation
     function THerdList.importFromFile(
           fileName: string;
           fileFormat: integer;
+          errMsg: pstring = nil;
           fnPrimaryProgress: TObjFnBool1Int = nil;
           fnSecondaryProgress: TObjFnBool1Int = nil;
           fnProgressMessage: TObjFnVoid1String = nil;
-          progressStepPercent: integer = 0
+          populateDB: boolean = true;
+          ids: TQIntegerVector = nil
         ): boolean;
       begin
+        // populateDB is only used by the XML file importer at this time.
+        
         case fileFormat of
           XML_FILE_FORMAT:
-            result := importXML( fileName )
+            begin
+              result := importXML(
+                fileName,
+                errMsg,
+                fnPrimaryProgress,
+                fnProgressMessage,
+                populateDB,
+                ids
+              );
+              if( nil <> @fnSecondaryProgress ) then
+                fnSecondaryProgress( 100 )
+              ;
+            end
           ;
           CSV_FILE_FORMAT:
             result := importCSV(
               fileName,
+              errMsg,
               fnPrimaryProgress,
               fnSecondaryProgress,
               fnProgressMessage,
-              progressStepPercent
+              ids
             )
           ;
 
@@ -1558,10 +2430,11 @@ implementation
 
     function THerdList.importCSV(
           fileName: string;
+          errMsg: pstring = nil;
           fnPrimaryProgress: TObjFnBool1Int = nil;
           fnSecondaryProgress: TObjFnBool1Int = nil;
           fnProgressMessage: TObjFnVoid1String = nil;
-          progressStepPercent: integer = 0
+          ids: TQIntegerVector = nil
         ): boolean;
       var
         h: THerd;
@@ -1570,21 +2443,39 @@ implementation
         i: integer;
         tmp: string;
 
+        idColNames: TQStringList;
+        ptColNames: TQStringList;
+        sizeColNames: TQStringList;
+        latColNames: TQStringList;
+        lonColNames: TQStringList;
+        stateColNames: TQStringList;
+        daysInStateColNames: TQStringList;
+        daysLeftColNames: TQStringList;
+
         total: integer;
 
         lastCompleteRow: integer;
+
+        success: boolean;
       begin
+        if( nil <> errMsg ) then
+          errMsg^ := ''
+        ;
+
         // First step: read and parse the file
         //-------------------------------------
         if( nil <> @fnProgressMessage ) then fnProgressMessage( 'Reading file contents...' );
 
-        csv := TCSVContents.createFromFile( fileName, true );
+        csv := TCSVContents.createFromFile( fileName, csvListSep(), true );
 
         if( not( csv.parseSuccess ) ) then
           begin
             if( nil <> @fnPrimaryProgress ) then fnPrimaryProgress( 100 );
             if( nil <> @fnSecondaryProgress ) then fnSecondaryProgress( 100 );
             csv.Free();
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'The file does not seem to be a CSV file, and cannot be parsed.' )
+            ;
             result := false;
             exit;
           end
@@ -1599,8 +2490,43 @@ implementation
         //-------------------------------
         if( nil <> @fnProgressMessage ) then fnProgressMessage( 'Checking file format...' );
 
-//        colDict := TIntegerDictionary.create();
         colDict := TQStringLongIntMap.create();
+
+        idColNames := TQStringList.create( 'id | herdid | ''id | herd id | unitid | unit id'
+          + ' | iddelhato | iddelaunidad | id de la unidad'
+          , '|'
+        );
+
+        ptColNames := TQStringList.create(
+          'productiontype | productiontypeid | production type | production type id'
+            + ' | tipodeproducción | tipo de producción | tipodeproduccion | tipo de produccion'
+          , '|'
+        );
+
+        sizeColNames := TQStringList.create(
+          'herdsize | initialsize | herd size | initial size | size | unitsize | unit size'
+            + ' | tamañodelhato | tamaño del hato | tamanodelhato | tamano del hato'
+          , '|'
+        );
+
+        latColNames := TQStringList.create( 'lat | latitude | latitud', '|' );
+
+        lonColNames := TQStringList.create( 'lon | longitude | long | longitud', '|' );
+
+        stateColNames := TQStringList.create( 'status | initialstatecode | estado', '|' );
+
+        // FIX ME: Double-check Spanish fo "initial state"
+        daysInStateColNames := TQStringList.create(
+          'daysinstate | daysinstatus | daysininitialstate | days in state | days in initial state | days in status | days in initial status'
+            + ' | díaseneseestado | días en ese estado | diaseneseestado | dias en ese estado'
+          , '|'
+        );
+
+        daysLeftColNames := TQStringList.create(
+          'daysleftininitialstate | days left in initial state | daysleftinstatus | days left in status | daysleftinstate | days left in state'
+            + ' | díasapermanacereneseestado | díasapermanacereneseestado | diasapermanacereneseestado | dias a permanacer en ese estado'
+          , '|'
+        );
 
         // FIX ME: this search could be a bit more robust
         // (e.g. don't allow duplicate column names)
@@ -1608,84 +2534,81 @@ implementation
           begin
             dbcout( csv.header(i), DBHERDLIST );
             tmp := fixup( csv.header(i) );
-            if
-              ( 'id' = tmp )
-            or
-              ( 'herdid' = tmp )
-            or
-              ( '''id' = tmp )
-            or
-              ( 'herd id' = tmp )
-            or
-              ( 'unitid' = tmp )
-            or
-              ( 'unit id' = tmp )
-            then
-              colDict['id'] := i
-            ;
 
-            if
-              ( 'productiontype' = tmp )
-            or
-              ( 'productiontypeid' = tmp )
-            or
-              ( 'production type' = tmp )
-            or
-              ( 'production type id' = tmp )
-            then
-              colDict['productionType'] := i
-            ;
-
-            if
-              ( 'herdsize' = tmp )
-            or
-              ( 'initialsize' = tmp )
-            or
-              ( 'herd size' = tmp )
-            or
-              ( 'initial size' = tmp )
-            or
-              ( 'size' = tmp )
-            or
-              ( 'unitsize' = tmp )
-            or
-              ( 'unit size' = tmp )
-            then
-              colDict['herdSize'] := i
-            ;
-
-            if( ( 'lat' = tmp ) or ( 'latitude' = tmp ) ) then colDict['lat'] := i;
-
-            if
-              ( 'lon' = tmp )
-            or
-              ( 'longitude' = tmp )
-            or
-              ( 'long' = tmp )
-            then
-              colDict['lon'] := i
-            ;
-
-            if( ( 'status' = tmp ) or ( 'initialstatecode' = tmp ) ) then colDict['status'] := i;
-            if( ( 'daysleftinstatus' = tmp ) or ( 'daysleftininitialstate' = tmp ) ) then colDict['daysLeftInStatus'] := i;
+            if( idColNames.contains( tmp ) ) then colDict['id'] := i;
+            if( ptColNames.contains( tmp ) ) then colDict['productionType'] := i;
+            if( sizeColNames.contains( tmp ) ) then colDict['herdSize'] := i;
+            if( latColNames.contains( tmp ) ) then colDict['lat'] := i;
+            if( lonColNames.contains( tmp ) ) then colDict['lon'] := i;
+            if( stateColNames.contains( tmp ) ) then colDict['status'] := i;
+            if( daysInStateColNames.contains( tmp ) ) then colDict['daysInState'] := i;
+            if( daysLeftColNames.contains( tmp ) ) then colDict['daysLeftInState'] := i;
           end
         ;
 
+        idColNames.Free();
+        ptColNames.Free();
+        sizeColNames.Free();
+        latColNames.Free();
+        lonColNames.Free();
+        stateColNames.Free();
+        daysInStateColNames.Free();
+        daysLeftColNames.Free();
+
         // Check that all required columns are present
-        // (daysLeftInStatus is optional)
-        if not(
-          colDict.HasKey('id')
-        and
-          colDict.HasKey('productionType')
-        and
-          colDict.HasKey('herdSize')
-        and
-          colDict.HasKey('lat')
-        and
-          colDict.HasKey('lon')
-        and
-          colDict.HasKey('status') )
-        then
+        // (daysLeftInState is optional)
+        success := true; // until shown otherwise.
+        
+        if( not( colDict.HasKey('id') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "unitID" is missing.' ) + endl
+            ;
+          end
+        ;
+        if( not( colDict.HasKey('productionType') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "productionType" is missing.' ) + endl
+            ;
+          end
+        ;
+        if( not( colDict.HasKey('herdSize') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "unitSize" is missing.' ) + endl
+            ;
+          end
+        ;
+        if( not( colDict.HasKey('lat') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "lat" is missing.' ) + endl
+            ;
+          end
+        ;
+        if( not( colDict.HasKey('lon') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "lon" is missing.' ) + endl
+            ;
+          end
+        ;
+        if( not( colDict.HasKey('status') ) ) then
+          begin
+            success := false;
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + tr( 'Column "status" is missing.' ) + endl
+            ;
+          end
+        ;
+
+        if( not( success ) ) then
           begin
             if( nil <> @fnPrimaryProgress ) then fnPrimaryProgress( 100 );
             if( nil <> @fnSecondaryProgress ) then fnSecondaryProgress( 100 );
@@ -1723,11 +2646,14 @@ implementation
                     if( 0 = ( i mod 100 ) ) then fnPrimaryProgress( round( ( i/total) * 99 ) );
                   end
                 ;
-                  
+
                 if( not( csv.rowIsEmpty( i ) ) ) then
                   begin
                     h := THerd.create( self );
                     h.id := myStrToInt( csv.value( colDict['id'], i ) );
+                    if( ( nil <> ids ) and ( -1 <> h.id ) ) then
+                      ids.append( h.id )
+                    ;
 
                     if( -1 = myStrToInt( csv.value( colDict['productionType'], i ), -1, false ) ) then
                       h.setProdTypeName( trim( csv.value( colDict['productionType'], i ) ) )
@@ -1737,19 +2663,33 @@ implementation
 
                     h.initialSize := myStrToInt( csv.value( colDict['herdSize'], i ) );
 
-                    h.lat := usStrToFloat( csv.value( colDict['lat'], i ) );
-                    h.lon := usStrToFloat( csv.value( colDict['lon'], i ) );
+                    h.setLatLon(
+                      csvStrToFloat( csv.value( colDict['lat'], i ) ),
+                      csvStrToFloat( csv.value( colDict['lon'], i ) )
+                    );
 
                     if( -1 = myStrToInt( csv.value( colDict['status'], i ), -1, false ) ) then
-                      h.initialStatus := transitionStateFromCode( trim( csv.value( colDict['status'], i ) ) )
+                      h.initialStatus := naadsmDiseaseStateFromCode( charAt( trim( csv.value( colDict['status'], i ) ), 0 ) )
                     else
-                      h.initialStatus := TTransitionState( myStrToInt( csv.value( colDict['status'], i ) ) )
+                      h.initialStatus := TNAADSMDiseaseState( myStrToInt( csv.value( colDict['status'], i ) ) )
                     ;
 
-                    if( colDict.HasKey('daysLeftInStatus') ) then
+                    if( colDict.HasKey('daysInState') ) then
                       begin
-                        if( '' <> csv.value( colDict['daysLeftInStatus'], i ) ) then
-                          h.daysLeftInInitialState := myStrtoInt( csv.value( colDict['daysLeftInStatus'], i ) )
+                        if( '' <> csv.value( colDict['daysInState'], i ) ) then
+                          h.daysInInitialState := myStrtoInt( csv.value( colDict['daysInState'], i ) )
+                        else
+                          h.daysInInitialState := -1
+                        ;
+                      end
+                    else
+                      h.daysInInitialState := -1
+                    ;
+
+                    if( colDict.HasKey('daysLeftInState') ) then
+                      begin
+                        if( '' <> csv.value( colDict['daysLeftInState'], i ) ) then
+                          h.daysLeftInInitialState := myStrtoInt( csv.value( colDict['daysLeftInState'], i ) )
                         else
                           h.daysLeftInInitialState := -1
                         ;
@@ -1770,7 +2710,10 @@ implementation
             dbcout( 'Rows were successfully processed', DBHERDLIST );
             result := true;
           except
-            dbcout( 'Exception occurred while processing rows, at or around row ' + intToStr( lastCompleteRow ), DBHERDLIST );
+            if( nil <> errMsg ) then
+              errMsg^ := errMsg^ + ansiReplaceStr( tr( 'An error occurred at or near row xyz.' ), 'xyz', intToStr( lastCompleteRow + 1 ) ) + endl
+            ;
+            dbcout( 'Exception occurred while processing rows, at or around row ' + intToStr( lastCompleteRow + 1 ), DBHERDLIST );
             if( nil <> @fnPrimaryProgress ) then fnPrimaryProgress( 100 );
             if( nil <> @fnSecondaryProgress ) then fnSecondaryProgress( 100 );
             result := false;
@@ -1784,21 +2727,234 @@ implementation
     ;
 
 
-    function THerdList.importXML( const herdFileName: string ): boolean;
+    function THerdList.importXML(
+          const herdFileName: string;
+          errMsg: pstring = nil;
+          fnPrimaryProgress: TObjFnBool1Int = nil;
+          fnProgressMessage: TObjFnVoid1String = nil;
+          populateDB: boolean = true;
+          ids: TQIntegerVector = nil
+        ): boolean;
       var
-        Converter: TXMLConvert;
-        ret_val: boolean;
+        sdew: TSdew;
+        root: pointer;
+        i, n: integer;
+        e: pointer;
+        h: THerd;
+        ptDict: TQStringObjectMap;
+        msg: string;
+        nSteps, nStepsCompleted: integer;
+        subElement: Pointer;
+        proj4Params: string;
+        doInverseProjection: boolean;
       begin
-        ret_val := false;
-
-        if ( length( herdFileName ) > 0 ) then
+        if( strIsEmpty( herdFileName ) ) then
           begin
-            Converter := TXMLConvert.create(herdFileName, '', nil );
-            ret_val := Converter.ReadHerdXML( self );
-            Converter.Destroy();
-          end;
+            result := false;
+            exit;
+          end
+        ;
 
-        result := ret_val;
+        result := true; // Until shown otherwise
+
+        sdew := TSdew.createFromFile( pAnsiChar( herdFileName ) );
+        root := sdew.GetRootTree();
+        n := sdew.GetElementCount( root );
+
+        // This can occur if the XML character encoding is incorrect or the XMLis not well formed
+        if 0 > n then
+          begin
+            appendToPString( errMsg, tr( 'The XML herd import file could not be parsed.' ) );
+            sdew.Free();
+            result := false;
+            exit;
+          end
+        ;
+        nSteps := ceil( n / 100 ) + 6;
+        nStepsCompleted := 0;
+
+        // Set up dictionary for production types
+        //---------------------------------------
+        // ptDict is used to quickly set the production type for each herd.
+        // It will go away when we're done with it.
+        if( nil <> @fnProgressMessage ) then
+          fnProgressMessage( tr( 'Checking production types...' ) )
+        ;
+
+        // If a XML parameter import was also to occur but failed then ptList is nil, causing access violation - how should this be handled?
+        ptDict := TQStringObjectMap.create();
+        for i := 0 to _sim.ptList.Count - 1 do
+          ptDict.insert( _sim.ptList.objects[i].productionTypeDescr, _sim.ptList.objects[i] )
+        ;
+
+
+        // Determine if herd coordinates are already projected and inverse to geographic if so
+        //------------------------------------------------------------------------------------
+        proj4Params := '';
+        doInverseProjection := false;
+        e := Sdew.GetElementByName( root, 'spatial_reference' );
+        if ( nil <> e ) then // the coordinates are not geographic
+          begin
+            subElement := Sdew.GetElementByName( e, 'PROJ4' ); // projection parameters
+            if ( subElement <> nil ) then 
+              begin
+                proj4Params := Sdew.GetElementContents( subElement );
+                // initialize _proj with imported projection parameters so herds (on create) can inverse project to lat lon
+                doInverseProjection := setProjection(proj4Params, false);
+                // the next setProjection call below re-initializes _proj for one of the default projections used by the model
+
+                if not doInverseProjection then
+                  begin
+                    result := false;
+                    appendToPString( errMsg, tr( 'Projection parameters in the herd import file are invalid so premises are not located properly.' ) ); 
+                  end
+                ;
+              end
+            ;
+          end
+        ;
+
+
+        // Read herds
+        //-----------
+        inc( nStepsCompleted );
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+        ;
+        if( nil <> @fnProgressMessage ) then
+          fnProgressMessage( tr( 'Reading units...' ) )
+        ;
+
+        for i := 0 to n - 1 do
+          begin
+            e := sdew.GetElementByIndex( root, i );
+            if( 'herd' = sdew.GetElementName( e ) ) then
+              begin
+                h := THerd.create( self, _sim, sdew, e, ptDict, @msg, doInverseProjection );
+
+                if( strIsEmpty( msg ) ) then
+                  begin
+                    self.append( h );
+                    if( ( nil <> ids ) and ( -1 <> h.id ) ) then
+                      ids.append( h.id )
+                    ;
+                  end
+                else
+                  begin
+                    h.Free();
+                    appendToPString( errMsg, msg );
+                    msg := '';   //otherwise initial error msg is printed for every herd
+                    result := false;
+                  end
+                ;
+
+                if( 0 = ( i mod 100 ) ) then
+                  begin
+                    inc( nStepsCompleted );
+                    if( nil <> @fnPrimaryProgress ) then
+                      fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+                    ;
+                  end
+                ;
+              end
+            ;
+          end
+        ;
+
+        (*
+          Note: populateDB controls whether to replace the contents of dynHerd
+          now or simply rebuild the herd list and whether to project herd
+          coordinates. populateDB is typically true when this function is called
+          from FormImport and some of the herd list constructors but false when
+          called from FormHerdListEditor. The default value of true preserves
+          what happened in the function before this input parameter was added.
+        *)
+
+        // Deal with database issues
+        //--------------------------
+        inc( nStepsCompleted );
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+        ;
+
+        if ( populateDB ) then
+          begin
+            if( nil <> @fnProgressMessage ) then
+              fnProgressMessage( tr( 'Populating scenario database...' ) )
+            ;
+            populateDatabase( _smdb );
+            setMinMaxLLFromDB();
+          end
+        else
+          begin
+            setMinMaxLL;
+          end
+        ;
+
+        // Project herd lat/lons
+        //----------------------
+        inc( nStepsCompleted );
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+        ;
+
+        if ( populateDB ) then
+          begin
+            if( nil <> @fnProgressMessage ) then
+              fnProgressMessage( tr( 'Performing geographic projection...' ) )
+            ;
+
+            //  NOTE:  setProjection() calls project(), if the projection set was valid.
+            //         no valid reason to call it twice...
+            setProjection( defaultProjection( minLat, minLon, maxLat, maxLon ) );
+          end
+        else
+          begin
+            // The projection parameters are set to defaults, but the herds are not projected
+            setProjection( defaultProjection( minLat, minLon, maxLat, maxLon ), false );
+          end
+        ;
+
+        // Count herds
+        //------------
+        inc( nStepsCompleted );
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+        ;
+        if( nil <> @fnProgressMessage ) then
+          fnProgressMessage( tr( 'Validating units...' ) )
+        ;
+        _sim.ptList.recountUnits( self );
+
+
+        // Initialize output records
+        //--------------------------
+        inc( nStepsCompleted );
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( trunc( 100 * nStepsCompleted / nSteps ) )
+        ;
+        if( nil <> @fnProgressMessage ) then
+          fnProgressMessage( tr( 'Initializing units...' ) )
+        ;
+
+        initializeAllOutputRecords();
+
+        // Clean up and go home
+        //---------------------
+        sdew.Free();
+        ptDict.Free();
+
+        _updated := false;
+
+        if( nil <> @fnPrimaryProgress ) then
+          fnPrimaryProgress( 100 )
+        ;
+        if( nil <> @fnProgressMessage ) then
+          fnProgressMessage( tr( 'Done!' ) )
+        ;
+
+        dbcout( 'Herd list created from database updated: ' + usBoolToText( updated ), DBHERDLIST );
+        dbcout( 'Done creating herd list', DBHERDLIST );
       end
     ;
   //---------------------------------------------------------------------------
@@ -1808,14 +2964,25 @@ implementation
   //---------------------------------------------------------------------------
   // THerdList: Text export
   //---------------------------------------------------------------------------
-  (*
-    function THerdList.ssXml(): string;
+    function THerdList.ssXml( const useProjection: boolean ): string;
       var
         h: THerd;
         it: THerdListIterator;
       begin
         result := '<?xml version="1.0" encoding="UTF-16" ?>' + endl;
-        result := result + '<herds>' + endl + endl;
+        result := result + '<herds' + endl;
+        result := result + '  xmlns:naadsm="http://www.naadsm.org/schema"' + endl;
+        result := result + '  xmlns:xsd="http://www.w3.org/2001/XMLSchema"' + endl;
+        result := result + '  xmlns:gml="http://www.opengis.net/gml"' + endl;
+        result := result + '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' + endl;
+
+        if( useProjection ) then
+          begin
+            result := result + '  <spatial_reference>' + endl;
+            result := result + '    <PROJ4>' + _proj.paramString + '</PROJ4>' + endl;
+            result := result + '  </spatial_reference>' + endl;
+          end
+        ;
 
         it := THerdListIterator.create( self );
 
@@ -1824,7 +2991,7 @@ implementation
             h := it.current();
 
             if( not( h.removeFromDatabase ) ) then
-              result := result + h.ssXml() + endl
+              result := result + h.ssXml( useProjection ) + endl
             ;
 
             it.incr();
@@ -1836,24 +3003,40 @@ implementation
         it.Free();
       end
     ;
-  *)
+
 
     {*
     WARNING: this function will attempt to overwrite an existing file without notice.
     FIX ME: no error checking is done.
     }
-    function THerdList.writeXMLFile( fileName: string; errMsg: PString = nil ): boolean;
+    function THerdList.writeXMLFile( fileName: string; const useProjection: boolean; errMsg: PString = nil ): boolean;
       var
         xmlFile: TextFile;
         h: THerd;
         it: THerdListIterator;
       begin
+        if( useProjection and not( isProjected ) ) then
+          raise exception.create( 'Projected coordinates requested when projection did not occur properly in THerdList.writeXMLFile()' )
+        ;
+
         try
           assignUnicode( xmlFile, fileName );
           rewrite( xmlFile );
 
-          writeln( xmlFile, '<?xml version="1.0" encoding="UTF-16" ?>' + endl );
-          writeln( xmlFile,'<herds>' + endl );
+          writeln( xmlFile, '<?xml version="1.0" encoding="UTF-16" ?>' );
+          writeln( xmlFile,'<herds' );
+          writeln( xmlFile,'  xmlns:naadsm="http://www.naadsm.org/schema"' );
+          writeln( xmlFile,'  xmlns:xsd="http://www.w3.org/2001/XMLSchema"' );
+          writeln( xmlFile,'  xmlns:gml="http://www.opengis.net/gml"' );
+          writeln( xmlFile,'  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' + endl );
+
+          if( useProjection ) then
+            begin
+              writeln( xmlFile, '  <spatial_reference>' );
+              writeln( xmlFile, '    <PROJ4>' + _proj.paramString + '</PROJ4>' );
+              writeln( xmlFile, '  </spatial_reference>' + endl );
+            end
+          ;
 
           it := THerdListIterator.create( self );
 
@@ -1862,7 +3045,7 @@ implementation
               h := it.current();
 
               if( not( h.removeFromDatabase ) ) then
-                writeln( xmlFile, h.ssXML() );
+                writeln( xmlFile, h.ssXML( useProjection ) );
               ;
 
               it.incr();
@@ -1884,28 +3067,59 @@ implementation
 
     function THerdList.writeCSVFile(
           fileName: string;
-          writeProdTypeName: boolean;
-          writeInitialStateChar: boolean;
+          const writeProdTypeName: boolean;
+          const writeInitialStateChar: boolean;
+          const useProjection: boolean;
           errMsg: PString = nil
         ): boolean;
       var
         csvFile: TextFile;
         h: THerd;
-        sep: string;
+        header: string;
       begin
-        sep := ',';
+        if( useProjection and not( isProjected ) ) then
+          raise exception.create( 'Projected coordinates requested when projection did not occur properly in THerdList.writeCSVFile()' )
+        ;
 
         try
           assignFile( csvFile, fileName );
           rewrite( csvFile );
 
-          writeln( csvFile, 'UnitID' + sep + 'ProductionType' + sep + 'UnitSize' + sep + 'Lat' + sep + 'Lon' + sep + 'Status' + sep + 'DaysLeftInStatus' );
+          if( useProjection ) then
+            begin
+              header := ''
+                + 'UnitID' + csvListSep
+                + 'ProductionType' + csvListSep
+                + 'UnitSize' + csvListSep
+                + 'x' + csvListSep
+                + 'y' + csvListSep
+                + 'Status' + csvListSep
+                + 'DaysInState' + csvListSep
+                + 'DaysLeftInState'
+              ;
+            end
+          else
+            begin
+              header := ''
+                + 'UnitID' + csvListSep
+                + 'ProductionType' + csvListSep
+                + 'UnitSize' + csvListSep
+                + 'Lat' + csvListSep
+                + 'Lon' + csvListSep
+                + 'Status' + csvListSep
+                + 'DaysInState' + csvListSep
+                + 'DaysLeftInState'
+              ;
+            end
+          ;
+
+          writeln( csvFile, header );
 
           h := self.first();
           while( nil <> h ) do
             begin
               if( not( h.removeFromDatabase ) ) then
-                writeln( csvFile, h.csvText( sep, writeProdTypeName, writeInitialStateChar ) )
+                writeln( csvFile, h.csvText( writeProdTypeName, writeInitialStateChar, useProjection ) )
               ;
               h := self.next();
             end
@@ -1926,28 +3140,29 @@ implementation
   //---------------------------------------------------------------------------
   // THerdList: Database population
   //---------------------------------------------------------------------------
-    procedure THerdList.populateDatabase( db: TSMDatabase; fnProgress: TObjFnBool1Int = nil );
+    function THerdList.populateDatabase( db: TSMDatabase; fnProgress: TObjFnBool1Int = nil; errMsg: pstring = nil ): boolean;
       var
         h: THerd;
-        q: string;
         ptErrors: TCStringList;
-//        ptIDs: TIntegerDictionary;
         ptIDs: TQStringLongIntMap;
         res: TSqlResult;
         row: TSqlRow;
         db2: TSqlDatabase;
         success, failure: integer;
         ptID: string;
-
+        str: string;
         taskTotal: integer;
         taskCounter: integer;
 
         vDict: TQStringVariantMap;
 
         idCounter: integer;
+
+        mergeSuccess: boolean;
       begin
+        result := false; // Until shown otherwise.
+
         vDict := TQStringVariantMap.Create();
-//        ptIDs := TIntegerDictionary.Create();
         ptIDs := TQStringLongIntMap.create();
         ptErrors := TCStringList.create();
         db2 := db as TSqlDatabase;
@@ -1971,7 +3186,7 @@ implementation
         res.Free();
 
         // We iterate over the list 4(!) times in this function, but only 3 take any time.
-        taskTotal := self.Count * 3;
+        taskTotal := self.Count * 4;
         taskCounter := 0;
 
         // Iterate over the list removing any items that should be removed.
@@ -2030,7 +3245,8 @@ implementation
                     db.quickUpdate( h.id, 'productionTypeID', h.prodType.productionTypeID );
                     db.quickUpdate( 'latitude', h.lat );
                     db.quickUpdate( 'longitude', h.lon );
-                    db.quickUpdate( 'initialStateCode', transitionStateCode( h.initialStatus ) );
+                    db.quickUpdate( 'initialStateCode', naadsmDiseaseStateCode( h.initialStatus ) );
+                    db.quickUpdate( 'daysInInitialState', h.daysInInitialState );
                     db.quickUpdate( 'daysLeftInInitialState', h.daysLeftInInitialState );
                     db.quickUpdate( 'initialSize', h.initialSize );
 
@@ -2058,15 +3274,27 @@ implementation
 
         db.endQuickUpdate();
 
-        // FIX ME: add the 4th progress check here.
+
+        // Iterate over the list to determine the last herd ID number in use
+        //------------------------------------------------------------------
         idCounter := db.lastHerdID();
         if( 0 = idCounter ) then
           begin
             h := self.first();
             while( nil <> h ) do
               begin
-                if( h.id > idCounter ) then idCounter := h.id;
+                Application.ProcessMessages();
+                inc( taskCounter );
+
+                if( h.id > idCounter ) then
+                  idCounter := h.id
+                ;
+
                 h := self.next();
+
+                if( 0 = ( taskCounter mod 25 ) ) then
+                  if( nil <> @fnProgress ) then fnProgress( (100*taskCounter) div taskTotal )
+                ;
               end
             ;
           end
@@ -2108,13 +3336,13 @@ implementation
                     vdict['productionTypeID'] := ptID;
                     vdict['latitude'] := h.lat;
                     vdict['longitude'] := h.lon;
-                    vdict['initialStateCode'] := transitionStateCode( h.initialStatus );
+                    vdict['initialStateCode'] := naadsmDiseaseStateCode( h.initialStatus );
                     vdict['initialSize'] := h.initialSize;
 
-                    h.setID( (strToInt( db.quickInsert( vDict, 'herdID' ) ) ) );
+                    h.setID( db.quickInsert( vDict, 'herdID' ) );
                     h.isInDatabase := true;
                     h.setUpdated( false );
-                      
+
                     inc( success );
                   end
                 else
@@ -2137,24 +3365,52 @@ implementation
 
         db.endQuickInsert();
 
-        db.mergeHerdTables();
+        mergeSuccess := db.mergeHerdTables();
 
 
         // Alert the user to any failures.
         //--------------------------------
-        if( failure > 0 ) then
+        if( not( mergeSuccess ) ) then
           begin
-            q := intToStr( failure ) + ' herd records out of ' + intToStr( failure + success ) + ' could not be imported.';
+            // result is false from aboce
+            if( nil <> errMsg ) then
+              errMsg^ := tr( 'Problems were encountered during import of this herd list.  Please check your file format, and verify that your scenario contains all desired units.' )
+            ;
+          end
+        else if( failure > 0 ) then
+          begin
+            // result is false from above
+
+            if( nil <> errMsg ) then
+              begin
+                errMsg^ := tr( 'Problems were encountered during import of this herd list.  Please check your file format, and verify that your scenario contains all desired units.' );
+                str := tr( 'xyz unit records of out zyx could not be imported.' );
+                str := ansiReplaceStr( str, 'xyz', intToStr( failure ) );
+                str := ansiReplaceStr( str, 'zyx', intToStr( failure + success ) );
+                errMsg^ := errMsg^ + endl + endl + str;
+              end
+            ;
 
             if( ptErrors.Count > 0 ) then
-              q  := q + endl
-              + 'The following production types are not present in the scenario file:'
-              + endl
-              + ptErrors.Text
+              begin
+                if( nil <> errMsg ) then
+                  begin
+                    errMsg^ := errMsg^ + endl + endl
+                    + tr( 'The following production types are not present in the scenario file:' )
+                    + endl
+                    + ptErrors.Text
+                  end
+                ;
+              end
             ;
           end
         else
-          q := intToStr( success ) + ' herd records successfully imported.';
+          begin
+            result := true;
+            if( nil <> errMsg ) then
+              errMsg^ := ansiReplaceStr( tr( 'xyz unit records were successfully imported.' ), 'xyz', intToStr( success ) )
+            ;
+          end
         ;
 
         _updated := false;
@@ -2193,7 +3449,7 @@ implementation
             while( h <> nil ) do
               begin
                 if( not( h.isValid( err ) ) ) then result := false;
-                if( h.initialStatus in [tsLatent, tsSubClinical, tsClinical] ) then diseaseFound := true;
+                if( h.initialStatus in [NAADSMStateLatent, NAADSMStateSubclinical, NAADSMStateClinical] ) then diseaseFound := true;
                 h := self.next();
               end
             ;
@@ -2218,6 +3474,13 @@ implementation
       begin
         dbcout( '=========BEGIN HERDS: ' + intToStr( self.Count ) + endl, true );
 
+        dbcout( 'isProjected: ' + usBoolToText( isProjected ), true );
+        dbcout( 'Northwest LL: (' + usFloatToStr( maxLat ) + ', ' + usFloatToStr( minLon ) + ')', true );
+        dbcout( 'Southeast LL: (' + usFloatToStr( minLat ) + ', ' + usFloatToStr( maxLon ) + ')', true );
+        dbcout( 'Upper left XY : (' + usFloatToStr( minX ) + ', ' + usFloatToStr( maxY ) + ')', true );
+        dbcout( 'Lower right XY: (' + usFloatToStr( maxX ) + ', ' + usFloatToStr( minY ) + ')', true );
+        dbcout( endl, true );
+        
         h := self.first();
 
         while( h <> nil ) do
@@ -2228,6 +3491,44 @@ implementation
         ;
 
         dbcout( '=========END HERDS', true );
+      end
+    ;
+
+
+    {*
+      Used to double-check that inverse cartographic projection is OK.
+
+      There is nothing in the GUI that uses inverse projection, but there
+      are some places in the core library where it is required for output
+      processing.
+
+      Right now, this function is just used to generate a list for inspection.
+      If necessary, it could be made more robust some day, so that the user
+      could ensure that the projection system in use won't cause any problems.
+    }
+    procedure THerdList.invProjectDebug();
+      var
+        it: THerdListIterator;
+        llr: RLatLon;
+        h: THerd;
+      begin
+        it := THerdListIterator.create( self );
+
+        while( nil <> it.current() ) do
+          begin
+            h := it.current();
+
+            llr := _proj.pjInv( h.x, h.y );
+
+            dbcout( 'Orig: ' + usFloatToStr( h.lat ) + ', ' + usFloatToStr( h.lon ), true );
+            dbcout( 'invP: ' + usFloatToStr( llr.lat ) + ', ' + usFloatToStr( llr.lon ), true );
+            dbcout( endl, true );
+            
+            it.incr();
+          end
+        ;
+
+        it.Free();
       end
     ;
   //---------------------------------------------------------------------------
@@ -2291,24 +3592,6 @@ implementation
     ;
 
 
-    (*
-    // FIX ME: use a list iterator here, as soon as there is one...
-    procedure THerdList.processDailyRecords();
-      var
-        h: THerd;
-      begin
-        h := self.first();
-        while( nil <> h ) do
-          begin
-            h.setDailyOutput();
-            h := self.next();
-          end
-        ;
-      end
-    ;
-    *)
-
-
     procedure THerdList.processIterationRecords( db: TSMDatabase; iterationJustCompleted: integer );
       var
         h: THerd;
@@ -2328,12 +3611,14 @@ implementation
 
             if( h.outputUpdated ) then
               begin
-                _smdb.quickUpdate( h.id, 'finalStateCode', transitionStateCode( h.simulatedStatus ) );
-                _smdb.quickUpdate( 'finalApparentStateCode', apparentStatusCode( h.apparentStatus ) );
-                _smdb.quickUpdate( 'cumInfected', h.cumInfections );
-                _smdb.quickUpdate( 'cumDetected', h.cumDetections );
-                _smdb.quickUpdate( 'cumDestroyed', h.cumDestructions );
-                _smdb.quickUpdate( 'cumVaccinated', h.cumVaccinations );
+                _smdb.quickUpdate( h.id, 'finalStateCode', naadsmDiseaseStateCode( h.diseaseStatus ) );
+                _smdb.quickUpdate( 'finalControlStateCode', controlStatusCode( h.controlStatus ) );
+                _smdb.quickUpdate( 'finalDetectionStateCode', detectionStatusCode( h.detectionStatus ) );
+                
+                _smdb.quickUpdate( 'cumulInfected', h.ctrlActivities.cumulInfections );
+                _smdb.quickUpdate( 'cumulDetected', h.ctrlActivities.cumulDetections );
+                _smdb.quickUpdate( 'cumulDestroyed', h.ctrlActivities.cumulDestructions );
+                _smdb.quickUpdate( 'cumulVaccinated', h.ctrlActivities.cumulVaccinations );
               end
             ;
 
@@ -2389,42 +3674,9 @@ implementation
         if( null <> row.field('minLon') ) then _minLon := row.field('minLon');
 
         res.Free();
-      end
-    ;
 
-
-    function THerdList.getMinLat(): double;
-      begin
-        if( LAT_LON_UNDEFINED = _minLat ) then setMinMaxLL();
-        assert( LAT_LON_UNDEFINED <> _minLat );
-        result := _minLat;
-      end
-    ;
-
-
-    function THerdList.getMaxLat(): double;
-      begin
-        if( LAT_LON_UNDEFINED = _maxLat ) then setMinMaxLL();
-        assert( LAT_LON_UNDEFINED <> _maxLat );
-        result := _maxLat;
-      end
-    ;
-
-
-    function THerdList.getMinLon(): double;
-      begin
-        if( LAT_LON_UNDEFINED = _minLon ) then setMinMaxLL();
-        assert( LAT_LON_UNDEFINED <> _minLon );
-        result := _minLon;
-      end
-    ;
-
-
-    function THerdList.getMaxLon(): double;
-      begin
-        if( LAT_LON_UNDEFINED = _maxLon ) then setMinMaxLL();
-        assert( LAT_LON_UNDEFINED <> _maxLon );
-        result := _maxLon;
+        setEastAndWest();
+        setMinMaxXY();
       end
     ;
 
@@ -2433,11 +3685,6 @@ implementation
       var
         h: THerd;
         it: THerdListIterator;
-
-        adjMinLon, adjMaxLon: double;
-        presLonW, presLonE: double;
-
-        testLon, testLat: double;
       begin
         dbcout( '*** THerdList.setMinMaxLL!', DBHERDLIST );
 
@@ -2470,14 +3717,20 @@ implementation
                 _minLat := LAT_LON_UNDEFINED;
                 _minLon := LAT_LON_UNDEFINED;
 
+                _maxX := MinDouble;
+                _maxY := MinDouble;
+
+                _minX := MaxDouble;
+                _minY := MaxDouble;
+
                 while( nil <> it.current() ) do
                   begin
                     h := it.current();
 
-                    if( h.lat > _maxLat ) then _maxLat := h.lat;
-                    if( h.lat < _minLat ) then _minLat := h.lat;
-                    if( h.lon > _maxLon ) then _maxLon := h.lon;
-                    if( h.lon < _minLon ) then _minLon := h.lon;
+                    _maxLat := max( _maxLat, h.lat );
+                    _minlat := min( _minLat, h.lat );
+                    _maxLon := max( _maxLon, h.lon );
+                    _minLon := min( _minLon, h.lon );
 
                     it.incr();
                   end
@@ -2492,8 +3745,26 @@ implementation
           end
         ;
 
-        // Next, try to figure out which lon is "east" and which is "west"
-        //-----------------------------------------------------------------
+        it.Free();
+
+        setEastAndWest();
+        setMinMaxXY();
+      end
+    ;
+
+
+    procedure THerdList.setEastAndWest();
+      var
+        h: THerd;
+        it: THerdListIterator;
+
+        adjMinLon, adjMaxLon: double;
+        presLonW, presLonE: double;
+
+        testLon, testLat: double;
+      begin
+        // Try to figure out which lon is "east" and which is "west"
+        //-----------------------------------------------------------
 
         // Start by making an educated guess about the presumptive west and east lons.
 
@@ -2549,7 +3820,8 @@ implementation
         testLon := presLonW;
 
         // Find a suitable test point...
-        it.toFirst();
+        it := THerdListIterator.create( self );
+        
         while( nil <> it.current() ) do
           begin
             h := it.current();
@@ -2594,6 +3866,79 @@ implementation
     ;
 
 
+
+    procedure THerdList.setMinMaxXY();
+      var
+        xyr: RPoint;
+
+        procedure setMinsAndMaxes();
+          begin
+            _minX := min( _minX, xyr.x );
+            _maxX := max( _maxX, xyr.x );
+            _minY := min( _minY, xyr.y );
+            _maxY := max( _maxY, xyr.y );
+          end
+        ;
+      begin
+        _minX := MaxDouble;
+        _minY := MaxDouble;
+        _maxX := MinDouble;
+        _maxY := MinDouble;
+
+        if( nil <> _proj ) then
+          begin
+            // Project all four combinations of min and max lat and lon,
+            // and set min and max x and y accordingly.
+            xyr := _proj.pjFwd( minLon, minLat );
+            setMinsAndMaxes();
+            xyr := _proj.pjFwd( maxLon, minLat );
+            setMinsAndMaxes();
+            xyr := _proj.pjFwd( minLon, maxLat );
+            setMinsAndMaxes();
+            xyr := _proj.pjFwd( maxLon, maxLat );
+            setMinsAndMaxes();
+          end
+        ;
+      end
+    ;
+
+
+    function THerdList.getMinLat(): double;
+      begin
+        if( LAT_LON_UNDEFINED = _minLat ) then setMinMaxLL();
+        assert( LAT_LON_UNDEFINED <> _minLat );
+        result := _minLat;
+      end
+    ;
+
+
+    function THerdList.getMaxLat(): double;
+      begin
+        if( LAT_LON_UNDEFINED = _maxLat ) then setMinMaxLL();
+        assert( LAT_LON_UNDEFINED <> _maxLat );
+        result := _maxLat;
+      end
+    ;
+
+
+    function THerdList.getMinLon(): double;
+      begin
+        if( LAT_LON_UNDEFINED = _minLon ) then setMinMaxLL();
+        assert( LAT_LON_UNDEFINED <> _minLon );
+        result := _minLon;
+      end
+    ;
+
+
+    function THerdList.getMaxLon(): double;
+      begin
+        if( LAT_LON_UNDEFINED = _maxLon ) then setMinMaxLL();
+        assert( LAT_LON_UNDEFINED <> _maxLon );
+        result := _maxLon;
+      end
+    ;
+
+
     function THerdList.getEastLon(): double;
       begin
         if( LAT_LON_UNDEFINED = _eastLon ) then setMinMaxLL();
@@ -2608,6 +3953,42 @@ implementation
         if( LAT_LON_UNDEFINED = _westLon ) then setMinMaxLL();
         assert( LAT_LON_UNDEFINED <> _westLon );
         result := _westLon;
+      end
+    ;
+
+
+    function THerdList.getMinX(): double;
+      begin
+        if( MaxDouble = _minX ) then setMinMaxXY();
+        assert( MaxDouble <> _minX );
+        result := _minX;
+      end
+    ;
+
+
+    function THerdList.getMaxX(): double;
+      begin
+        if( MinDouble = _maxX ) then setMinMaxXY();
+        assert( MinDouble <> _maxX );
+        result := _maxX;
+      end
+    ;
+
+
+    function THerdList.getMinY(): double;
+      begin
+        if( MaxDouble = _minY ) then setMinMaxXY();
+        assert( MaxDouble <> _minY );
+        result := _minY;
+      end
+    ;
+
+
+    function THerdList.getMaxY(): double;
+      begin
+        if( MinDouble = _maxY ) then setMinMaxXY();
+        assert( MinDouble <> _maxY );
+        result := _maxY;
       end
     ;
   //---------------------------------------------------------------------------
@@ -2628,12 +4009,23 @@ implementation
       begin
         result := inherited Add( dm );
 
-        if( dm.lat > maxLat ) then _maxLat := dm.lat;
-        if( dm.lat < minLat ) then _minLat := dm.lat;
+        if ( count <= 1 ) then //  This is one more than you might assume because the above inherited call causes the count to update...
+          begin
+            _maxLat := dm.lat;
+            _minLat := dm.lat;
+            _maxLon := dm.lon;
+            _minLon := dm.lon;
+          end
+        else
+          begin
+            if( dm.lat > maxLat ) then _maxLat := dm.lat;
+            if( dm.lat < minLat ) then _minLat := dm.lat;
 
-        if( dm.lon > maxLon ) then _maxLon := dm.lon;
-        if( dm.lon < minLon ) then _minLon := dm.lon;
-
+            if( dm.lon > maxLon ) then _maxLon := dm.lon;
+            if( dm.lon < minLon ) then _minLon := dm.lon;
+          end
+        ;
+        
         _westLon := LAT_LON_UNDEFINED;
         _eastLon := LAT_LON_UNDEFINED;
       end

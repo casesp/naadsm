@@ -4,13 +4,13 @@ unit StatusEnums;
 StatusEnums.pas
 ----------------
 Begin: 2005/06/20
-Last revision: $Date: 2008/04/18 20:35:19 $ $Author: areeves $
-Version number: $Revision: 1.24 $
+Last revision: $Date: 2011-08-23 21:40:54 $ $Author: areeves $
+Version number: $Revision: 1.35.2.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -21,137 +21,99 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-  const
-    EVT_TRANSITION_STATE_CHANGE = 'R';
-    EVT_TRACED_DIRECT = 'T';
-    EVT_TRACED_INDIRECT = 'I';
-    EVT_DESTROYED = 'D';
-    EVT_VACCINATED = 'V';
-    EVT_INFECTED = 'F';
-    EVT_DETECTED = 'E';
-    EVT_ZONE_FOCUS = 'Z';
-    EVT_ZONE_CHANGED = 'C';
+  uses
+    Graphics,
 
-	{*
-  	Mostly compatible with SHARCSpread HRD_status_t
-  }
-  type TTransitionState = (
-  	tsSusceptible = 0,
-    tsLatent = 1,
-    tsSubClinical = 2,
-    tsClinical = 3,
-    tsNaturalImmune = 4,
-    tsVaccineImmune = 5,
-    tsDestroyed = 6,
-    tsDummy = 254,
-    tsUnspecified = 255  // Not in HRD_status_t
+    NAADSMLibraryTypes
+  ;
+
+  type TColorArray = array of TColor;
+
+  type TControlStatus = (
+  	asUnspecified,
+    asNoControl,          // 'U'
+    asDetected,           // 'E'
+    asTracedDirectFwd,    // 'T'
+    asTracedIndirectFwd,  // 'I'
+    asTracedDirectBack,   // 'K'
+    asTracedIndirectBack, // 'J'
+    asVaccinated,         // 'V'
+    asDestroyed,          // 'D'
+    asInDestructionQueue  // 'Q'
   );
 
 
-  type TApparentStatus = (
-  	asUnspecified = 0,
-    asUnknown = ord('U'), // Note that 'unknown' has a different meaning than 'unspecified'
-    asDetected = ord('E'),
-    asTracedDirect = ord('T'),
-    asTracedIndirect = ord('I'),
-    asVaccinated = ord('V'),
-    asDestroyed = ord('D')
+  // Order matters for this type!
+  type TDetectionStatus = (
+    dsUnspecified,
+    dsNoStatus,               // 'U': not infected, with no detection activity
+    dsInfectedUndetected,     // 'I': Undetected latent, subclinical, or clinical units
+    dsExamined,               // 'M': Units (possibly but not necessarily infected) subjected to a herd exam, but not (yet) detected.
+    dsTestTrueNeg,            // 'N'
+    dsTestFalseNeg,           // 'O'
+    dsTestFalsePos,           // 'Q'
+    dsTestTruePos,            // 'P':
+    dsDetectedClinical,       // 'E': Units detected on the basis of clinical signs (including by herd exam).  In NAADSM 3.x, these are always true positives.
+    dsDestroyed,               // 'D'
+    dsDetectedDeadFromDisease // 'X'
   );
 
 
-  function apparentStatusFromCode( statusCode: char ): TApparentStatus;
-  function transitionStateFromCode( statusCode: string ): TTransitionState;
-  function transitionStateFromString( statusStr: string ): TTransitionState;
+  type TEventStatus = (
+    esUnspecified,
+    esFirstDetection,     // 'E'
+    esFirstDestruction,   // 'D'
+    esFirstVaccination,   // 'V'
+    esOutbreakOver        // 'O'
+  );
 
-  function transitionStateCode( status: TTransitionState ): string;
-  function apparentStatusCode( status: TApparentStatus ): char;
-  function xmlTransitionStateString( status: TTransitionState ): string;
-  function transitionStateString( status: TTransitionState ): string;
-  function apparentStatusString( status: TApparentStatus ): string;
+  
+  function controlStatusFromCode( statusCode: char ): TControlStatus;
+  function controlStatusCode( status: TControlStatus ): char;
+  function controlStatusString( status: TControlStatus ): string;
+  function controlStatusColor( s: TControlStatus ): TColor;
+
+  function detectionStatusFromCode( code: char ): TDetectionStatus;
+  function detectionStatusCode( status: TDetectionStatus ): char;
+  function detectionStatusString( status: TDetectionStatus ): string;
+  function detectionStatusColor( s: TDetectionStatus ): TColor;
+
+  function eventStatusFromCode( eventCode: char ): TEventStatus;
+  function eventStatusCode( status: TEventStatus ): char;
+  function eventStatusString( status: TEventStatus ): string;
+  function eventStatusColor( s: TEventStatus ): TColor;
+
+  function zoneColor( const zoneLevel: integer ): TColor;
 
 implementation
 
 	uses
   	SysUtils,
     MyStrUtils,
-    USStrUtils,
     I88n
   ;
 
-  // WARNING: statusCode must already be trimmed and upper case.
-  // (This will save multiple thousands of function calls.)
-  function transitionStateFromCode( statusCode: string ): TTransitionState;
-  	begin
-    	if( 'S' = statusCode ) then result := tsSusceptible
-      else if( 'L' = statusCode ) then result := tsLatent
-      else if( 'B' = statusCode ) then result := tsSubclinical
-      else if( 'C' = statusCode ) then result := tsClinical
-      else if( 'N' = statusCode ) then result := tsNaturalImmune
-      else if( 'V' = statusCode ) then result := tsVaccineImmune
-      else if( 'D' = statusCode ) then result := tsDestroyed
-      else
-        begin
-          raise exception.Create( 'Unrecognized statusCode (' + statusCode + ') in transitionStateFromCode' );
-      	  result := tsUnspecified;
-        end
-      ;
-    end
-  ;
+  var
+    _perimeterColors: TColorArray;
 
-
-  function transitionStateFromString( statusStr: string ): TTransitionState;
-  	begin
-      statusStr := fixup( statusStr );
-
-      // These are the "preferred" strings, because they're guaranteed to be translated:
-    	if( ansiLowerCase( tr( 'Susceptible' ) ) = statusStr ) then result := tsSusceptible
-      else if( ansiLowerCase( tr( 'Latent' )  ) = statusStr ) then result := tsLatent
-      else if( ansiLowerCase( tr( 'Subclinical' ) ) = statusStr ) then result := tsSubclinical
-      else if( ansiLowerCase( tr( 'Clinical' ) ) = statusStr ) then result := tsClinical
-      else if( ansiLowerCase( tr( 'Natural immune' ) ) = statusStr ) then result := tsNaturalImmune
-      else if( ansiLowerCase( tr( 'Vaccine immune' ) ) = statusStr ) then result := tsVaccineImmune
-      else if( ansiLowerCase( tr( 'Destroyed' ) ) = statusStr ) then result := tsDestroyed
-
-      // These strings are occasionally used in the interface:
-      else if( ansiLowerCase( tr( 'Naturally immune' ) ) = statusStr ) then result := tsNaturalImmune
-      else if( ansiLowerCase( tr( 'Nat Immune' ) ) = statusStr ) then result := tsNaturalImmune
-      else if( ansiLowerCase( tr( 'Vac Immune' ) ) = statusStr ) then result := tsVaccineImmune
-
-      // These strings are "preferred" for NAADSM XML, and will always be in English:
-    	else if( 'susceptible' = statusStr ) then result := tsSusceptible
-      else if( 'latent' = statusStr ) then result := tsLatent
-      else if( 'subclinical' = statusStr ) then result := tsSubclinical
-      else if( 'clinical' = statusStr ) then result := tsClinical
-      else if( 'natural immune' = statusStr ) then result := tsNaturalImmune
-      else if( 'vaccine immune' = statusStr ) then result := tsVaccineImmune
-      else if( 'destroyed' = statusStr ) then result := tsDestroyed
-
-      // These strings may also appear in NAADSM XML:
-      else if( 'incubating' = statusStr ) then result := tsLatent
-      else if( 'infectious subclinical' = statusStr ) then result := tsSubClinical
-      else if( 'infectioussubclinical' = statusStr ) then result := tsSubClinical
-      else if( 'naturally immune' = statusStr ) then result := tsNaturalImmune
-      else if( 'naturally immune' = statusStr ) then result := tsNaturalImmune
-      else if( 'vaccineimmune' = statusStr ) then result := tsVaccineImmune
-      else
-        begin
-          raise exception.Create( 'Unrecognized statusStr (' + statusStr + ') in transitionStateFromString' );
-      	  result := tsUnspecified;
-        end
-      ;
-    end
-  ;
-
-  
-  // WARNING: statusCode must already be trimmed.
-  // This will save multiple thousands of function calls.
-  function apparentStatusFromCode( statusCode: char ): TApparentStatus;
+//-----------------------------------------------------------------------------
+// Control status helper functions
+//-----------------------------------------------------------------------------
+  function controlStatusFromCode( statusCode: char ): TControlStatus;
   	begin
       case statusCode of
-        'U', 'E', 'T', 'I', 'V', 'D': result := TApparentStatus( ord( statusCode ) );
+        'U': result := asNoControl;
+        'E': result := asDetected;
+        'T': result := asTracedDirectFwd;
+        'I': result := asTracedIndirectFwd;
+        'K': result := asTracedDirectBack;
+        'J': result := asTracedIndirectBack;
+        'V': result := asVaccinated;
+        'D': result := asDestroyed;
+        'Q': result := asInDestructionQueue;
         else
           begin
-            raise exception.create( 'Unrecognized apparent status code (' + statusCode + ') in apparentStatusFromCode' );
+            raise exception.create( 'Unrecognized control status code (' + statusCode + ') in controlStatusFromCode()' );
             result := asUnspecified;
           end
         ;
@@ -160,78 +122,21 @@ implementation
   ;
 
 
-  function transitionStateCode( status: TTransitionState ): string;
-  	begin
-    	case status of
-        tsSusceptible: result := 'S';
-        tsLatent: result := 'L';
-        tsSubClinical: result := 'B';
-        tsClinical: result := 'C';
-        tsNaturalImmune: result := 'N';
-        tsVaccineImmune: result := 'V';
-        tsDestroyed: result := 'D';
-        else
-          begin
-            raise exception.create( 'Unrecognized transition state code (' + intToStr( ord(status) ) + ') in transitionStateCode' );
-            result := 'U';
-          end
-        ;
-      end;
-    end
-  ;
-
-
-  function xmlTransitionStateString( status: TTransitionState ): string;
-  	begin
-    	case status of
-        tsSusceptible: result := 'Susceptible';
-        tsLatent: result := 'Latent';
-        tsSubClinical: result := 'Infectious subclinical';
-        tsClinical: result := 'Infectious clinical';
-        tsNaturalImmune: result := 'Naturally immune';
-        tsVaccineImmune: result := 'Vaccine immune';
-        tsDestroyed: result := 'Destroyed';
-        else
-          begin
-            raise exception.create( 'Unrecognized transition state code (' + intToStr( ord(status) ) + ') in xmlTransitionStateString' );
-            result := 'Unspecified';
-          end
-        ;
-      end;
-    end
-  ;
-
-
-
-  function transitionStateString( status: TTransitionState ): string;
-  	begin
-    	case status of
-        tsSusceptible: result := tr( 'Susceptible' );
-        tsLatent: result := tr( 'Latent' );
-        tsSubClinical: result := tr( 'Subclinical' );
-        tsClinical: result := tr( 'Clinical' );
-        tsNaturalImmune: result := tr( 'Naturally immune' );
-        tsVaccineImmune: result := tr( 'Vaccine immune' );
-        tsDestroyed: result := tr( 'Destroyed' );
-        else
-          begin
-            raise exception.create( 'Unrecognized transition state code (' + intToStr( ord(status) ) + ') in transitionStateCode' );
-            result := tr( 'Unspecified' );
-          end
-        ;
-      end;
-    end
-  ;
-
-
-  function apparentStatusCode( status: TApparentStatus ): char;
+  function controlStatusCode( status: TControlStatus ): char;
   	begin
       case status of
-        asUnknown, asDetected, asTracedDirect, asTracedIndirect, asVaccinated, asDestroyed:
-          result := chr( ord( status ) );
+        asNoControl: result := 'U';
+        asDetected: result := 'E';
+        asTracedDirectFwd: result := 'T';
+        asTracedIndirectFwd: result := 'I';
+        asTracedDirectBack: result := 'K';
+        asTracedIndirectBack: result := 'J';
+        asVaccinated: result := 'V';
+        asDestroyed: result := 'D';
+        asInDestructionQueue: result := 'Q';
         else
           begin
-            raise exception.create( 'Unrecognized apparent status code (' + intToStr( ord(status) ) + ') in apparentStatusCode' );
+            raise exception.create( 'Unrecognized control status code (' + intToStr( ord(status) ) + ') in controlStatusCode()' );
             result := char(0);
           end
         ;
@@ -240,18 +145,247 @@ implementation
   ;
 
 
-  function apparentStatusString( status: TApparentStatus ): string;
+  function controlStatusString( status: TControlStatus ): string;
     begin
       case status of
-        asUnknown: result := tr( 'Unknown' );
+        asNoControl: result := tr( 'No control' );
         asDetected: result := tr( 'Detected' );
-        asTracedDirect: result := tr( 'Traced, direct' );
-        asTracedIndirect: result := tr( 'Traced, indirect' );
+        asTracedDirectFwd: result := tr( 'Trace forward of direct contact' );
+        asTracedIndirectFwd: result := tr( 'Trace forward of indirect contact' );
+        asTracedDirectBack: result := tr( 'Trace back of direct contact' );
+        asTracedIndirectBack: result := tr( 'Trace back of indirect contact' );
         asVaccinated: result := tr( 'Vaccinated' );
         asDestroyed: result := tr( 'Destroyed' );
-        else result := 'UNSPECIFIED: THIS IS A PROBLEM.';
+        asInDestructionQueue: result := tr( 'In Destruction Queue' );
+        else
+          begin
+            raise exception.create( 'Unrecognized control status code (' + intToStr( ord(status) ) + ') in controlStatusString()' );
+            result := 'Unspecified';
+          end
+        ;
       end;
     end
   ;
+
+
+  function controlStatusColor( s: TControlStatus ): TColor;
+  	begin
+   		case s of
+        asNoControl: result := clBlack;
+        asDetected: result := clGreen;
+        asTracedDirectFwd: result := clNavy;
+        asTracedDirectBack: result := clSkyBlue;
+        asTracedIndirectFwd: result := clPurple;
+        asTracedIndirectBack: result := $00C864C8; // CUSTOM COLOR: Light purple
+        asInDestructionQueue: result := $00A6FFFF; // CUSTOM COLOR: Light yellow
+        asVaccinated: result := $00FF0000; // CUSTOM COLOR: Bright blue
+        asDestroyed: result := clWhite;
+        else
+        	raise exception.Create( 'Unrecognized control status (' + intToStr(ord(s)) + ') in controlStatusColor()' )
+        ;
+      end;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// Detection status helper functions
+//-----------------------------------------------------------------------------
+  function detectionStatusFromCode( code: char ): TDetectionStatus;
+    begin
+      case code of
+        'U': result := dsNoStatus;
+        'I': result := dsInfectedUndetected;
+        'E': result := dsDetectedClinical;
+        'M': result := dsExamined;
+        'P': result := dsTestTruePos;
+        'Q': result := dsTestFalsePos;
+        'N': result := dsTestTrueNeg;
+        'O': result := dsTestFalseNeg;
+        'D': result := dsDestroyed;
+        'X': result := dsDetectedDeadFromDisease;
+        else
+          begin
+            raise exception.create( 'Unrecognized code (' + code + ') in detectionStatusFromCode()' );
+            result := dsUnspecified;
+          end
+        ;
+      end;
+    end
+  ;
+
+
+  function detectionStatusCode( status: TDetectionStatus ): char;
+    begin
+      case status of
+        dsNoStatus: result := 'U';
+        dsInfectedUndetected: result := 'I';
+        dsDetectedClinical: result := 'E';
+        dsExamined: result := 'M';
+        dsTestTruePos: result := 'P';
+        dsTestFalsePos: result := 'Q';
+        dsTestTrueNeg: result := 'N';
+        dsTestFalseNeg: result := 'O';
+        dsDestroyed: result := 'D';
+        dsDetectedDeadFromDisease: result := 'X';
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(status) ) + ') in detectionStatusCode()' );
+            result := char(0);
+          end
+        ;
+      end;
+    end
+  ;
+
+
+  function detectionStatusString( status: TDetectionStatus ): string;
+    begin
+      case status of
+        dsNoStatus: result := tr( 'Uninfected, no disease control activity' );
+        dsInfectedUndetected: result := tr( 'Infected but undetected' );
+        dsDetectedClinical: result := tr( 'Detected by clinical signs' );
+        dsExamined: result := tr( 'Examined' );
+        dsTestTruePos: result := tr( 'Test true positive' );
+        dsTestFalsePos: result := tr( 'Test false positive' );
+        dsTestTrueNeg: result := tr( 'Test true negative' );
+        dsTestFalseNeg: result := tr( 'Test false negative' );
+        dsDestroyed: result := tr( 'Destroyed' );
+        dsDetectedDeadFromDisease: result := tr( 'Detected dead from disease' );
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(status) ) + ') in detectionStatusString()' );
+            result := 'Unspecified';
+          end
+        ;
+      end;
+    end
+  ;
+
+
+  function detectionStatusColor( s: TDetectionStatus ): TColor;
+    begin
+      case s of
+        dsNoStatus: result := clBlack;
+        dsInfectedUndetected: result := clRed;
+        dsExamined: result :=  $00CC49A2; // CUSTOM COLOR: Light purple
+        dsTestTrueNeg: result := clSkyBlue;
+        dsTestFalseNeg: result := $00FF64FF; // CUSTOM COLOR: Light fuchsia
+        dsTestFalsePos: result := clYellow;
+        dsTestTruePos: result := $0000A8FF; // CUSTOM COLOR: Orange
+        dsDetectedClinical: result := clGreen;
+        dsDestroyed: result := clWhite;
+        dsDetectedDeadFromDisease: result := clLime //rbh fix me! temporary //:= clGreen; // yes for now same as dsDetectedClinical
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(s) ) + ') in detectionStatusColor()' );
+            result := clLime;
+          end
+        ;
+      end;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Event status helper functions
+//-----------------------------------------------------------------------------
+
+  function eventStatusFromCode( eventCode: char ): TEventStatus;
+    begin
+      case eventCode of
+        'E': result := esFirstDetection;
+        'D': result := esFirstDestruction;
+        'V': result := esFirstVaccination;
+        'O': result := esOutbreakOver;
+        else
+          begin
+            raise exception.create( 'Unrecognized code (' + eventCode + ') in eventStatusFromCode()' );
+            result := esUnspecified;
+          end;
+        ;
+      end;
+    end
+  ;
+
+  function eventStatusCode( status: TEventStatus ): char;
+    begin
+      case status of
+        esFirstDetection: result := 'E';
+        esFirstDestruction: result := 'D';
+        esFirstVaccination: result := 'V';
+        esOutbreakOver: result := 'O';
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(status) ) + ') in eventStatusCode()' );
+            result := char(0);
+          end
+        ;
+      end;
+    end
+  ;
+
+  function eventStatusString( status: TEventStatus ): string;
+    begin
+      case status of
+        esFirstDetection: result := tr( 'First Detection' );
+        esFirstDestruction: result := tr( 'First Destruction' );
+        esFirstVaccination: result := tr( 'First Vaccination' );
+        esOutbreakOver: result := tr( 'Outbreak Over' );
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(status) ) + ') in eventStatusString()' );
+            result := 'Unspecified';
+          end
+        ;
+      end;
+    end
+  ;
+
+  function eventStatusColor( s: TEventStatus ): TColor;
+    begin
+      case s of
+        esFirstDetection: result :=    controlStatusColor(asDetected);
+        esFirstDestruction: result :=  controlStatusColor(asDestroyed);
+        esFirstVaccination: result :=  controlStatusColor(asVaccinated);
+        esOutbreakOver: result :=      clRed;
+        else
+          begin
+            raise exception.create( 'Unrecognized value (' + intToStr( ord(s) ) + ') in eventStatusColor()' );
+            result := clLime;
+          end
+        ;
+      end;
+    end
+  ;
+
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// Zone colors
+//-----------------------------------------------------------------------------
+  function zoneColor( const zoneLevel: integer ): TColor;
+    begin
+      result := _perimeterColors[ ( zoneLevel - 1 ) mod length( _perimeterColors ) ]
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+initialization
+  setLength( _perimeterColors, 4 );
+  _perimeterColors[0] := clMaroon;
+  _perimeterColors[1] := clTeal;
+  _perimeterColors[2] := clNavy;
+  _perimeterColors[3] := clOlive;
+
+
+finalization
+  setLength( _perimeterColors, 0 );
 
 end.

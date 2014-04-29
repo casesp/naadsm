@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>10</num-days>
@@ -54,37 +54,38 @@
     <airborne-spread-model from-production-type="Beef Cattle" to-production-type="Beef Cattle">
       <!-- The values of prob-spread-1km and max-spread give a >0.5 probability
         of infection for herds 1 km apart. -->
-      <prob-spread-1km>0.505</prob-spread-1km>
-      <!-- Allow any direction. -->
-      <wind-direction-start>
-	<value>0</value>
-	<units><xdf:unit>degree</xdf:unit></units>
-      </wind-direction-start>
-      <wind-direction-end>
-	<value>360</value>
-	<units><xdf:unit>degree</xdf:unit></units>
-      </wind-direction-end>
-      <max-spread>
-	<value>50</value>
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>1</value>
 	<units>
 	  <xdf:unit>km</xdf:unit>
 	</units>
-      </max-spread>
+      </herd-distance>
+      <prob>0.505</prob>
+      <wind-direction-start>
+        <value>0</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-start>
+      <wind-direction-end>
+        <value>360</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-end>
     </airborne-spread-model>
 
     <!-- With both probabilities at 1.0, a diseased herd will be detected the
       instant it shows clinical signs. -->
     <detection-model production-type="Beef Cattle">
-      <prob-report-vs-time-clinical>
+      <prob-detect-vs-time-clinical>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-clinical>
-      <prob-report-vs-time-since-outbreak>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-since-outbreak>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
     </detection-model>
 
     <resources-and-implementation-of-controls-model>
@@ -124,20 +125,22 @@
 
     <detection-monitor>
       <output>
-        <variable-name>num-units-detected</variable-name> 
+        <variable-name>detnU</variable-name> 
         <frequency>daily</frequency>
       </output>
     </detection-monitor>
 
     <destruction-monitor>
       <output>
-        <variable-name>num-units-destroyed</variable-name> 
+        <variable-name>desnU</variable-name> 
         <frequency>daily</frequency>
       </output>
     </destruction-monitor>
 
     <conflict-resolver></conflict-resolver>
 
+    <full-table-writer />
+
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

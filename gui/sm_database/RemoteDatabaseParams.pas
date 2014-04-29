@@ -4,11 +4,11 @@ unit RemoteDatabaseParams;
 RemoteDatabaseParams.pas
 ------------------------
 Begin: 2007/03/19
-Last revision: $Date: 2007/11/19 16:44:45 $ $Author: areeves $
+Last revision: $Date: 2007-11-19 16:44:45 $ $Author: areeves $
 Version number: $Revision: 1.4 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2007 Animal Population Health Institute, Colorado State University
 

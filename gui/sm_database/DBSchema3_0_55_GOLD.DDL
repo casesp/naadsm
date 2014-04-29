@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Update existing table `dynHerd`.
 create table `dynHerd_IM0` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -36,15 +33,11 @@ insert into `dynHerd_IM0` ( `herdID`, `productionTypeID`, `latitude`, `longitude
            `dynHerd`.`cumDestroyed`  
     from `dynHerd`;
 
-
 alter table `dynHerd`
 	drop constraint `inProductionType_dynHerd_FK1`;
 
-
 drop table `dynHerd`; 
-
-
--- `dynHerd` : Table of dynHerd  
+ 
 create table `dynHerd` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -57,13 +50,6 @@ create table `dynHerd` (
 	`cumInfected` INTEGER,
 	`cumVaccinated` INTEGER,
 	`cumDestroyed` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`dynHerd`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'dynHerd' :
--- 	`productionTypeID`
-
 
 insert into `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `initialStateCode`, `initialSize`, `finalStateCode`, `cumInfected`, `cumVaccinated`, `cumDestroyed`) 
     select `dynHerd_IM0`.`herdID`,
@@ -78,20 +64,14 @@ insert into `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `i
            `dynHerd_IM0`.`cumDestroyed`  
     from `dynHerd_IM0`;
 
-
 drop table `dynHerd_IM0`; 
-
 
 alter table `dynHerd`
 	add constraint `dynHerd_PK` primary key (`herdID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `dynHerd`
 	add constraint `inProductionType_dynHerd_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

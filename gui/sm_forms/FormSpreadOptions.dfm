@@ -1,6 +1,6 @@
 inherited FormSpreadOptions: TFormSpreadOptions
-  Left = 744
-  Top = 252
+  Left = 622
+  Top = 329
   Caption = 'Scenario parameters: Spread options'
   ClientHeight = 449
   ClientWidth = 623
@@ -36,77 +36,61 @@ inherited FormSpreadOptions: TFormSpreadOptions
     Align = alClient
     TabOrder = 2
     object grpSpreadOptions: TGroupBox
-      Left = 88
-      Top = 40
+      Left = 96
+      Top = 16
       Width = 417
-      Height = 121
+      Height = 57
       Caption = 
-        'What type of SPREAD would you like to model during simulation ru' +
-        'ns? '
+        'Which type(s) of SPREAD would you like to model during simulatio' +
+        'n runs? '
       TabOrder = 0
-      object rdoAirborne: TRadioButton
-        Left = 16
-        Top = 48
-        Width = 233
-        Height = 17
-        Caption = 'Airborne'
-        TabOrder = 0
-        OnClick = rdoClick
-      end
-      object rdoContact: TRadioButton
-        Left = 16
+      object cbxContact: TCheckBox
+        Left = 8
         Top = 24
-        Width = 233
+        Width = 97
         Height = 17
         Caption = 'Contact'
-        TabOrder = 1
-        OnClick = rdoClick
+        TabOrder = 0
+        OnClick = cbxClick
       end
-      object rdoBoth: TRadioButton
-        Left = 16
-        Top = 72
-        Width = 233
+      object cbxAirborne: TCheckBox
+        Left = 280
+        Top = 24
+        Width = 129
         Height = 17
-        Caption = 'Both airborne and contact'
+        Caption = 'Airborne'
         TabOrder = 2
-        OnClick = rdoClick
+        OnClick = cbxClick
       end
-      object rdoNoSpread: TRadioButton
-        Left = 16
-        Top = 96
-        Width = 233
+      object cbxLocalArea: TCheckBox
+        Left = 120
+        Top = 24
+        Width = 161
         Height = 17
-        Caption = 'No spread'
-        TabOrder = 3
-        OnClick = rdoClick
+        Caption = 'Local-area spread'
+        TabOrder = 1
+        OnClick = cbxClick
       end
     end
-    object gbxAirborneDecay: TGroupBox
-      Left = 88
-      Top = 168
+    object gbxWindParams: TGroupBox
+      Left = 96
+      Top = 80
       Width = 417
-      Height = 105
-      Caption = 'For airborne spread: '
+      Height = 273
+      Caption = 'For airborne spread:'
       TabOrder = 1
-      object rdoAirborneLinear: TRadioButton
-        Left = 16
-        Top = 16
-        Width = 377
-        Height = 33
-        Caption = 'Rate of disease transfer declines linearly from source'
+      inline fraWindDirection: TFrameWindDirection
+        Left = 48
+        Top = 24
+        Width = 289
+        Height = 225
         TabOrder = 0
-        WordWrap = True
-        OnClick = rdoClick
-      end
-      object rdoAirborneExponential: TRadioButton
-        Left = 16
-        Top = 56
-        Width = 377
-        Height = 33
-        Caption = 'Rate of disease transfer declines exponentially from source'
-        TabOrder = 1
-        WordWrap = True
-        OnClick = rdoClick
+        inherited rleWindStart: TREEdit
+          OnExit = processWindDirText
+        end
+        inherited rleWindEnd: TREEdit
+          OnExit = processWindDirText
+        end
       end
     end
   end

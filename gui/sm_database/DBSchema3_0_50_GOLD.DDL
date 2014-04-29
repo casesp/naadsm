@@ -9,9 +9,6 @@
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
 
-
--- Create new table `inProductionTypePair`.
--- `inProductionTypePair` : Table of inProductionTypePair  
 create table `inProductionTypePair` ( 
 	`sourceProductionTypeID` INTEGER,
 	`destProductionTypeID` INTEGER,
@@ -22,17 +19,6 @@ create table `inProductionTypePair` (
 	`useAirborneSpread` BIT,
 	`airborneContactSpreadID` INTEGER, constraint `inProductionTypePairs_PK` primary key (`sourceProductionTypeID`, `destProductionTypeID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inProductionTypePair`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inProductionTypePair' :
--- 	`directContactSpreadID`
--- 	`indirectContactSpreadID`
--- 	`airborneContactSpreadID`
-
-
--- Create new table `inProductionType`.
--- `inProductionType` : Table of inProductionType  
 create table `inProductionType` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -64,28 +50,6 @@ create table `inProductionType` (
 	`vaccRingRadius` DOUBLE,
 	`vaccPriority` INTEGER, constraint `inProductionType_PK` primary key (`productionTypeID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inProductionType' :
--- 	`latentPeriodPdfID`
--- 	`subclinicalPeriodPdfID`
--- 	`clinicalPeriodPdfID`
--- 	`immunePeriodPdfID`
--- 	`detProbReportVsTimeClinicalRelID`
--- 	`detProbReportVsFirstDetectionRelID`
--- 	`vaccImmunePeriodPdfID`
-
-
--- Note: Access does not support default values in SQL DDL.  Default values will be created in
--- the database using DAO only if there is a connection to the Access MDB file during DDL generation.
--- Columns with default values for table 'inProductionType' :
--- 	`destrDirectTracePeriod`
--- 	`destrIndirectSuccess`
-
-
--- Create new table `inGeneral`.
--- `inGeneral` : Table of inGeneral  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -96,8 +60,6 @@ create table `inGeneral` (
 	`includeAirborneSpread` BIT,
 	`includeEconomics` BIT, constraint `inGeneral_PK` primary key (`inGeneralID`) ); 
 
--- Create new table `inDiseaseSpread`.
--- `inDiseaseSpread` : Table of inDiseaseSpread  
 create table `inDiseaseSpread` ( 
 	`spreadID` COUNTER,
 	`spreadMethodCode` CHAR(1),
@@ -113,17 +75,6 @@ create table `inDiseaseSpread` (
 	`windDirectionStart` INTEGER,
 	`windDirectionEnd` INTEGER, constraint `inProductionTypePair_PK` primary key (`spreadID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inDiseaseSpread`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inDiseaseSpread' :
--- 	`distancePdfID`
--- 	`movementControlRelID`
--- 	`transportDelayPdfID`
-
-
--- Create new table `inControlsGlobal`.
--- `inControlsGlobal` : Table of inControlsGlobal  
 create table `inControlsGlobal` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -136,25 +87,13 @@ create table `inControlsGlobal` (
 	`vaccDetectedUnitsBeforeStart` INTEGER,
 	`vaccCapacityRelID` INTEGER,
 	`vaccPriorityOrder` VARCHAR(255), constraint `inControlsGlobal_PK` primary key (`controlsGlobalID`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inControlsGlobal`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inControlsGlobal' :
--- 	`destrCapacityRelID`
--- 	`vaccCapacityRelID`
-
-
--- Create new table `inChartDetail`.
--- `inChartDetail` : Table of inChartDetail  
+  
 create table `inChartDetail` ( 
 	`pointOrder` INTEGER,
 	`x` DOUBLE,
 	`y` DOUBLE,
 	`chartID` INTEGER, constraint `inChartDetail_PK` primary key (`pointOrder`, `chartID`) ); 
 
--- Create new table `inChart`.
--- `inChart` : Table of inChart  
 create table `inChart` ( 
 	`chartID` COUNTER,
 	`fieldName` VARCHAR(50),
@@ -168,9 +107,7 @@ create table `inChart` (
 	`b` DOUBLE,
 	`xAxisUnits` VARCHAR(50),
 	`yAxisUnits` VARCHAR(50), constraint `inChart_PK` primary key (`chartID`) ); 
-
--- Create new table `dynHerd`.
--- `dynHerd` : Table of dynHerd  
+ 
 create table `dynHerd` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -182,32 +119,18 @@ create table `dynHerd` (
 	`cumInfected` INTEGER,
 	`cumVaccinated` INTEGER,
 	`cumDestroyed` INTEGER, constraint `dynHerd_PK` primary key (`herdID`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`dynHerd`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'dynHerd' :
--- 	`productionTypeID`
-
-
--- Create new table `DBSchemaVersion`.
--- `DBSchemaVersion` : Table of DBSchemaVersion  
+ 
 create table `DBSchemaVersion` ( 
 	`VersionNumber` VARCHAR(255),
 	`VersionDate` DATETIME,
 	`VersionInfoURL` VARCHAR(255), constraint `DBSchemaVersion_PK` primary key (`VersionNumber`) ); 
 
--- Add the remaining keys, constraints and indexes for the table `inGeneral`.
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Add the remaining keys, constraints and indexes for the table `inChart`.
 create unique index `chartNameIndex` on `inChart` (
 	`chartName`); 
 
-
--- Add foreign key constraints to table `inProductionTypePair`.
 alter table `inProductionTypePair`
 	add constraint `inDiseaseSpread_inProductionTypePairs_FK1` foreign key (
 		`directContactSpreadID`)
@@ -238,7 +161,6 @@ alter table `inProductionTypePair`
 	 references `inProductionType` (
 		`productionTypeID`); 
 
--- Add foreign key constraints to table `inProductionType`.
 alter table `inProductionType`
 	add constraint `FK1` foreign key (
 		`latentPeriodPdfID`)
@@ -281,7 +203,6 @@ alter table `inProductionType`
 	 references `inChart` (
 		`chartID`); 
 
--- Add foreign key constraints to table `inDiseaseSpread`.
 alter table `inDiseaseSpread`
 	add constraint `inChart_inDiseaseSpread_FK3` foreign key (
 		`transportDelayPdfID`)
@@ -300,7 +221,6 @@ alter table `inDiseaseSpread`
 	 references `inChart` (
 		`chartID`); 
 
--- Add foreign key constraints to table `inControlsGlobal`.
 alter table `inControlsGlobal`
 	add constraint `inChart_inControlsGlobal_FK1` foreign key (
 		`destrCapacityRelID`)
@@ -313,19 +233,15 @@ alter table `inControlsGlobal`
 	 references `inChart` (
 		`chartID`); 
 
--- Add foreign key constraints to table `inChartDetail`.
 alter table `inChartDetail`
 	add constraint `inChart_inChartDetail_FK1` foreign key (
 		`chartID`)
 	 references `inChart` (
 		`chartID`); 
 
--- Add foreign key constraints to table `dynHerd`.
 alter table `dynHerd`
 	add constraint `inProductionType_dynHerd_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

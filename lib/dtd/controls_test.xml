@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Parameters for a sample simulation run.</description>
   <num-days>200</num-days>
@@ -406,4 +406,4 @@
     <frequency>once</frequency>
   </output>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

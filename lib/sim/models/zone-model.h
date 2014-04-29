@@ -18,8 +18,8 @@
 #ifndef ZONE_MODEL_H
 #define ZONE_MODEL_H
 
-char *zone_model_interface_version (void);
-ergadm_model_t *zone_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                ZON_zone_list_t * zones);
+naadsm_model_t *zone_model_new (scew_element * params, HRD_herd_list_t *,
+                                projPJ, ZON_zone_list_t *);
 
+gboolean zone_model_is_singleton (void);
 #endif

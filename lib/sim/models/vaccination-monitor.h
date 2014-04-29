@@ -20,8 +20,7 @@
 #ifndef VACCINATION_MONITOR_H
 #define VACCINATION_MONITOR_H
 
-char *vaccination_monitor_interface_version (void);
-ergadm_model_t *vaccination_monitor_new (scew_element * params, HRD_herd_list_t * herds,
-                                         ZON_zone_list_t * zones);
+naadsm_model_t *vaccination_monitor_new (scew_element * params, HRD_herd_list_t *,
+                                         projPJ, ZON_zone_list_t *);
 
 #endif

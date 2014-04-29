@@ -4,13 +4,13 @@ unit FormOutputOptions;
 FormOutputOptions.pas/dfm
 -------------------------
 Begin: 2005/07/06
-Last revision: $Date: 2008/04/18 20:35:16 $ $Author: areeves $
-Version number: $Revision: 1.18 $
+Last revision: $Date: 2011-10-28 17:18:44 $ $Author: areeves $
+Version number: $Revision: 1.19.12.2 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -68,7 +68,7 @@ interface
       lblNAADSMapLabel: TLabel;
 
       procedure updateControls( Sender: TObject );
-    procedure btnChooseNAADSMapDirClick(Sender: TObject);
+      procedure btnChooseNAADSMapDirClick(Sender: TObject);
 
     protected
       _options: TSMOutputOptions;
@@ -98,7 +98,6 @@ implementation
   uses
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n,
 
@@ -144,7 +143,7 @@ implementation
           rdoDailyOutputSpecified.Caption := tr( 'Save all daily output for a specified number of iterations' );
           gbxEventsAndExposures.Caption := tr( 'Daily events and exposures' );
           cbxEvents.Caption := tr( 'Save information for each event (scenario files may be very large)' );
-          cbxExposures.Caption := tr( 'Save information for each exposure (scenario files may be very large)' );
+          cbxExposures.Caption := tr( 'Save information for each exposure and trace (scenario files may be very large)' );
           gbxMapOutputs.Caption := tr( 'NAADSMap output' );
           lblNAADSMapFolder.Caption := tr( 'lblNAADSMapDir' );
           lblNAADSMapLabel.Caption := tr( 'Folder for NAADSMap output:' );
@@ -177,7 +176,7 @@ implementation
       speDailyOutputIterations.Value := _options.dailyOutputsForIterations;
 
       cbxEvents.Checked := _options.saveDailyEvents;
-      cbxExposures.Checked := _options.saveDailyExposures;
+      cbxExposures.Checked := _options.saveDailyExposuresAndTraces;
 
       cbxMapOutput.Checked := _options.writeNAADSMapOutput;
 
@@ -232,14 +231,20 @@ implementation
         _options.dailyOutputsForIterations := speDailyOutputIterations.Value
       ;
 
-      if( _options.saveDailyExposures <> cbxExposures.Checked ) then
-        _options.saveDailyExposures := cbxExposures.Checked
+      if( _options.saveDailyExposuresAndTraces <> cbxExposures.Checked ) then
+        _options.saveDailyExposuresAndTraces := cbxExposures.Checked
       ;
 
       if( _options.saveDailyEvents <> cbxEvents.Checked ) then
         _options.saveDailyEvents := cbxEvents.Checked
       ;
 
+      // FIX ME: NAADSMap output is disabled for the time being.
+      // Some day, it may be helpful again, but a lot more work is needed first.
+      if( false <> _options.writeNAADSMapOutput ) then
+        _options.writeNAADSMapOutput := false
+      ;
+      (*
       if( _options.writeNAADSMapOutput <> cbxMapOutput.Checked ) then
         _options.writeNAADSMapOutput := cbxMapOutput.Checked
       ;
@@ -251,6 +256,7 @@ implementation
           ;
         end
       ;
+      *)
 
       result := _options.updated;
     end
@@ -270,7 +276,7 @@ implementation
         end
       ;
 
-      frm.Free();
+      frm.Release();
     end
   ;
 

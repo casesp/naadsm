@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+    targetNamespace="C:\NAADSM-XML-Validation\4Line\schema"
+    xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+    xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -15,80 +16,16 @@
     </annotation>
     <sequence>
       <!-- Model parameters. -->
-      <element name="appraisal" type="ergadm:money">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of appraisal per unit.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="euthanasia" type="ergadm:money">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of euthanasia per animal.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="indemnification" type="ergadm:money">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of indemnification per animal.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="carcass-disposal" type="ergadm:money">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of carcass disposal per animal.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="cleaning-disinfecting" type="ergadm:money">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of cleaning and disinfecting per unit.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="visiting" type="ergadm:REL">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of a surveillance visit to a unit, based on the number
-              of animals in the unit.
-            ]]>
-          </documentation>
-          <appinfo>
-            <x-axis-type>ergadm:unitless</x-axis-type>
-            <y-axis-type>ergadm:money</y-axis-type>
-          </appinfo>
-        </annotation>
-      </element>
-      <element name="testing" type="ergadm:REL">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The cost of testing a unit, based on the number of animals in the
-              unit.
-            ]]>
-          </documentation>
-          <appinfo>
-            <x-axis-type>ergadm:unitless</x-axis-type>
-            <y-axis-type>ergadm:money</y-axis-type>
-          </appinfo>
-        </annotation>
-      </element>
-      <element name="vaccination-fixed" type="ergadm:money">
+      
+      <!-- rbh: Note on minOccurs="0"
+      The minOccurs="0" were necessary because economic-model parameters
+      for zone surveillance are an entirely different set from  
+      vaccination or destruction. Also, destruction of vaccination useage
+      can be different among production types, leading to absent elements.
+      Validation without the minOccurs="0". Is there a better way to handle this??
+      -->
+      
+      <element name="vaccination-fixed" type="naadsm:money" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -97,7 +34,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="vaccination" type="ergadm:money">
+      <element name="vaccination" type="naadsm:money" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -108,7 +45,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="baseline-vaccination-capacity" type="ergadm:unitless">
+      <element name="baseline-vaccination-capacity" type="naadsm:unitless" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -118,7 +55,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="additional-vaccination" type="ergadm:money">
+      <element name="additional-vaccination" type="naadsm:money" minOccurs="0">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -128,7 +65,103 @@
           </documentation>
         </annotation>
       </element>
-
+      <element name="appraisal" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of appraisal per unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="euthanasia" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of euthanasia per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="indemnification" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of indemnification per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="carcass-disposal" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of carcass disposal per animal.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="cleaning-disinfecting" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of cleaning and disinfecting per unit.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="appraisal-applies-to-dead-units" type="string" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether appraisal costs apply when a unit is discovered to have
+              died from disease.  Value can be "yes", "no", or "sometimes" to
+              indicate that the cost applies only if the unit had been slated
+              for destruction prior to its death.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="indemnification-applies-to-dead-units" type="string" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether indemnification costs apply when a unit is discovered to
+              have died from disease.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="carcass-disposal-applies-to-dead-units" type="string" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether carcass disposal costs apply when a unit is discovered to
+              have died from disease.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="cleaning-disinfecting-applies-to-dead-units" type="string" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Whether cleaning and disinfecting costs apply when a unit is
+              discovered to have died from disease.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="surveillance" type="naadsm:money" minOccurs="0">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The cost of zone surveillance per animal per day.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+ 
       <element name="output" minOccurs="0" maxOccurs="unbounded">
         <complexType>
           <sequence>
@@ -142,6 +175,7 @@
                   <enumeration value="carcass-disposal-cost" />
                   <enumeration value="cleaning-and-disinfecting-cost" />
                   <enumeration value="vaccination-cost" />
+                  <enumeration value="surveillance-cost" />
                   <enumeration value="cumulative-total-cost" />
                   <enumeration value="cumulative-appraisal-cost" />
                   <enumeration value="cumulative-euthanasia-cost" />
@@ -149,16 +183,37 @@
                   <enumeration value="cumulative-carcass-disposal-cost" />
                   <enumeration value="cumulative-cleaning-and-disinfecting-cost" />
                   <enumeration value="cumulative-vaccination-cost" />
+                  <enumeration value="cumulative-surveillance-cost" />
+                  <!-- rbh: the ones above are the originals and the ones below new; 
+                  are these new ones replacements or supplements? -->
+                  <enumeration value="destrAppraisal" />
+                  <enumeration value="destrEuthanasia" />
+                  <enumeration value="destrIndemnification" />
+                  <enumeration value="destrDisposal" />
+                  <enumeration value="destrCleaning" />
+                  <enumeration value="destrSubtotal" />
+                  <enumeration value="vaccSetup" />
+                  <enumeration value="vaccVaccination" />
+                  <enumeration value="vaccSubtotal" />
+                  <enumeration value="costSurveillance" />
+                  <enumeration value="costsTotal" />
                 </restriction>
               </simpleType>                   
             </element>
-            <element name="frequency" type="ergadm:output-variable-frequency" />
+            <element name="frequency" type="naadsm:output-variable-frequency" />
           </sequence>
         </complexType>
       </element>
     </sequence>
     <attribute name="version" type="string" fixed="0.1" />
-    <attribute name="production-type" type="string" use="required" />
+    
+    <!-- rbh: revisit! "required" will not validate in XML generated with SC option on.
+      In the case of output variables, the economic model element has no attributes. 
+    -->
+    <!--<attribute name="production-type" type="string" use="required" />-->
+    <attribute name="production-type" type="string" use="optional" />
+    <attribute name="production-type-id" type="integer" use="optional"  />
+    <attribute name="zone" type="string" use="optional" />
   </complexType>
 
 </schema>

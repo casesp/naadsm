@@ -4,13 +4,13 @@ unit FormExport;
 FormExport.pas/dfm
 ------------------
 Begin: 2005/03/15
-Last revision: $Date: 2008/04/18 20:35:16 $ $Author: areeves $
-Version: $Revision: 1.29 $
+Last revision: $Date: 2009-11-07 16:54:35 $ $Author: areeves $
+Version: $Revision: 1.36 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,76 +19,106 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-uses
-  Windows,
-  Messages,
-  SysUtils,
-  Variants,
-  Classes,
-  Graphics,
-  Controls,
-  Forms,
-  Dialogs,
-  StdCtrls,
-  IniHandler,
+  uses
+    Windows,
+    Messages,
+    SysUtils,
+    Variants,
+    Classes,
+    Graphics,
+    Controls,
+    Forms,
+    Dialogs,
+    StdCtrls,
+    ExtCtrls,
 
-  SMScenario,
-  SMSimulationInput
-;
+    REEdit,
 
-type TExportResult = (
-	ExpUnspecified,
-  ExpSuccess,
-  ExpFileFailure,
-  ExpValidationFailure
-);
+    FrameAcceptCancel,
+
+    IniHandler,
+
+    SMScenario,
+    SMDatabase,
+    SMSimulationInput
+  ;
+
+  type TExportResult = (
+    ExpUnspecified,
+    ExpSuccess,
+    ExpFileFailure,
+    ExpValidationFailure
+  );
 
 
-type TFormExport = class(TForm)
-    leScenario: TEdit;
-    leHerds: TEdit;
-    btnScenario: TButton;
-    btnHerds: TButton;
-    lblScenario: TLabel;
-    lblHerds: TLabel;
-    btnExport: TButton;
-    GroupBox1: TGroupBox;
-    cbxScenario: TCheckBox;
-    cbxHerds: TCheckBox;
-    SaveDialog1: TSaveDialog;
-    btnCancel: TButton;
-    cbxWriteOutputs: TCheckBox;
+  type TFormExport = class(TForm)
+      gbxScenarioExport: TGroupBox;
+      SaveDialog1: TSaveDialog;
+      cbxWriteOutputs: TCheckBox;
+      gbxIterationEnd: TGroupBox;
+      rdoOutbreakEnd: TRadioButton;
+      rdoDiseaseEnd: TRadioButton;
+      rdoFirstDetection: TRadioButton;
+      rdoSpecDay: TRadioButton;
+      pnlSpacer: TPanel;
+      btnScenario: TButton;
+      leScenario: TEdit;
+      lblScenario: TLabel;
+      GroupBox1: TGroupBox;
+      cbxScenario: TCheckBox;
+      cbxHerds: TCheckBox;
+      GroupBox2: TGroupBox;
+      btnHerds: TButton;
+      leHerds: TEdit;
+      lblHerds: TLabel;
+      pnlSpacer2: TPanel;
+      pnlSpacer3: TPanel;
+      pnlSpacer4: TPanel;
+      pnlButtons: TPanel;
+      btnExport: TButton;
+      btnCancel: TButton;
+      fraAcceptCancel: TFrameAcceptCancel;
+      rleSpecDay: TREEdit;
     
-    procedure FormCreate(Sender: TObject );
+      procedure FormCreate(Sender: TObject );
     
-    procedure btnScenarioClick(Sender: TObject);
-    procedure btnHerdsClick(Sender: TObject);
+      procedure btnScenarioClick(Sender: TObject);
+      procedure btnHerdsClick(Sender: TObject);
 
-    // FIX ME: do some major error checking in here!
-    procedure btnExportClick(Sender: TObject);
-    procedure btnCancelClick(Sender: TObject);
-    procedure cbxScenarioClick(Sender: TObject);
-    procedure cbxHerdsClick(Sender: TObject);
+      // FIX ME: do some major error checking in here!
+      procedure btnExportClick(Sender: TObject);
+      procedure btnCancelClick(Sender: TObject);
+      procedure cbxScenarioClick(Sender: TObject);
+      procedure cbxHerdsClick(Sender: TObject);
+      procedure rdoEndOptionClick(Sender: TObject);
+      procedure rleSpecDayEnter(Sender: TObject);
+      procedure rleSpecDayExit(Sender: TObject);
+      procedure rleSpecDayKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+      procedure fraAcceptCancelbtnAcceptClick(Sender: TObject);
+      procedure fraAcceptCancelbtnCancelClick(Sender: TObject);
 
-  private
-  	_ini: TIniHandler;
-    _scenario: TSMScenario;
+    protected
+      _ini: TIniHandler;
+      _scenario: TSMScenario;
+      _stopReason: TStopReason;
+      _nDays: integer;
 
-    function exportScenario( smSim: TSMSimulationInput; scenarioFileName: string ): TExportResult;
-		function exportHerdList( smSim: TSMSimulationInput; herdFileName: string ): TExportResult;
+      function exportScenario( smSim: TSMSimulationInput; scenarioFileName: string ): TExportResult;
+      function exportHerdList( smSim: TSMSimulationInput; herdFileName: string ): TExportResult;
 
-    procedure setScenarioEnabled( val: boolean );
-    procedure setHerdsEnabled( val: boolean );
+      procedure setScenarioEnabled( val: boolean );
+      procedure setHerdsEnabled( val: boolean );
+      procedure setBtnExportEnabled();
 
-  protected
-    procedure translateUI();
+      procedure translateUI();
+      procedure translateUIManual();
 
-  public
-    constructor create( AOwner: TComponent; scenario: TSMScenario; iniSettings: TIniHandler ); reintroduce;
-    destructor destroy(); override;
+    public
+      constructor create( AOwner: TComponent; scenario: TSMScenario; iniSettings: TIniHandler ); reintroduce;
+      destructor destroy(); override;
 
-  end
-;
+    end
+  ;
 
 
 implementation
@@ -99,13 +129,14 @@ implementation
     StrUtils,
     
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     DialogLongMessage,
     Herd,
     StringConsts,
     ControlUtils,
-    I88n
+    I88n,
+    RegExpDefs,
+    DebugWindow
   ;
 
 
@@ -120,6 +151,11 @@ implementation
       leScenario.Text := _ini.str('LastScenarioExportFile' );
       leHerds.Text := _ini.str( 'LastHerdExportFile' );
 
+      rleSpecDay.InputExpression := RE_INTEGER_INPUT;
+      
+      _stopReason := ssStopAtEndOfOutBreak;
+      _nDays := -1;
+      
       setScenarioEnabled( false );
       setHerdsEnabled( false );
     end
@@ -128,29 +164,45 @@ implementation
 
   procedure TFormExport.translateUI();
     begin
-      // This function was generated automatically by Caption Collector 0.6.0.
-      // Generation date: Mon Feb 25 12:56:55 2008
-      // File name: C:/Documents and Settings/apreeves/My Documents/NAADSM/Interface-Fremont/sm_forms/FormExport.dfm
-      // File date: Mon Oct 30 19:41:36 2006
+      // This function was generated automatically by Caption Collector 0.6.3.
+      // Generation date: Thu Nov 5 16:48:07 2009
+      // File name: C:/Documents and Settings/areeves/My Documents/NAADSM/Interface-naadsm_3_line_interface/sm_forms/FormExport.dfm
+      // File date: Mon Aug 24 11:20:25 2009
 
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
           Caption := tr( 'Export scenario' );
+          gbxScenarioExport.Caption := tr( 'Scenario parameters:' );
           lblScenario.Caption := tr( 'Scenario parameters file:' );
-          lblHerds.Caption := tr( 'List of units:' );
+          cbxWriteOutputs.Caption := tr( 'Include output specification for NAADSM/SC' );
+          gbxIterationEnd.Caption := tr( 'Iteration end condition:' );
+          rdoOutbreakEnd.Caption := tr( 'End of outbreak (including all control activities)' );
+          rdoDiseaseEnd.Caption := tr( 'End of active disease phase' );
+          rdoFirstDetection.Caption := tr( 'First detection' );
+          rdoSpecDay.Caption := tr( 'Specific day' );
           btnScenario.Caption := tr( 'Browse...' );
-          btnHerds.Caption := tr( 'Browse...' );
-          btnExport.Caption := tr( 'Export' );
-          GroupBox1.Caption := tr( 'Items to import:' );
+          GroupBox1.Caption := tr( 'Files to export:' );
           cbxScenario.Caption := tr( 'Export scenario parameters file' );
           cbxHerds.Caption := tr( 'Export list of units' );
-          cbxWriteOutputs.Caption := tr( 'Include output specification for NAADSM/SC' );
+          GroupBox2.Caption := tr( 'List of units:' );
+          lblHerds.Caption := tr( 'Units file:' );
+          btnHerds.Caption := tr( 'Browse...' );
+          btnExport.Caption := tr( 'Export' );
           btnCancel.Caption := tr( 'Cancel' );
           SaveDialog1.Filter := tr( 'XML files (*.xml)|*.xml|All files (*.*)|*.*' );
         end
       ;
 
+      // If any phrases are found that could not be automatically extracted by
+      // Caption Collector, modify the following function to take care of them.
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFormExport.translateUIManual();
+    begin
     end
   ;
 
@@ -194,7 +246,7 @@ implementation
 
       if( simIsValid ) then
         begin
-          if( smSim.writeXMLFile( scenarioFileName, cbxWriteOutputs.Checked ) ) then
+          if( smSim.writeXMLFile( scenarioFileName, cbxWriteOutputs.Checked, _stopReason, _nDays ) ) then
             result := ExpSuccess
           else
             begin
@@ -226,7 +278,7 @@ implementation
             err
           );
           dlgLongMessage.showModal();
-          dlgLongMessage.free();
+          dlgLongMessage.Release();
 
           screen.Cursor := tmpCursor;
 
@@ -257,7 +309,8 @@ implementation
         begin
           //dbcout( 'Writing herd list to file ' + herdFileName );
 
-          if( localHerdList.writeXMLFile( herdFileName ) ) then
+          // FIX ME: Use of the projected coordinate system is not currently allowed by herd export.
+          if( localHerdList.writeXMLFile( herdFileName, false ) ) then
             result := ExpSuccess
           else
             begin
@@ -291,7 +344,7 @@ implementation
             err
           );
           dlgLongMessage.showModal();
-          dlgLongMessage.free();
+          dlgLongMessage.Release();
 
           screen.Cursor := tmpCursor;
 
@@ -318,14 +371,21 @@ implementation
       hfn := trim( leHerds.Text );
 
 
-      if ( LowerCase( RightStr( sfn, 4 ) ) <> '.xml'  )  then
-        sfn := sfn + '.xml';
+      if ( '.xml' <> ansiLowerCase( RightStr( sfn, 4 ) ) )  then
+        sfn := sfn + '.xml'
+      ;
 
-      if ( LowerCase( RightStr( hfn, 4 ) ) <> '.xml'  )  then
-        hfn := hfn + '.xml';
+      if ( '.xml' <> ansiLowerCase( RightStr( hfn, 4 ) ) )  then
+        hfn := hfn + '.xml'
+      ;
 
-      if( cbxScenario.Checked ) then sResult := exportScenario( _scenario.simInput, sfn );
-      if( cbxHerds.Checked ) then hResult := exportHerdList( _scenario.simInput, hfn );
+      if( cbxScenario.Checked ) then
+        sResult := exportScenario( _scenario.simInput, sfn )
+      ;
+
+      if( cbxHerds.Checked ) then
+        hResult := exportHerdList( _scenario.simInput, hfn )
+      ;
 
       // This mess will indicate whether everything that should have been exported was successfully exported
       scenarioSuccess := ( ( cbxScenario.Checked and ( ExpSuccess = sResult ) ) or ( not cbxScenario.Checked ) );
@@ -371,8 +431,10 @@ implementation
       leScenario.Enabled := val;
       btnScenario.Enabled := val;
       cbxWriteOutputs.Enabled := val;
+      gbxIterationEnd.Enabled := val;
+      setChildrenEnabled( gbxIterationEnd, val );
 
-      btnExport.Enabled := ( cbxScenario.Checked or cbxHerds.Checked );
+      setBtnExportEnabled();
     end
   ;
 
@@ -383,7 +445,22 @@ implementation
       leHerds.Enabled := val;
       btnHerds.Enabled := val;
 
-      btnExport.Enabled := ( cbxScenario.Checked or cbxHerds.Checked );
+      setBtnExportEnabled();
+    end
+  ;
+
+
+  procedure TFormExport.setBtnExportEnabled();
+    begin
+      _nDays := myStrToInt( rleSpecDay.Text, -1 );
+
+      if( not( cbxScenario.Checked or cbxHerds.Checked ) ) then
+        btnExport.Enabled := false
+      else if( rdoSpecDay.Checked and ( 0 >= _nDays ) ) then
+        btnExport.Enabled := false
+      else
+        btnExport.Enabled := true
+      ;
     end
   ;
 
@@ -428,6 +505,85 @@ implementation
   ;
 
 
+  procedure TFormExport.fraAcceptCancelbtnAcceptClick(Sender: TObject);
+    begin
+      fraAcceptCancel.Visible := false;
+      setBtnExportEnabled();
+    end
+  ;
+
+
+
+  procedure TFormExport.fraAcceptCancelbtnCancelClick(Sender: TObject);
+    begin
+      if( rleSpecDay.Visible ) then
+        rleSpecDay.Text := ''
+      ;
+
+      fraAcceptCancel.Visible := false;
+      setBtnExportEnabled();
+    end
+  ;
+
+
+  procedure TFormExport.rleSpecDayExit(Sender: TObject);
+    begin
+      if
+        ( fraAcceptCancel.btnAccept = self.ActiveControl )
+      or
+        ( fraAcceptCancel.btnCancel = self.ActiveControl )
+      then
+        // Do nothing: the button click events do the work.
+      else
+        begin
+          // Force accept
+          fraAcceptCancelbtnAcceptClick( nil );
+        end
+      ;
+    end
+  ;
+
+
+  procedure TFormExport.rleSpecDayKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    begin
+      if( 13 = key ) then
+        fraAcceptCancelbtnAcceptClick( nil )
+      else if( 27 = key ) then
+        fraAcceptCancelbtnCancelClick( nil )
+      ;
+    end
+  ;
+
+
+  procedure TFormExport.rdoEndOptionClick(Sender: TObject);
+    begin
+      if( rdoOutbreakEnd.Checked ) then
+        begin
+          _stopReason := ssStopAtEndOfOutBreak;
+          _nDays := -1;
+        end
+      else if( rdoDiseaseEnd.Checked ) then
+        begin
+          _stopReason := ssStopAtDiseaseEnd;
+          _nDays := -1;
+        end
+      else if( rdoFirstDetection.Checked ) then
+        begin
+          _stopReason := ssStopAtFirstDetection;
+          _nDays := -1;
+        end
+      else if( rdoSpecDay.Checked ) then
+        _stopReason := ssStopAtSpecificDay
+      else
+        raise exception.Create( 'Out of options in TFormExport.rdoEndOptionClick()' )
+      ;
+
+      rleSpecDay.Visible := rdoSpecDay.checked;
+      setBtnExportEnabled();
+    end
+  ;
+
+
   procedure TFormExport.cbxScenarioClick(Sender: TObject);
     begin
       setScenarioEnabled( cbxScenario.Checked );
@@ -445,6 +601,14 @@ implementation
   procedure TFormExport.btnCancelClick(Sender: TObject);
     begin
       close();
+    end
+  ;
+
+
+  procedure TFormExport.rleSpecDayEnter(Sender: TObject);
+    begin
+      btnExport.Enabled := false;
+      fraAcceptCancel.Visible := true;
     end
   ;
 

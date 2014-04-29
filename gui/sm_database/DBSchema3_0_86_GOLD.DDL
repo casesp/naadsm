@@ -1,4 +1,3 @@
--- Update existing table `inProductionType`.
 create table `inProductionType_IM0` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -84,107 +83,50 @@ insert into `inProductionType_IM0` ( `productionTypeID`, `descr`, `useDiseaseTra
            `inProductionType`.`costVaccAdditionalPerAnimal`  
     from `inProductionType`;
 
-
 alter table `dynHerd`
 	drop constraint `inProductionType_dynHerd_FK1`;
-
 
 alter table `inProductionTypePair`
 	drop constraint `inProductionType_inProductionTypePairs_FK1`;
 
-
 alter table `inProductionTypePair`
 	drop constraint `inProductionType_inProductionTypePairs_FK2`;
-
 
 alter table `outDailyByProductionType`
 	drop constraint `inProductionType_outDailyByProductionType_FK1`;
 
-
 alter table `outIterationByProductionType`
 	drop constraint `inProductionType_outIterationByProductionType_FK1`;
-
 
 alter table `outEpidemicCurves`
 	drop constraint `inProductionType_outEpidemicCurves_FK1`;
 
-
 alter table `outIterationCosts`
 	drop constraint `inProductionType_outIterationCosts_FK1`;
-
 
 alter table `inProductionType`
 	drop constraint `FK1`;
 
-
 alter table `inProductionType`
 	drop constraint `FK2`;
-
 
 alter table `inProductionType`
 	drop constraint `FK4`;
 
-
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK3`;
-
 
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK5`;
 
-
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK6`;
-
 
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK7`;
 
-
 drop table `inProductionType`; 
 
-
--- `inProductionType` : Table of inProductionType
--- 	`productionTypeID` : A unique ID for each production type present in the scenario.
--- 	`descr` : A unique description of the production type.
--- 	`useDiseaseTransition` : Indicates whether units of this production type will undergo disease transition.
--- 	`disLatentPeriodPdfID` : ID number of the probability density function used to define the latent period for units of this production type.  This field references inChart.chartID.
--- 	`disSubclinicalPeriodPdfID` : ID number of the probability density function used to define the subclinical period for units of this production type.  This field references inChart.chartID.
--- 	`disClinicalPeriodPdfID` : ID number of the probability density function used to define the clinical period for units of this production type.  This field references inChart.chartID.
--- 	`disImmunePeriodPdfID` : ID number of the probability density function used to define the natural immune period for units of this production type.  This field references inChart.chartID.
--- 	`useDetection` : Indicates whether disease detection will be modeled for units of this production type.
--- 	`detProbObsVsTimeClinicalRelID` : ID number of the relational function used to define the probability of observing clinical signs in units of this production type.  This field references inChart.chartID.
--- 	`detProbReportVsFirstDetectionRelID` : ID number of the relational function used to define the probabilty of reporting disease in units of this production type.  This field references inChart.chartID.
--- 	`traceDirect` : Indicates whether trace surveillance for direct contacts will be attempted.
--- 	`traceDirectSuccess` : The probability of success of identifying direct contacts by trace surveillance.
--- 	`traceDirectTracePeriod` : The period of time, in days, for which traceback surveillance of direct contacts will be attempted.
--- 	`traceIndirect` : Indicates whether trace surveillance for indirect contacts will be attempted.
--- 	`traceIndirectSuccess` : The probability of success of identifying indirect contacts by trace surveillance.
--- 	`traceIndirectTracePeriod` : The period of time, in days, for which traceback surveillance of indirect contacts will be attempted.
--- 	`useBasicDestruction` : Indicates whether detected clinical units of this production type will be destroyed.
--- 	`destrIsRingTrigger` : Indicates whether detection of a unit of this type will trigger the formation of destruction ring.
--- 	`destrRingRadius` : Radius, in kilometers, of the destruction ring.
--- 	`destrIsRingTarget` : Indicates whether units of this type will be subject to preemptive ring destruction.
--- 	`destrDirectTraces` : Indicates whether units of this type identified by traceback of direct contacts will be subject to preemptive destruction.
--- 	`destrIndirectTraces` : Indicates whether units of this type identified by traceback of indirect contacts will be subject to preemptive destruction.
--- 	`destrPriority` : The destruction priority of this production type, relative to other production types.  A lower number indicates higher priority.
--- 	`useVaccination` : Indicates whether units of this type will be subject to vaccination.
--- 	`vaccMinTimeBetweenVaccinations` : The minimum time, in days, between vaccinations for units of this production type.
--- 	`vaccDaysToImmunity` : The number of days required for the onset of vaccine immunity in a newly vaccinated unit of this type.
--- 	`vaccImmunePeriodPdfID` : ID number of the probability density function used to define the vaccine immune period for units of this production type.  This field references inChart.chartID.
--- 	`vaccRing` : Indicates whether detection of a clinical unit of this type will trigger a vaccination ring. 
--- 	`vaccRingRadius` : Radius, in kilometers, of the vaccination ring.
--- 	`vaccPriority` : The vaccination priority of this production type, relative to other production types. A lower number indicates higher priority.
--- 	`useCosts` : Indicates whether direct costs will be tracked for units of this production type.
--- 	`costDestrAppraisalPerUnit` : The cost associated with appraisal for each destroyed unit of this type.
--- 	`costDestrCleaningPerUnit` : The cost of cleaning and disinfection for each destroyed unit of this type.
--- 	`costDestrEuthanasiaPerAnimal` : The cost of euthanizing each destroyed animal of this type.
--- 	`costDestrIndemnificationPerAnimal` : The cost of indemnification for each destroyed animal of this type.
--- 	`costDestrDisposalPerAnimal` : The cost of carcass disposal for each destroyed animal of this type.
--- 	`costVaccSetupPerUnit` : The cost of site setup for each vaccinated unit of this type.
--- 	`costVaccThreshold` : The number of animals of this type that can be vaccinated before the cost of vaccination increases.
--- 	`costVaccBaselinePerAnimal` : The baseline cost of vaccination for each vaccinated animal of this type.  This cost applies to all vaccinations before the threshold set in costVaccThreshold is met.
--- 	`costVaccAdditionalPerAnimal` : The additional cost of vaccination for each vaccinated animal of this type, after the threshold is exceeded.
 create table `inProductionType` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -270,15 +212,11 @@ insert into `inProductionType` (`productionTypeID`, `descr`, `useDiseaseTransiti
            `inProductionType_IM0`.`costVaccAdditionalPerAnimal`  
     from `inProductionType_IM0`;
 
-
 drop table `inProductionType_IM0`; 
-
 
 alter table `inProductionType`
 	add constraint `inProductionType_PK` primary key (`productionTypeID`) ; 
-	
-	
--- Restore foreign key constraints for existing tables
+
 alter table `inProductionType`
 	add constraint `FK1` foreign key (
 		`disLatentPeriodPdfID`)
@@ -363,8 +301,6 @@ alter table `outIterationCosts`
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
--- Update existing table `inControlsGlobal`.
 create table `inControlsGlobal_IM0` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -394,31 +330,14 @@ insert into `inControlsGlobal_IM0` (`controlsGlobalID`, `includeDetection`, `inc
            `inControlsGlobal`.`vaccPriorityOrder`  
     from `inControlsGlobal`;
 
-
 alter table `inControlsGlobal`
 	drop constraint `inChart_inControlsGlobal_FK1`;
-
 
 alter table `inControlsGlobal`
 	drop constraint `inChart_inControlsGlobal_FK2`;
 
-
 drop table `inControlsGlobal`; 
 
-
--- `inControlsGlobal` : Table of inControlsGlobal
--- 	`controlsGlobalID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`includeDetection` : Indicates whether detection of disease in any production type will be modeled.
--- 	`includeTracing` : Indicates whether surveillance of any production type will be modeled.
--- 	`includeDestruction` : Indicates whether destruction will be used in any production type.
--- 	`destrProgramDelay` : The number of days that must pass after the first detection before a destruction program can begin.
--- 	`destrCapacityRelID` : ID number of the relational function used to define the daily destruction capacity.  This field references inChart.chartID.
--- 	`destrPriorityOrder` : A string that identifies the primary priority order for destruction: see Section 8.9.2.1.
--- 	`destrReasonOrder` : A string that identifies the secondary priority order for destruction: see Section 8.9.2.1.
--- 	`includeVaccination` : Indicates whether vaccination will be used in any production type.
--- 	`vaccDetectedUnitsBeforeStart` : The number of clinical units which must be detected before the initiation of a vaccination program.
--- 	`vaccCapacityRelID` : ID number of the relational function used to define the daily vaccination capacity.  This field references inChart.chartID.
--- 	`vaccPriorityOrder` : A string that identifies the priority order for vaccination: see Section 8.10.2.1.  
 create table `inControlsGlobal` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -455,8 +374,6 @@ drop table `inControlsGlobal_IM0`;
 alter table `inControlsGlobal`
 	add constraint `inControlsGlobal_PK` primary key (`controlsGlobalID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inControlsGlobal`
 	add constraint `inChart_inControlsGlobal_FK1` foreign key (
 		`destrCapacityRelID`)
@@ -468,3 +385,4 @@ alter table `inControlsGlobal`
 		`vaccCapacityRelID`)
 	 references `inChart` (
 		`chartID`); 
+

@@ -3,7 +3,6 @@
 #  include <config.h>
 #endif
 
-#include <popt.h>
 #include "reporting.h"
 #include <stdio.h>
 #include <gsl/gsl_statistics_double.h>
@@ -36,7 +35,7 @@
  * @version 0.1
  * @date May 2004
  *
- * Copyright &copy; University of Guelph, 2004-2007
+ * Copyright &copy; University of Guelph, 2004-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -47,9 +46,6 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 /* #define DEBUG 1 */
-
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
 
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
@@ -393,7 +389,7 @@ var:
 	   * to the master list of outputs.
 	   */
 	  add_values (0, $3, NULL);
-	  RPT_free_reporting ($3, TRUE);
+	  RPT_free_reporting ($3);
 	}
       else
         g_free ($1);
@@ -403,17 +399,17 @@ var:
 value:
     INT
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_integer, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_integer, RPT_never);
       RPT_reporting_set_integer ($$, $1, NULL);
     }
   | FLOAT
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_real, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_real, RPT_never);
       RPT_reporting_set_real ($$, $1, NULL);
     }
   | STRING
     {
-      $$ = RPT_new_reporting (NULL, NULL, RPT_text, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_text, RPT_never);
       RPT_reporting_set_text ($$, $1, NULL);
       /* The string token's value is set with a g_strndup, so we need to free
        * it after copying it into the RPT_reporting structure. */
@@ -437,7 +433,7 @@ value:
     {
       GSList *iter;
 
-      $$ = RPT_new_reporting (NULL, NULL, RPT_group, RPT_never, FALSE);
+      $$ = RPT_new_reporting (NULL, RPT_group, RPT_never);
       for (iter = $2; iter != NULL; iter = g_slist_next (iter))
 	RPT_reporting_splice ($$, (RPT_reporting_t *) (iter->data));
 
@@ -536,7 +532,6 @@ silent_log_handler (const gchar * log_domain, GLogLevelFlags log_level,
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
   int verbosity = 0;
   unsigned int noutputs, nvalues;
   unsigned int i, j;
@@ -544,44 +539,30 @@ main (int argc, char *argv[])
   GData **node_output_values;
   GArray *node_values, *values;
   double value;
-  gboolean zeroes_dont_count;
-  double mean, stddev, lo, hi, p05, p25, median, p75, p95;
-  struct poptOption options[2];
+  double mean, stddev, lo, hi, p05, p10, p25, median, p75, p90, p95;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { NULL }
+  };
 #if DEBUG
   GString *tmp;
 #endif
 
-  /* Get the command-line options and arguments. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip = "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
-
-  options[1].longName = NULL;
-  options[1].shortName = '\0';
-  options[1].argInfo = 0;
-  options[1].arg = NULL;
-  options[1].val = 0;
-  options[1].descrip = NULL;
-  options[1].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **)argv, options, 0);
-  poptGetNextOpt (option);
-  poptFreeContext (option);
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
+  g_option_context_free (context);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("reporting", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("reporting", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
@@ -599,7 +580,7 @@ main (int argc, char *argv[])
     yyparse();
 
   /* Print the header line for the table. */
-  printf ("Output,Number of occurrences,Mean,StdDev,Low,High,p5,p25,p50 (Median),p75,p95\n");
+  printf ("Output,Number of occurrences,Mean,StdDev,Low,High,p5,p10,p25,p50 (Median),p75,p90,p95\n");
 
   /* Alphabetize the output variable names. */
   g_ptr_array_sort (output_names, g_ascii_strcasecmp_as_GCompareFunc);
@@ -616,12 +597,6 @@ main (int argc, char *argv[])
       /* Combine the values for this output variable from each node into one
        * big list. */
       g_array_set_size (values, 0);
-      /* Note: this is a kludge to make the statistics more sensible for two
-       * particular output variables.  Hard-coding strings here is a bad
-       * solution; it would be better to give module writers a way to represent
-       * a "null" or "not applicable" or "not filled in" value. */
-      zeroes_dont_count = (strcmp (s, "time-to-first-detection") == 0
-			   || strcmp (s, "time-to-end-of-outbreak") == 0);
       for (current_node = 0; current_node < output_values->len; current_node++)
 	{
 	  node_output_values = (GData **)(&g_ptr_array_index (output_values, current_node));
@@ -631,8 +606,6 @@ main (int argc, char *argv[])
 	  for (j = 0; j < node_values->len; j++)
 	    {
 	      value = g_array_index (node_values, run_day_value_triple_t, j).value;
-	      if (zeroes_dont_count && value == 0)
-		continue;
 	      g_array_append_val (values, value);
 	    }
 	}
@@ -643,7 +616,7 @@ main (int argc, char *argv[])
       if (nvalues == 0)
         {
           mean = stddev = 0;
-          lo = p05 = p25 = median = p75 = p95 = hi = 0;
+          lo = p05 = p10 = p25 = median = p75 = p90 = p95 = hi = 0;
         }
       else
         {
@@ -664,14 +637,16 @@ main (int argc, char *argv[])
 
           median = gsl_stats_median_from_sorted_data ((double *)(values->data), 1, nvalues);
           p05 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.05);
+          p10 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.10);
           p25 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.25);
           p75 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.75);
+          p90 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.90);
           p95 = gsl_stats_quantile_from_sorted_data ((double *)(values->data), 1, nvalues, 0.95);
         }
 
       printf (",%g,%g", mean, stddev);
       printf (",%g,%g", lo, hi);
-      printf (",%g,%g,%g,%g,%g\n", p05, p25, median, p75, p95);
+      printf (",%g,%g,%g,%g,%g,%g,%g\n", p05, p10, p25, median, p75, p90, p95);
 
 #if DEBUG
       fflush (stdout);

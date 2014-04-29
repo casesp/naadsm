@@ -55,14 +55,21 @@
  * of <a href="http://www.colostate.edu/">Colorado State University</a>.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
+ *
+ * @author Shaun Case <ShaunCase@colostate.edu><br>
+ *   Animal Population Health Institute<br>
+ *   College of Veterinary Medicine and Biomedical Sciences<br>
+ *   Colorado State University<br>
+ *   Fort Collins, CO 80523<br>
+ *   USA
+ *
  * @version 0.1
  * @date November 2003
  *
- * Copyright &copy; University of Guelph, 2003-2007
+ * Copyright &copy; University of Guelph, and Colorado State University  2003-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -74,34 +81,32 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version contact_spread_model_LTX_interface_version
-#define is_singleton contact_spread_model_LTX_is_singleton
-#define new contact_spread_model_LTX_new
-#define set_params contact_spread_model_LTX_set_params
-#define run contact_spread_model_LTX_run
-#define reset contact_spread_model_LTX_reset
-#define events_listened_for contact_spread_model_LTX_events_listened_for
-#define is_listening_for contact_spread_model_LTX_is_listening_for
-#define has_pending_actions contact_spread_model_LTX_has_pending_actions
-#define has_pending_infections contact_spread_model_LTX_has_pending_infections
-#define to_string contact_spread_model_LTX_to_string
-#define local_printf contact_spread_model_LTX_printf
-#define local_fprintf contact_spread_model_LTX_fprintf
-#define local_free contact_spread_model_LTX_free
-#define handle_request_for_exposure_causes_event contact_spread_model_LTX_handle_request_for_exposure_causes_event
-#define handle_request_for_infection_causes_event contact_spread_model_LTX_handle_request_for_infection_causes_event
-#define handle_new_day_event contact_spread_model_LTX_handle_new_day_event
-#define handle_public_announcement_event contact_spread_model_LTX_handle_public_announcement_event
-#define callback contact_spread_model_LTX_callback
-#define check_and_choose contact_spread_model_LTX_check_and_choose
-#define events_created contact_spread_model_LTX_events_created
+#if HAVE_MPI && !CANCEL_MPI
+  #include <mpi.h>
+#endif
+
+/* To avoid name clashes when multiple modules have the same interface. */
+#define is_singleton contact_spread_model_is_singleton
+#define new contact_spread_model_new
+#define set_params contact_spread_model_set_params
+#define run contact_spread_model_run
+#define reset contact_spread_model_reset
+#define events_listened_for contact_spread_model_events_listened_for
+#define is_listening_for contact_spread_model_is_listening_for
+#define has_pending_actions contact_spread_model_has_pending_actions
+#define to_string contact_spread_model_to_string
+#define local_printf contact_spread_model_printf
+#define local_fprintf contact_spread_model_fprintf
+#define local_free contact_spread_model_free
+#define handle_before_any_simulations_event contact_spread_model_handle_before_any_simulations_event
+#define handle_new_day_event contact_spread_model_handle_new_day_event
+#define handle_public_announcement_event contact_spread_model_handle_public_announcement_event
+#define check_and_choose contact_spread_model_check_and_choose
 
 #include "model.h"
 #include "model_util.h"
 #include "gis.h"
+#include "spatial_search.h"
 
 #if STDC_HEADERS
 #  include <string.h>
@@ -115,9 +120,16 @@
 #  include <math.h>
 #endif
 
-#include "guilib.h"
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_randist.h>
 
+#include "naadsm.h"
+#include "general.h"
 #include "contact-spread-model.h"
+
+#ifdef USE_SC_GUILIB
+#  include <sc_naadsm_outputs.h>
+#endif
 
 #if !HAVE_ROUND && HAVE_RINT
 #  define round rint
@@ -127,35 +139,15 @@ double round (double x);
 
 extern const char *HRD_status_name[];
 extern const char *EVT_event_type_name[];
-extern const char *EVT_contact_type_name[];
 
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "contact-spread-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate spread of a disease by direct contact (movement of animals\n\
-between herds) and indirect contact (movement of people/equipment between\n\
-herds).\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 November 2003\
-"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
-
-#define NEVENTS_CREATED 4
-EVT_event_type_t events_created[] =
-  { EVT_DeclarationOfExposureCauses, EVT_DeclarationOfInfectionCauses,
-  EVT_Exposure, EVT_AttemptToInfect
-};
-
-#define NEVENTS_LISTENED_FOR 4
+#define NEVENTS_LISTENED_FOR 3
 EVT_event_type_t events_listened_for[] =
-  { EVT_RequestForExposureCauses, EVT_RequestForInfectionCauses, EVT_NewDay,
-  EVT_PublicAnnouncement
-};
+  { EVT_BeforeAnySimulations, EVT_NewDay, EVT_PublicAnnouncement };
 
 
 
@@ -163,7 +155,13 @@ EVT_event_type_t events_listened_for[] =
 
 
 
-/* Specialized information for this model. */
+/**
+ * Specialized information for this module.  Because the module is a singleton,
+ * with only one instance existing, there is a local_data_t structure that
+ * holds global information, and the local_data_t structure contains an array
+ * of param_block_t structures, each of which holds parameters specific to one
+ * contact type/source production type/recipient production type combination.
+ */
 typedef struct
 {
   double movement_rate;
@@ -173,10 +171,10 @@ typedef struct
     focus.  When the source unit is inside a zone focus, use the charts by
     zone and production type, in local_data_t below. */
   PDF_dist_t *distance_dist;
-  PDF_dist_t *shipping_delay;
   gboolean latent_units_can_infect;
   gboolean subclinical_units_can_infect;
   double prob_infect;
+  PDF_dist_t *movement_proportion_dist;
 }
 param_block_t;
 
@@ -187,39 +185,31 @@ typedef struct
 {
   GPtrArray *production_types; /**< Each item in the list is a char *. */
   ZON_zone_list_t *zones;
-  param_block_t ***param_block[EVT_NCONTACT_TYPES]; /**< Blocks of parameters.
+  param_block_t ***param_block[NAADSM_NCONTACT_TYPES]; /**< Blocks of parameters.
     Use an expression of the form
     param_block[contact_type][source_production_type][recipient_production_type]
     to get a pointer to a particular param_block. */
-  REL_chart_t ***movement_control[EVT_NCONTACT_TYPES]; /**< Movement control
+  REL_chart_t ***movement_control[NAADSM_NCONTACT_TYPES]; /**< Movement control
     charts for units inside zones.  Use an expression of the form
     movement_control[contact_type][zone->level-1][source_production_type]
     to get a pointer to a particular chart. */
-  GPtrArray *pending_infections; /**< An array to store delayed contacts.  Each
-    item in the array is a GQueue of Infection and Exposure events.  (Actually
-    a singly-linked list would suffice, but the GQueue syntax is much more
-    readable than the GSList syntax.)  An index "rotates" through the array, so
-    an event that is to happen in 1 day is placed in the GQueue that is 1 place
-    ahead of the rotating index, an event that is to happen in 2 days is placed
-    in the GQueue that is 2 places ahead of the rotating index, etc. */
-  unsigned int npending_infections;
-  unsigned int rotating_index; /**< To go with pending_infections. */
-  double use_rtree_index;
   gboolean outbreak_known;
-  unsigned short int public_announcement_day;
+  int public_announcement_day;
 }
 local_data_t;
 
 
+
 /**
- * Responds to a request for exposure causes by declaring all the causes which
- * this model may state for an exposure.
+ * Before any simulations, this module declares all the causes which it may
+ * state for an exposure.
  *
- * @param self the model.
+ * @param self this module.
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_exposure_causes_event (struct ergadm_model_t_ *self, EVT_event_queue_t * queue)
+handle_before_any_simulations_event (struct naadsm_model_t_ * self,
+                                     EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   unsigned int nprod_types, i, j;
@@ -227,142 +217,54 @@ handle_request_for_exposure_causes_event (struct ergadm_model_t_ *self, EVT_even
   GPtrArray *causes;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_exposure_causes_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_request_for_exposure_causes_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
 
   /* Find out if any parameters have been defined for direct contact. */
   nprod_types = local_data->production_types->len;
   causes_direct = FALSE;
   for (i = 0; i < nprod_types && causes_direct == FALSE; i++)
-    if (local_data->param_block[DirectContact][i] != NULL)
+    if (local_data->param_block[NAADSM_DirectContact][i] != NULL)
       for (j = 0; j < nprod_types && causes_direct == FALSE; j++)
-        if (local_data->param_block[DirectContact][i][j] != NULL)
+        if (local_data->param_block[NAADSM_DirectContact][i][j] != NULL)
           causes_direct = TRUE;
 
   /* Find out if any parameters have been defined for indirect contact. */
   causes_indirect = FALSE;
   for (i = 0; i < nprod_types && causes_indirect == FALSE; i++)
-    if (local_data->param_block[IndirectContact][i] != NULL)
+    if (local_data->param_block[NAADSM_IndirectContact][i] != NULL)
       for (j = 0; j < nprod_types && causes_indirect == FALSE; j++)
-        if (local_data->param_block[IndirectContact][i][j] != NULL)
+        if (local_data->param_block[NAADSM_IndirectContact][i][j] != NULL)
           causes_indirect = TRUE;
 
   causes = g_ptr_array_new ();
   if (causes_direct)
-    g_ptr_array_add (causes, (char *) EVT_contact_type_name[DirectContact]);
+    g_ptr_array_add (causes, (char *) NAADSM_contact_type_abbrev[NAADSM_DirectContact]);
   if (causes_indirect)
-    g_ptr_array_add (causes, (char *) EVT_contact_type_name[IndirectContact]);
+    g_ptr_array_add (causes, (char *) NAADSM_contact_type_abbrev[NAADSM_IndirectContact]);
   EVT_event_enqueue (queue, EVT_new_declaration_of_exposure_causes_event (causes));
 
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
+  /* Note that we don't clean up the GPtrArrays.  They will be freed along with
    * the declaration event after all interested sub-models have processed the
    * event. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_exposure_causes_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_request_for_exposure_causes_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-  
   return;
 }
 
 
 
 /**
- * Responds to a request for infection causes by declaring all the causes which
- * this model may state for an infection.
- *
- * @param self the model.
- * @param queue for any new events the model creates.
- */
-void
-handle_request_for_infection_causes_event (struct ergadm_model_t_ *self, EVT_event_queue_t * queue)
-{
-  local_data_t *local_data;
-  unsigned int nprod_types, i, j;
-  gboolean causes_direct, causes_indirect;
-  GPtrArray *causes;
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_infection_causes_event (%s)", MODEL_NAME);
-#endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_request_for_infection_causes_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-
-  local_data = (local_data_t *) (self->model_data);
-
-  /* Find out if any parameters have been defined for direct contact. */
-  nprod_types = local_data->production_types->len;
-  causes_direct = FALSE;
-  for (i = 0; i < nprod_types && causes_direct == FALSE; i++)
-    if (local_data->param_block[DirectContact][i] != NULL)
-      for (j = 0; j < nprod_types && causes_direct == FALSE; j++)
-        if (local_data->param_block[DirectContact][i][j] != NULL)
-          causes_direct = TRUE;
-
-  /* Find out if any parameters have been defined for indirect contact. */
-  causes_indirect = FALSE;
-  for (i = 0; i < nprod_types && causes_indirect == FALSE; i++)
-    if (local_data->param_block[IndirectContact][i] != NULL)
-      for (j = 0; j < nprod_types && causes_indirect == FALSE; j++)
-        if (local_data->param_block[IndirectContact][i][j] != NULL)
-          causes_indirect = TRUE;
-
-  causes = g_ptr_array_new ();
-  if (causes_direct)
-    g_ptr_array_add (causes, (char *) EVT_contact_type_name[DirectContact]);
-  if (causes_indirect)
-    g_ptr_array_add (causes, (char *) EVT_contact_type_name[IndirectContact]);
-  EVT_event_enqueue (queue, EVT_new_declaration_of_infection_causes_event (causes));
-
-  /* Note that we don't clean up the GPtrArray.  It will be freed along with
-   * the declaration event after all interested sub-models have processed the
-   * event. */
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_infection_causes_event (%s)", MODEL_NAME);
-#endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_request_for_infection_causes_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-  
-  return;
-}
-
-
-
-/**
- * Special structure for use with the callback function below.
+ * Special sub-structure for use with the callback function below.
+ * 
  */
 typedef struct
 {
-  struct ergadm_model_t_ *self;
-  HRD_herd_list_t *herds;
-  ZON_zone_list_t *zones;
-  RAN_gen_t *rng;
-  HRD_herd_t *herd1;
-  ZON_zone_fragment_t *herd1_fragment;
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   unsigned int recipient_production_type;
   double movement_distance;
   HRD_herd_t *best_herd; /**< The current pick for best recipient. */
@@ -373,7 +275,48 @@ typedef struct
   double min_difference; /**< The smallest value of best_herd_difference so
     far.  See the file drift.xml in the direct contact tests for an explanation
     of why this is needed. */
-  double cumul_size;
+  double cumul_size;    
+  gboolean try_again;  /*  Used if and when the RTree search method found no match */    
+}sub_callback_t;
+
+
+/**
+ * Special structure for use with the callback function below.
+ */
+typedef struct
+{
+  struct naadsm_model_t_ *self;
+  int day;
+  HRD_herd_list_t *herds;
+  ZON_zone_list_t *zones;
+  RAN_gen_t *rng;
+  HRD_herd_t *herd1;
+  ZON_zone_fragment_t *herd1_fragment;
+  /**  This optimization repairs the fact that the RTree and the exhaustive
+       searching is so time intensive, by altering the original algorithm to
+       handle all contact/prodcution-type combinations at the same time during
+       the iteration over the eligible herd list.  Prior to this, the search 
+       was done once for each contact/production-type combination, thus compounding
+       the search time consumption exponentially.  This is where the majority of
+       the simulation time is spent, so reducing this complexity could significantly
+       improve on performance for the simulation engine.  Reduction should be
+       as a maximum: 
+       Total_Time / [ number_of_contact_types X number_of_production_types X average( number_of_contacts_per_production_type ) ]     
+       where number_of_contacts_per_production_type varies in number per [number_of_contact_types X number_of_production_types] pair
+       
+       For sufficiently diverse, i.e. worst case, scenario populations, this could be as big a difference
+       as the differenc between O(n^4) and O(n[log(n)]), i.e. exponential 
+       speed-up; best case scenario parameters would show a linear speed-up.  Either case,
+       should be fairly dramatic improvements in time consumption....we'll se....        
+   **/
+  unsigned long contact_count;
+  unsigned long production_type_count;
+  /*  This is a 3-Dimensional matrix of contact-types, production-types, and 
+   *  sub_callback_t structures, where the depth of the matrix, sub-callback_t element,
+   *  is variable per [contact-type, production-type] pair.
+   */
+  GPtrArray ***_contacts; /* gpointer points to a sub_callback_t */    
+  unsigned int num_unmatched_exposures;
 } callback_t;
 
 
@@ -383,197 +326,227 @@ typedef struct
  * best (so far) matching potential target herd.
  */
 void
-check_and_choose (callback_t * callback_data, HRD_herd_t * herd2)
+check_and_choose (int id, gpointer arg)
 {
+  callback_t *callback_data;
+  HRD_herd_list_t *herds;
+  HRD_herd_t *herd2;
   HRD_herd_t *herd1;
+  HSC_scorecard_t *scorecard;
   local_data_t *local_data;
-  gboolean herd2_can_be_target;
   double distance;
   double difference;
   ZON_zone_fragment_t *herd1_fragment, *herd2_fragment;
   gboolean contact_forbidden;
-#if DEBUG
-  GString *s;
-#endif
+  NAADSM_contact_type contact_type;
+  unsigned long production_type;
+  unsigned long index;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_and_choose (%s)", MODEL_NAME);
+  g_debug ("----- ENTER check_and_choose (%s)", MODEL_NAME);
 #endif
-  /*
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER check_and_choose %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-  */
+
+  callback_data = (callback_t *) arg;
+  g_assert (callback_data != NULL);
+
+  herds = callback_data->herds;
+  herd2 = HRD_herd_list_get (herds, id);
+
+  if ( callback_data->_contacts != NULL )
+  {
+    scorecard = naadsm_get_scorecard (herd2); /* may be NULL */
+    if ( 
+      ( herd2 != callback_data->herd1 ) 
+      && ( herd2->status != Destroyed )
+      && !( ( scorecard != NULL )
+            && ( scorecard->is_detected_as_dead )
+            && ( scorecard->day_detected_as_dead < callback_data->day ) )
+    )
+    {
+      herd1 = callback_data->herd1;
+
+      local_data = ( local_data_t * ) ( callback_data->self->model_data );
+      distance = GIS_distance ( herd1->x, herd1->y, herd2->x, herd2->y );
   
-  /* Are herd 1 and herd 2 the same? */
-  herd1 = callback_data->herd1;
-  if (herd1 == herd2)
-    goto end;
-
-  local_data = (local_data_t *) (callback_data->self->model_data);
-
-  /* Can herd 2 be the target of an exposure? */
-#if DEBUG
-  s = g_string_new (NULL);
-  g_string_sprintf (s, "unit \"%s\" is %s, state is %s: ",
-                    herd2->official_id, herd2->production_type_name,
-                    HRD_status_name[herd2->status]);
-#endif
-
-#ifdef LARAMIE
-  /* In the experimental version LARAMIE, destroyed units can still receive
-   * indirect contacts. */
-  if( callback_data->contact_type == IndirectContact )
-    {
-      herd2_can_be_target =
-        herd2->production_type == callback_data->recipient_production_type;
-    }
-  else
-    {
-      herd2_can_be_target =
-        herd2->production_type == callback_data->recipient_production_type
-        && herd2->status != Destroyed;
-    } 
-#else
-  herd2_can_be_target =
-    herd2->production_type == callback_data->recipient_production_type
-    && herd2->status != Destroyed;
-#endif
+      for ( contact_type = 0; contact_type < callback_data->contact_count; contact_type++ )
+      {         
+        for ( production_type = 0; production_type < callback_data->production_type_count; production_type++ )
+        {
+          GPtrArray *_contacts = (GPtrArray *)callback_data->_contacts[contact_type][production_type];
+   
+          if ( _contacts != NULL )
+          {
+            sub_callback_t *contact;
+            for ( index = 0; index < _contacts->len; index ++ )
+            {              
+              if ( ( contact = g_ptr_array_index ( _contacts, index ) ) != NULL )
+              {  
+                if ( index == 0 )
+                  if ( herd2->production_type != contact->recipient_production_type )
+                  {
+                    /*  Wrong production type...try next combination */ 
+                    break;
+                  };
+  
+                /* This will be set to TRUE if the search within the circle is
+                 * running for the first time, or if the search within the
+                 * circle found nothing and we are now using exhaustive search.
+                 */
+                if ( contact->try_again )
+                { 
+                  /* Is herd 2 closer to herd 1 than the best match so far? */
+                  difference = fabs ( contact->movement_distance - distance );
+                  if ( contact->best_herd == NULL )
+                  {                     
+                    /* If herd 2 is quarantined, it cannot be the recipient of a direct
+                     * contact. */
+                    if ( ( herd2->quarantined ) && ( contact->contact_type == NAADSM_DirectContact ) )
+                    {
+                      #if DEBUG
+                        g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Fit found, but not allowed; quarantined direct-contact" );
+                      #endif                         
+                    }
+                    else
+                    {                        
+                      contact->best_herd = herd2;
+                      contact->best_herd_distance = distance;
+                      contact->best_herd_difference = difference;
+                      contact->min_difference = difference;
+                      contact->cumul_size = herd2->size;
+                      /* A best_herd has been filled in where there previously
+                       * was NULL.  This means that we can decrement the count
+                       * of unmatched exposures. */
+                      callback_data->num_unmatched_exposures--;
+                    };
+                  }
+                  else if ( fabs ( difference - contact->min_difference ) <= EPSILON )
+                  {                        
+                    /* When we find a second potential recipient unit the same distance from
+                     * the source as the current closest potential recipient, we first check
+                     * if contact with the new find is forbidden by quarantine or zone rules.
+                     * If so, we can ignore it.  Otherwise, the new find has a 1 in 2 chance
+                     * of replacing the older find, if they are the same size.  (If the new
+                     * find is half the size of the old one, it has a 1 in 3 chance; if it is
+                     * twice the size of the old one, it has a 2 in 3 chance.)  If we find a
+                     * third potential recipient unit the same distance from the source, its
+                     * chance of replacing the older choice is its size divided by the sum of
+                     * its size and the sizes of all of the older choices.  This gives the
+                     * same result as recording all the potential recipient herds and
+                     * choosing among them afterwards. */
+                    herd1_fragment = callback_data->herd1_fragment;
+                    herd2_fragment = callback_data->zones->membership[herd2->index];
     
-#if DEBUG
-  g_string_sprintfa (s, "%s be target", herd2_can_be_target ? "can" : "cannot");
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "%s", s->str);
-  g_string_free (s, TRUE);
-#endif
-  if (!herd2_can_be_target)
-    goto end;
-
-  /* Is herd 2 closer to herd 1 than the best match so far? */
-  distance = GIS_local_distance (herd1->lat, herd1->lon, herd2->lat, herd2->lon);
-  difference = fabs (callback_data->movement_distance - distance);
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "distance to unit \"%s\" = %g km (within %g km)",
-         herd2->official_id, distance, difference);
-#endif
-
-#ifdef CHEYENNE
-  /* In the experimental version CHEYENNE, quarantined units can still receive
-   * direct contacts. */
-  contact_forbidden = FALSE;
-#endif
-  if (callback_data->best_herd == NULL)
+    
+                    contact_forbidden = ( ( herd2->quarantined && contact->contact_type == NAADSM_DirectContact )
+                                          || ( ZON_level ( herd2_fragment ) > ZON_level ( herd1_fragment ) )
+                                          || ( ZON_level ( herd1_fragment ) - ZON_level ( herd2_fragment ) > 1 )
+                                          || ( ( ZON_level ( herd1_fragment ) - ZON_level ( herd2_fragment ) == 1 )
+                                               && !ZON_nests_in ( herd2_fragment, herd1_fragment ) )
+                                          || ( ( ZON_level ( herd2_fragment ) == ZON_level ( herd1_fragment ) )
+                                               && !ZON_same_fragment ( herd2_fragment, herd1_fragment ) ) );
+    
+                    if ( !contact_forbidden )
+                    {
+                      contact->cumul_size += herd2->size;
+    
+                      if ( RAN_num ( callback_data->rng ) < herd2->size / contact->cumul_size )
+                      {                        
+                        contact->best_herd = herd2;
+                        contact->best_herd_distance = distance;
+                        contact->best_herd_difference = difference;
+                        if ( difference < contact->min_difference )
+                          contact->min_difference = difference;
+                      }
+                      else
+                      {
+                        #if DEBUG
+                        g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Herd size rules do allow replacing best_herd with this contacted herd" );
+                        #endif                           
+                      };
+                    }
+                    else
+                    {
+                      #if DEBUG
+                      g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Contact forbidden by zone rules or quarantine rules" );
+                      #endif                        
+                    }
+                  }
+                  else if ( difference < contact->min_difference )
+                  {
+                       
+                    contact_forbidden = ( herd2->quarantined && contact->contact_type == NAADSM_DirectContact );
+    
+                    if ( !contact_forbidden )
+                    {                       
+                      contact->best_herd = herd2;
+                      contact->best_herd_distance = distance;
+                      contact->best_herd_difference = difference;
+                      contact->min_difference = difference;
+                      contact->cumul_size = herd2->size;
+                    }
+                    else
+                    {
+                      #if DEBUG
+                      g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Better fit found, but contact forbidden:  quarantined herd for direct-contact" );
+                      #endif           
+                    };
+                  }
+                  else
+                  {
+                    #if DEBUG
+                    g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  No fit found" );
+                    #endif       
+                  };
+                };
+              };  /*  End if contact is not NULL */
+            };  /* End For contacts loop */
+          };  /*  End if contacts list is not NULL */
+        };  /*  End for production types loop */
+      };  /*  End for contact types loop */
+    }  /*  End if herd2 is not the same herd as the source herd */
+    else
     {
-#ifndef CHEYENNE
-      /* If herd 2 is quarantined, it cannot be the recipient of a direct
-       * contact. */
-      contact_forbidden = (herd2->quarantined && callback_data->contact_type == DirectContact);
-#endif
-      if (!contact_forbidden)
-        {
-          callback_data->best_herd = herd2;
-          callback_data->best_herd_distance = distance;
-          callback_data->best_herd_difference = difference;
-          callback_data->min_difference = difference;
-          callback_data->cumul_size = herd2->size;
-        }
-    }
-  else if (fabs (difference - callback_data->min_difference) <= EPSILON)
-    {
-      /* When we find a second potential recipient unit the same distance from
-       * the source as the current closest potential recipient, we first check
-       * if contact with the new find is forbidden by quarantine or zone rules.
-       * If so, we can ignore it.  Otherwise, the new find has a 1 in 2 chance
-       * of replacing the older find, if they are the same size.  (If the new
-       * find is half the size of the old one, it has a 1 in 3 chance; if it is
-       * twice the size of the old one, it has a 2 in 3 chance.)  If we find a
-       * third potential recipient unit the same distance from the source, its
-       * chance of replacing the older choice is its size divided by the sum of
-       * its size and the sizes of all of the older choices.  This gives the
-       * same result as recording all the potential recipient herds and
-       * choosing among them afterwards. */
-      herd1_fragment = callback_data->herd1_fragment;
-      herd2_fragment = callback_data->zones->membership[herd2->index];
-
-#ifndef CHEYENNE
-      contact_forbidden = ((herd2->quarantined && callback_data->contact_type == DirectContact)
-                           || (ZON_level (herd2_fragment) > ZON_level (herd1_fragment))
-                           || ((ZON_level (herd2_fragment) == ZON_level (herd1_fragment))
-                               && !ZON_same_fragment (herd2_fragment, herd1_fragment)));
-#else
-  #error "How should Cheyenne handle zone rules?"
-#endif
-      if (!contact_forbidden)
-        {
-          callback_data->cumul_size += herd2->size;
-
-          if (RAN_num (callback_data->rng) < herd2->size / callback_data->cumul_size)
-            {
-              callback_data->best_herd = herd2;
-              callback_data->best_herd_distance = distance;
-              callback_data->best_herd_difference = difference;
-              if (difference < callback_data->min_difference)
-                callback_data->min_difference = difference;
-            }
-        }
-    }
-  else if (difference < callback_data->min_difference)
-    {
-#ifndef CHEYENNE
-      contact_forbidden = (herd2->quarantined && callback_data->contact_type == DirectContact);
-#endif
-      if (!contact_forbidden)
-        {
-          callback_data->best_herd = herd2;
-          callback_data->best_herd_distance = distance;
-          callback_data->best_herd_difference = difference;
-          callback_data->min_difference = difference;
-          callback_data->cumul_size = herd2->size;
-        }
-    }
-
-end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_choose (%s)", MODEL_NAME);
+     if ( herd2->status == Destroyed )
+       g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Herd found was destroyed" );
+     else     
+       g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- check_and_choose - Optimized Version:  Herd found was same as source herd" );
+#endif   
+         ;      
+    };
+  }; /*  END if callback_data->_contacts != NULL */
+#if DEBUG
+  g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT check_and_choose (%s) - Optimized Version", MODEL_NAME );
 #endif
-  /*
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT check_and_choose %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-  */
   return;
 }
 
 
 
-int
-callback (int id, void *arg)
+typedef struct
 {
-  callback_t *callback_data;
+  struct naadsm_model_t_ *self;
   HRD_herd_list_t *herds;
-  HRD_herd_t *herd2;
-
-  callback_data = (callback_t *) arg;
-  herds = callback_data->herds;
-  /* Because herd indices start at 0, and R-Tree rectangle IDs start at 1. */
-  herd2 = HRD_herd_list_get (herds, id - 1);
-  check_and_choose (callback_data, herd2);
-
-  /* A return value of 0 would mean that the spatial search should stop early
-   * (before all herds in the search rectangle were visited).  We don't want
-   * that, so return 1. */
-  return 1;
-}
+  ZON_zone_list_t *zones;
+  EVT_new_day_event_t *event;
+  RAN_gen_t *rng;
+  EVT_event_queue_t *queue;   
+  PDF_dist_t *_poisson;
+  unsigned long new_infections;
+  unsigned long exposure_attempts;
+} new_day_event_hash_table_data;
 
 
+void new_day_event_handler( gpointer key, gpointer value, gpointer user_data );
 
 /**
+ * Optimized Version:
  * Responds to a new day event by releasing any pending contacts and
- * stochastically generating exposures and infections.
+ * stochastically generating exposures and infections.  This optimized version
+ * calls a glib hash_table foreach function for each infectious herd in the 
+ * list, which in turn does the work found in the non-optimized version of this
+ * function.  This foreach call should be altered to an OMP pragma around a
+ * for loop to utilize a parallel implementation of this loop, in future revisions.
  *
  * @param self the model.
  * @param herds a list of herds.
@@ -583,415 +556,612 @@ callback (int id, void *arg)
  * @param queue for any new events the model creates.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                       ZON_zone_list_t * zones, EVT_new_day_event_t * event,
                       RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  EVT_event_t *pending_event;
+  PDF_dist_t *poisson;
+  new_day_event_hash_table_data *foreach_callback_data;
+#ifdef USE_MPI
+  double start_time, end_time;
+#endif
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s) - Optimized Version", MODEL_NAME);
+#endif
+
+  /******                                                      ******/
+  /* This is all the same as the previous version of this function */
+  /******                                                    ******/
+  local_data = (local_data_t *) (self->model_data);
+  
+  /* Allocate a distribution that will be used to pick the number of exposures
+   * from a source. */
+  poisson = PDF_new_poisson_dist ( 1.0 );
+
+    /******                                                    ******/
+   /*           Begin optimization additions/changes               */
+  /******                                                    ******/
+
+  foreach_callback_data = g_new( new_day_event_hash_table_data, 1 );
+
+  /*  Fill in the user_data to be sent to the foreach hash table call */
+  foreach_callback_data->self = self;
+  foreach_callback_data->herds = herds;
+  foreach_callback_data->zones = zones;
+  foreach_callback_data->event = event;
+  foreach_callback_data->rng = rng;
+  foreach_callback_data->queue = queue; 
+  foreach_callback_data->_poisson = poisson; 
+  foreach_callback_data->new_infections = 0;
+  foreach_callback_data->exposure_attempts = 0;
+
+#ifdef USE_MPI
+    start_time = MPI_Wtime();
+#endif
+  
+#if defined( USE_MPI ) && defined( USE_OMP )
+#error TODO:  Add OMP code here to process the infectious herd list!
+#else  
+  /*  Iterate over the infectious herds.  This is a shortened list compared to the entire herd list */
+  g_hash_table_foreach( _iteration.infectious_herds, new_day_event_handler, foreach_callback_data );  
+#endif
+    
+#ifdef USE_MPI  
+    end_time = MPI_Wtime();
+    g_log( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "handle_new_day_event: Day: %i  Processed %i infectious herds, %i exposure attempts, and %i new infections in %g seconds.\n", event->day, g_hash_table_size( _iteration.infectious_herds ), foreach_callback_data->exposure_attempts, foreach_callback_data->new_infections, (double)( end_time - start_time) );
+#endif
+  
+  /*  Free memory used by the user_data structure */
+  g_free( foreach_callback_data );
+
+  /* Free memory used by the Poisson distribution */
+  PDF_free_dist (poisson);
+
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s) - Optimized Version", MODEL_NAME);
+#endif
+}
+
+/**
+ * Responds to a new day event by releasing any pending contacts and
+ * stochastically generating exposures and infections.
+ * This is the optimized version, which builds matrices of exposure attempt/production_type/contact_type
+ * combinations, and sends them to the optimized version of check_and_choose.
+ *
+ * @param key       Unused, but required by g_hash_table_foreach()
+ * @param value     A Pointer to the infectious herd, (source herd).
+ * @param user_data A Pointer to the foreach_callback_data structure, as passed by the optimized handle_new_day_event() function.
+ */
+ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
+ {
+  local_data_t *local_data;
   double disease_control_factors;
   double rate;
   PDF_dist_t *poisson;
   unsigned int nherds;          /* number of herds */
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   param_block_t **contact_type_block;
   HRD_herd_t *herd1, *herd2;
-  unsigned int nprod_types, i, j;
+  unsigned int nprod_types, i, j, k;
   param_block_t *param_block;
-  unsigned int herd1_index, herd2_index;
+  unsigned int herd2_index;
   unsigned int zone_index;
   REL_chart_t *control_chart;
   int nexposures;
-  EVT_event_t *exposure, *infection;
-  struct Rect search_rect;
-  double mult;                  /* to account for latitude */
+  EVT_event_t *exposure;
   callback_t callback_data;
   double distance;              /* between two herds being considered */
+  gboolean contact_forbidden;
   double r, P;
+  gboolean contact_is_adequate;
   ZON_zone_fragment_t *background_zone, *herd1_fragment, *herd2_fragment;
-  int shipping_delay;
-  int delay_index;
-  GQueue *q;
-  HRD_expose_t exposure_update;
-  char guilog[1024];
+  GPtrArray ***_contacts;
 
+  struct naadsm_model_t_ *self;
+  HRD_herd_list_t *herds;
+  ZON_zone_list_t *zones;
+  EVT_new_day_event_t *event;
+  RAN_gen_t *rng;
+  EVT_event_queue_t *queue;  
+  unsigned long sum_exposures;
+  double max_distance;
+  unsigned long new_infections;
+  
+  
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new_day_event_handler - Optimized Version" );
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_new_day_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
+  
+  max_distance = 0.0;  
+  new_infections = 0;
+  sum_exposures = 0;
 
-  local_data = (local_data_t *) (self->model_data);
+  /*  Does our user_data actually point to something? */
+  if ( user_data != NULL )
+  {
+    new_day_event_hash_table_data *foreach_callback_data = (new_day_event_hash_table_data *) user_data;
+    
+    self = foreach_callback_data->self;
+    herds = foreach_callback_data->herds;
+    zones = foreach_callback_data->zones;
+    event = foreach_callback_data->event;
+    rng = foreach_callback_data->rng;
+    queue = foreach_callback_data->queue;  
 
-  /* Release any pending (due to shipping delays) events. */
-  local_data->rotating_index =
-    (local_data->rotating_index + 1) % local_data->pending_infections->len;
-  q = (GQueue *) g_ptr_array_index (local_data->pending_infections, local_data->rotating_index);
-  while (!g_queue_is_empty (q))
+    /*  Do we actually have a valid model_data pointer? */
+    if ( self->model_data != NULL )
     {
-      /* Remove the event from this model's internal queue and place it in the
-       * simulation's event queue. */
-      pending_event = (EVT_event_t *) g_queue_pop_head (q);
-      EVT_event_enqueue (queue, pending_event);
-      local_data->npending_infections--;
-    }
+      local_data = (local_data_t *) (self->model_data);
 
-  /* Allocate a distribution that will be used to pick the number of exposures
-   * from a source. */
-  poisson = PDF_new_poisson_dist (1.0);
+      /*  Set the usual items for this function from the check_and_choose callback structure*/
+      callback_data.self = self;
+      callback_data.day = event->day;
+      callback_data.herds = herds;
+      callback_data.zones = zones;
+      callback_data.rng = rng;
 
-  callback_data.self = self;
-  callback_data.herds = herds;
-  callback_data.zones = zones;
-  callback_data.rng = rng;
-
-  background_zone = ZON_zone_list_get_background (zones);
-  nprod_types = local_data->production_types->len;
-  nherds = HRD_herd_list_length (herds);
-  for (herd1_index = 0; herd1_index < nherds; herd1_index++)
-    {
-      herd1 = HRD_herd_list_get (herds, herd1_index);
+      poisson = foreach_callback_data->_poisson;
+      background_zone = ZON_zone_list_get_background ( zones );
+      nprod_types = local_data->production_types->len;
+      nherds = HRD_herd_list_length ( herds );
+        
+      herd1 = (HRD_herd_t *) value;
+      herd1_fragment = zones->membership[herd1->index];
+      callback_data.herd1_fragment = herd1_fragment;      
+      callback_data.herd1 = herd1;
 
 #if DEBUG
       g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "unit \"%s\" is %s, state is %s",
-             herd1->official_id, herd1->production_type_name, HRD_status_name[herd1->status]);
+             "new_day_event_handler:  unit \"%s\" is %s (%i), state is %s",
+             herd1->official_id, herd1->production_type_name, herd1->production_type, HRD_status_name[herd1->status]);
 #endif
 
-      /* If the herd is not Latent, Infectious Subclinical, or Infectious
-       * Clinical, it cannot generate exposures. */
-      if (herd1->status < Latent || herd1->status > InfectiousClinical)
-        continue;
+      /*  How many contact types do we have?  */
+      j = 0;
+      for ( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+        j++;
 
-      callback_data.herd1 = herd1;
-      if (NULL != guilib_record_exposure)
-        {
-          exposure_update.src_index = herd1->index;
-          exposure_update.src_status = herd1->status;
-        }
-      herd1_fragment = zones->membership[herd1->index];
-      callback_data.herd1_fragment = herd1_fragment;
+      /*  Begin building 1-dimension of the attempted exposure matrix */
+      _contacts = g_new( GPtrArray **, j );
+      
+      /*  Set some more callback data for check_and_choose to use */
+      callback_data.contact_count = j;
+      callback_data.production_type_count = nprod_types;
+      callback_data._contacts = _contacts; 
 
-      /* Do direct contacts, then indirect contacts. */
-      for (contact_type = DirectContact; contact_type <= IndirectContact; contact_type++)
+      /*  Iterate over all contact/production-type pairs and build the remaining dimensions of the matrix of desired matches for exposure attempts */
+      if ( callback_data.contact_count > 0 )
+      {        
+        j = 0;
+        for ( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
         {
+          _contacts[j] = g_new( GPtrArray *, nprod_types );
+  
           contact_type_block = local_data->param_block[contact_type][herd1->production_type];
-          if (contact_type_block == NULL)
-            continue;
 
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                 "generating %s exposures from unit \"%s\"",
-                 EVT_contact_type_name[contact_type], herd1->official_id);
-#endif
-
-          /* If the herd is quarantined, it cannot be a source.  Recall that
-           * quarantine affects only direct contacts. */
-          if (herd1->quarantined)
-            {
-              if (contact_type == DirectContact)
-                {
-#if DEBUG
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                         "unit \"%s\" is quarantined, will not be source", herd1->official_id);
-#endif
-                  continue;
-                }
-              else
-                {
-#if DEBUG
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                         "quarantined unit \"%s\" will be a source of indirect contact",
-                         herd1->official_id);
-#endif
-                  ;
-                }
-            }
-
-          callback_data.contact_type = contact_type;
-          if (NULL != guilib_record_exposure)
-            {
-              if (contact_type == DirectContact)
-                exposure_update.exposure_method = "D";
-              else
-                exposure_update.exposure_method = "I";
-            }
-
-          /* Generate contacts for each recipient production type separately. */
+      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+             "new_day_event_handler:  Trying %i production types for this contact type %s",
+            nprod_types, (( contact_type == NAADSM_DirectContact)? "Direct":"Indirect"));
+#endif  
           for (i = 0; i < nprod_types; i++)
+          {
+            /*  Reset maximum distance desired to zero for each contact/production-type pair.  
+                This is used only by the RTree search function.  */
+            distance = 0.0;
+            
+            /*  Create this element of the 2nd Dimension of the exposure attempt matrix */
+            _contacts[j][i] = g_ptr_array_new();
+  
+            if (contact_type_block != NULL)
             {
+              /*  Get this combination, contact_type/production_type, param_block from memory */              
               param_block = contact_type_block[i];
-              if (param_block == NULL)
-                continue;
-
-              /* Check whether the source herd can infect this recipient
-               * production type. */
-              if ((herd1->status == Latent && param_block->latent_units_can_infect == FALSE)
-                  || (herd1->status == InfectiousSubclinical
-                      && param_block->subclinical_units_can_infect == FALSE))
-                continue;
-
+  
+              if ( param_block != NULL )
+              {
+  
+                /*  Can this exposure attempt happen? */
+                if ( !((herd1->quarantined) && (contact_type == NAADSM_DirectContact)) )
+                {
+                  /*  Check spread parameters to see if this unit's status can spread for this contact type */ 
+                  if ( (herd1->status == Latent && param_block->latent_units_can_infect == TRUE) || 
+                       (herd1->status == InfectiousSubclinical && param_block->subclinical_units_can_infect == TRUE)
+                       || ( (herd1->status != Latent) && (herd1->status != InfectiousSubclinical) )
+                     )
+                  { 
+                    /*  Okay, this unit CAN spread disease for this contact/production_type pair 
+                        Establish the parameters of this exposure attempt.  */
+                    
+                    
+                    /* Compute a multiplier to reduce the rate of movement once the
+                     * community is aware of an outbreak. */
+                    if ( !local_data->outbreak_known )
+                      disease_control_factors = REL_chart_lookup (0, param_block->movement_control);
+                    else if (ZON_same_zone (background_zone, herd1_fragment))
+                      disease_control_factors =
+                        REL_chart_lookup (event->day - local_data->public_announcement_day,
+                                          param_block->movement_control);
+                    else
+                    {
+                      zone_index = ZON_level (herd1_fragment) - 1;
+                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "zone index = %u", zone_index);
+                      control_chart =
+                        local_data->movement_control[contact_type][zone_index][herd1->production_type];
+                      if (control_chart == NULL)
+                      {
 #if DEBUG
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                     "generating exposures to %s units",
-                     (char *) g_ptr_array_index (local_data->production_types, i));
+                        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                               "new_day_event_handler:  unit is in \"%s\" zone, no special control chart for %s units in this zone",
+                               herd1_fragment->parent->name, herd1->production_type_name);
 #endif
-              callback_data.recipient_production_type = i;
-
-              /* Compute a multiplier to reduce the rate of movement once the
-               * community is aware of an outbreak. */
-              if (!local_data->outbreak_known)
-                disease_control_factors = REL_chart_lookup (0, param_block->movement_control);
-              else if (ZON_same_zone (background_zone, herd1_fragment))
-                disease_control_factors =
-                  REL_chart_lookup (event->day - local_data->public_announcement_day,
-                                    param_block->movement_control);
+                        control_chart = param_block->movement_control;
+                      }
+                      else
+                      {
+#if DEBUG
+                        g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                               "new_day_event_handler:  unit is in \"%s\" zone, using special control chart for %s units in this zone",
+                               herd1_fragment->parent->name, herd1->production_type_name);
+#endif
+                        ;
+                      }
+                      disease_control_factors =
+                        REL_chart_lookup (event->day - local_data->public_announcement_day,
+                                          control_chart);
+                    }; /*  END Compute a multiplier */
+  
+  
+                    /* Pick the number of exposures from this source.
+                     * If a fixed number of movements is specified, use it.
+                     * Otherwise, pick a number from the Poisson distribution. */
+                    if (param_block->fixed_movement_rate > 0)
+                    {
+                      rate = param_block->fixed_movement_rate * disease_control_factors;
+#if DEBUG
+                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                             "new_day_event_handler:  contact rate = %g (fixed) * %g = %g",
+                             param_block->fixed_movement_rate, disease_control_factors, rate);
+#endif
+                      nexposures = (int) ((event->day + 1) * rate) - (int) (event->day * rate);
+                      sum_exposures = sum_exposures + nexposures;
+                    }
+                    else
+                    {
+                      rate = param_block->movement_rate * disease_control_factors;
+#if DEBUG
+                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                             "new_day_event_handler:  contact rate = %g * %g = %g",
+                             param_block->movement_rate, disease_control_factors, rate);
+#endif
+                      poisson->u.poisson.mu = rate;
+                      nexposures = (int) trunc (PDF_random (poisson, rng));
+                      sum_exposures = sum_exposures + nexposures;                        
+                    }
+#if DEBUG
+                    g_debug ("new_day_event_handler:  Day %i, Needing %i exposures from herd \"%s\", for production_type %i and contact_type %i",
+                             event->day, nexposures, herd1->official_id, i + 1, j + 1 );
+#endif
+  
+                    /*  Now create and fillin the 3rd and final dimension of the 
+                        exposure attempt matrix, to be used by check_and_choose  */
+                    for ( k = 0; k < nexposures; k++ )
+                    {
+                      /*  Allocate some memory for this data */  
+                      sub_callback_t *sub_callback = g_new(sub_callback_t, 1);
+  
+                      if ( sub_callback != NULL )
+                      {
+                        /*  Add the pointer to this data to the matrix */ 
+                        g_ptr_array_add( _contacts[j][i], sub_callback );
+  
+                        sub_callback->try_again = TRUE;
+                        sub_callback->contact_type = contact_type;
+                        sub_callback->recipient_production_type = i;
+                        sub_callback->best_herd = NULL;
+                        sub_callback->movement_distance = PDF_random_non_neg (param_block->distance_dist, rng);
+  
+                        /*  Use maximum distance desired for the bounding box in RTree */
+                        if ( sub_callback->movement_distance > distance )
+                          distance = sub_callback->movement_distance;
+#if DEBUG
+                        g_debug ( "new_day_event_handler:  contact of %g km",
+                                  sub_callback->movement_distance );
+#endif  
+                      };  
+                    };  /*  END nexposures for loop */                
+                  }
+                  else
+                  {
+                    if ( ( herd1->status != Latent ) && ( herd1->status != InfectiousSubclinical ) )
+                      g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_ERROR,
+                              "new_day_event_handler:  !! ERROR !!  Herd1 is okay to infect, but was not allowed to...something is wrong with the if statement logic...." );
+                     
+                  }
+                }
+                else
+                {
+#if DEBUG
+                  g_debug ( "new_day_event_handler:  Herd1 is quarantined and this is direct contact" );
+#endif                    
+                };
+              }
               else
+              {
+#if DEBUG
+                g_debug ( "new_day_event_handler:  parameter_block empty for this production_type/contact_type pair, %i/%s", i + 1, ((contact_type == NAADSM_DirectContact)? "Direct":"Indirect") );
+#endif                    
+              };
+            }
+            else
+            {
+#if DEBUG
+              g_debug ( "new_day_event_handler:  contact_type_block empty for this production_type/contact_type pair" );
+#endif                
+            };    
+            
+            /*  Calculate the overall maximum distance for the RTree search */
+            if ( max_distance < distance )
+              max_distance = distance;     
+#if DEBUG
+            g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                    "new_day_event_handler:  using a max distance of %g km for this contact/production-type pair",
+                    distance );
+#endif            
+          };
+          j = j +1;
+        };  /*  END build matrix of desired matches */
+      }; /*  END if contact_type count > 0 */
+
+      if ( sum_exposures > 0 )
+      {
+#if DEBUG
+        g_log ( G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                "new_day_event_handler:  Total exposures sought for this herd: %lu",
+                sum_exposures );
+#endif          
+
+        callback_data.num_unmatched_exposures = sum_exposures;
+        spatial_search_circle_by_id (herds->spatial_index, herd1->index, max_distance*2.0 + EPSILON,
+                                     check_and_choose, &callback_data);
+
+        /* A re-search using the exhaustive method is necessary if some
+         * exposures remain unmatched. */
+        if (callback_data.num_unmatched_exposures > 0)
+            {
+              /*  Iterate over the results and reset "try_again" status based on each 
+                  match's status.  A re-search using the exhaustive method may be necessary... */
+              j = 0;
+              for( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+              {
+                for( i = 0; i < nprod_types; i++ )
                 {
-                  zone_index = ZON_level (herd1_fragment) - 1;
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "zone index = %u", zone_index);
-                  control_chart =
-                    local_data->movement_control[contact_type][zone_index][herd1->production_type];
-                  if (control_chart == NULL)
+                  GPtrArray *t_array = NULL;
+                  t_array = _contacts[j][i];
+                    
+                  for( k = 0; k < t_array->len; k++ )
+                  {                       
+                    sub_callback_t *tsub = g_ptr_array_index( t_array, k );
+                    if ( tsub != NULL )
                     {
+                      /*  Did we not find a match?? */ 
+                      tsub->try_again = ( tsub->best_herd == NULL );
+                };
+              }
+            };
+            j = j + 1;
+          }                 
 #if DEBUG
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                             "unit is in \"%s\" zone, no special control chart for %s units in this zone",
-                             herd1_fragment->parent->name, herd1->production_type_name);
+              g_debug ( "new_day_event_handler:  Using exhaustive search" );
 #endif
-                      control_chart = param_block->movement_control;
-                    }
-                  else
-                    {
-#if DEBUG
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                             "unit is in \"%s\" zone, using special control chart for %s units in this zone",
-                             herd1_fragment->parent->name, herd1->production_type_name);
-#endif
-                      ;
-                    }
-                  disease_control_factors =
-                    REL_chart_lookup (event->day - local_data->public_announcement_day,
-                                      control_chart);
-                }
-
-              /* Pick the number of exposures from this source.
-               * If a fixed number of movements is specified, use it.
-               * Otherwise, pick a number from the Poisson distribution. */
-              if (param_block->fixed_movement_rate > 0)
+              /*  Iterate over the entire list of herds and find matches for each 
+                  needed exposure, using the check_and_choose function */
+              for (herd2_index = 0; herd2_index < nherds; herd2_index++)
+    	        {
+                check_and_choose (herd2_index, &callback_data);
+    	        };
+            };
+  
+  
+            /*  Okay, now we "should" have all the "best" fit's for each desired 
+                contact/production-type pair, items.  */
+            /*  Iterate over the results and post exposure and infection events 
+                when applicable, and simultaneously delete dynamic memory used */
+            j = 0;
+            for( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+            {
+              contact_type_block = local_data->param_block[contact_type][herd1->production_type];
+  
+              if ( contact_type_block != NULL )
+              {
+                for( i = 0; i < nprod_types; i++ )
                 {
-                  rate = param_block->fixed_movement_rate * disease_control_factors;
-#if DEBUG
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                         "contact rate = %g (fixed) * %g = %g",
-                         param_block->fixed_movement_rate, disease_control_factors, rate);
-#endif
-                  nexposures = (int) ((event->day + 1) * rate) - (int) (event->day * rate);
-                }
-              else
-                {
-                  rate = param_block->movement_rate * disease_control_factors;
-#if DEBUG
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                         "contact rate = %g * %g = %g",
-                         param_block->movement_rate, disease_control_factors, rate);
-#endif
-                  poisson->u.poisson.mu = rate;
-                  nexposures = (int) (PDF_random (poisson, rng));
-                }
-#if DEBUG
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i exposures from unit \"%s\"",
-                     nexposures, herd1->official_id);
-#endif
-
-              /* For each exposure, pick a distance and use it to find a
-               * recipient herd. */
-              for (j = 0; j < nexposures; j++)
-                {
-                  callback_data.movement_distance = PDF_random (param_block->distance_dist, rng);
-                  if (callback_data.movement_distance < 0)
-                    callback_data.movement_distance = 0;
-
-#if INFO
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "contact of %g km",
-                         callback_data.movement_distance);
-#endif
-
-                  /* Find the potential recipient herd whose distance from the
-                   * source herd is closest to the chosen distance.  If several
-                   * potential recipients are the same distance from the source
-                   * unit, choose among them randomly. */
-                  callback_data.best_herd = NULL;
-                  if (
-#if defined(USE_RTREE) && USE_RTREE == 1
-                       /* For debugging purposes, you can #define USE_RTREE to 0 to never
-                        * use the spatial index, or 1 to always use it. */
-                       TRUE ||
-#endif
-                       callback_data.movement_distance * 2 <= local_data->use_rtree_index)
+                  GPtrArray *t_array = NULL;
+                  t_array = _contacts[j][i];
+  
+                  param_block = contact_type_block[i];
+  
+                  if ( param_block != NULL )
+                  {
+                    /*  Iterate over each exposure attempt for this contact/production_type pair */ 
+                    for( k = 0; k < t_array->len; k++ )
                     {
-                      distance = callback_data.movement_distance * 2 / GIS_DEGREE_DISTANCE;
-                      mult = 1.0 / MIN (cos (DEG2RAD * (herd1->lat + distance)), cos(DEG2RAD * (herd1->lat - distance))); 
-                      search_rect.boundary[0] = herd1->lon - (distance * mult);
-                      search_rect.boundary[1] = herd1->lat - distance;
-                      search_rect.boundary[2] = herd1->lon + (distance * mult);
-                      search_rect.boundary[3] = herd1->lat + distance;
-                      RTreeSearch (herds->spatial_index, &search_rect, callback, &callback_data);
-                    }
-
-                  /* If the R-tree search didn't find anything (or if we didn't
-                   * use the R-tree), then do an exhaustive search through all
-                   * herds. */
-                  if (callback_data.best_herd == NULL || callback_data.best_herd_distance > (callback_data.movement_distance * 2))
-                    for (herd2_index = 0; herd2_index < nherds; herd2_index++)
-                      check_and_choose (&callback_data, HRD_herd_list_get (herds, herd2_index));
-
-                  if (callback_data.best_herd == NULL)
-                    {
-#if INFO
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                             "no recipient can be found at ~%g km from unit \"%s\"",
-                             callback_data.movement_distance, herd1->official_id);
-#endif
-                      continue;
-                    }
-
-                  /* An eligible recipient unit (correct production type, not
-                   * Destroyed) was found. */
-                  herd2 = callback_data.best_herd;
-#if INFO
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                         "unit \"%s\" within %g km of %g",
-                         herd2->official_id,
-                         callback_data.best_herd_difference, callback_data.movement_distance);
-#endif
-                  /* Check whether contact with this unit is forbidden by the
-                   * zone rules. */
-                  herd2_fragment = zones->membership[herd2->index];
-                  if (ZON_level (herd2_fragment) > ZON_level (herd1_fragment))
-                    {
-#if INFO
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                             "contact forbidden: contact from unit \"%s\" in \"%s\" zone, level %i to unit \"%s\" in \"%s\" zone, level %i would violate higher-to-lower rule",
-                             herd1->official_id,
-                             herd1_fragment->parent->name,
-                             herd1_fragment->parent->level,
-                             herd2->official_id,
-                             herd2_fragment->parent->name, herd2_fragment->parent->level);
-#endif
-                      continue;
-                    }
-                  if ((ZON_level (herd2_fragment) == ZON_level (herd1_fragment))
-                      && !ZON_same_fragment (herd2_fragment, herd1_fragment))
-                    {
-#if INFO
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                             "contact forbidden: contact from unit \"%s\" to unit \"%s\" in separate foci of \"%s\" zone would violate separate foci rule",
-                             herd1->official_id, herd2->official_id, herd1_fragment->parent->name);
-#endif
-                      continue;
-                    }
-
-                  /* Announce the exposure. */
-#if DEBUG
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                         "unit \"%s\" unit exposed", herd2->official_id);
-#endif
-                  exposure = EVT_new_exposure_event (herd1, herd2, event->day,
-                                                     EVT_contact_type_name[contact_type], TRUE);
-                  exposure->u.exposure.contact_type = contact_type;
-                  shipping_delay = (int) round (PDF_random (param_block->shipping_delay, rng));
-                  if (shipping_delay <= 0)
-                    EVT_event_enqueue (queue, exposure);
-                  else
-                    {
-                      exposure->u.exposure.day += shipping_delay;
-                      if (shipping_delay > local_data->pending_infections->len)
-                        ergadm_extend_rotating_array (local_data->pending_infections,
-                                                      shipping_delay, local_data->rotating_index);
-                      delay_index =
-                        (local_data->rotating_index +
-                         shipping_delay) % local_data->pending_infections->len;
-                      q =
-                        (GQueue *) g_ptr_array_index (local_data->pending_infections, delay_index);
-                      g_queue_push_tail (q, exposure);
-                      local_data->npending_infections++;
-                    }
-
-                  if (NULL != guilib_record_exposure)
-                    {
-                      exposure_update.dest_index = herd2->index;
-                      exposure_update.dest_status = herd2->status;
-                    }
-
-                  /* Does the exposure result in infection? */
-                  if (contact_type == DirectContact && herd1->prevalence_curve != NULL)
-                    P = herd1->prevalence;
-                  else
-                    P = param_block->prob_infect;
-                  r = RAN_num (rng);
-                  if (r >= P)
-                    {
-#if INFO
-                      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                             "r (%g) >= P (%g), unit \"%s\" not infected", r,
-                             P, herd2->official_id);
-#endif
-                      if (NULL != guilib_record_exposure)
+                      sub_callback_t *tsub = g_ptr_array_index( t_array, k );
+                      if ( tsub != NULL )
+                      {
+                        if (tsub->best_herd != NULL)
                         {
-                          exposure_update.success = 0;
-                          guilib_record_exposure (exposure_update);
-                        }
-                      continue;
-                    }
-#if INFO
-                  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-                         "r (%g) < P (%g), unit \"%s\" infected", r, P,
-                         herd2->official_id);
-#endif
-                  infection = EVT_new_attempt_to_infect_event (herd1, herd2,
-                                                               event->day,
-                                                               EVT_contact_type_name[contact_type]);
-                  if (shipping_delay <= 0)
-                    EVT_event_enqueue (queue, infection);
-                  else
-                    {
-                      infection->u.infection.day += shipping_delay;
-                      /* The queue to add the delayed infection to was already
-                       * found above. */
-                      g_queue_push_tail (q, infection);
-                      local_data->npending_infections++;
-                    }
-
-                  if (NULL != guilib_record_exposure)
-                    {
-                      exposure_update.success = -1;
-                      guilib_record_exposure (exposure_update);
-                    }
-
-                }               /* end of loop over exposures */
-
-            }                   /* end of loop over recipient production types */
-
-        }                       /* end of loop over contact types */
-
-    }                           /* end of loop over source herds */
-
-  PDF_free_dist (poisson);
-
+                          /*  Create exposure and infection events here  */
+  
+                          /* An eligible recipient unit (correct production type, not
+                           * Destroyed, in range, etc... ) was found. */
+                          herd2 = tsub->best_herd;
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+                          g_debug ("new_day_event_handler:  unit \"%s\" within %g km of %g",
+                                   herd2->official_id,
+                                   tsub->best_herd_difference, tsub->movement_distance);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_new_day_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-}
+                          /* Check whether contact with this unit is forbidden by the
+                           * zone rules. */
+                          herd2_fragment = zones->membership[herd2->index];
+                          contact_forbidden = FALSE;
+                          if ( ZON_level ( herd2_fragment ) > ZON_level ( herd1_fragment ) )
+                          {
+                            contact_forbidden = TRUE;
+#if DEBUG
+                            g_debug ("new_day_event_handler: contact forbidden: contact from unit \"%s\" in \"%s\" zone, level %i to unit \"%s\" in \"%s\" zone, level %i would violate higher-to-lower rule",
+                                     herd1->official_id,
+                                     herd1_fragment->parent->name,
+                                     herd1_fragment->parent->level,
+                                     herd2->official_id,
+                                     herd2_fragment->parent->name,
+                                     herd2_fragment->parent->level);
+#endif
+                          }
+                          else if ( ZON_level ( herd2_fragment ) == ZON_level ( herd1_fragment ) )
+                          {
+                            if ( !ZON_same_fragment ( herd2_fragment, herd1_fragment ) )
+                            {
+                              contact_forbidden = TRUE;
+#if DEBUG
+                              g_debug ("new_day_event_handler: contact forbidden: contact from unit \"%s\" to unit \"%s\" in separate foci of \"%s\" zone would violate separate foci rule",
+                                       herd1->official_id, herd2->official_id, herd1_fragment->parent->name);
+#endif
+                            }
+                          }
+                          else /* ZON_level ( herd2_fragment ) < ZON_level ( herd1_fragment ) */
+                          {
+                            if ( ZON_level ( herd1_fragment ) - ZON_level ( herd2_fragment ) > 1 )
+                            {
+                              contact_forbidden = TRUE;
+#if DEBUG
+                              g_debug ("new_day_event_handler: contact forbidden: contact from unit \"%s\" in \"%s\" zone, level %i to unit \"%s\" in non-adjacent \"%s\" zone, level %i",
+                                       herd1->official_id,
+                                       herd1_fragment->parent->name,
+                                       herd1_fragment->parent->level,
+                                       herd2->official_id,
+                                       herd2_fragment->parent->name,
+                                       herd2_fragment->parent->level);
+#endif
+                            }
+                            else if ( !ZON_nests_in ( herd2_fragment, herd1_fragment ) )
+                            {
+                              contact_forbidden = TRUE;
+#if DEBUG
+                              g_debug ("new_day_event_handler: contact forbidden: contact from unit \"%s\" in \"%s\" zone, level %i to unit \"%s\" in non-nested focus of \"%s\" zone, level %i",
+                                       herd1->official_id,
+                                       herd1_fragment->parent->name,
+                                       herd1_fragment->parent->level,
+                                       herd2->official_id,
+                                       herd2_fragment->parent->name,
+                                       herd2_fragment->parent->level);
+#endif
+                            }
+                          }
 
+                          /* If none of the zone rules forbade contact, create the exposure. */
+                          if ( !contact_forbidden )
+                          {
+                            /* Announce the exposure. */
+#if DEBUG
+                            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                                   "new_day_event_handler:  unit \"%s\" unit exposed",
+                                   herd2->official_id);
+#endif
+
+                            /* Does the exposure result in infection? */
+                            if ((contact_type == NAADSM_DirectContact) &&
+                                (herd1->prevalence_curve != NULL) &&
+                                (param_block->movement_proportion_dist != NULL))
+                            {
+                              int infected_size =
+                                round(herd1->prevalence * herd1->size);
+                              double shipment_proportion;
+                              do
+                              {
+                                shipment_proportion =
+                                  PDF_random_non_neg (param_block->movement_proportion_dist,
+                                                      rng);
+                              }
+                              while (shipment_proportion > 1);
+                              int shipment_size =
+                                GSL_MAX(1,
+                                        round(herd1->size * shipment_proportion));
+                              P =
+                                1.0 -
+                                gsl_ran_hypergeometric_pdf (0,
+                                                            infected_size,
+                                                            herd1->size - infected_size,
+                                                            shipment_size);
+                            }
+                            else
+                              P = param_block->prob_infect;
+                            r = RAN_num (rng);
+                            contact_is_adequate = (r < P);
+  
+                            exposure = EVT_new_exposure_event (herd1, herd2, event->day,
+                                                               NAADSM_contact_type_abbrev[contact_type], TRUE, 
+                                                               contact_is_adequate);
+                            exposure->u.exposure.contact_type = contact_type; /* This seems redundant (exposure.cause does the same thing), but there's probably a reason.... */
+                            EVT_event_enqueue (queue, exposure);
+                          } /* contact was not forbidden */
+                        }
+                        else  /*  hmmm no match was found... */
+                        {
+#if DEBUG
+                            g_debug ("new_day_event_handler:  no recipient can be found at ~%g km from unit \"%s\" for this instance of this contact_type / production_type pair" ,
+                                     tsub->movement_distance, herd1->official_id);
+#endif
+                          ;
+                        };  /*  END if a herd match was found */
+                        
+                        /*  Free the structure memory stored at this location in this GPtrArray  */
+                        g_free( tsub );
+                        
+                      };  /* END if tsub != NULL  */
+                    };  /*  END for loop iteration over this GPtrArray  */
+                  };
+
+                  /* Free memory for GPtrArray */
+                  g_ptr_array_free( t_array, TRUE );
+                  _contacts[j][i] = NULL; /* just in case */
+
+                }; /*  END iteration over production_types  */
+              };
+
+              /* Free memory for this row */
+              g_free( _contacts[j] );
+              j = j + 1;
+            }; /*  END iteration over contact_types  */
+          } /*  END if contact count > 0 */
+          else
+          {
+            /* Free memory */
+            for( j = 0, contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++, j++ )
+              {
+                for (i = 0; i < nprod_types; i++)
+                  g_ptr_array_free (_contacts[j][i], TRUE);
+                g_free( _contacts[j] );
+              }
+          }
+          g_free( _contacts );
+          _contacts = NULL;  /*  just in case */
+
+    }; /*  END test model_data Not NULL */
+    
+    /*  Set some debugging or informative counts for use by who, 
+       (i.e. some function or procedure), ever might want/need them after this */
+    foreach_callback_data->new_infections = foreach_callback_data->new_infections + new_infections;
+    foreach_callback_data->exposure_attempts = foreach_callback_data->exposure_attempts + sum_exposures;  
+      
+  }; /*  END test user_data not NULL */
+  
+#if DEBUG
+  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new_day_event_handler - Optimized Version" );
+#endif  
+ }
 
 
 /**
@@ -1004,7 +1174,7 @@ handle_new_day_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  */
 void
 handle_public_announcement_event (struct
-                                  ergadm_model_t_ *self, EVT_public_announcement_event_t * event)
+                                  naadsm_model_t_ *self, EVT_public_announcement_event_t * event)
 {
   local_data_t *local_data;
 
@@ -1012,20 +1182,13 @@ handle_public_announcement_event (struct
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
          "----- ENTER handle_public_announcement_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_public_announcement_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-
   local_data = (local_data_t *) (self->model_data);
   if (local_data->outbreak_known == FALSE)
     {
       local_data->outbreak_known = TRUE;
       local_data->public_announcement_day = event->day;
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "community is now aware of outbreak, movement will slow");
+#if DEBUG
+      g_debug ("community is now aware of outbreak, movement will slow");
 #endif
     }
 
@@ -1033,11 +1196,6 @@ handle_public_announcement_event (struct
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
          "----- EXIT handle_public_announcement_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_public_announcement_event %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
 }
 
 
@@ -1055,25 +1213,16 @@ handle_public_announcement_event (struct
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
-
   switch (event->type)
     {
-    case EVT_RequestForExposureCauses:
-      handle_request_for_exposure_causes_event (self, queue);
-      break;
-    case EVT_RequestForInfectionCauses:
-      handle_request_for_infection_causes_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (self, queue);
       break;
     case EVT_NewDay:
       handle_new_day_event (self, herds, zones, &(event->u.new_day), rng, queue);
@@ -1090,11 +1239,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
 }
 
 
@@ -1105,41 +1249,21 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  unsigned int i;
-  GQueue *q;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER reset %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
 
   local_data = (local_data_t *) (self->model_data);
   local_data->outbreak_known = FALSE;
   local_data->public_announcement_day = 0;
-  for (i = 0; i < local_data->pending_infections->len; i++)
-    {
-      q = (GQueue *) g_ptr_array_index (local_data->pending_infections, i);
-      while (!g_queue_is_empty (q))
-        EVT_free_event (g_queue_pop_head (q));
-    }
-  local_data->npending_infections = 0;
-  local_data->rotating_index = 0;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT reset %s", MODEL_NAME); 
-    guilib_printf( guilog );
-  }
 }
 
 
@@ -1152,7 +1276,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -1171,29 +1295,9 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
-  local_data_t *local_data;
-
-  local_data = (local_data_t *) (self->model_data);
-  return (local_data->npending_infections > 0);
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
-{
-  local_data_t *local_data;
-
-  local_data = (local_data_t *) (self->model_data);
-  return (local_data->npending_infections > 0);
+  return FALSE;
 }
 
 
@@ -1205,11 +1309,11 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   local_data_t *local_data;
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   param_block_t ***contact_type_block;
   REL_chart_t ***contact_type_chart;
   unsigned int nprod_types, nzones, i, j;
@@ -1224,7 +1328,7 @@ to_string (struct ergadm_model_t_ *self)
   /* Add the parameter block for each to-from combination of production
    * types. */
   nprod_types = local_data->production_types->len;
-  for (contact_type = DirectContact; contact_type <= IndirectContact; contact_type++)
+  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
     {
       contact_type_block = local_data->param_block[contact_type];
       for (i = 0; i < nprod_types; i++)
@@ -1238,7 +1342,7 @@ to_string (struct ergadm_model_t_ *self)
                                                                     i),
                                         (char *) g_ptr_array_index (local_data->production_types,
                                                                     j),
-                                        EVT_contact_type_name[contact_type]);
+                                        NAADSM_contact_type_name[contact_type]);
                 if (param_block->fixed_movement_rate > 0)
                   g_string_append_printf (s, "\n    fixed-movement-rate=%g",
                                           param_block->fixed_movement_rate);
@@ -1247,17 +1351,13 @@ to_string (struct ergadm_model_t_ *self)
 
                 substring = PDF_dist_to_string (param_block->distance_dist);
                 g_string_append_printf (s, "\n    distance=%s", substring);
-                free (substring);
-
-                substring = PDF_dist_to_string (param_block->shipping_delay);
-                g_string_append_printf (s, "\n    delay=%s", substring);
-                free (substring);
+                g_free (substring);
 
                 g_string_append_printf (s, "\n    prob-infect=%g", param_block->prob_infect);
 
                 substring = REL_chart_to_string (param_block->movement_control);
                 g_string_append_printf (s, "\n    movement-control=%s", substring);
-                free (substring);
+                g_free (substring);
 
                 g_string_append_printf (s, "\n    latent-units-can-infect=%s",
                                         param_block->latent_units_can_infect ? "true" : "false");
@@ -1270,7 +1370,7 @@ to_string (struct ergadm_model_t_ *self)
   /* Add the movement control chart for each production type-zone
    * combination. */
   nzones = ZON_zone_list_length (local_data->zones);
-  for (contact_type = DirectContact; contact_type <= IndirectContact; contact_type++)
+  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
     {
       contact_type_chart = local_data->movement_control[contact_type];
       for (i = 0; i < nzones; i++)
@@ -1282,10 +1382,10 @@ to_string (struct ergadm_model_t_ *self)
                                       (char *) g_ptr_array_index (local_data->production_types,
                                                                   j),
                                       ZON_zone_list_get (local_data->zones, i)->name,
-                                      EVT_contact_type_name[contact_type]);
+                                      NAADSM_contact_type_name[contact_type]);
               substring = REL_chart_to_string (chart);
               g_string_append_printf (s, "\n    movement-control=%s", substring);
-              free (substring);
+              g_free (substring);
             }
     }
 
@@ -1307,7 +1407,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -1333,7 +1433,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   int nchars_written;
 
@@ -1355,15 +1455,14 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int nprod_types, nzones, i, j;
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   param_block_t ***contact_type_block;
   param_block_t *param_block;
   REL_chart_t ***contact_type_chart;
-  GQueue *q;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
@@ -1373,7 +1472,7 @@ local_free (struct ergadm_model_t_ *self)
 
   /* Free each of the parameter blocks. */
   nprod_types = local_data->production_types->len;
-  for (contact_type = DirectContact; contact_type <= IndirectContact; contact_type++)
+  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
     {
       contact_type_block = local_data->param_block[contact_type];
       for (i = 0; i < nprod_types; i++)
@@ -1385,7 +1484,6 @@ local_free (struct ergadm_model_t_ *self)
                   param_block = contact_type_block[i][j];
                   /* Free the dynamically-allocated parts of the parameter block. */
                   PDF_free_dist (param_block->distance_dist);
-                  PDF_free_dist (param_block->shipping_delay);
                   REL_free_chart (param_block->movement_control);
                   /* Free the parameter block itself. */
                   g_free (param_block);
@@ -1399,7 +1497,7 @@ local_free (struct ergadm_model_t_ *self)
 
   /* Free the movement control charts for units inside zones. */
   nzones = ZON_zone_list_length (local_data->zones);
-  for (contact_type = DirectContact; contact_type <= IndirectContact; contact_type++)
+  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
     {
       contact_type_chart = local_data->movement_control[contact_type];
       for (i = 0; i < nzones; i++)
@@ -1415,16 +1513,6 @@ local_free (struct ergadm_model_t_ *self)
       g_free (contact_type_chart);
     }
 
-  /* Free any pending infections. */
-  for (i = 0; i < local_data->pending_infections->len; i++)
-    {
-      q = (GQueue *) g_ptr_array_index (local_data->pending_infections, i);
-      while (!g_queue_is_empty (q))
-        EVT_free_event (g_queue_pop_head (q));
-      g_queue_free (q);
-    }
-  g_ptr_array_free (local_data->pending_infections, TRUE);
-
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
@@ -1432,17 +1520,6 @@ local_free (struct ergadm_model_t_ *self)
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -1462,7 +1539,7 @@ is_singleton (void)
  * Adds a set of parameters to a contact spread model.
  */
 void
-set_params (struct ergadm_model_t_ *self, scew_element * params)
+set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 {
   local_data_t *local_data;
   param_block_t t;
@@ -1470,7 +1547,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   gboolean success;
   scew_attribute *attr;
   XML_Char const *attr_text;
-  EVT_contact_type_t contact_type;
+  NAADSM_contact_type contact_type;
   gboolean *from_production_type, *to_production_type;
   gboolean *zone;
   unsigned int nprod_types, nzones, i, j;
@@ -1489,9 +1566,9 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   g_assert (attr != NULL);
   attr_text = scew_attribute_value (attr);
   if (strcmp (attr_text, "direct") == 0)
-    contact_type = DirectContact;
+    contact_type = NAADSM_DirectContact;
   else if (strcmp (attr_text, "indirect") == 0)
-    contact_type = IndirectContact;
+    contact_type = NAADSM_IndirectContact;
   else
     g_assert_not_reached ();
 
@@ -1550,16 +1627,6 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
       t.distance_dist = NULL;
     }
 
-  e = scew_element_by_name (params, "delay");
-  if (e != NULL)
-    {
-      t.shipping_delay = PAR_get_PDF (e);
-    }
-  else
-    {
-      t.shipping_delay = PDF_new_point_dist (0);
-    }
-
   e = scew_element_by_name (params, "prob-infect");
   if (e != NULL)
     {
@@ -1575,6 +1642,19 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
       t.prob_infect = 0;
     }
 
+  e = scew_element_by_name (params, "movement-proportion");
+  if (e != NULL)
+    {
+      t.movement_proportion_dist = PAR_get_PDF (e);
+      /* The distribution must be contained in the range [0, 1]. */
+      g_assert ((PDF_min (t.movement_proportion_dist) >= 0.0) &&
+                (PDF_max (t.movement_proportion_dist) <= 1.0));
+    }
+  else
+    {
+      t.movement_proportion_dist = NULL;
+    }
+
   e = scew_element_by_name (params, "movement-control");
   if (e != NULL)
     {
@@ -1588,7 +1668,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   g_assert (REL_chart_min (t.movement_control) >= 0);
 
   e = scew_element_by_name (params, "latent-units-can-infect");
-  if (contact_type == DirectContact && e != NULL)
+  if (contact_type == NAADSM_DirectContact && e != NULL)
     {
       t.latent_units_can_infect = PAR_get_boolean (e, &success);
       if (success == FALSE)
@@ -1598,7 +1678,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
         }
     }
   else
-    t.latent_units_can_infect = (contact_type == DirectContact);
+    t.latent_units_can_infect = (contact_type == NAADSM_DirectContact);
 
   e = scew_element_by_name (params, "subclinical-units-can-infect");
   if (e != NULL)
@@ -1616,11 +1696,11 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   /* Find out which to-from production type combinations, or which production
    * type-zone combinations, these parameters apply to. */
   from_production_type =
-    ergadm_read_prodtype_attribute (params, "from-production-type", local_data->production_types);
+    naadsm_read_prodtype_attribute (params, "from-production-type", local_data->production_types);
   to_production_type =
-    ergadm_read_prodtype_attribute (params, "to-production-type", local_data->production_types);
+    naadsm_read_prodtype_attribute (params, "to-production-type", local_data->production_types);
   if (scew_attribute_by_name (params, "zone") != NULL)
-    zone = ergadm_read_zone_attribute (params, local_data->zones);
+    zone = naadsm_read_zone_attribute (params, local_data->zones);
   else
     zone = NULL;
 
@@ -1662,7 +1742,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
                          "setting parameters for %s -> %s (%s)",
                          (char *) g_ptr_array_index (local_data->production_types, i),
                          (char *) g_ptr_array_index (local_data->production_types, j),
-                         EVT_contact_type_name[contact_type]);
+                         NAADSM_contact_type_name[contact_type]);
 #endif
                 }
               else
@@ -1670,17 +1750,17 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
                   g_warning ("overwriting previous parameters for %s -> %s (%s)",
                              (char *) g_ptr_array_index (local_data->production_types, i),
                              (char *) g_ptr_array_index (local_data->production_types, j),
-                             EVT_contact_type_name[contact_type]);
+                             NAADSM_contact_type_name[contact_type]);
                 }
 
               param_block->movement_rate = t.movement_rate;
               param_block->fixed_movement_rate = t.fixed_movement_rate;
               param_block->movement_control = REL_clone_chart (t.movement_control);
               param_block->distance_dist = PDF_clone_dist (t.distance_dist);
-              param_block->shipping_delay = PDF_clone_dist (t.shipping_delay);
               param_block->latent_units_can_infect = t.latent_units_can_infect;
               param_block->subclinical_units_can_infect = t.subclinical_units_can_infect;
               param_block->prob_infect = t.prob_infect;
+              param_block->movement_proportion_dist = t.movement_proportion_dist;
             }
         }
     }
@@ -1714,7 +1794,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
                          "setting movement control for %s in \"%s\" zone (%s)",
                          (char *) g_ptr_array_index (local_data->production_types, j),
                          ZON_zone_list_get (local_data->zones, i)->name,
-                         EVT_contact_type_name[contact_type]);
+                         NAADSM_contact_type_name[contact_type]);
 #endif
                   ;
                 }
@@ -1724,7 +1804,7 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
                   g_warning ("overwriting previous movement control for %s in \"%s\" zone (%s)",
                              (char *) g_ptr_array_index (local_data->production_types, j),
                              ZON_zone_list_get (local_data->zones, i)->name,
-                             EVT_contact_type_name[contact_type]);
+                             NAADSM_contact_type_name[contact_type]);
                 }
               contact_type_chart[i][j] = REL_clone_chart (t.movement_control);
             }
@@ -1736,7 +1816,6 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
   if (zone != NULL)
     g_free (zone);
   PDF_free_dist (t.distance_dist);
-  PDF_free_dist (t.shipping_delay);
   REL_free_chart (t.movement_control);
 
 #if DEBUG
@@ -1751,25 +1830,22 @@ set_params (struct ergadm_model_t_ *self, scew_element * params)
 /**
  * Returns a new contact spread model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   unsigned int nprod_types, nzones, i;
-  char guilog[1024];
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -1779,7 +1855,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   m->reset = reset;
   m->is_listening_for = is_listening_for;
   m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
   m->to_string = to_string;
   m->printf = local_printf;
   m->fprintf = local_fprintf;
@@ -1793,9 +1868,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
    * the set_params function. */
   local_data->production_types = herds->production_type_names;
   nprod_types = local_data->production_types->len;
-  local_data->param_block[UnknownContact] = NULL;
-  local_data->param_block[DirectContact] = g_new0 (param_block_t **, nprod_types);
-  local_data->param_block[IndirectContact] = g_new0 (param_block_t **, nprod_types);
+  for (i = 0; i < NAADSM_NCONTACT_TYPES; i++)
+    local_data->param_block[i] = NULL;
+  local_data->param_block[NAADSM_DirectContact] = g_new0 (param_block_t **, nprod_types);
+  local_data->param_block[NAADSM_IndirectContact] = g_new0 (param_block_t **, nprod_types);
 
   /* local_data->movement_control holds movement control charts by zone and
    * production type.  The first level of indexing is by contact type, then by
@@ -1803,39 +1879,18 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
    * rows contain all NULL pointers. */
   local_data->zones = zones;
   nzones = ZON_zone_list_length (zones);
-  local_data->movement_control[UnknownContact] = NULL;
-  local_data->movement_control[DirectContact] = g_new0 (REL_chart_t **, nzones);
+  for (i = 0; i < NAADSM_NCONTACT_TYPES; i++)
+    local_data->movement_control[i] = NULL;
+  local_data->movement_control[NAADSM_DirectContact] = g_new0 (REL_chart_t **, nzones);
   for (i = 0; i < nzones; i++)
-    local_data->movement_control[DirectContact][i] = g_new0 (REL_chart_t *, nprod_types);
-  local_data->movement_control[IndirectContact] = g_new0 (REL_chart_t **, nzones);
+    local_data->movement_control[NAADSM_DirectContact][i] = g_new0 (REL_chart_t *, nprod_types);
+  local_data->movement_control[NAADSM_IndirectContact] = g_new0 (REL_chart_t **, nzones);
   for (i = 0; i < nzones; i++)
-    local_data->movement_control[IndirectContact][i] = g_new0 (REL_chart_t *, nprod_types);
+    local_data->movement_control[NAADSM_IndirectContact][i] = g_new0 (REL_chart_t *, nprod_types);
 
   /* No outbreak has been announced yet. */
   local_data->outbreak_known = FALSE;
   local_data->public_announcement_day = 0;
-
-  /* Initialize an array for delayed contacts.  We don't know yet how long the
-   * the array needs to be, since that will depend on values we sample from the
-   * delay distribution, so we initialize it to length 1. */
-  local_data->pending_infections = g_ptr_array_new ();
-  g_ptr_array_add (local_data->pending_infections, g_queue_new ());
-  local_data->npending_infections = 0;
-  local_data->rotating_index = 0;
-
-  /* Use the following heuristic to decide whether to use the R-tree index in
-   * searches: if the ratio of the diameter of circle of maximum spread to the
-   * short axis of the oriented bounding rectangle around the herds is <= 0.25,
-   * use the R-tree. */
-  if (herds->short_axis_length > 0)
-    local_data->use_rtree_index = 0.25 / 2 * herds->short_axis_length;
-  else
-    local_data->use_rtree_index = 0;
-#if defined(USE_RTREE) && USE_RTREE == 0
-  /* For debugging purposes, you can #define USE_RTREE to 0 to never use the
-   * spatial index, or 1 to always use it. */
-  local_data->use_rtree_index = 0;
-#endif
 
   /* Send the XML subtree to the init function to read the production type
    * combination specific parameters. */
@@ -1846,24 +1901,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
 
   return m;
-}
-
-char *
-contact_spread_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-contact_spread_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
-}
-
-gboolean
-contact_spread_model_is_singleton (void)
-{
-  return is_singleton ();
 }
 
 /* end of file contact-spread-model.c */

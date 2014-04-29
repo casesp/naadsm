@@ -4,13 +4,13 @@ unit NAADSMap;
 NAADSMap.pas
 -----------------
 Begin: 2007/02/01
-Last revision: $Date: 2008/11/25 22:01:21 $ $Author: areeves $
-Version: $Revision: 1.7 $
+Last revision: $Date: 2009-08-26 20:04:20 $ $Author: areeves $
+Version: $Revision: 1.14 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -22,12 +22,14 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
+    QVectors,
+    QLists,
+
     SMSimulationInput,
     Herd,
     SMDatabase,
-
-    QVectors,
-    QLists
+    StatusEnums,
+    EventsAndExposures
   ;
 
   type TMapOutput = (MAPStart, MAPEnd);
@@ -86,7 +88,7 @@ interface
       { Take the appropriate action when these events occur in the simulation }
       procedure simStart();
       procedure iterationStart( const iteration: integer );
-      procedure herdEvent( const h: THerd; const evt: string; const simDay: integer );
+      procedure herdEvent( const h: THerd; const evt: TEventCode; const simDay: integer );
       procedure iterationEnd( const iteration: integer );
       procedure simEnd( const simCompleted: boolean );
 
@@ -101,11 +103,11 @@ implementation
     StrUtils,
 
     MyStrUtils,
-    USStrUtils,
+    I88n,
 
     ProductionType,
     ProductionTypeList,
-    StatusEnums
+    NAADSMLibraryTypes
   ;
 
 //-----------------------------------------------------------------------------
@@ -330,10 +332,13 @@ implementation
         begin
           h := it.current();
           // Note the space before the herd ID.  It always appears in sample files, but I don't know if it's necessary.
-          line := dayStr + ',' + csvQuote( ' ' + intToStr( h.id ) )
-            + ',' + csvQuote( transitionStateString( h.simulatedStatus ) )
-            + ',' + usFloatToStr( h.lat ) + ',' + usFloatToStr( h.lon )
-            + ',' + csvQuote( h.prodTypeName ) + ',' + intToStr( h.initialSize )
+          line := dayStr + csvListSep
+            + csvQuote( ' ' + intToStr( h.id ) ) + csvListSep
+            + csvQuote( naadsmDiseaseStateStr( h.diseaseStatus ) ) + csvListSep
+            + csvFloatToStr( h.lat ) + csvListSep
+            + csvFloatToStr( h.lon ) + csvListSep
+            + csvQuote( h.prodTypeName ) + csvListSep
+            + intToStr( h.initialSize )
           ;
           writeLn( _mainFile, line );
           inc( _iterationLineCount );
@@ -408,7 +413,7 @@ implementation
           _lastStatDay := 0;
 
           _statusList.clear();
-          _statusList.append( transitionStateString( tsSusceptible ) );
+          _statusList.append( naadsmDiseaseStateStr( NAADSMStateSusceptible ) );
 
           _iterationLineCount := 0;
 
@@ -426,7 +431,7 @@ implementation
   ;
 
 
-  procedure TNAADSMap.herdEvent( const h: THerd; const evt: string; const simDay: integer );
+  procedure TNAADSMap.herdEvent( const h: THerd; const evt: TEventCode; const simDay: integer );
     var
       str: string;
       statusStr: string;
@@ -435,15 +440,18 @@ implementation
       //-----------------------------------------------------------
       // Sample format for state changes:
       //18," 16102","Destroyed",31.418804,-81.915954,"Commercial Layer",79000
-      if( ( EVT_TRANSITION_STATE_CHANGE = evt ) and ( _writingMainFile ) ) then
+      if( ( EVTTransistionStateChange = evt ) and ( _writingMainFile ) ) then
         begin
-          statusStr := transitionStateString( h.simulatedStatus );
+          statusStr := naadsmDiseaseStateStr( h.diseaseStatus );
 
           // Note the space before the herd ID.  It always appears in sample files, but I don't know if it's necessary.
-          str := intToStr( simDay ) + ',' + csvQuote( ' ' + intToStr( h.id ) )
-            + ',' + csvQuote( statusStr )
-            + ',' + usFloatToStr( h.lat ) + ',' + usFloatToStr( h.lon )
-            + ',' + csvQuote( h.prodTypeName ) + ',' + intToStr( h.initialSize )
+          str := intToStr( simDay ) + csvListSep
+            + csvQuote( ' ' + intToStr( h.id ) ) + csvListSep
+            + csvQuote( statusStr ) + csvListSep
+            + csvFloatToStr( h.lat ) + csvListSep
+            + csvFloatToStr( h.lon ) + csvListSep
+            + csvQuote( h.prodTypeName ) + csvListSep
+            + intToStr( h.initialSize )
           ;
 
           writeln( _mainFile, str );
@@ -463,17 +471,23 @@ implementation
       ;
 
       (*
-      // These events are sent by ModelImplementation, but not yet recorded for NAADSMap:
-      EVT_DESTROYED
-      EVT_VACCINATED
-      EVT_INFECTED
-      EVT_DETECTED
-      EVT_ZONE_FOCUS
-      EVT_ZONE_CHANGED
+      // These events are sent by NAADSMLibrary, but not yet recorded for NAADSMap:
+      EVTDestroyed
+      EVTVaccinated
+      EVTInfected
+      EVTDetected
+      EVTZoneFocus
+      EVTZoneChanged
 
-      // These events are NOT sent by ModelImplementation to NAADSMap.  They probably aren't needed.
-      EVT_TRACED_DIRECT
-      EVT_TRACED_INDIRECT
+      // These events are NOT sent by NAADSMLibrary to NAADSMap.  They probably aren't needed.
+      EVTTraceForwardDirect
+      EVTTraceForwardIndirect
+
+      // These events are new since NAADSMap was written.  I don't know if they are needed or not.
+      EVTTraceBackDirect
+      EVTTraceBackIndirect
+      EVTHerdExam
+      EVTDiagnosticTest
       *)
     end
   ;

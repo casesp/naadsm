@@ -17,13 +17,10 @@
  * any later version.
  */
 
-
-
 #ifndef BASIC_DESTRUCTION_MODEL_H
 #define BASIC_DESTRUCTION_MODEL_H
 
-char *basic_destruction_model_interface_version (void);
-ergadm_model_t *basic_destruction_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                             ZON_zone_list_t * zones);
+naadsm_model_t *basic_destruction_model_new (scew_element * params, HRD_herd_list_t *,
+                                             projPJ, ZON_zone_list_t *);
 
 #endif

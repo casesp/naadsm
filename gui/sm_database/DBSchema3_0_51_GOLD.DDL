@@ -8,30 +8,13 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Create new table `outGeneral`.
--- `outGeneral` : Table of outGeneral
--- 	`outGeneralID` : outGeneralID identifies outGeneral
--- 	`simulationStartTime` : simulationStartTime is of outGeneral
--- 	`simulationEndTime` : simulationEndTime is of outGeneral
--- 	`completedIterations` : completedIterations is of outGeneral  
+ 
 create table `outGeneral` ( 
 	`outGeneralID` CHAR(10),
 	`simulationStartTime` DATETIME,
 	`simulationEndTime` DATETIME,
 	`completedIterations` INTEGER, constraint `outGeneral_PK` primary key (`outGeneralID`) ); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outGeneral`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outGeneral' :
--- 	`outGeneralID`
-
-
--- Create new table `outDailyByProductionType`.
--- `outDailyByProductionType` : Table of outDailyByProductionType
--- 	`outDailyByPTID` : outDailyByPTID identifies outDailyByProductionType  
+ 
 create table `outDailyByProductionType` ( 
 	`outDailyByPTID` COUNTER,
 	`iteration` INTEGER,
@@ -70,20 +53,9 @@ create table `outDailyByProductionType` (
 	`duUClin` INTEGER,
 	`duAClin` INTEGER, constraint `outDailyEpiByProductionType_PK` primary key (`outDailyByPTID`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyByProductionType' :
--- 	`outDailyByPTID`
--- 	`productionTypeID`
-
-
--- Add foreign key constraints to table `outDailyByProductionType`.
 alter table `outDailyByProductionType`
 	add constraint `inProductionType_outDailyByProductionType_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

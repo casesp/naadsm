@@ -7,18 +7,11 @@
 --    Connected data source : naadsm-3_1_x-temp
 --    Connected server      : ACCESS
 --    Connected database    : C:\Documents and Settings\apreeves\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x-temp.mdb
-
-
--- Create new table `dynBlob`.
--- `dynBlob` : Table of dynBlob
--- 	`dynBlobID` : dynBlobID identifies dynBlob
--- 	`zonePerimeters` : zonePerimeters is of dynBlob  
+ 
 create table `dynBlob` ( 
 	`dynBlobID` CHAR(10),
 	`zonePerimeters` LONGBINARY, constraint `dynBlob_PK` primary key (`dynBlobID`) ); 
 
-
--- Update existing table `inZoneProductionTypePair`.
 create table `inZoneProductionTypePair_IM0` ( 
 	`zoneID` INTEGER,
 	`productionTypeID` INTEGER,
@@ -34,35 +27,20 @@ insert into `inZoneProductionTypePair_IM0` (`zoneID`, `productionTypeID`, `zoneD
            `inZoneProductionTypePair`.`zoneDetectionMultiplier`  
     from `inZoneProductionTypePair`;
 
-
 alter table `inZoneProductionTypePair`
 	drop constraint `inChart_inZoneProductionTypePair_FK1`;
-
 
 alter table `inZoneProductionTypePair`
 	drop constraint `inChart_inZoneProductionTypePair_FK2`;
 
-
 alter table `inZoneProductionTypePair`
 	drop constraint `inProductionType_inZoneProductionTypePair_FK1`;
-
 
 alter table `inZoneProductionTypePair`
 	drop constraint `inSurveillanceZone_inZoneProductionTypePair_FK1`;
 
-
 drop table `inZoneProductionTypePair`; 
 
-
--- `inZoneProductionTypePair` : Table of inZoneProductionTypePair
--- 	`zoneID` : zoneID identifies inZoneProductionTypePair
--- 	`productionTypeID` : productionTypeID partly identifies inZoneProductionTypePair
--- 	`useDirectMovementControl` : useDirectMovementControl is of inZoneProductionTypePair
--- 	`zoneDirectMovementRelID` : zoneDirectMovementRelID is of inZoneProductionTypePair
--- 	`useIndirectMovementControl` : useIndirectMovementControl is of inZoneProductionTypePair
--- 	`zoneIndirectMovementRelID` : zoneIndirectMovementRelID is of inZoneProductionTypePair
--- 	`useDetectionMultiplier` : useDetectionMultiplier is of inZoneProductionTypePair
--- 	`zoneDetectionMultiplier` : zoneDetectionMultiplier is of inZoneProductionTypePair  
 create table `inZoneProductionTypePair` ( 
 	`zoneID` INTEGER,
 	`productionTypeID` INTEGER,
@@ -73,14 +51,6 @@ create table `inZoneProductionTypePair` (
 	`useDetectionMultiplier` BIT,
 	`zoneDetectionMultiplier` DOUBLE); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inZoneProductionTypePair`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inZoneProductionTypePair' :
--- 	`zoneID`
--- 	`productionTypeID`
-
-
 insert into `inZoneProductionTypePair` (`zoneID`, `productionTypeID`, `zoneDirectMovementRelID`, `zoneIndirectMovementRelID`, `zoneDetectionMultiplier`) 
     select `inZoneProductionTypePair_IM0`.`zoneID`, 
            `inZoneProductionTypePair_IM0`.`productionTypeID`, 
@@ -89,15 +59,11 @@ insert into `inZoneProductionTypePair` (`zoneID`, `productionTypeID`, `zoneDirec
            `inZoneProductionTypePair_IM0`.`zoneDetectionMultiplier`  
     from `inZoneProductionTypePair_IM0`;
 
-
 drop table `inZoneProductionTypePair_IM0`; 
-
 
 alter table `inZoneProductionTypePair`
 	add constraint `inZoneProductionTypePair_PK` primary key (`zoneID`, `productionTypeID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inZoneProductionTypePair`
 	add constraint `inChart_inZoneProductionTypePair_FK1` foreign key (
 		`zoneDirectMovementRelID`)
@@ -121,11 +87,7 @@ alter table `inZoneProductionTypePair`
 		`zoneID`)
 	 references `inSurveillanceZone` (
 		`zoneID`); 
-		
-		
 
-
--- Update existing table `inControlsGlobal`.
 create table `inControlsGlobal_IM0` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -155,32 +117,14 @@ insert into `inControlsGlobal_IM0` (`controlsGlobalID`, `includeDetection`, `inc
            `inControlsGlobal`.`vaccPriorityOrder`  
     from `inControlsGlobal`;
 
-
 alter table `inControlsGlobal`
 	drop constraint `inChart_inControlsGlobal_FK1`;
-
 
 alter table `inControlsGlobal`
 	drop constraint `inChart_inControlsGlobal_FK2`;
 
-
 drop table `inControlsGlobal`; 
 
-
--- `inControlsGlobal` : Table of inControlsGlobal
--- 	`controlsGlobalID` : A primary key for the single record stored in this table.  This value is always "NAADSMXXXX".
--- 	`includeDetection` : Indicates whether detection of disease in any production type will be modeled.
--- 	`includeTracing` : Indicates whether surveillance of any production type will be modeled.
--- 	`includeDestruction` : Indicates whether destruction will be used in any production type.
--- 	`destrProgramDelay` : The number of days that must pass after the first detection before a destruction program can begin.
--- 	`destrCapacityRelID` : ID number of the relational function used to define the daily destruction capacity.  This field references inChart.chartID.
--- 	`destrPriorityOrder` : A string that identifies the primary priority order for destruction: see Section 8.9.2.1.
--- 	`destrReasonOrder` : A string that identifies the secondary priority order for destruction: see Section 8.9.2.1.
--- 	`includeVaccination` : Indicates whether vaccination will be used in any production type.
--- 	`vaccDetectedUnitsBeforeStart` : The number of clinical units which must be detected before the initiation of a vaccination program.
--- 	`vaccCapacityRelID` : ID number of the relational function used to define the daily vaccination capacity.  This field references inChart.chartID.
--- 	`vaccPriorityOrder` : A string that identifies the priority order for vaccination: see Section 8.10.2.1.
--- 	`includeSurveillanceZones` : includeSurveillanceZones is of inControlsGlobal  
 create table `inControlsGlobal` ( 
 	`controlsGlobalID` CHAR(10),
 	`includeDetection` BIT,
@@ -211,15 +155,11 @@ insert into `inControlsGlobal` (`controlsGlobalID`, `includeDetection`, `include
            `inControlsGlobal_IM0`.`vaccPriorityOrder`  
     from `inControlsGlobal_IM0`;
 
-
 drop table `inControlsGlobal_IM0`; 
-
 
 alter table `inControlsGlobal`
 	add constraint `inControlsGlobal_PK` primary key (`controlsGlobalID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inControlsGlobal`
 	add constraint `inChart_inControlsGlobal_FK1` foreign key (
 		`destrCapacityRelID`)
@@ -231,6 +171,3 @@ alter table `inControlsGlobal`
 		`vaccCapacityRelID`)
 	 references `inChart` (
 		`chartID`); 
-		
-		
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

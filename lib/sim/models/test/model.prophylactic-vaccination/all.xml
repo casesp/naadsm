@@ -1,0 +1,576 @@
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>0% vaccinated, deterministic</short-name>
+
+  <description>
+    Test a scenario with 0% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_0</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 0% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - 0 units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>25% vaccinated, deterministic</short-name>
+
+  <description>
+    Test a scenario with 25% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_25</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 25% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - 2 units should start vaccine immune.  Since this is a deterministic
+       test, the vaccinated units will be spread evenly through the
+       population instead of being chosen randomly.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>S</td> <td>S</td> <td>S</td> <td>V</td> <td>S</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>50% vaccinated, deterministic</short-name>
+
+  <description>
+    Test a scenario with 50% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_50</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 50% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - 4 units should start vaccine immune.  Since this is a deterministic
+       test, the vaccinated units will be spread evenly through the
+       population instead of being chosen randomly.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>S</td> <td>V</td> <td>S</td> <td>V</td> <td>S</td> <td>V</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>75% vaccinated, deterministic</short-name>
+
+  <description>
+    Test a scenario with 75% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_75</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 75% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - 6 units should start vaccine immune.  Since this is a deterministic
+       test, the vaccinated units will be spread evenly through the
+       population instead of being chosen randomly.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>V</td> <td>V</td> <td>S</td> <td>V</td> <td>V</td> <td>V</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>100% vaccinated, deterministic</short-name>
+
+  <description>
+    Test a scenario with 100% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_100</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 100% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - 8 units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>V</td> <td>V</td> <td>V</td> <td>V</td> <td>V</td> <td>V</td> <td>V</td></tr>
+  </output>
+</deterministic-test>
+
+<stochastic-variable-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>75% vaccinated, stochastic</short-name>
+
+  <description>
+    Test a scenario with 75% of the units vaccinated.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>1 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected</herd-file>
+
+  <parameter-file>proportion_75_w_vars</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 75% of units.  The vaccine produces
+    immunity immediately, and the immunity lasts 3 days.
+
+    What should happen:
+     - There should always be 6 units vaccine immune on the first simulation
+       day.  Which 6 units may differ, but there should always be 6.  This test
+       makes sure that a particular herd isn’t chosen twice (or more) for
+       vaccination.
+  </parameter-description>
+
+  <output probability="1.0">
+    <tr>
+      <td>tsdUSusc</td>
+      <td>tsdULat</td>
+      <td>tsdUSubc</td>
+      <td>tsdUClin</td>
+      <td>tsdUNImm</td>
+      <td>tsdUVImm</td>
+      <td>tsdUDest</td>
+      <td>tsdUDead</td>
+    </tr>
+    <tr><td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>6</td> <td>0</td> <td>0</td></tr>
+  </output>
+</stochastic-variable-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 50% vaccinated in one, 0% in other, pattern 1</short-name>
+
+  <description>
+    Test a scenario with 2 production types and different proportions of units
+    vaccinated in each.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_1</herd-file>
+
+  <parameter-file>proportion_50_0</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 50% of units of type “A” and 0% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “A” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>S</td> <td>V</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 50% vaccinated in one, 0% in other, pattern 2</short-name>
+
+  <description>
+    Test a scenario with 2 production types and different proportions of units
+    vaccinated in each.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_2</herd-file>
+
+  <parameter-file>proportion_50_0</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 50% of units of type “A” and 0% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “A” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>S</td> <td>S</td> <td>S</td> <td>V</td> <td>S</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 0% vaccinated in one, 50% in other, pattern 1</short-name>
+
+  <description>
+    Test a scenario with 2 production types and different proportions of units
+    vaccinated in each.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_1</herd-file>
+
+  <parameter-file>proportion_0_50</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 0% of units of type “A” and 50% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “B” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>S</td> <td>S</td> <td>S</td> <td>S</td> <td>V</td> <td>S</td> <td>V</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 0% vaccinated in one, 50% in other, pattern 2</short-name>
+
+  <description>
+    Test a scenario with 2 production types and different proportions of units
+    vaccinated in each.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_2</herd-file>
+
+  <parameter-file>proportion_0_50</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 0% of units of type “A” and 50% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “B” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>S</td> <td>V</td> <td>S</td> <td>S</td> <td>S</td> <td>V</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 50% vaccinated in one, 50% in other, pattern 1</short-name>
+
+  <description>
+    Test a scenario with 2 production types.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_1</herd-file>
+
+  <parameter-file>proportion_50_50</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 50% of units of type “A” and 50% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “A” units and 2 of the “B” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>S</td> <td>V</td> <td>S</td> <td>V</td> <td>S</td> <td>V</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>2 production types, 50% vaccinated in one, 50% in other, pattern 2</short-name>
+
+  <description>
+    Test a scenario with 2 production types.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>2 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>8herds_none_infected_2prodtypes_2</herd-file>
+
+  <parameter-file>proportion_50_50</parameter-file>
+
+  <parameter-description>
+    No units are initially infected.
+    
+    Prophylactic vaccination is done in 50% of units of type “A” and 50% of
+    units of type “B”.  The vaccine produces immunity immediately, and the
+    immunity lasts 3 days.
+
+    What should happen:
+     - 2 of the “A” units and 2 of the “B” units should start vaccine immune.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>V</td> <td>S</td> <td>S</td> <td>V</td> <td>V</td> <td>S</td> <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>1 day between vaccinations</short-name>
+
+  <description>
+    This is one of 4 scenarios that tests the time between vaccinations.  In
+    this scenario, there is 1 day between vaccinations
+    (&lt;i&gt;i.e.&lt;/i&gt;, units are vaccinated every day).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>days_between_vacc_1</parameter-file>
+
+  <parameter-description>
+    In both production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+    
+    Prophylactic vaccination is done in 100% of cattle units, but not in pig
+    units.  The vaccine produces immunity immediately, and the immunity lasts 3
+    days.  The time between vaccinations is 1 day, which means that
+    prophylactic vaccination is done every day.
+
+    What should happen:
+     - Unit 1, the cattle unit, starts the simulation infected.  It will
+       progress through 1 day latent, 2 days clinical, and on to naturally
+       immune.
+     - Unit 0, the pig unit, will start vaccine immune.  The parameter for
+       the time between vaccinations is 1, which means that vaccination
+       happened the day before the simulation begins.  So unit 0 will have all
+       3 days of vaccine immunity.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>L</td></tr>
+    <tr><td>V</td> <td>C</td></tr>
+    <tr><td>V</td> <td>C</td></tr>
+    <tr><td>S</td> <td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>3 days between vaccinations</short-name>
+
+  <description>
+    This is one of 4 scenarios that tests the time between vaccinations.  In
+    this scenario, there are 3 days between vaccinations.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>days_between_vacc_3</parameter-file>
+
+  <parameter-description>
+    In both production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+    
+    Prophylactic vaccination is done in 100% of cattle units, but not in pig
+    units.  The vaccine produces immunity immediately, and the immunity lasts 3
+    days.  The time between vaccinations is 3 days.
+
+    What should happen:
+     - Unit 1, the cattle unit, starts the simulation infected.  It will
+       progress through 1 day latent, 2 days clinical, and on to naturally
+       immune.
+     - Unit 0, the pig unit, was vaccinated before the simulation begins.  The
+       vaccination may have happened between 1 and 3 days before the simulation
+       begins.  With fixed “random” numbers of 0.5, we will choose 2 days
+       before the simulation begins.  So unit 0 will have 2 days of vaccine
+       immunity remaining.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>L</td></tr>
+    <tr><td>V</td> <td>C</td></tr>
+    <tr><td>S</td> <td>C</td></tr>
+    <tr><td>S</td> <td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>5 days between vaccinations</short-name>
+
+  <description>
+    This is one of 4 scenarios that tests the time between vaccinations.  In
+    this scenario, there are 5 days between vaccinations.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>days_between_vacc_5</parameter-file>
+
+  <parameter-description>
+    In both production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+    
+    Prophylactic vaccination is done in 100% of cattle units, but not in pig
+    units.  The vaccine produces immunity immediately, and the immunity lasts 3
+    days.  The time between vaccinations is 5 days.
+
+    What should happen:
+     - Unit 1, the cattle unit, starts the simulation infected.  It will
+       progress through 1 day latent, 2 days clinical, and on to naturally
+       immune.
+     - Unit 0, the pig unit, was vaccinated before the simulation begins.  The
+       vaccination may have happened between 1 and 5 days before the simulation
+       begins.  With fixed “random” numbers of 0.5, we will choose 3 days
+       before the simulation begins.  So unit 0 will have 1 day of vaccine
+       immunity remaining.
+  </parameter-description>
+
+  <output>
+    <tr><td>V</td> <td>L</td></tr>
+    <tr><td>S</td> <td>C</td></tr>
+    <tr><td>S</td> <td>C</td></tr>
+    <tr><td>S</td> <td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>prophylactic-vaccination</category>
+  <short-name>7 days between vaccinations</short-name>
+
+  <description>
+    This is one of 4 scenarios that tests the time between vaccinations.  In
+    this scenario, there are 7 days between vaccinations.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>3 December 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>days_between_vacc_7</parameter-file>
+
+  <parameter-description>
+    In both production types, the latent period lasts 1 day, the infectious
+    clinical period lasts 2 days, and immunity lasts 3 days.
+    
+    Prophylactic vaccination is done in 100% of cattle units, but not in pig
+    units.  The vaccine produces immunity immediately, and the immunity lasts 3
+    days.  The time between vaccinations is 7 days.
+
+    What should happen:
+     - Unit 1, the cattle unit, starts the simulation infected.  It will
+       progress through 1 day latent, 2 days clinical, and on to naturally
+       immune.
+     - Unit 0, the pig unit, was vaccinated before the simulation begins.  The
+       vaccination may have happened between 1 and 7 days before the simulation
+       begins.  With fixed “random” numbers of 0.5, we will choose 4 days
+       before the simulation begins.  So unit 0 will have gone through its 3
+       days of immunity already and will be back to susceptible.
+  </parameter-description>
+
+  <output>
+    <tr><td>S</td> <td>L</td></tr>
+    <tr><td>S</td> <td>C</td></tr>
+    <tr><td>S</td> <td>C</td></tr>
+    <tr><td>S</td> <td>N</td></tr>
+  </output>
+</deterministic-test>

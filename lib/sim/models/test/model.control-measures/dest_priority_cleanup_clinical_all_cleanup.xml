@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:xml="http://www.w3.org/XML/1998/namespace">
+  <description>New scenario</description>
+  <naadsm-version>
+    <major-version>4</major-version>
+    <minor-version>0</minor-version>
+    <release>6</release>
+  </naadsm-version>
+  <language>en</language>
+
+  <num-runs>1</num-runs>
+  <num-days>28</num-days>
+
+<models>
+
+  <disease-model production-type="Cattle">
+    <latent-period>
+      <probability-density-function>
+        <point>
+          1
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </latent-period>
+    <infectious-subclinical-period>
+      <probability-density-function>
+        <point>
+          0
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-subclinical-period>
+    <infectious-clinical-period>
+      <probability-density-function>
+        <point>
+          2
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-clinical-period>
+    <immunity-period>
+      <probability-density-function>
+        <point>
+          100
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </immunity-period>
+    <mortality>1</mortality>
+  </disease-model>
+
+  <disease-model production-type="Pigs">
+    <latent-period>
+      <probability-density-function>
+        <point>
+          1
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </latent-period>
+    <infectious-subclinical-period>
+      <probability-density-function>
+        <point>
+          0
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-subclinical-period>
+    <infectious-clinical-period>
+      <probability-density-function>
+        <point>
+          2
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-clinical-period>
+    <immunity-period>
+      <probability-density-function>
+        <point>
+          100
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </immunity-period>
+    <mortality>1</mortality>
+  </disease-model>
+
+  <disease-model production-type="Sheep">
+    <latent-period>
+      <probability-density-function>
+        <point>
+          1
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </latent-period>
+    <infectious-subclinical-period>
+      <probability-density-function>
+        <point>
+          0
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-subclinical-period>
+    <infectious-clinical-period>
+      <probability-density-function>
+        <point>
+          2
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </infectious-clinical-period>
+    <immunity-period>
+      <probability-density-function>
+        <point>
+          100
+        </point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </probability-density-function>
+    </immunity-period>
+    <mortality>1</mortality>
+  </disease-model>
+
+  <resources-and-implementation-of-controls-model>
+    <destruction-program-delay>
+      <value>3</value>
+      <units><xdf:unit>day</xdf:unit></units>
+    </destruction-program-delay>
+    <destruction-capacity>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></y-units>
+      </relational-function>
+    </destruction-capacity>
+    <destruction-priority-order>
+      reason,production type,time waiting
+    </destruction-priority-order>
+
+    <vaccination-capacity>
+      <relational-function>
+        <value><x>1</x>             <y>0</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></y-units>
+      </relational-function>
+    </vaccination-capacity>
+    <vaccination-priority-order>
+      reason,production type,time waiting
+    </vaccination-priority-order>
+    <vaccination-program-delay>
+      1
+    </vaccination-program-delay>
+  </resources-and-implementation-of-controls-model>
+
+  <quarantine-model />
+
+  <detection-model production-type="Cattle">
+    <prob-detect-vs-time-clinical>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-clinical>
+    <prob-detect-vs-time-dead>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-dead>
+    <prob-report-clinical-signs-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-clinical-signs-vs-time-since-outbreak>
+    <prob-report-death-from-disease-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-death-from-disease-vs-time-since-outbreak>
+  </detection-model>
+
+  <detection-model production-type="Sheep">
+    <prob-detect-vs-time-clinical>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-clinical>
+    <prob-detect-vs-time-dead>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-dead>
+    <prob-report-clinical-signs-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-clinical-signs-vs-time-since-outbreak>
+    <prob-report-death-from-disease-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-death-from-disease-vs-time-since-outbreak>
+  </detection-model>
+
+  <detection-model production-type="Pigs">
+    <prob-detect-vs-time-clinical>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-clinical>
+    <prob-detect-vs-time-dead>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-detect-vs-time-dead>
+    <prob-report-clinical-signs-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-clinical-signs-vs-time-since-outbreak>
+    <prob-report-death-from-disease-vs-time-since-outbreak>
+      <relational-function>
+        <value><x>0</x>             <y>1</y></value>
+        <x-units><xdf:unit>day</xdf:unit></x-units>
+        <y-units><xdf:unit>probability</xdf:unit></y-units>
+      </relational-function>
+    </prob-report-death-from-disease-vs-time-since-outbreak>
+  </detection-model>
+
+  <basic-dcd-model production-type="Cattle">
+    <priority>1</priority>
+  </basic-dcd-model>
+
+  <basic-dcd-model production-type="Pigs">
+    <priority>2</priority>
+  </basic-dcd-model>
+
+  <basic-dcd-model production-type="Sheep">
+    <priority>3</priority>
+  </basic-dcd-model>
+
+  <basic-destruction-model production-type="Cattle">
+    <priority>4</priority>  <!-- Based on the production type and destruction reason (basic aka detection) -->
+  </basic-destruction-model>
+
+  <basic-destruction-model production-type="Pigs">
+    <priority>5</priority>  <!-- Based on the production type and destruction reason (basic aka detection) -->
+  </basic-destruction-model>
+
+  <basic-destruction-model production-type="Sheep">
+    <priority>6</priority>  <!-- Based on the production type and destruction reason (basic aka detection) -->
+  </basic-destruction-model>
+
+  <conflict-resolver />
+
+  <state-table-writer />
+
+</models>
+
+</naadsm:disease-simulation>
+

@@ -4,13 +4,13 @@ unit DestructionParams;
 DestructionParams.pas
 ----------------------
 Begin: 2005/01/06
-Last revision: $Date: 2008/10/23 20:24:39 $ $Author: areeves $
-Version number: $Revision: 1.36 $
+Last revision: $Date: 2011-10-19 01:24:12 $ $Author: areeves $
+Version number: $Revision: 1.43.6.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 20010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -20,15 +20,20 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
+    QStringMaps,
+    QLists,
+    Sdew,
+    Models,
     RelFunction,
-    SMDatabase,
-    Models
+    SMDatabase
   ;
 
   type TDestructionParams = class( TModel )
     protected
     	// Properties
       //-------------
+      _xmlModelList: TQStringList;
+
       _prodTypeDescr: string;
 
       // Indicates whether detected, infected units will be destroyed (basic destruction)
@@ -41,29 +46,28 @@ interface
       // Indicates whether units of this type are destroyed in ring destruction
       _isRingTarget: boolean;
 
-      // Tracing parameters
-      //-------------------
+      // Parameters for destruction of traced units
+      //-------------------------------------------
       // Indicates whether tracing will trigger pre-emptive slaughter
-      _traceDirectContact: boolean;
-      _traceIndirectContact: boolean;
-      _directTracePeriod: integer;
-      _indirectTracePeriod: integer;
-      _indirectTraceSuccess: real;
-      _directTraceSuccess: real;
-
-      // Indicates whether detection will trigger pre-emptive slaughter
-      _destroyDirectTraces: boolean;
-      _destroyIndirectTraces: boolean;
+      _destroyDirectForwardTraces: boolean;
+      _destroyIndirectForwardTraces: boolean;
+      _destroyDirectBackTraces: boolean;
+      _destroyIndirectBackTraces: boolean;
 
       _destrPriority: integer;
 
       procedure initialize();
 
-
       // Overridden from TModel
       //-----------------------
       function getUpdated(): boolean; override;
 
+      // XML import
+      //-----------
+      function getXmlModelList(): TQStringList;
+      procedure importBasicDestructionModelXml( model: pointer; sdew: TSdew; errMsg: pstring );
+      procedure importTraceDestructionXml( model: pointer; sdew: TSdew; errMsg: pstring );
+      procedure importRingDestructionXml( model: pointer; sdew: TSdew; errMsg: pstring );
 
       // Properties
       //-------------
@@ -87,43 +91,29 @@ interface
       procedure setIsRingTarget( val: boolean );
       function getIsRingTarget(): boolean;
 
-      // For tracing
-      procedure setDirectTracePeriod( val: integer );
-      function getDirectTracePeriod(): integer;
-      procedure setIndirectTracePeriod( val: integer );
-      function getIndirectTracePeriod(): integer;
-      procedure setTraceDirectContact( val: boolean );
-      function getTraceDirectContact(): boolean;
-      procedure setTraceIndirectContact( val: boolean );
-      function getTraceIndirectContact(): boolean;
-      procedure setIndirectTraceSuccess( val: double );
-      procedure setDirectTraceSuccess( val: double );
-      function getIndirectTraceSuccess(): double;
-      function getDirectTraceSuccess(): double;
-
-      // For traceback destruction
-      procedure setDestroyDirectTraces( val: boolean );
-      function getDestroyDirectTraces(): boolean;
-      procedure setDestroyIndirectTraces( val: boolean );
-      function getDestroyIndirectTraces(): boolean;
+      // For destruction of traced units
+      procedure setDestroyDirectForwardTraces( val: boolean );
+      function getDestroyDirectForwardTraces(): boolean;
+      procedure setDestroyIndirectForwardTraces( val: boolean );
+      function getDestroyIndirectForwardTraces(): boolean;
+      procedure setDestroyDirectBackTraces( val: boolean );
+      function getDestroyDirectBackTraces(): boolean;
+      procedure setDestroyIndirectBackTraces( val: boolean );
+      function getDestroyIndirectBackTraces(): boolean;
+      function getUseTraceDestruction(): boolean;
 
     public
     	constructor create(sim: TObject; ptDescr: string ); overload;
       constructor create( const src: TDestructionParams; sim: TObject ); overload;
-      destructor destroy(); override;
+      constructor create( db: TSMDatabase; ptID: integer; prodTypeName: string; sim: TObject ); overload;
 
-      procedure initializeFromDB( db: TSMDatabase; ptID: integer; prodTypeName: string );
+      destructor destroy(); override;
 
       // Module functions
       //------------------
-      function ssBasicDestrModelXml( priority: integer; const productionTypeID: integer ): string;
-      function ssTracebackDestrModelXml(
-        priority: integer;
-        traceTypeDescr: string;
-        const includeDestructionGlobal: boolean;
-        const productionTypeID: integer
-      ): string;
-
+      function ssBasicDestrModelXml( const productionTypeID, priority: integer ): string;
+      function ssTraceDestrModelXml( const productionTypeID: integer; destrPriorityList: TQStringLongIntMap ): string;
+      function ssBasicDCDXml( const productionTypeID: integer; destrPriorityList: TQStringLongIntMap ): string;
 
       // Overridden from TModel
       //-----------------------
@@ -132,6 +122,11 @@ interface
   		function validate( err: PString = nil ): boolean; override;
       procedure debug(); override;
 
+      // XML import
+      //-----------
+      class function createXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+      property xmlModelList: TQStringList read getXmlModelList;
 
       // Properties
       //------------
@@ -148,17 +143,12 @@ interface
       property isRingTrigger: boolean read getIsRingTrigger write setIsRingTrigger;
       property ringRadius: double read getRingRadius write setRingRadius;
 
-      // For traceback destruction
-      property destroyDirectTraces: boolean read getDestroyDirectTraces write setDestroyDirectTraces;
-      property destroyIndirectTraces: boolean read getDestroyIndirectTraces write setDestroyIndirectTraces;
-
-      // For tracing
-      property directTracePeriod: integer read getDirectTracePeriod write setDirectTracePeriod;
-      property indirectTracePeriod: integer read getIndirectTracePeriod write setIndirectTracePeriod;
-      property traceDirectContact: boolean read getTraceDirectContact write setTraceDirectContact;
-      property traceIndirectContact: boolean read getTraceIndirectContact write setTraceIndirectContact;
-      property indirectTraceSuccess: double read getIndirectTraceSuccess write setIndirectTraceSuccess;
-      property directTraceSuccess: double read getDirectTraceSuccess write setDirectTraceSuccess;
+      // For destruction of traced units
+      property destroyDirectForwardTraces: boolean read getDestroyDirectForwardTraces write setDestroyDirectForwardTraces;
+      property destroyIndirectForwardTraces: boolean read getDestroyIndirectForwardTraces write setDestroyIndirectForwardTraces;
+      property destroyDirectBackTraces: boolean read getDestroyDirectBackTraces write setDestroyDirectBackTraces;
+      property destroyIndirectBackTraces: boolean read getDestroyIndirectBackTraces write setDestroyIndirectBackTraces;
+      property useTraceDestruction: boolean read getUseTraceDestruction;
 
       property destrPriority: integer read _destrPriority write setDestrPriority;
     end
@@ -176,7 +166,6 @@ implementation
     Variants,
 
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     SqlClasses,
     I88n,
@@ -201,6 +190,9 @@ implementation
   constructor TDestructionParams.create( const src: TDestructionParams; sim: TObject );
     begin
       inherited create( src );
+      
+      _xmlModelList := nil;
+      
       _sim := sim;
       
     	_destroyDetectedUnits := src._destroyDetectedUnits;
@@ -209,17 +201,10 @@ implementation
       _ringRadius := src._ringRadius;
       _isRingTarget := src._isRingTarget;
 
-      _traceDirectContact := src._traceDirectContact;
-      _traceIndirectContact := src._traceIndirectContact;
-
-      _directTracePeriod := src._directTracePeriod;
-      _directTraceSuccess := src._directTraceSuccess;
-
-      _indirectTracePeriod := src._indirectTracePeriod;
-      _indirectTraceSuccess := src._indirectTraceSuccess;
-
-      _destroyDirectTraces := src._destroyDirectTraces;
-      _destroyIndirectTraces := src._destroyIndirectTraces;
+      _destroyDirectForwardTraces := src._destroyDirectForwardTraces;
+      _destroyIndirectForwardTraces := src._destroyIndirectForwardTraces;
+      _destroyDirectBackTraces := src._destroyDirectBackTraces;
+      _destroyIndirectBackTraces := src._destroyIndirectBackTraces;
 
       prodTypeDescr := src.prodTypeDescr;
 
@@ -230,13 +215,19 @@ implementation
   ;
 
 
-  procedure TDestructionParams.initializeFromDB( db: TSMDatabase; ptID: integer; prodTypeName: string );
-    var
+  constructor TDestructionParams.create( db: TSMDatabase; ptID: integer; prodTypeName: string; sim: TObject );
+     var
       q: string;
       db2: TSqlDatabase;
       res: TSqlResult;
       row: TSqlRow;
     begin
+      inherited create();
+      initialize();
+
+      _sim := sim;
+      _prodTypeDescr := prodTypeName;
+
       db2 := db as TSqlDatabase;
 
       q := 'SELECT'
@@ -246,16 +237,10 @@ implementation
         + ' `destrIsRingTrigger`,'
         + ' `destrRingRadius`,'
 
-        + ' `traceDirect`,'
-        + ' `traceDirectSuccess`,'
-        + ' `traceDirectTracePeriod`,'
-
-        + ' `traceIndirect`,'
-        + ' `traceIndirectSuccess`,'
-        + ' `traceIndirectTracePeriod`,'
-
-        + ' `destrDirectTraces`,'
-        + ' `destrIndirectTraces`,'
+        + ' `destrDirectForwardTraces`,'
+        + ' `destrIndirectForwardTraces`,'
+        + ' `destrDirectBackTraces`,'
+        + ' `destrIndirectBackTraces`,'
 
         + ' `destrPriority`'
 
@@ -285,32 +270,28 @@ implementation
       ;
       if( null <> row.field('destrRingRadius') ) then ringRadius := row.field('destrRingRadius');
 
-      if( null <> row.field('traceDirect') ) then
-        traceDirectContact := boolean( row.field('traceDirect') )
+      if( null <> row.field('destrDirectForwardTraces') ) then
+        destroyDirectForwardTraces := boolean( row.field('destrDirectForwardTraces') )
       else
-        traceDirectContact := false
-      ;
-      if( null <> row.field('traceDirectSuccess') ) then directTraceSuccess := double( row.field('traceDirectSuccess') );
-      if( null <> row.field('traceDirectTracePeriod') ) then directTracePeriod := integer( row.field('traceDirectTracePeriod') );
-
-      if( null <> row.field('traceIndirect') ) then
-        traceIndirectContact := boolean( row.field('traceIndirect') )
-      else
-        traceIndirectContact := false
-      ;
-      if( null <> row.field('traceIndirectSuccess') ) then indirectTraceSuccess := double( row.field('traceIndirectSuccess') );
-      if( null <> row.field('traceIndirectTracePeriod') ) then indirectTracePeriod := integer( row.field('traceIndirectTracePeriod') );
-
-      if( null <> row.field('destrDirectTraces') ) then
-        destroyDirectTraces := boolean( row.field('destrDirectTraces') )
-      else
-        destroyDirectTraces := false
+        destroyDirectForwardTraces := false
       ;
 
-      if( null <> row.field('destrIndirectTraces') ) then
-        destroyIndirectTraces := boolean( row.field('destrIndirectTraces') )
+      if( null <> row.field('destrIndirectForwardTraces') ) then
+        destroyIndirectForwardTraces := boolean( row.field('destrIndirectForwardTraces') )
       else
-        destroyIndirectTraces := false
+        destroyIndirectForwardTraces := false
+      ;
+
+      if( null <> row.field('destrDirectBackTraces') ) then
+        destroyDirectBackTraces := boolean( row.field('destrDirectBackTraces') )
+      else
+        destroyDirectBackTraces := false
+      ;
+
+      if( null <> row.field('destrIndirectBackTraces') ) then
+        destroyIndirectBackTraces := boolean( row.field('destrIndirectBackTraces') )
+      else
+        destroyIndirectBackTraces := false
       ;
 
       if( null <> row.field('destrPriority') ) then
@@ -318,8 +299,6 @@ implementation
       else
         _destrPriority := ptID
       ;
-
-      prodTypeDescr := prodTypeName;
 
       freeAndNil( res );
 
@@ -339,17 +318,12 @@ implementation
 
       _isRingTarget := false;
 
-      _directTracePeriod := 0;
-      _directTraceSuccess := 0.0;
+      _xmlModelList := nil;
 
-      _indirectTracePeriod := 0;
-      _indirectTraceSuccess := 0.0;
-
-      _traceDirectContact := false;
-      _traceIndirectContact := false;
-
-      _destroyDirectTraces := false;
-      _destroyIndirectTraces := false;
+      _destroyDirectForwardTraces := false;
+      _destroyIndirectForwardTraces := false;
+      _destroyDirectBackTraces := false;
+      _destroyIndirectBackTraces := false;
 
       _destrPriority := -1;
 
@@ -362,6 +336,8 @@ implementation
 
   destructor TDestructionParams.destroy();
     begin
+      freeAndNil( _xmlModelList );
+      
 			inherited destroy();
     end
   ;
@@ -379,27 +355,25 @@ implementation
   	begin
       dict := TQueryDictionary.create();
 
-      dict['useBasicDestruction'] := boolToStr( destroyDetectedUnits );
+      dict['useBasicDestruction'] := db.sqlBool( destroyDetectedUnits );
 
-      dict['destrIsRingTarget'] := boolToStr( isRingTarget );
-      dict['destrIsRingTrigger'] := boolToStr( isRingTrigger );
+      dict['destrIsRingTarget'] := db.sqlBool( isRingTarget );
+      dict['destrIsRingTrigger'] := db.sqlBool( isRingTrigger );
       dict['destrRingRadius' ] := usFloatToStr( ringRadius );
 
-      dict['traceDirect'] := boolToStr( traceDirectContact );
-      dict['traceDirectSuccess'] := usFloatToStr( directTraceSuccess );
-      dict['traceDirectTracePeriod'] := intToStr( directTracePeriod );
-
-      dict['traceIndirect'] := boolToStr( traceIndirectContact );
-      dict['traceIndirectSuccess'] := usFloatToStr( indirectTraceSuccess );
-      dict['traceIndirectTracePeriod'] := intToStr( indirectTracePeriod );
-
-      dict['destrDirectTraces'] := boolToStr( destroyDirectTraces );
-      dict['destrIndirectTraces'] := boolToStr( destroyIndirectTraces );
-
+      dict['destrDirectForwardTraces'] := db.sqlBool( destroyDirectForwardTraces );
+      dict['destrIndirectForwardTraces'] := db.sqlBool( destroyIndirectForwardTraces );
+      dict['destrDirectBackTraces'] := db.sqlBool( destroyDirectBackTraces );
+      dict['destrIndirectBackTraces'] := db.sqlBool( destroyIndirectBackTraces );
+      
       if ( ( self._sim as TSMSimulationInput).controlParams.ssDestrPriorities.HasKey( self.prodTypeDescr + '+' + 'basic' ) ) then
         dict['destrPriority'] := IntToStr( (self._sim as TSMSimulationInput).controlParams.ssDestrPriorities.Item[ self.prodTypeDescr + '+' + 'basic' ] )
       else
-        raise exception.Create( 'No destr priority specified in TDestructionParams.populateDatabase' )
+        begin
+          //raise exception.Create( 'No destr priority specified in TDestructionParams.populateDatabase' );
+          dbcout( 'No destr priority specified in TDestructionParams.populateDatabase', true );
+          dict['destrPriority'] := intToStr( -1 );
+        end
       ;
 
      //??? Are there other "priorities" which need to be written here as well???
@@ -417,83 +391,6 @@ implementation
       dict.Free();
 
       _updated := false;
-    end
-  ;
-//-----------------------------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------
-// XML export
-//-----------------------------------------------------------------------------
-  function TDestructionParams.ssXml(): string;
-    begin
-      // I don't think this one will work...
-      result := '';
-    end
-  ;
-
-
-	function TDestructionParams.ssBasicDestrModelXml( priority: integer; const productionTypeID: integer ): string;
-  	begin
-    	result := endl;
-      result := result + '  <basic-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '">' + endl;
-      result := result + '    <priority>' + intToStr( priority ) + '</priority>  <!-- Based on the production type and destruction reason (basic aka detection) -->' + endl;
-      result := result + '  </basic-destruction-model>' + endl;
-      result := result + endl;
-    end
-  ;
-
-
-	function TDestructionParams.ssTracebackDestrModelXml(
-        priority: integer;
-        traceTypeDescr: string;
-        const includeDestructionGlobal: boolean;
-        const productionTypeID: integer
-      ): string;
-  	var
-    	s: string;
-      success: real;
-      period: integer;
-      quarantineOnly: boolean;
-  	begin
-    	// FIX ME: outputs may (or may not) be needed here
-
-
-      // FIX ME: this is an ugly hack
-      if( 'direct' = traceTypeDescr ) then
-      	begin
-          dbcout( 'destroyDirectTraces: ' + usBoolToText(destroyDirectTraces), DBDESTRUCTIONPARAMS );
-          dbcout( 'includeDestructionGlobal: ' + usBoolToText(includeDestructionGlobal), DBDESTRUCTIONPARAMS );
-
-        	success := directTraceSuccess;
-          period := directTracePeriod;
-          quarantineOnly := ( not( destroyDirectTraces ) or not( includeDestructionGlobal ) );
-        end
-      else
-      	begin
-          dbcout( 'destroyIndirectTraces: ' + usBoolToText(destroyIndirectTraces), DBDESTRUCTIONPARAMS );
-          dbcout( 'includeDestructionGlobal: ' + usBoolToText(includeDestructionGlobal), DBDESTRUCTIONPARAMS );
-
-        	success := indirectTraceSuccess;
-          period := indirectTracePeriod;
-          quarantineOnly := ( not( destroyIndirectTraces ) or not( includeDestructionGlobal ) );
-        end
-      ;
-
-      s := endl;
-      s := s + '  <trace-back-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '" contact-type="' + traceTypeDescr + '">' + endl;
-      s := s + '    <priority>' + intToStr( priority ) + '</priority> <!-- Based on production type and destruction reason (trace direct/indirect) -->' + endl;
-      s := s + '      <trace-success>' + usFloatToStr( success ) + '</trace-success>' + endl;
-      s := s + '      <trace-period>' + endl;
-      s := s + '        <value>' + intToStr( period ) + '</value>' + endl;
-      s := s + '        <units><xdf:unit>day</xdf:unit></units>' + endl;
-      s := s + '      </trace-period>' + endl;
-      s := s + '    <quarantine-only>' + usBoolToText( quarantineOnly ) + '</quarantine-only>' + endl;
-      s := s + '  </trace-back-destruction-model>' + endl;
-      s := s + endl;
-
-      result := s;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -532,43 +429,12 @@ implementation
         end
       ;
 
-
-      // For traceback destruction:
-      // 0 <= probabilities of success <=1
-
-      if( traceDirectContact ) then
-      	begin
-        	if( ( 0 > directTraceSuccess ) or ( 1 < directTraceSuccess ) ) then
-          	begin
-              if( nil <> err ) then
-              	msg := msg + '  ' + tr( 'Probability of direct trace success must be between 0 and 1.' ) + endl
-              ;
-              result := false;
-            end
-          ;
-        end
-      ;
-
-      if( traceIndirectContact ) then
-      	begin
-        	if( ( 0 > indirectTraceSuccess ) or ( 1 < indirectTraceSuccess ) ) then
-          	begin
-              if( nil <> err ) then
-              	msg := msg + '  ' + tr( 'Probability of indirect trace success must be between 0 and 1.' ) + endl
-              ;
-              result := false;
-            end
-          ;
-        end
-      ;
-
       if( ( result = false ) and ( nil <> err ) ) then
       	begin
 					msg := endl + ansiReplaceStr( tr( 'Destruction parameters for xyz:' ), 'xyz', prodTypeDescr ) + endl + msg;
           err^ := err^ + msg;
         end
       ;
-
     end
   ;
 //-----------------------------------------------------------------------------
@@ -580,13 +446,14 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TDestructionParams.debug();
     begin
-      dbcout( '---------DESTRUCTION PARAMETERS' + endl, true );
+      dbcout( '---------DESTRUCTION PARAMETERS for ' + _prodTypeDescr + endl, true );
 
-      if( destroyDetectedUnits ) then
-      	dbcout( 'Destroy detected units: TRUE', true )
-      else
-      	dbcout( 'Destroy detected units: FALSE', true )
-      ;
+      dbcout( 'Destroy detected units: ' + usBoolToText( destroyDetectedUnits ) , true );
+      dbcout( 'Destroy direct fwd traces: ' + usBoolToText( destroyDirectForwardTraces ) , true );
+      dbcout( 'Destroy indirect fwd traces: ' + usBoolToText( destroyIndirectForwardTraces ) , true );
+      dbcout( 'Destroy direct back traces: ' + usBoolToText( destroyDirectBackTraces ) , true );
+      dbcout( 'Destroy indirect back traces: ' + usBoolToText( destroyIndirectBackTraces ) , true );
+      dbcout( 'Destruction priority: ' + intToStr( destrPriority ), true );
 
       if( isRingTrigger ) then
       	begin
@@ -597,25 +464,7 @@ implementation
       	dbcout( 'Ring trigger: FALSE' + endl, true )
       ;
 
-      if( traceDirectContact ) then
-        dbcout( 'Direct trace destruction: period ' + intToStr( directTracePeriod )
-          + ', success rate ' + usFloatToStr( directTraceSuccess )
-          + endl, true )
-      else
-      	dbcout( 'Direct trace destruction: FALSE', true )
-      ;
-
-      if( traceIndirectContact ) then
-        dbcout( 'Indirect trace destruction: period ' + intToStr( indirectTracePeriod )
-          + ', success rate ' + usFloatToStr( indirectTraceSuccess )
-          + endl, true )
-      else
-      	dbcout( 'Indirect trace destruction: FALSE', true )
-      ;
-
-
       dbcout( '---------END DESTRUCTION PARAMETERS' + endl, true );
-
     end
   ;
 //-----------------------------------------------------------------------------
@@ -642,9 +491,7 @@ implementation
       result :=
         destroyDetectedUnits
       or
-        destroyDirectTraces
-      or
-        destroyIndirectTraces
+        useTraceDestruction
       or
         isRingTarget
       ;
@@ -689,75 +536,59 @@ implementation
 
   function TDestructionParams.getIsRingTarget(): boolean; begin result := _isRingTarget; end;
 
-  // Traceback destruction
-  procedure TDestructionParams.setDestroyDirectTraces( val: boolean );
+  // For destruction of traced units
+  procedure TDestructionParams.setDestroyDirectForwardTraces( val: boolean );
     begin
-      _destroyDirectTraces := val;
+      _destroyDirectForwardTraces := val;
       _updated := true;
     end
   ;
 
-  function TDestructionParams.getDestroyDirectTraces(): boolean; begin result := _destroyDirectTraces; end;
+  function TDestructionParams.getDestroyDirectForwardTraces(): boolean; begin result := _destroyDirectForwardTraces; end;
 
-  procedure TDestructionParams.setDestroyIndirectTraces( val: boolean );
+  procedure TDestructionParams.setDestroyIndirectForwardTraces( val: boolean );
     begin
-      _destroyIndirectTraces := val;
+      _destroyIndirectForwardTraces := val;
       _updated := true;
     end
   ;
 
-  function TDestructionParams.getDestroyIndirectTraces(): boolean; begin result := _destroyIndirectTraces; end;
+  function TDestructionParams.getDestroyIndirectForwardTraces(): boolean; begin result := _destroyIndirectForwardTraces; end;
 
-  // Tracing
-  function TDestructionParams.getDirectTracePeriod(): integer; begin Result := _directTracePeriod; end;
-  function TDestructionParams.getIndirectTracePeriod(): integer; begin Result := _indirectTracePeriod; end;
-  function TDestructionParams.getTraceDirectContact(): boolean; begin Result := _traceDirectContact; end;
-  function TDestructionParams.getTraceIndirectContact(): boolean; begin Result := _traceIndirectContact; end;
-  function TDestructionParams.getIndirectTraceSuccess(): double; begin Result := _indirectTraceSuccess; end;
-  function TDestructionParams.getDirectTraceSuccess(): double; begin Result := _directTraceSuccess; end;
-
-  procedure TDestructionParams.setDirectTracePeriod( val: integer );
+  procedure TDestructionParams.setDestroyDirectBackTraces( val: boolean );
     begin
-      _directTracePeriod := val;
+      _destroyDirectBackTraces := val;
       _updated := true;
     end
   ;
 
-  procedure TDestructionParams.setIndirectTracePeriod( val: integer );
+  function TDestructionParams.getDestroyDirectBackTraces(): boolean; begin result := _destroyDirectBackTraces; end;
+
+  procedure TDestructionParams.setDestroyIndirectBackTraces( val: boolean );
     begin
-      _indirectTracePeriod := val;
+      _destroyIndirectBackTraces := val;
       _updated := true;
     end
   ;
 
-  procedure TDestructionParams.setTraceDirectContact( val: boolean );
+  function TDestructionParams.getDestroyIndirectBackTraces(): boolean; begin result := _destroyIndirectBackTraces; end;
+
+
+  function TDestructionParams.getUseTraceDestruction(): boolean;
     begin
-      _traceDirectContact := val;
-      _updated := true;
+      result := (
+          destroyDirectForwardTraces
+        or
+          destroyIndirectForwardTraces
+        or
+          destroyDirectBackTraces
+        or
+          destroyIndirectBackTraces
+      );
     end
   ;
 
-  procedure TDestructionParams.setTraceIndirectContact( val: boolean );
-    begin
-      _traceIndirectContact := val;
-      _updated := true;
-    end
-  ;
-
-  procedure TDestructionParams.setIndirectTraceSuccess( val: double );
-    begin
-      _indirectTraceSuccess := val;
-      _updated := true;
-    end
-  ;
-
-  procedure TDestructionParams.setDirectTraceSuccess( val: double );
-    begin
-      _directTraceSuccess := val;
-      _updated := true;
-    end
-  ;
-
+  
   procedure TDestructionParams.setDestrPriority( val: integer );
     begin
       _destrPriority := val;
@@ -765,8 +596,359 @@ implementation
     end
   ;
 
-
   function TDestructionParams.getUpdated(): boolean; begin result := _updated; end;
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// XML export
+// ( Ring destruction export occurs in TProductionType.ssRingDestrXml() )
+//-----------------------------------------------------------------------------
+
+  function TDestructionParams.ssXml(): string;
+    begin
+      // I don't think this one will work...
+      raise exception.Create( 'Don''t use TDestructionParams.ssXml()!!' );
+      result := '';
+    end
+  ;
+
+  function TDestructionParams.ssBasicDCDXml( const productionTypeID: integer; destrPriorityList: TQStringLongIntMap ): string;
+    var
+      priority: integer;
+    begin
+      priority := destrPriorityList[ prodTypeDescr + '+' + 'dead-from-disease' ];
+      result := endl;
+
+      result := result + '  <basic-dcd-model production-type="' + encodeXml( prodTypeDescr ) + '">' + endl;
+      result := result + '    <priority>' + intToStr( priority ) + '</priority>' + endl;
+      result := result + '  </basic-dcd-model>' + endl;
+      result := result + endl;
+    end
+  ;
+
+
+	function TDestructionParams.ssBasicDestrModelXml( const productionTypeID, priority: integer ): string;
+  	begin
+    	result := endl;
+      result := result + '  <basic-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '">' + endl;
+      result := result + '    <priority>' + intToStr( priority ) + '</priority>  <!-- Based on the production type and destruction reason (basic aka detection) -->' + endl;
+      result := result + '  </basic-destruction-model>' + endl;
+      result := result + endl;
+    end
+  ;
+
+
+  function TDestructionParams.ssTraceDestrModelXml( const productionTypeID: integer; destrPriorityList: TQStringLongIntMap ): string;
+    var
+      priority: integer;
+    begin
+      result := '';
+
+      if( destroyDirectForwardTraces ) then
+        begin
+          priority := destrPriorityList[ prodTypeDescr + '+' + 'direct-forward' ];
+          result := result
+            + '  <trace-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '"'
+            + ' contact-type="direct" direction="out">' + endl
+            + '    <priority>' + intToStr( priority ) + '</priority>' + endl
+            + '  </trace-destruction-model>' + endl + endl
+          ;
+        end
+      ;
+
+      if( destroyIndirectForwardTraces ) then
+        begin
+          priority := destrPriorityList[ prodTypeDescr + '+' + 'indirect-forward' ];
+          result := result
+            + '  <trace-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '"'
+            + ' contact-type="indirect" direction="out">' + endl
+            + '    <priority>' + intToStr( priority ) + '</priority>' + endl
+            + '  </trace-destruction-model>' + endl + endl
+          ;
+        end
+      ;
+
+      if( destroyDirectBackTraces ) then
+        begin
+          priority := destrPriorityList[ prodTypeDescr + '+' + 'direct-back' ];
+          result := result
+            + '  <trace-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '"'
+            + ' contact-type="direct" direction="in">' + endl
+            + '    <priority>' + intToStr( priority ) + '</priority>' + endl
+            + '  </trace-destruction-model>' + endl + endl
+          ;
+        end
+      ;
+
+      if( destroyIndirectBackTraces ) then
+        begin
+          priority := destrPriorityList[ prodTypeDescr + '+' + 'indirect-back' ];
+          result := result
+            + '  <trace-destruction-model production-type="' + encodeXml( prodTypeDescr ) + '" production-type-id="' + intToStr( productionTypeID ) + '"'
+            + ' contact-type="indirect" direction="in">' + endl
+            + '    <priority>' + intToStr( priority ) + '</priority>' + endl
+            + '  </trace-destruction-model>' + endl + endl
+          ;
+        end
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// XML import
+//-----------------------------------------------------------------------------
+  class function TDestructionParams.createXmlModelList(): TQStringList;
+    begin
+      result := TQStringList.create();
+      result.Append( 'basic-destruction-model' );
+      result.Append( 'trace-destruction-model' );
+      result.Append( 'ring-destruction-model' );
+    end
+  ;
+
+
+  function TDestructionParams.getXmlModelList(): TQStringList;
+    begin
+      if( nil = _xmlModelList ) then
+        _xmlModelList := createXmlModelList()
+      ;
+
+      result := _xmlModelList;
+    end
+  ;
+
+
+  procedure TDestructionParams.importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    begin
+      if( 'basic-destruction-model' = sdew.GetElementName( model ) ) then
+        importBasicDestructionModelXml( model, sdew, errMsg )
+      ;
+      if( 'trace-destruction-model' = sdew.GetElementName( model ) ) then
+        importTraceDestructionXml( model, sdew, errMsg )
+      ;
+      if( 'ring-destruction-model' = sdew.GetElementName( model ) ) then
+        importRingDestructionXml( model, sdew, errMsg )
+      ;
+    end
+  ;
+
+
+  procedure TDestructionParams.importBasicDestructionModelXml( model: pointer; sdew: TSdew; errMsg: pstring );
+    var
+      priority: integer;
+      smSim: TSMSimulationInput;
+    begin
+      smSim := sim as TSMSimulationInput;
+      
+      if ( nil = sdew.GetElementByName( model, 'priority' ) ) then
+        begin
+          appendToPstring( errMsg, tr( 'Priority is missing from basic destruction XML.' ) );
+          exit;
+        end
+      else
+        begin
+          priority := myStrToInt( Sdew.GetElementContents( Sdew.GetElementByName( model, 'priority' ) ), -1 );
+          if( -1 = priority ) then
+            begin
+              appendToPstring( errMsg, tr( 'Priority is missing from basic destruction XML.' ) );
+              exit;
+            end
+          ;
+
+          self.destrPriority := priority;
+          self.destroyDetectedUnits := true;
+
+          if( smSim.controlParams.ssDestrPriorities.contains( self.prodTypeDescr + '+' + 'basic' ) ) then
+            begin
+              if( priority < smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'basic'] ) then
+                smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'basic'] := priority
+              ;
+            end
+          else
+            smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'basic'] := priority
+          ;
+        end
+      ;
+    end
+  ;
+
+
+  procedure TDestructionParams.importTraceDestructionXml( model: pointer; sdew: TSdew; errMsg: pstring );
+    var
+      contactType: string;
+      contactDirection: string;
+      priority: integer;
+      smSim: TSMSimulationInput;
+      destString: string;
+    begin
+      smSim := sim as TSMSimulationInput;
+
+      contactType :=  Sdew.GetElementAttribute( model, 'contact-type' );
+      contactDirection :=  Sdew.GetElementAttribute( model, 'direction' );
+
+      if( ( 'direct' <> contactType ) and ( 'indirect' <> contactType ) ) then
+        begin
+          appendToPstring( errMsg, tr( 'Trace destruction XML includes an invalid contact type.' ) );
+          exit;
+        end
+      ;
+
+      if( ( 'in' <> contactDirection )  and ( 'out' <> contactDirection ) ) then
+        begin
+          appendToPstring( errMsg, tr( 'Trace destruction XML includes an invalid contact direction.' ) );
+          exit;
+        end
+      ;
+
+      if ( nil = sdew.GetElementByName( model, 'priority' ) ) then
+        begin
+          appendToPstring( errMsg, tr( 'Priority is missing from trace destruction XML.' ) );
+          exit;
+        end
+      else
+        begin
+          priority := myStrToInt( Sdew.GetElementContents( Sdew.GetElementByName( model, 'priority' ) ), -1 );
+          if( -1 = priority ) then
+            begin
+              appendToPstring( errMsg, tr( 'Priority is missing from trace destruction XML.' ) );
+              exit;
+            end
+          ;
+        end
+      ;
+
+      if( 'direct' = contactType ) then
+        begin
+          if( 'in' = contactDirection ) then
+            begin
+              self.destroyDirectBackTraces := true;
+              destString := 'direct-back';
+            end
+          else if( 'out' = contactDirection ) then
+            begin
+              self.destroyDirectForwardTraces := true;
+              destString := 'direct-forward';
+            end
+          else
+            raise exception.create( 'Someone forgot something in TDestructionParams.importTraceDestructionXml' )
+          ;
+        end
+      else if( 'indirect' = contactType ) then
+        begin
+          if( contactDirection = 'in' ) then
+            begin
+              self.destroyIndirectBackTraces := true;
+              destString := 'indirect-back';
+            end
+          else if( contactDirection = 'out' ) then
+            begin
+              self.destroyIndirectForwardTraces := true;
+              destString := 'indirect-forward';
+            end
+          else
+            raise exception.create( 'Someone forgot something in TDestructionParams.importTraceDestructionXml' )
+          ;
+        end
+      ;
+
+      if( smSim.controlParams.ssDestrPriorities.contains( self.prodTypeDescr + '+' + destString ) ) then
+        begin
+          if( priority < smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + destString] ) then
+            smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + destString] := priority
+          ;
+        end
+      else
+        smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + destString] := priority
+      ;
+    end
+  ;
+
+
+  procedure TDestructionParams.importRingDestructionXml( model: pointer; sdew: TSdew; errMsg: pstring );
+    var
+      value: double;
+      subElement: pointer;
+      priority: integer;
+      smSim: TSMSimulationInput;
+      ok: boolean;
+    begin
+      smSim := sim as TSMSimulationInput;
+      ok := false;
+
+      // Parse this production type as the "source" type.
+      //-------------------------------------------------
+      if( self.prodTypeDescr = sdew.GetElementAttribute( model, 'from-production-type' ) ) then
+        begin
+          ok:= true;
+          subElement := Sdew.GetElementByName( model, 'radius' );
+          if ( nil <> subElement ) then
+            begin
+              if ( nil <> Sdew.GetElementByName( subElement, 'value' ) ) then
+                begin
+                  value := usStrToFloat( Sdew.GetElementContents( Sdew.GetElementByName( subElement, 'value' ) ) );
+                  //  Units are present in the xml file, but not stored anywhere in the current schema.
+                  self.ringRadius := value;
+                end
+              ;
+            end
+          ;
+
+          self.isRingTrigger := true;
+
+          // Set the destruction priority for the from-type to bogus value so that the populateDatabase() function won't
+          // throw an exception.  The from-type doesn't need a priority here, but the populate function doesn't know that.
+
+          if( not( smSim.controlParams.ssDestrPriorities.contains( self.prodTypeDescr + '+' + 'ring' ) ) ) then
+             smSim.controlParams.ssDestrPriorities.Add( self.prodTypeDescr + '+' + 'ring', -1 )
+          ;
+        end
+       ;
+
+      // Parse this production type as the "destination" type.
+      //------------------------------------------------------
+
+      if( self.prodTypeDescr = sdew.GetElementAttribute( model, 'to-production-type' ) ) then
+        begin
+          ok := true;
+          //Priorities go with the "to type", i.e. destination.
+          if( nil = sdew.GetElementByName( model, 'priority' ) ) then
+            begin
+              appendToPstring( errMsg, tr( 'Priority is missing from ring destruction XML.' ) );
+              exit;
+            end
+          else
+            begin
+              priority := myStrToInt( Sdew.GetElementContents( Sdew.GetElementByName( model, 'priority' ) ), -1 );
+              if( -1 = priority ) then
+                begin
+                  appendToPstring( errMsg, tr( 'Priority is missing from ring destruction XML.' ) );
+                  exit;
+                end
+              ;
+
+              self.isRingTarget := true;
+
+              if( smSim.controlParams.ssDestrPriorities.contains( self.prodTypeDescr + '+' + 'ring' ) ) then
+                begin
+                  if ( smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'ring'] > priority ) then
+                    smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'ring'] := priority
+                  ;
+                end
+              else
+                smSim.controlParams.ssDestrPriorities.Item[self.prodTypeDescr + '+' + 'ring'] := priority
+              ;
+            end
+          ;
+        end
+      ;
+
+      if not ok then raise exception.Create( 'Unhandled GetElementAttribute value in TDestructionParams.importRingDestructionXml()' );
+    end
+  ;
+//-----------------------------------------------------------------------------
+
 
 end.

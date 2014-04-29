@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Advance or stop, p advance = 0.95</description>
   <num-days>32767</num-days>
@@ -74,16 +74,16 @@
 
     <!-- Use detection to prevent backtracking. -->
     <detection-model production-type="A">
-      <prob-report-vs-time-clinical>
+      <prob-detect-vs-time-clinical>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-clinical>
-      <prob-report-vs-time-since-outbreak>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-since-outbreak>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
     </detection-model>
 
     <resources-and-implementation-of-controls-model>
@@ -119,4 +119,4 @@
 
   </models>
 
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

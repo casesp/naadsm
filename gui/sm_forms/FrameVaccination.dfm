@@ -2,13 +2,13 @@ object FrameVaccination: TFrameVaccination
   Left = 0
   Top = 0
   Width = 462
-  Height = 322
+  Height = 354
   TabOrder = 0
   object pnlRingVacc: TPanel
     Left = 0
-    Top = 217
+    Top = 265
     Width = 462
-    Height = 105
+    Height = 89
     Align = alClient
     TabOrder = 0
     object lblVaccRingRadius: TLabel
@@ -37,21 +37,20 @@ object FrameVaccination: TFrameVaccination
       OnClick = processClick
     end
     object rleVaccRingRadius: TREEdit
-      Left = 272
+      Left = 360
       Top = 52
       Width = 65
       Height = 21
       EditAlign = eaLeft
       TabOrder = 1
       OnExit = processTextEntry
-      OnKeyDown = rleKeyDown
     end
   end
   object pnlVaccination: TPanel
     Left = 0
     Top = 0
     Width = 462
-    Height = 217
+    Height = 265
     Align = alTop
     TabOrder = 1
     object pnlUseVacc: TPanel
@@ -85,7 +84,7 @@ object FrameVaccination: TFrameVaccination
       Left = 1
       Top = 49
       Width = 460
-      Height = 167
+      Height = 215
       Align = alClient
       BevelOuter = bvNone
       Constraints.MinWidth = 460
@@ -112,10 +111,14 @@ object FrameVaccination: TFrameVaccination
       end
       object lblMinTimeBetwVacc: TLabel
         Left = 24
-        Top = 128
-        Width = 204
-        Height = 13
-        Caption = 'Minimum time between vaccinations (days):'
+        Top = 120
+        Width = 300
+        Height = 39
+        Caption = 
+          'Minimum time that must elapse after vaccination of a unit of thi' +
+          's production type before that unit can be queued for another vac' +
+          'cination (days):'
+        WordWrap = True
       end
       object imgPdf: TImage
         Left = 24
@@ -164,7 +167,7 @@ object FrameVaccination: TFrameVaccination
         TabOrder = 0
       end
       object rleDaysToImmunity: TREEdit
-        Left = 328
+        Left = 360
         Top = 88
         Width = 65
         Height = 21
@@ -173,13 +176,25 @@ object FrameVaccination: TFrameVaccination
         OnExit = processTextEntry
       end
       object rleMinTimeBetwVacc: TREEdit
-        Left = 328
+        Left = 360
         Top = 128
         Width = 65
         Height = 21
         EditAlign = eaLeft
         TabOrder = 2
         OnExit = processTextEntry
+      end
+      object cbxVaccinateDetected: TCheckBox
+        Left = 24
+        Top = 176
+        Width = 409
+        Height = 33
+        Caption = 
+          'Vaccinate detected units of this production type when they occur' +
+          ' in vaccination rings'
+        TabOrder = 3
+        WordWrap = True
+        OnClick = processClick
       end
     end
   end

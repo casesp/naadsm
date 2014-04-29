@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+  <include schemaLocation="base_types.xsd" />
+
+  <complexType name="prophylactic-vaccination-model-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          This module provides a policy of vaccinating units before disease is
+          present.
+        ]]>
+      </documentation>
+    </annotation>    
+    <sequence>
+      <!-- Model parameters. -->
+      <element name="delay-to-onset-of-immunity" type="naadsm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The number of days it takes before immunity exists in the animal.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:probability</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="duration-of-immunity" type="naadsm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The number of days immunity lasts in the animal.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:probability</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>             
+      <element name="proportion-of-units-vaccinated" type="naadsm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The proportion of units of this production type that are
+              vaccinated.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:probability</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="proportion-of-animals-vaccinated" type="naadsm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The proportion of animals that are vaccinated in units of this
+              production type.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:probability</x-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="time-between-vaccinations" type="naadsm:PDF">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              How often units of this production type are vaccinated.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:probability</x-axis-type>
+          </appinfo>          
+        </annotation>
+      </element>
+    </sequence>
+    <attribute name="production-type" type="string" />
+  </complexType>
+
+</schema>

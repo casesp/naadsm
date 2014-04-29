@@ -12,8 +12,8 @@
  * @version 0.1
  * @date September 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -24,24 +24,19 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version basic_destruction_model_LTX_interface_version
-#define new basic_destruction_model_LTX_new
-#define run basic_destruction_model_LTX_run
-#define reset basic_destruction_model_LTX_reset
-#define events_listened_for basic_destruction_model_LTX_events_listened_for
-#define is_listening_for basic_destruction_model_LTX_is_listening_for
-#define has_pending_actions basic_destruction_model_LTX_has_pending_actions
-#define has_pending_infections basic_destruction_model_LTX_has_pending_infections
-#define to_string basic_destruction_model_LTX_to_string
-#define local_printf basic_destruction_model_LTX_printf
-#define local_fprintf basic_destruction_model_LTX_fprintf
-#define local_free basic_destruction_model_LTX_free
-#define handle_request_for_destruction_reasons_event basic_destruction_model_LTX_handle_request_for_destruction_reasons_event
-#define handle_detection_event basic_destruction_model_LTX_handle_detection_event
-#define events_created basic_destruction_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new basic_destruction_model_new
+#define run basic_destruction_model_run
+#define reset basic_destruction_model_reset
+#define events_listened_for basic_destruction_model_events_listened_for
+#define is_listening_for basic_destruction_model_is_listening_for
+#define has_pending_actions basic_destruction_model_has_pending_actions
+#define to_string basic_destruction_model_to_string
+#define local_printf basic_destruction_model_printf
+#define local_fprintf basic_destruction_model_fprintf
+#define local_free basic_destruction_model_free
+#define handle_before_any_simulations_event basic_destruction_model_before_any_simulations_event
+#define handle_detection_event basic_destruction_model_handle_detection_event
 
 #include "model.h"
 #include "model_util.h"
@@ -58,8 +53,6 @@
 #  include <math.h>
 #endif
 
-#include "guilib.h"
-
 #include "basic-destruction-model.h"
 
 #if !HAVE_ROUND && HAVE_RINT
@@ -73,23 +66,10 @@ double round (double x);
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "basic-destruction-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of destroying diseased units.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 September 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 2
-EVT_event_type_t events_created[] =
-  { EVT_DeclarationOfDestructionReasons, EVT_RequestForDestruction };
 
 #define NEVENTS_LISTENED_FOR 2
-EVT_event_type_t events_listened_for[] = { EVT_RequestForDestructionReasons, EVT_Detection };
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_Detection };
 
 
 
@@ -98,32 +78,29 @@ typedef struct
 {
   gboolean *production_type;
   GPtrArray *production_types;
-  unsigned short int priority;
+  int priority;
 }
 local_data_t;
 
 
 
 /**
- * Responds to a request for destruction reasons by declaring all the reasons
- * for which this model may request a destruction.
+ * Before any simulations, this module declares all the reasons for which it
+ * may request a destruction.
  *
- * @param self the model.
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
-                                              EVT_event_queue_t * queue)
+handle_before_any_simulations_event (EVT_event_queue_t * queue)
 {
   GPtrArray *reasons;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
 
   reasons = g_ptr_array_sized_new (1);
-  g_ptr_array_add (reasons, "reported diseased");
+  g_ptr_array_add (reasons, "Det");
   EVT_event_enqueue (queue, EVT_new_declaration_of_destruction_reasons_event (reasons));
 
   /* Note that we don't clean up the GPtrArray.  It will be freed along with
@@ -131,8 +108,7 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
    * event. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
   return;
 }
@@ -148,36 +124,40 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                         EVT_detection_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 
-  /* Check whether the herd is a production type we're interested in. */
-  if (local_data->production_type[herd->production_type] == FALSE)
-    goto end;
-
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-         "ordering unit \"%s\" destroyed", event->herd->official_id);
-#endif
-  EVT_event_enqueue (queue,
-                     EVT_new_request_for_destruction_event (event->herd,
-                                                            event->day,
-                                                            "reported diseased",
-                                                            local_data->priority));
-
-end:
+  /* Check whether the herd is a production type we're interested in, and that
+   * it is not already dead or destroyed.  We can "detect" a dead or destroyed
+   * herd because of test result delays -- if a test comes back positive and
+   * the herd has died or been pre-emptively destroyed in the meantime, that is
+   * still a "detection". */
+  if (local_data->production_type[herd->production_type] == TRUE
+      && herd->status != Destroyed
+      && herd->status != DeadFromDisease)
+    {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+      g_debug ("ordering unit \"%s\" destroyed", event->herd->official_id);
+#endif
+      EVT_event_enqueue (queue,
+                         EVT_new_request_for_destruction_event (event->herd,
+                                                                event->day,
+                                                                "Det",
+                                                                local_data->priority));
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
   return;
 }
@@ -195,22 +175,17 @@ end:
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
-    case EVT_RequestForDestructionReasons:
-      handle_request_for_destruction_reasons_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (queue);
       break;
     case EVT_Detection:
       handle_detection_event (self, herds, &(event->u.detection), queue);
@@ -222,13 +197,8 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -239,16 +209,16 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   /* Nothing to do. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -262,7 +232,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -281,21 +251,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
-{
-  return FALSE;
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -309,7 +265,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   gboolean already_names;
@@ -353,7 +309,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -373,7 +329,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -386,12 +342,12 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
@@ -402,19 +358,8 @@ local_free (struct ergadm_model_t_ *self)
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -422,25 +367,23 @@ interface_version (void)
 /**
  * Returns a new basic destruction model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element *e;
   gboolean success;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -449,7 +392,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   m->reset = reset;
   m->is_listening_for = is_listening_for;
   m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
   m->to_string = to_string;
   m->printf = local_printf;
   m->fprintf = local_fprintf;
@@ -459,16 +401,16 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting production types");
+  g_debug ("setting production types");
 #endif
   local_data->production_types = herds->production_type_names;
   local_data->production_type =
-    ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
+    naadsm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
 
   e = scew_element_by_name (params, "priority");
   if (e != NULL)
     {
-      local_data->priority = (unsigned short int) round (PAR_get_unitless (e, &success));
+      local_data->priority = (int) round (PAR_get_unitless (e, &success));
       if (success == FALSE)
         {
           g_warning ("%s: setting priority to 1", MODEL_NAME);
@@ -487,23 +429,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-
-char *
-basic_destruction_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-basic_destruction_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file basic-destruction-model.c */

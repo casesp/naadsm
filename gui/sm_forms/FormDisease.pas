@@ -4,13 +4,13 @@ unit FormDisease;
 FormDisease.pas/dfm
 -------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.34 $
+Last revision: $Date: 2011-10-04 23:58:12 $ $Author: areeves $
+Version: $Revision: 1.40.2.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -40,7 +40,8 @@ interface
   ;
 
   type TFormDisease = class( TFormProdTypeBase )
-      fraParams: TFrameDisease;
+    sbxAllParams: TScrollBox;
+    fraParams: TFrameDisease;
 
     	procedure cbxTransitionClick(Sender: TObject);
 
@@ -76,7 +77,6 @@ implementation
     SysUtils,
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     ChartFunction,
     ControlUtils,
@@ -95,8 +95,7 @@ implementation
       inherited create( AOwner );
       translateUI();
 
-      fraParams.cbxTransition.visible := false;
-      fraParams.pnlDiseaseParams.Visible := false;
+      fraParams.visible := false;
       lblProdType.Caption := '';
 
       _ignoreClick := false;
@@ -136,41 +135,26 @@ implementation
 // Display functions
 //-----------------------------------------------------------------------------
   procedure TFormDisease.updateDisplay();
-    var
-      usePrevalence: boolean;
   	begin
-    	if( _selectedPT <> nil ) then
+      if( 0 = _ptList.count ) then
+        begin
+          //sbxAllParams.Visible := false;
+          exit;
+        end
+      else
+        //sbxAllParams.Visible := true
+      ;
+
+    	if( nil <> _selectedPT ) then
       	begin
-          usePrevalence := (_selectedPT.sim as TSMSimulationInput).useWithinHerdPrevalence;
-
-          fraParams.lblPrevalence.Visible := usePrevalence;
-          fraParams.imgPrevalence.Visible := usePrevalence;
-          fraParams.smrPrevalence.Visible := usePrevalence;
-
-          lblProdType.Caption := ( _selectedPT.productionTypeDescr );
-          fraParams.pnlDiseaseParams.Visible := _selectedPT.simulateTransition;
-          fraParams.cbxTransition.visible := true;
-
-          // Setting the checkbox "checked" property triggers the checkbox "clicked" event, which is silly...
-          _ignoreClick := true;
-          fraParams.cbxTransition.Checked := _selectedPT.simulateTransition;
-          _ignoreClick := false;
-
-          if( _selectedPT.simulateTransition ) then
-            begin
-              fraParams.smcLatent.showChart( _selectedPT, _selectedPT.diseaseLatent, DLatent );
-              fraParams.smcSubclinical.showChart( _selectedPT, _selectedPT.diseaseSubclinical, DSubclinical );
-              fraParams.smcClinical.showChart( _selectedPT, _selectedPT.diseaseClinical, DClinical );
-              fraParams.smcImmune.showChart( _selectedPT, _selectedPT.diseaseImmune, DImmune );
-              fraParams.smrPrevalence.showChart( _selectedPT, _selectedPT.diseasePrevalence, DPrevalence );
-            end
-          ;
+          lblProdType.Caption := _selectedPT.productionTypeDescr;
+          fraParams.Visible := true;
+					fraParams.prodType := _selectedPT;
         end
       else
         begin
-          fraParams.pnlDiseaseParams.visible := false;
-      		fraParams.cbxTransition.visible := false;
           lblProdType.Caption := '';
+          fraParams.visible := false;
         end
       ;
     end
@@ -179,8 +163,6 @@ implementation
 
   procedure TFormDisease.prepFunctionDicts();
   	var
-    	pt: TProductionType;
-      i: integer;
       it: TFunctionDictionaryIterator;
   	begin
     	dbcout( 'Updating master display.  Chart function editors should be cleared.', DBFORMDISEASE );
@@ -191,7 +173,8 @@ implementation
           smcSubclinical.ClearList();
           smcClinical.ClearList();
           smcImmune.ClearList();
-          smrPrevalence.clearList();
+          smrPrevInfected.clearList();
+          smrPrevShedding.clearList();
         end
       ;
 
@@ -202,38 +185,16 @@ implementation
           begin
             if ( not it.value().removed ) then
               begin
-                case ( it.value().fn.dbField ) of
-                  integer( DLatent ):
-                    begin
-                       it.value().refCounter := 0;
-                       fraParams.smcLatent.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DSubclinical ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcSubclinical.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DClinical ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcClinical.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DImmune ):
-                    begin
-                      it.value().RefCounter := 0;
-                      fraParams.smcImmune.appendFunction( it.value().fn );
-                    end;
-
-                  integer( DPrevalence ):
-                    begin
-                      it.value().refCounter := 0;
-                      fraParams.smrPrevalence.appendFunction( it.value().fn );
-                    end;
+                case( TSMChart( integer ( it.value().fn.dbField ) ) ) of
+                  DLatent: fraParams.smcLatent.appendFunction( it.value().fn );
+                  DSubclinical: fraParams.smcSubclinical.appendFunction( it.value().fn );
+                  DClinical: fraParams.smcClinical.appendFunction( it.value().fn );
+                  DImmune: fraParams.smcImmune.appendFunction( it.value().fn );
+                  DPrevInfected: fraParams.smrPrevInfected.appendFunction( it.value().fn );
+                  DPrevShedding: fraParams.smrPrevShedding.appendFunction( it.value().fn );
                 end;
-              end;
+              end
+            ;
           end
         ;
 
@@ -241,19 +202,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-
-      // Set the reference counters, based on how many times a function is actually used.
-      for i := 0 to _ptList.Count-1 do
-      	begin
-        	pt := _ptList.at(i);
-          if( nil <> pt.diseaseLatent ) then _fnDict.value( pt.latentName ).incrRefCounter();
-          if( nil <> pt.diseaseSubclinical ) then _fnDict.value( pt.subclinicalName).incrRefCounter();
-          if( nil <> pt.diseaseClinical ) then _fnDict.value( pt.clinicalName ).incrRefCounter();
-          if( nil <> pt.diseaseImmune ) then _fnDict.value( pt.immuneName ).incrRefCounter();
-          if( nil <> pt.diseasePrevalence ) then _fnDict.value( pt.prevalenceName ).incrRefCounter();
-        end
-      ;
     end
   ;
 
@@ -266,13 +214,16 @@ implementation
           smcSubclinical.setFunctionDict( _fnDict );
           smcClinical.setFunctionDict( _fnDict );
           smcImmune.setFunctionDict( _fnDict );
-          smrPrevalence.setFunctionDict( _fnDict );
+          smrPrevInfected.setFunctionDict( _fnDict );
+          smrPrevShedding.setFunctionDict( _fnDict );
 
        		smcLatent.setModelList( _ptList );
           smcSubclinical.setModelList( _ptList );
           smcClinical.setModelList( _ptList );
           smcImmune.setModelList( _ptList );
-          smrPrevalence.setModelList( _ptList );
+          smrPrevInfected.setModelList( _ptList );
+          smrPrevShedding.setModelList( _ptList );
+
         end
       ;
     end
@@ -287,7 +238,7 @@ implementation
   procedure TFormDisease.cbxTransitionClick(Sender: TObject);
     begin
       if( not( _ignoreClick ) ) then
-     	  _selectedPT.simulateTransition := fraParams.cbxTransition.Checked
+     	  _selectedPT.diseaseParams.useDisease := fraParams.cbxTransition.Checked
       ;
      	updateDisplay();
     end
@@ -313,13 +264,16 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFormDisease.copyParameters( const src: TProductionType; dest: TProductionType );
     begin
-      dest.simulateTransition := src.simulateTransition;
+      dest.diseaseParams.useDisease := src.diseaseParams.useDisease;
 
       dest.setChart( DLatent, src.chart( DLatent ) );
       dest.setChart( DSubclinical, src.chart( DSubclinical ) );
       dest.setChart( DClinical, src.chart( DClinical ) );
       dest.setChart( DImmune, src.chart( DImmune ) );
-      dest.setChart( DPrevalence, src.chart( DPrevalence ) );
+      dest.setChart( DPrevInfected, src.chart( DPrevInfected ) );
+      dest.setChart( DPrevShedding, src.chart( DPrevShedding ) );
+
+      dest.diseaseParams.probMortality := src.diseaseParams.probMortality;
 
       dest.updated := true;
     end

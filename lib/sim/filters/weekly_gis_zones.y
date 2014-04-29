@@ -4,7 +4,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include <glib.h>
 #include <gpcl/gpc.h>
 #include <shapefil.h>
@@ -60,9 +59,6 @@
 #define BUFFERSIZE 2048
 #define COPY_BUFFERSIZE 8192
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
@@ -74,7 +70,7 @@ unsigned int max_zone_name_length; /**< The length of the longest zone name.
 unsigned int last_day; /**< The most recent run number we have seen in the
   table. */
 GPtrArray *last_day_zones; /**< Each item is a pointer to a gpc_polygon. */
-char *arcview_shp_filename = NULL;
+const char *arcview_shp_filename = NULL;
 char *arcview_base_name;
 gboolean done;
 
@@ -282,7 +278,9 @@ var_names:
       /* Make sure the first part of the variable name is "zone-shape". */
       s = (GString *) g_ptr_array_index ($3, 0);
       if (g_ascii_strcasecmp (s->str, "zone-shape") != 0)
-        g_error ("found a variable \"%s\" that is not a zone-shape", s->str);
+        {
+          g_error ("found a variable \"%s\" that is not a zone-shape", s->str);
+        }
       /* Once we have checked that first part of the variable name, we can
        * discard that string. */
       g_string_free (s, TRUE);
@@ -301,7 +299,9 @@ var_names:
       /* Make sure the first part of the variable name is "zone-shape". */
       s = (GString *) g_ptr_array_index ($1, 0);
       if (g_ascii_strcasecmp (s->str, "zone-shape") != 0)
-        g_error ("found a variable \"%s\" that is not a zone-shape", s->str);
+        {
+          g_error ("found a variable \"%s\" that is not a zone-shape", s->str);
+        }
       /* Once we have checked that first part of the variable name, we can
        * discard that string. */
       g_string_free (s, TRUE);
@@ -574,45 +574,34 @@ silent_log_handler (const gchar * log_domain, GLogLevelFlags log_level,
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[2];
   int verbosity = 0;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { NULL }
+  };
 
   /* Get the command-line options and arguments.  There should be one command-
    * line argument, the name of the ArcView .shp file. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip = "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
-
-  options[1].longName = NULL;
-  options[1].shortName = '\0';
-  options[1].argInfo = 0;
-  options[1].arg = NULL;
-  options[1].val = 0;
-  options[1].descrip = NULL;
-  options[1].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **)argv, options, 0);
-  poptGetNextOpt (option);
-  arcview_shp_filename = poptGetArg (option);
-  if (arcview_shp_filename == NULL)
-    g_error ("Need the base name of ArcView shape files to write.");
-  poptFreeContext (option);
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
+  if (argc >= 2)
+    arcview_shp_filename = argv[1];
+  else
+    {
+      g_error ("Need the base name of ArcView shape files to write.");
+    }
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
@@ -623,12 +612,12 @@ main (int argc, char *argv[])
     {
       arcview_base_name = g_strndup (arcview_shp_filename,
                                      strlen(arcview_shp_filename) - 4);
-      free (arcview_shp_filename);
     }
   else
     {
-      arcview_base_name = arcview_shp_filename;
+      arcview_base_name = g_strdup (arcview_shp_filename);
     }
+  g_option_context_free (context);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,

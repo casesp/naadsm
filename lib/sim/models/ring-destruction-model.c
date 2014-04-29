@@ -13,8 +13,8 @@
  * @version 0.1
  * @date September 2003
  *
- * Copyright &copy; University of Guelph, 2003-2007
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -25,30 +25,25 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version ring_destruction_model_LTX_interface_version
-#define new ring_destruction_model_LTX_new
-#define run ring_destruction_model_LTX_run
-#define reset ring_destruction_model_LTX_reset
-#define events_listened_for ring_destruction_model_LTX_events_listened_for
-#define is_listening_for ring_destruction_model_LTX_is_listening_for
-#define has_pending_actions ring_destruction_model_LTX_has_pending_actions
-#define has_pending_infections ring_destruction_model_LTX_has_pending_infections
-#define to_string ring_destruction_model_LTX_to_string
-#define local_printf ring_destruction_model_LTX_printf
-#define local_fprintf ring_destruction_model_LTX_fprintf
-#define local_free ring_destruction_model_LTX_free
-#define handle_request_for_destruction_reasons_event ring_destruction_model_LTX_handle_request_for_destruction_reasons_event
-#define handle_detection_event ring_destruction_model_LTX_handle_detection_event
-#define callback ring_destruction_model_LTX_callback
-#define check_and_choose ring_destruction_model_LTX_check_and_choose
-#define events_created ring_destruction_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new ring_destruction_model_new
+#define run ring_destruction_model_run
+#define reset ring_destruction_model_reset
+#define events_listened_for ring_destruction_model_events_listened_for
+#define is_listening_for ring_destruction_model_is_listening_for
+#define has_pending_actions ring_destruction_model_has_pending_actions
+#define to_string ring_destruction_model_to_string
+#define local_printf ring_destruction_model_printf
+#define local_fprintf ring_destruction_model_fprintf
+#define local_free ring_destruction_model_free
+#define handle_before_any_simulations_event ring_destruction_model_before_any_simulations_event
+#define handle_detection_event ring_destruction_model_handle_detection_event
+#define check_and_choose ring_destruction_model_check_and_choose
 
 #include "model.h"
 #include "model_util.h"
 #include "gis.h"
+#include "spatial_search.h"
 
 #if STDC_HEADERS
 #  include <string.h>
@@ -61,8 +56,6 @@
 #if HAVE_MATH_H
 #  include <math.h>
 #endif
-
-#include "guilib.h"
 
 #include "ring-destruction-model.h"
 
@@ -77,28 +70,14 @@ double round (double x);
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "ring-destruction-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of destroying units within a given distance of\n\
-a diseased unit.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 September 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 2
-EVT_event_type_t events_created[] =
-  { EVT_DeclarationOfDestructionReasons, EVT_RequestForDestruction };
 
 #define NEVENTS_LISTENED_FOR 2
-EVT_event_type_t events_listened_for[] = { EVT_RequestForDestructionReasons, EVT_Detection };
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_Detection };
 
 
 
-#define EPSILON 0.01
+#define EPSILON 0.01 /* 10 m */
 
 
 
@@ -107,36 +86,31 @@ typedef struct
 {
   gboolean *from_production_type, *to_production_type;
   GPtrArray *production_types;
-  unsigned short int priority;
+  int priority;
   double radius;
-  double radius_sq;
-  double radius_as_degrees;
-  gboolean use_rtree_index;
 }
 local_data_t;
 
 
 
 /**
- * Responds to a request for destruction reasons by declaring all the reasons
- * for which this model may request a destruction.
+ * Before any simulations, this module declares all the reasons for which it
+ * may request a destruction.
  *
- * @param self the model.
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
-                                              EVT_event_queue_t * queue)
+handle_before_any_simulations_event (EVT_event_queue_t * queue)
 {
   GPtrArray *reasons;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+         "----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
 
   reasons = g_ptr_array_sized_new (1);
-  g_ptr_array_add (reasons, "ring destruction");
+  g_ptr_array_add (reasons, "Ring");
   EVT_event_enqueue (queue, EVT_new_declaration_of_destruction_reasons_event (reasons));
 
   /* Note that we don't clean up the GPtrArray.  It will be freed along with
@@ -145,7 +119,7 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_destruction_reasons_event (%s)", MODEL_NAME);
+         "----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
 #endif
   return;
 }
@@ -157,53 +131,55 @@ handle_request_for_destruction_reasons_event (struct ergadm_model_t_ *self,
  */
 typedef struct
 {
-  struct ergadm_model_t_ *self;
+  local_data_t *local_data;
   HRD_herd_list_t *herds;
   HRD_herd_t *herd1;
-  unsigned short int day;
+  int day;
   EVT_event_queue_t *queue;
 } callback_t;
 
 
 
 /**
- * Check whether herd 2 is within the given distance of herd 1.
+ * Check whether herd 2 should be part of the destruction ring.
  */
 void
-check_and_choose (callback_t * callback_data, HRD_herd_t * herd2)
+check_and_choose (int id, gpointer arg)
 {
+  callback_t *callback_data;
+  HRD_herd_t *herd2;
   HRD_herd_t *herd1;
   local_data_t *local_data;
-  double distance_sq;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER check_and_choose (%s)", MODEL_NAME);
 #endif
+
+  callback_data = (callback_t *) arg;
+  herd2 = HRD_herd_list_get (callback_data->herds, id);
 
   /* Are herd 1 and herd 2 the same? */
   herd1 = callback_data->herd1;
   if (herd1 == herd2)
     goto end;
 
-  local_data = (local_data_t *) (callback_data->self->model_data);
+  local_data = callback_data->local_data;
 
-  /* Is herd 2 the production type we're interested in? */
-  if (local_data->to_production_type[herd2->production_type] == FALSE)
+  /* Is herd 2 the production type we're interested in, and not already dead or
+   * destroyed? */
+  if (local_data->to_production_type[herd2->production_type] == FALSE
+      || herd2->status == Destroyed
+      || herd2->status == DeadFromDisease)
     goto end;
 
-  distance_sq = GIS_local_distance_sq (herd1->lat, herd1->lon, herd2->lat, herd2->lon);
-  if (distance_sq - local_data->radius_sq <= EPSILON)
-    {
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "unit \"%s\" within radius, ordering unit destroyed", herd2->official_id);
+#if DEBUG
+  g_debug ("unit \"%s\" within radius, ordering unit destroyed", herd2->official_id);
 #endif
-      EVT_event_enqueue (callback_data->queue,
-                         EVT_new_request_for_destruction_event (herd2,
-                                                                callback_data->day,
-                                                                "ring destruction",
-                                                                local_data->priority));
-    }
+  EVT_event_enqueue (callback_data->queue,
+                     EVT_new_request_for_destruction_event (herd2,
+                                                            callback_data->day,
+                                                            "Ring",
+                                                            local_data->priority));
 
 end:
 #if DEBUG
@@ -214,35 +190,11 @@ end:
 
 
 
-int
-callback (int id, void *arg)
-{
-  callback_t *callback_data;
-  HRD_herd_t *herd2;
-
-  callback_data = (callback_t *) arg;
-  /* Because herd indices start at 0, and R-Tree rectangle IDs start at 1. */
-  herd2 = HRD_herd_list_get (callback_data->herds, id - 1);
-  check_and_choose (callback_data, herd2);
-
-  /* A return value of 0 would mean that the spatial search should stop early
-   * (before all herds in the search rectangle were visited).  We don't want
-   * that, so return 1. */
-  return 1;
-}
-
-
-
 void
-ring_destroy (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
-              HRD_herd_t * herd, unsigned short int day, EVT_event_queue_t * queue)
+ring_destroy (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
+              HRD_herd_t * herd, int day, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  unsigned int nherds, herd2_index;
-  double distance;              /* between two units being considered */
-  struct Rect search_rect;      /* for narrowing down radius searches using the
-                                   R-tree (spatial index) */
-  double mult;                  /* to account for latitude */
   callback_t callback_data;
 
 #if DEBUG
@@ -251,35 +203,16 @@ ring_destroy (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
 
   local_data = (local_data_t *) (self->model_data);
 
-  callback_data.self = self;
+  callback_data.local_data = local_data;
   callback_data.herds = herds;
   callback_data.herd1 = herd;
   callback_data.day = day;
   callback_data.queue = queue;
 
   /* Find the distances to other units. */
-  if (
-#if defined(USE_RTREE) && USE_RTREE == 1
-       /* For debugging purposes, you can #define USE_RTREE to 0 to never use
-        * the spatial index, or 1 to always use it. */
-       TRUE ||
-#endif
-       local_data->use_rtree_index)
-    {
-      distance = local_data->radius_as_degrees;
-      mult = 1.0 / MIN (cos (DEG2RAD * (herd->lat + distance)), cos(DEG2RAD * (herd->lat - distance))); 
-      search_rect.boundary[0] = herd->lon - (distance * mult) - EPSILON;
-      search_rect.boundary[1] = herd->lat - distance - EPSILON;
-      search_rect.boundary[2] = herd->lon + (distance * mult) + EPSILON;
-      search_rect.boundary[3] = herd->lat + distance + EPSILON;
-      RTreeSearch (herds->spatial_index, &search_rect, callback, &callback_data);
-    }
-  else
-    {
-      nherds = HRD_herd_list_length (herds);
-      for (herd2_index = 0; herd2_index < nherds; herd2_index++)
-        check_and_choose (&callback_data, HRD_herd_list_get (herds, herd2_index));
-    }
+  spatial_search_circle_by_id (herds->spatial_index, herd->index,
+                               local_data->radius + EPSILON,
+                               check_and_choose, &callback_data);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT ring_destroy (%s)", MODEL_NAME);
@@ -297,7 +230,7 @@ ring_destroy (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
+handle_detection_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
                         EVT_detection_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
@@ -332,22 +265,17 @@ handle_detection_event (struct ergadm_model_t_ *self, HRD_herd_list_t * herds,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
-    case EVT_RequestForDestructionReasons:
-      handle_request_for_destruction_reasons_event (self, queue);
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (queue);
       break;
     case EVT_Detection:
       handle_detection_event (self, herds, &(event->u.detection), queue);
@@ -361,11 +289,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -376,7 +299,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
@@ -399,7 +322,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -418,21 +341,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
-{
-  return FALSE;
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -446,7 +355,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   gboolean already_names;
@@ -491,7 +400,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -511,7 +420,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -524,7 +433,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
@@ -548,23 +457,13 @@ local_free (struct ergadm_model_t_ *self)
 
 
 /**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
-}
-
-
-
-/**
  * Returns a new ring destruction model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element *e;
   scew_attribute *attr;
@@ -574,13 +473,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -589,7 +485,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   m->reset = reset;
   m->is_listening_for = is_listening_for;
   m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
   m->to_string = to_string;
   m->printf = local_printf;
   m->fprintf = local_fprintf;
@@ -603,7 +498,7 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
   local_data->production_types = herds->production_type_names;
   local_data->from_production_type =
-    ergadm_read_prodtype_attribute (params, "from-production-type", herds->production_type_names);
+    naadsm_read_prodtype_attribute (params, "from-production-type", herds->production_type_names);
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "setting \"to\" production types");
@@ -613,15 +508,15 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   attr = scew_attribute_by_name (params, "production-type");
   if (attr != NULL)
     local_data->to_production_type =
-      ergadm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
+      naadsm_read_prodtype_attribute (params, "production-type", herds->production_type_names);
   else
     local_data->to_production_type =
-      ergadm_read_prodtype_attribute (params, "to-production-type", herds->production_type_names);
+      naadsm_read_prodtype_attribute (params, "to-production-type", herds->production_type_names);
 
   e = scew_element_by_name (params, "priority");
   if (e != NULL)
     {
-      local_data->priority = (unsigned short int) round (PAR_get_unitless (e, &success));
+      local_data->priority = (int) round (PAR_get_unitless (e, &success));
       if (success == FALSE)
         {
           g_warning ("%s: setting priority to 1", MODEL_NAME);
@@ -660,47 +555,12 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
       g_warning ("%s: radius missing, setting to 0", MODEL_NAME);
       local_data->radius = 0;
     }
-  local_data->radius_as_degrees = local_data->radius / GIS_DEGREE_DISTANCE;
-  local_data->radius_sq = local_data->radius * local_data->radius;
-
-  /* Use the following heuristic to decide whether to use the R-tree index in
-   * searches: if the ratio of the diameter of circle of maximum spread to the
-   * short axis of the oriented bounding rectangle around the herds is <= 0.25,
-   * use the R-tree. */
-  if (herds->short_axis_length > 0)
-    {
-      local_data->use_rtree_index =
-        (local_data->radius * 2 / herds->short_axis_length) <= 0.25;
-    }
-  else
-    {
-      local_data->use_rtree_index = FALSE;
-    }
-
-#if defined(USE_RTREE) && USE_RTREE == 0
-  /* For debugging purposes, you can #define USE_RTREE to 0 to never use the
-   * spatial index, or 1 to always use it. */
-  local_data->use_rtree_index = FALSE;
-#endif
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-
-char *
-ring_destruction_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-ring_destruction_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file ring-destruction-model.c */

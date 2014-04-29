@@ -7,42 +7,35 @@
  * There can be an arbitrary number of zones, each with a name.
  *
  * @image html surv_levels.png
- * @image latex surv_levels.eps
  *
  * The basic form of a zone is a circle around a unit.  Areas outside the
  * circle also constitute a zone, with the lowest surveillance level.
  *
  * @image html basic_circle.png
- * @image latex basic_circle.eps
  *
  * Higher levels of surveillance correspond to smaller zones.
  *
  * @image html ordered_circles.png
- * @image latex ordered_circles.eps
  *
  * Overlapping foci of the same zone merge.
  *
  * @image html adjacent_zones.png
- * @image latex adjacent_zones.eps
  *
  * Zones with lower surveillance levels are absorbed when enclosed by a zone of
  * a higher surveillance level.  (The "no donuts" rule.)
  *
  * @image html enclosure.png
- * @image latex enclosure.eps
  *
  * Note that adding a focus can join existing physically separated areas of the
  * same zone and create more than one donut-hole.
  *
  * @image html enclosure2.png
- * @image latex enclosure2.eps
  *
  * If a focus is removed from a zone, the zone takes the shape it would have
  * had were that focus never included.  (The "no bites out of Mickey's head"
  * rule.)
  *
  * @image html split_zones.png
- * @image latex split_zones.eps
  *
  * @section movement-and-zones Movement and zones
  *
@@ -50,19 +43,16 @@
  * separated foci of the same zone is not.
  *
  * @image html movement_inside.png
- * @image latex movement_inside.eps
  *
  * Movement from a zone to an adjacent zone of a higher surveillance level is
  * allowed, but not vice-versa.
  *
  * @image html lower_to_higher.png
- * @image latex lower_to_higher.eps
  *
  * Movement that would cross a zone of a higher surveillance level "as the crow
  * flies" but where a "detour" exists, is allowed.
  *
  * @image html detour.png
- * @image latex detour.eps
  *
  * Symbols from this module begin with ZON_.
  *
@@ -74,8 +64,8 @@
  * @version 0.1
  * @date October 2004
  *
- * Copyright &copy; University of Guelph, 2004-2007
- * 
+ * Copyright &copy; University of Guelph, 2004-2010
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -93,14 +83,17 @@
 
 
 /** A zone. */
+/* NOTE: When this struct is altered, the record type ZON_zone_t in
+ * the Delphi user interface also needs to be updated.  See unit
+ * ZonePerimeter.pas. */
 typedef struct
 {
   char *name;
   int level;
   double radius;
-  double radius_sq;
-  double radius_as_degrees;
-  double use_rtree_index;
+  double radius_sq; /* Comparing distance^2 to radius^2 saves us taking a
+    square root. */
+  double epsilon_sq; /* The leeway when comparing distance^2 to radius^2. */
   GArray *foci; /**< Unordered array of foci.  Each focus is a gpc_vertex
     structure. */
   gpc_polygon *poly; /**< the (possibly multi-contour) polygon */
@@ -111,14 +104,22 @@ typedef struct
     in <i>poly</i>.  You should use ZON_same_zone() and ZON_same_fragment() to
     safely compare zone fragments. */
   double area;
+  double perimeter;
   unsigned int nholes_filled;
+#ifdef USE_SC_GUILIB
+  double max_area;
+  unsigned short int max_day;
+  GHashTable *_herdDays;
+  GHashTable *_animalDays;
+#endif
 }
 ZON_zone_t;
 
 
 
 /** A zone "fragment". */
-typedef struct
+typedef struct _ZON_zone_fragment_t ZON_zone_fragment_t;
+struct _ZON_zone_fragment_t
 {
 #if DEBUG
   int id; /**< a numeric identifier for debugging purposes */
@@ -128,8 +129,10 @@ typedef struct
   gpc_vertex sample; /**< a point (any point) that is known to be inside the
     fragment.  Used to tell which post-merge contour corresponds to which
     pre-merge contour. */
-}
-ZON_zone_fragment_t;
+  ZON_zone_fragment_t *nests_in; /**< If there are multiple levels of zones,
+    this points to the fragment of the next larger zone inside which this
+    fragment nests. */
+};
 
 
 
@@ -200,7 +203,7 @@ void ZON_free_zone_list (ZON_zone_list_t *);
 /* Functions for zone objects. */
 
 ZON_zone_t *ZON_new_zone (char *, int level, double radius);
-void ZON_free_zone (ZON_zone_t *, gboolean free_segment);
+void ZON_free_zone (ZON_zone_t *);
 char *ZON_zone_to_string (ZON_zone_t *);
 int ZON_fprintf_zone (FILE *, ZON_zone_t *);
 
@@ -211,8 +214,14 @@ ZON_zone_fragment_t *ZON_zone_add_focus (ZON_zone_t *, double x, double y, gpc_p
 gboolean ZON_zone_contains (ZON_zone_t *, double x, double y);
 gboolean ZON_same_zone (ZON_zone_fragment_t *, ZON_zone_fragment_t *);
 gboolean ZON_same_fragment (ZON_zone_fragment_t *, ZON_zone_fragment_t *);
+gboolean ZON_nests_in (ZON_zone_fragment_t * inner, ZON_zone_fragment_t * outer);
 double ZON_update_area (ZON_zone_t *);
+double ZON_update_perimeter (ZON_zone_t *);
 
 #define ZON_level(F) (F->parent->level)
+
+#ifdef USE_SC_GUILIB
+  void addToZoneTotals( unsigned short int _day, ZON_zone_t *_zone, unsigned int _prod_id, unsigned int _herd_size   );
+#endif
 
 #endif /* !ZONE_H */

@@ -37,12 +37,7 @@
 #include <glib.h>
 #include <glib/gprintf.h>
 #include <regex.h>
-
-#if !HAVE_GETLINE
-/* getline is a GNU extension; if it's not found at configure time, a fallback
- * implementation will go into libreplace, and we need a prototype here. */
-ssize_t getline (char **, size_t *, FILE *);
-#endif
+#include "replace.h"
 
 #define FOLDER "sm_output"
 #define PROMPT "> "
@@ -56,7 +51,7 @@ main (int argc, char *argv[])
   size_t bufsize = 0;
   ssize_t len;
   GString *cmd = NULL, *filename = NULL;
-  FILE *tmp_file;
+  gint tmp_file;
   char *tmp_filename;
   GError *error;
 
@@ -69,7 +64,7 @@ main (int argc, char *argv[])
         break;
       if (g_ascii_strncasecmp (buf, "stochastic", 10) == 0)
         {
-          g_string_printf (cmd, "test/minisim -V 0 --model-dir=.. -h %s", &buf[11]);
+          g_string_printf (cmd, "test/mininaadsm -V 0 --model-dir=.. -h %s", &buf[11]);
           system (cmd->str);
         }
       else if (g_ascii_strncasecmp (buf, "variables", 9) == 0)
@@ -83,12 +78,12 @@ main (int argc, char *argv[])
           buf[len - 1] = '\0';
 
           /* Run the simulator. */
-          g_string_printf (cmd, "test/minisim-fixed-rng -V 0 --model-dir=.. -h %s \> %s",
+          g_string_printf (cmd, "test/mininaadsm-fixed-rng -V 0 --model-dir=.. -h %s > %s",
                            &buf[10], tmp_filename);
           system (cmd->str);
 
           /* Get a table of the output variable values. */
-          g_string_printf (cmd, "../filters/full_table_filter %s", tmp_filename);
+          g_string_printf (cmd, "../filters/full_table_filter < %s", tmp_filename);
           system (cmd->str);
 
           /* Remove the temporary file. */

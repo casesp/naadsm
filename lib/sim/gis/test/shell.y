@@ -21,38 +21,25 @@
  * The commands are:
  * <ul>
  *   <li>
- *     <code>distance (lat1, lon1, lat2, lon2)</code>
+ *     <code>great circle distance (lat1, lon1, lat2, lon2)</code>
  *
  *     Returns the great-circle distance in km between two points.  The
  *     arguments are given in degrees.
  *   <li>
- *     <code>local distance (lat1, lon1, lat2, lon2)</code>
+ *     <code>distance (x1, y1, x2, y2)</code>
  *
- *     Returns a local flat-Earth estimate (in which meridians converge) of the
- *     distance in km between two points.  The arguments are given in degrees.
+ *     Returns the distance in km between two points.  The arguments are given
+ *     on a km grid.
  *   <li>
- *     <code>simple distance (lat1, lon1, lat2, lon2)</code>
- *
- *     Returns a flat, square grid estimate (in which meridians do not
- *     converge)of the distance in km between two points.  The arguments are
- *     given in degrees.
- *   <li>
- *     <code>heading (lat1, lon1, lat2, lon2)</code>
+ *     <code>great circle heading (lat1, lon1, lat2, lon2)</code>
  *
  *     Returns the initial heading in degrees from point 1 to point 2.  The
  *     arguments are given in degrees.
  *   <li>
- *     <code>local heading (lat1, lon1, lat2, lon2)</code>
+ *     <code>heading (x1, y1, x2, y2)</code>
  *
- *     Returns a local flat-Earth estimate (in which meridians converge) of the
- *     heading in degrees from point 1 to point 2.  The arguments are given in
- *     degrees.
- *   <li>
- *     <code>simple heading (lat1, lon1, lat2, lon2)</code>
- *
- *     Returns a flat, square grid estimate (in which meridians do not
- *     converge) of the heading in degrees from point 1 to point 2.  The
- *     arguments are given in degrees.
+ *     Returns the heading in degrees from point 1 to point 2.  The arguments
+ *     are given on a km grid.
  *   <li>
  *     <code>area (x1,y1,x2,y2,...)</code>
  *
@@ -60,21 +47,17 @@
  *     repeated as the final point.  Inputs with zero, one, or two points are
  *     allowed, in which case the area should be 0.
  *   <li>
- *     <code>simple area (lat1,lon1,lat2,lon2,...)</code>
+ *     <code>perimeter (x1,y1,x2,y2,...)</code>
  *
- *     Returns a flat, square grid estimate (in which meridians do not
- *     converge) of the area in square km of a polygon.  The arguments are
- *     given in degrees.  The initial point does not have to be repeated as the
- *     final point.  Inputs with zero, one, or two points are allowed, in which
- *     case the area should be 0.
+ *     Returns the perimeter of a polygon.  The initial point does not have to
+ *     be repeated as the final point.  Inputs with zero, one, or two points
+ *     are allowed, in which case the perimeter should be 0.
  *   <li>
- *     <code>local area (lat1,lon1,lat2,lon2,...)</code>
+ *     <code>point in polygon (x,y,x1,y1,x2,y2,...)</code>
  *
- *     Returns a local flat-Earth estimate (in which meridians converge) of the
- *     area in square km of a polygon.  The arguments are given in degrees.
- *     The initial point does not have to be repeated as the final point.
- *     Inputs with zero, one, or two points are allowed, in which case the area
- *     should be 0.
+ *     Finds whether the point x,y is inside the polygon whose vertices are
+ *     defined by x1,y2,...,xn,yn.  For the polygon, the initial point does not
+ *     have to be repeated as the final point.  The output is 't' or 'f'.
  * </ul>
  *
  * The shell exits on EOF (Ctrl+D if you're typing commands into it
@@ -88,7 +71,7 @@
  * @version 0.1
  * @date January 2004
  *
- * Copyright &copy; University of Guelph, 2004-2006
+ * Copyright &copy; University of Guelph, 2004-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -114,8 +97,7 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
   GSList *lval;
 }
 
-%token DISTANCE HEADING AREA LOCAL SIMPLE
-%token NUM
+%token DISTANCE HEADING AREA PERIMETER GREATCIRCLE POINTINPOLYGON
 %token LPAREN RPAREN COMMA
 %token <fval> NUM
 %type <lval> num_list
@@ -132,34 +114,24 @@ command :
   ;
 
 function_call :
-    DISTANCE LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
+    GREATCIRCLE DISTANCE LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
     {
-      printf ("%g\n%s", GIS_great_circle_distance ($3, $5, $7, $9), PROMPT);
+      printf ("%g\n%s", GIS_great_circle_distance ($4, $6, $8, $10), PROMPT);
       fflush (stdout);
     }
-  | LOCAL DISTANCE LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
+  | DISTANCE LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
     {
-      printf ("%g\n%s", GIS_local_distance ($4, $6, $8, $10), PROMPT);
+      printf ("%g\n%s", GIS_distance ($3, $5, $7, $9), PROMPT);
       fflush (stdout);
     }
-  | SIMPLE DISTANCE LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
+  | GREATCIRCLE HEADING LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
     {
-      printf ("%g\n%s", GIS_simple_distance ($4, $6, $8, $10), PROMPT);
+      printf ("%g\n%s", GIS_great_circle_heading ($4, $6, $8, $10), PROMPT);
       fflush (stdout);
     }
   | HEADING LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
     {
       printf ("%g\n%s", GIS_heading ($3, $5, $7, $9), PROMPT);
-      fflush (stdout);
-    }
-  | LOCAL HEADING LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
-    {
-      printf ("%g\n%s", GIS_local_heading ($4, $6, $8, $10), PROMPT);
-      fflush (stdout);
-    }
-  | SIMPLE HEADING LPAREN NUM COMMA NUM COMMA NUM COMMA NUM RPAREN
-    {
-      printf ("%g\n%s", GIS_simple_heading ($4, $6, $8, $10), PROMPT);
       fflush (stdout);
     }
   | AREA LPAREN RPAREN
@@ -220,21 +192,21 @@ function_call :
       printf ("%g\n%s", area, PROMPT);
       fflush (stdout);
     }
-  | SIMPLE AREA LPAREN RPAREN
+  | PERIMETER LPAREN RPAREN
     {
       gpc_polygon * poly;
-      double area;
+      double perimeter;
 
       poly = gpc_new_polygon (); /* starts with no contours */
-      area = GIS_simple_latlon_polygon_area (poly);
+      perimeter = GIS_polygon_perimeter (poly);
       gpc_free_polygon (poly);
-      printf ("%g\n%s", area, PROMPT);
+      printf ("%g\n%s", perimeter, PROMPT);
       fflush (stdout);
     }
-  | SIMPLE AREA LPAREN num_list RPAREN
+  | PERIMETER LPAREN num_list RPAREN
     {
       gpc_polygon * poly;
-      double area;
+      double perimeter;
       int len;
       int n;
       gpc_vertex_list *contour;
@@ -244,7 +216,7 @@ function_call :
       /* Initialize a polygon. */
       poly = gpc_new_polygon ();
 
-      len = g_slist_length ($4);
+      len = g_slist_length ($3);
       if (len % 2 != 0)
         {
           g_warning ("number of arguments must be even");
@@ -259,40 +231,30 @@ function_call :
           /* iter will point to the current node in the GSList of doubles; v
            * will point to the current vertex. */
           v = contour->vertex;
-          for (iter = $4; iter != NULL; )
+          for (iter = $3; iter != NULL; )
             {
-              v->y = *((double *)(iter->data)); /* latitude */
+              v->x = *((double *)(iter->data));
               iter = g_slist_next (iter);
-              v->x = *((double *)(iter->data)); /* longitude */
+              v->y = *((double *)(iter->data));
               iter = g_slist_next (iter);
               v++;
             }
           /* Now merge the (single) contour into a polygon object. */
           gpc_add_contour (poly, contour, 0);
         }
-      g_slist_foreach ($4, g_free_as_GFunc, NULL);
-      g_slist_free ($4);
+      g_slist_foreach ($3, g_free_as_GFunc, NULL);
+      g_slist_free ($3);
 
-      area = GIS_simple_latlon_polygon_area (poly);
+      perimeter = GIS_polygon_perimeter (poly);
       gpc_free_polygon (poly);
-      printf ("%g\n%s", area, PROMPT);
+      printf ("%g\n%s", perimeter, PROMPT);
       fflush (stdout);
     }
-  | LOCAL AREA LPAREN RPAREN
+  | POINTINPOLYGON LPAREN num_list RPAREN
     {
       gpc_polygon * poly;
-      double area;
-
-      poly = gpc_new_polygon (); /* starts with no contours */
-      area = GIS_local_latlon_polygon_area (poly);
-      gpc_free_polygon (poly);
-      printf ("%g\n%s", area, PROMPT);
-      fflush (stdout);
-    }
-  | LOCAL AREA LPAREN num_list RPAREN
-    {
-      gpc_polygon * poly;
-      double area;
+      double x,y;
+      gboolean inside;
       int len;
       int n;
       gpc_vertex_list *contour;
@@ -302,38 +264,45 @@ function_call :
       /* Initialize a polygon. */
       poly = gpc_new_polygon ();
 
-      len = g_slist_length ($4);
-      if (len % 2 != 0)
+      len = g_slist_length ($3);
+      if (len < 2 || len % 2 != 0)
         {
-          g_warning ("number of arguments must be even");
+          g_warning ("must have at least 2 arguments, and number of arguments must be even");
         }
       else
         {
-          /* Copy the points into a gpc_contour structure. */
-          n = len / 2;
+          /* Copy the first point as the point to test. */
+          iter = $3;
+          x = *((double *)(iter->data));
+          iter = g_slist_next (iter);
+          y = *((double *)(iter->data));
+          iter = g_slist_next (iter);
+          /* Copy the remaining points into a gpc_contour structure. */
+          n = (len - 2) / 2;
           contour = g_new (gpc_vertex_list, 1);
           contour->num_vertices = n;
           contour->vertex = g_new (gpc_vertex, n);
           /* iter will point to the current node in the GSList of doubles; v
            * will point to the current vertex. */
           v = contour->vertex;
-          for (iter = $4; iter != NULL; )
+          for (; iter != NULL; )
             {
-              v->y = *((double *)(iter->data)); /* latitude */
+              v->x = *((double *)(iter->data));
               iter = g_slist_next (iter);
-              v->x = *((double *)(iter->data)); /* longitude */
+              v->y = *((double *)(iter->data));
               iter = g_slist_next (iter);
               v++;
             }
           /* Now merge the (single) contour into a polygon object. */
           gpc_add_contour (poly, contour, 0);
         }
-      g_slist_foreach ($4, g_free_as_GFunc, NULL);
-      g_slist_free ($4);
+      g_slist_foreach ($3, g_free_as_GFunc, NULL);
+      g_slist_free ($3);
 
-      area = GIS_local_latlon_polygon_area (poly);
+      inside = GIS_point_in_polygon (poly, x, y);
       gpc_free_polygon (poly);
-      printf ("%g\n%s", area, PROMPT);
+      printf (inside ? "t" : "f");
+      printf ("\n%s", PROMPT);
       fflush (stdout);
     }
   ;
@@ -367,7 +336,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s)
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;

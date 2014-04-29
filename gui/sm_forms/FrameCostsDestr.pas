@@ -4,13 +4,13 @@ unit FrameCostsDestr;
 FrameCostsDestr.pas/dfm
 ------------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/03/12 22:10:50 $ $Author: areeves $
-Version number: $Revision: 1.3 $
+Last revision: $Date: 2009-11-13 16:28:40 $ $Author: rhupalo $
+Version number: $Revision: 1.7 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -57,11 +57,17 @@ interface
 
       pnlNoDestruction: TPanel;
       lblNoDestruction: TLabel;
+      lblCostApplicationHeader: TLabel;
+      lblDeadUnitAppraise: TLabel;
+      lblDeadUnitClean: TLabel;
+      lblDeadUnitIndemnify: TLabel;
+      lblDeadUnitDispose: TLabel;
+      cbxDeadUnitAppraise: TComboBox;
+      cbxDeadUnitClean: TComboBox;
+      cbxDeadUnitIndemnify: TComboBox;
+      cbxDeadUnitDispose: TComboBox;
 
       procedure processTextEntry( Sender: TObject );
-
-      { This function deals with a little bug in TREEdit.}
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
 
 		protected
     	// properties
@@ -94,9 +100,9 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
-    I88n
+    I88n,
+    CostParams
   ;
 
   constructor TFrameCostsDestr.create( AOWner: TComponent );
@@ -142,6 +148,23 @@ implementation
           lblDollars4.Caption := tr( '$' );
           lblDollars5.Caption := tr( '$' );
           lblNoDestruction.Caption := tr( '(Destruction is not used with the selected production type.)' );
+          lblCostApplicationHeader.Caption := tr( 'Cost application for deaths caused by the disease:' );
+          lblDeadUnitAppraise.Caption := tr( 'Whether to charge to appraise:' );
+          lblDeadUnitClean.Caption := tr( 'Whether to charge to clean:' );
+          lblDeadUnitIndemnify.Caption := tr( 'Whether to charge to indemnify:' );
+          lblDeadUnitDispose.Caption := tr( 'Whether to charge to dispose:' );
+          cbxDeadUnitAppraise.Items.Strings[0] := tr( 'Always applied' );
+          cbxDeadUnitAppraise.Items.Strings[1] := tr( 'Never applied' );
+          cbxDeadUnitAppraise.Items.Strings[2] := tr( 'Only apply after queued for destruction' );
+          cbxDeadUnitClean.Items.Strings[0] := tr( 'Always applied' );
+          cbxDeadUnitClean.Items.Strings[1] := tr( 'Never applied' );
+          cbxDeadUnitClean.Items.Strings[2] := tr( 'Only apply after queued for destruction' );
+          cbxDeadUnitIndemnify.Items.Strings[0] := tr( 'Always applied' );
+          cbxDeadUnitIndemnify.Items.Strings[1] := tr( 'Never applied' );
+          cbxDeadUnitIndemnify.Items.Strings[2] := tr( 'Only apply after queued for destruction' );
+          cbxDeadUnitDispose.Items.Strings[0] := tr( 'Always applied' );
+          cbxDeadUnitDispose.Items.Strings[1] := tr( 'Never applied' );
+          cbxDeadUnitDispose.Items.Strings[2] := tr( 'Only apply after queued for destruction' );
         end
       ;
 
@@ -156,28 +179,45 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFrameCostsDestr.processTextEntry( Sender: TObject );
   	begin
-      _prodType.costParams.destrAppraisalPerUnit := myStrToFloat( rleDestrAppraisalPerUnit.text, -1.0 );
-      _prodType.costParams.destrCleaningPerUnit := myStrToFloat( rleDestrCleaningPerUnit.text, -1.0 );
-      _prodType.costParams.destrEuthanasiaPerAnimal := myStrToFloat( rleDestrEuthanasiaPerAnimal.text, -1.0 );
-      _prodType.costParams.destrIndemnificationPerAnimal := myStrToFloat( rleDestrIndemnificationPerAnimal.text, -1.0 );
-      _prodType.costParams.destrDisposalPerAnimal := myStrToFloat( rleDestrDisposalPerAnimal.text, -1.0 );
+      _prodType.costParams.destrAppraisalPerUnit := uiStrToFloat( rleDestrAppraisalPerUnit.text, -1.0 );
+      _prodType.costParams.destrCleaningPerUnit := uiStrToFloat( rleDestrCleaningPerUnit.text, -1.0 );
+      _prodType.costParams.destrEuthanasiaPerAnimal := uiStrToFloat( rleDestrEuthanasiaPerAnimal.text, -1.0 );
+      _prodType.costParams.destrIndemnificationPerAnimal := uiStrToFloat( rleDestrIndemnificationPerAnimal.text, -1.0 );
+      _prodType.costParams.destrDisposalPerAnimal := uiStrToFloat( rleDestrDisposalPerAnimal.text, -1.0 );
+
+      case cbxDeadUnitAppraise.ItemIndex of
+        0: _prodType.costParams.destrAppraiseDeadUnitsCode := caAlwaysApply;
+        1: _prodType.costParams.destrAppraiseDeadUnitsCode := caNeverApply;
+        2: _prodType.costParams.destrAppraiseDeadUnitsCode := caOnlyApplyAfterQueDestr;
+      else
+        _prodType.costParams.destrAppraiseDeadUnitsCode := caUnspecified;
+      end;
+
+      case cbxDeadUnitClean.ItemIndex of
+        0: _prodType.costParams.destrCleanDeadUnitsCode := caAlwaysApply;
+        1: _prodType.costParams.destrCleanDeadUnitsCode := caNeverApply;
+        2: _prodType.costParams.destrCleanDeadUnitsCode := caOnlyApplyAfterQueDestr;
+      else
+        _prodType.costParams.destrCleanDeadUnitsCode := caUnspecified;
+      end;
+
+      case cbxDeadUnitIndemnify.ItemIndex of
+        0: _prodType.costParams.destrIndemnificationDeadUnitsCode := caAlwaysApply;
+        1: _prodType.costParams.destrIndemnificationDeadUnitsCode := caNeverApply;
+        2: _prodType.costParams.destrIndemnificationDeadUnitsCode := caOnlyApplyAfterQueDestr;
+      else
+        _prodType.costParams.destrIndemnificationDeadUnitsCode := caUnspecified;
+      end;
+
+      case cbxDeadUnitDispose.ItemIndex of
+        0: _prodType.costParams.destrDisposeDeadUnitsCode := caAlwaysApply;
+        1: _prodType.costParams.destrDisposeDeadUnitsCode := caNeverApply;
+        2: _prodType.costParams.destrDisposeDeadUnitsCode := caOnlyApplyAfterQueDestr;
+      else
+        _prodType.costParams.destrDisposeDeadUnitsCode := caUnspecified;
+      end;
 
       _prodType.updated := true;
-    end
-  ;
-
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameCostsDestr.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -218,36 +258,68 @@ implementation
           _loading := true;
 
           if( 0.0 <= _prodType.costParams.DestrAppraisalPerUnit ) then
-            rleDestrAppraisalPerUnit.text := uiFloatToStr( _prodType.costParams.DestrAppraisalPerUnit, 2, true )
+            rleDestrAppraisalPerUnit.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrAppraisalPerUnit, 2, true )
           else
             rleDestrAppraisalPerUnit.text := ''
           ;
 
           if( 0.0 <= _prodType.costParams.DestrCleaningPerUnit ) then
-            rleDestrCleaningPerUnit.text := uiFloatToStr( _prodType.costParams.DestrCleaningPerUnit, 2, true )
+            rleDestrCleaningPerUnit.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrCleaningPerUnit, 2, true )
           else
             rleDestrCleaningPerUnit.text := ''
           ;
 
           if( 0.0 <= _prodType.costParams.DestrDisposalPerAnimal ) then
-            rleDestrDisposalPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrDisposalPerAnimal, 2, true )
+            rleDestrDisposalPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrDisposalPerAnimal, 2, true )
           else
             rleDestrDisposalPerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.DestrEuthanasiaPerAnimal ) then
-            rleDestrEuthanasiaPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrEuthanasiaPerAnimal, 2, true )
+            rleDestrEuthanasiaPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrEuthanasiaPerAnimal, 2, true )
           else
             rleDestrEuthanasiaPerAnimal.text := ''
           ;
 
 
           if( 0.0 <= _prodType.costParams.DestrIndemnificationPerAnimal ) then
-            rleDestrIndemnificationPerAnimal.text := uiFloatToStr( _prodType.costParams.DestrIndemnificationPerAnimal, 2, true )
+            rleDestrIndemnificationPerAnimal.text := uiFloatToStrZeroPadded( _prodType.costParams.DestrIndemnificationPerAnimal, 2, true )
           else
             rleDestrIndemnificationPerAnimal.text := ''
           ;
+
+          case _prodType.costParams.destrAppraiseDeadUnitsCode of
+            caAlwaysApply:            cbxDeadUnitAppraise.ItemIndex := 0;
+            caNeverApply:             cbxDeadUnitAppraise.ItemIndex := 1;
+            caOnlyApplyAfterQueDestr: cbxDeadUnitAppraise.ItemIndex := 2;
+          else
+            cbxDeadUnitAppraise.ItemIndex := -1;
+          end;
+
+          case _prodType.costParams.destrCleanDeadUnitsCode of
+            caAlwaysApply:            cbxDeadUnitClean.ItemIndex := 0;
+            caNeverApply:             cbxDeadUnitClean.ItemIndex := 1;
+            caOnlyApplyAfterQueDestr: cbxDeadUnitClean.ItemIndex := 2;
+          else
+            cbxDeadUnitClean.ItemIndex := -1;
+          end;
+
+          case _prodType.costParams.destrIndemnificationDeadUnitsCode of
+            caAlwaysApply:            cbxDeadUnitIndemnify.ItemIndex := 0;
+            caNeverApply:             cbxDeadUnitIndemnify.ItemIndex := 1;
+            caOnlyApplyAfterQueDestr: cbxDeadUnitIndemnify.ItemIndex := 2;
+          else
+            cbxDeadUnitIndemnify.ItemIndex := -1;
+          end;
+
+          case _prodType.costParams.destrDisposeDeadUnitsCode of
+            caAlwaysApply:            cbxDeadUnitDispose.ItemIndex := 0;
+            caNeverApply:             cbxDeadUnitDispose.ItemIndex := 1;
+            caOnlyApplyAfterQueDestr: cbxDeadUnitDispose.ItemIndex := 2;
+          else
+            cbxDeadUnitDispose.ItemIndex := -1;
+          end;
 
           _loading := false;
         end

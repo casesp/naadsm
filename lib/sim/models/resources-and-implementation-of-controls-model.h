@@ -20,9 +20,9 @@
 #ifndef RESOURCES_AND_IMPLEMENTATION_OF_CONTROLS_MODEL_H
 #define RESOURCES_AND_IMPLEMENTATION_OF_CONTROLS_MODEL_H
 
-char *resources_and_implementation_of_controls_model_interface_version (void);
-ergadm_model_t *resources_and_implementation_of_controls_model_new (scew_element * params,
-                                                                    HRD_herd_list_t * herds,
-                                                                    ZON_zone_list_t * zones);
+naadsm_model_t *resources_and_implementation_of_controls_model_new (scew_element * params,
+                                                                    HRD_herd_list_t *,
+                                                                    projPJ,
+                                                                    ZON_zone_list_t *);
 
 #endif

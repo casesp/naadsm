@@ -1,6 +1,6 @@
 inherited FormOutputOptions: TFormOutputOptions
-  Left = 1167
-  Top = 483
+  Left = 1023
+  Top = 198
   Caption = 'Scenario parameters: Output options'
   ClientHeight = 588
   ClientWidth = 710
@@ -205,8 +205,8 @@ inherited FormOutputOptions: TFormOutputOptions
         Width = 537
         Height = 17
         Caption = 
-          'Save information for each exposure (scenario files may be very l' +
-          'arge)'
+          'Save information for each exposure and trace (scenario files may' +
+          ' be very large)'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
@@ -230,6 +230,7 @@ inherited FormOutputOptions: TFormOutputOptions
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 3
+      Visible = False
       object lblNAADSMapFolder: TLabel
         Left = 24
         Top = 64

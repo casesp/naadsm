@@ -167,28 +167,6 @@ INPUT.search { font-size: 75%;
 }
 TD.tiny      { font-size: 75%;
 }
-
-TD.Susceptible { color: #000000;
-                 background-color: #ffffff;
-}
-TD.Latent { color: #000000;
-            background-color: #e5e500;
-}
-TD.Contagious { color: #000000;
-                background-color: #cc0000;
-}
-TD.InfectiousSubclinical { color: #000000;
-                           background-color: #e59900;
-}
-TD.InfectiousClinical { color: #000000;
-                        background-color: #cc0000;
-}
-TD.NaturallyImmune { color: #000000;
-                     background-color: #00a800;
-}
-TD.VaccineImmune { color: #000000;
-                   background-color: #0000a8;
-}
-TD.Destroyed { color: #ffffff;
-               background-color: #000000;
-}
+TABLE { border-collapse: collapse; }
+TABLE,TH,TD { border: 1px solid black; }
+TH,TD { padding: 0.5ex; }

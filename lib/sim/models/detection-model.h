@@ -21,8 +21,8 @@
 #ifndef DETECTION_MODEL_H
 #define DETECTION_MODEL_H
 
-char *detection_model_interface_version (void);
-ergadm_model_t *detection_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                     ZON_zone_list_t * zones);
+naadsm_model_t *detection_model_new (scew_element * params, HRD_herd_list_t *,
+                                     projPJ, ZON_zone_list_t *);
 gboolean detection_model_is_singleton (void);
+
 #endif

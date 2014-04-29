@@ -33,7 +33,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include <glib.h>
 #include <shapefil.h>
 #include <gd.h>
@@ -299,6 +298,8 @@ draw_herds (SHPHandle shape_file, DBFHandle attribute_file, int nherds, gdImageP
             herd_colour = blue;
           else if (strcmp (field_value, "Destroyed") == 0)
             herd_colour = black;
+          else if (strcmp (field_value, "Dead from Disease") == 0)
+            herd_colour = grey;
 
           /* Note that we don't free field_value; it is a pointer to an
            * internal buffer in shapelib. */
@@ -550,60 +551,45 @@ end:
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[3];
   const char *herd_shapefile_name = NULL;       /* name of the herd shapefile */
   const char *zone_shapefile_name = NULL;       /* name of the zone shapefile */
-  char *image_file_name = NULL; /* name of the image file to write. */
+  char *image_file_name; /* name of the image file to write. */
   char *base_name;
   int verbosity = 0;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { "zones", 'z', 0, G_OPTION_ARG_FILENAME, &zone_shapefile_name, "Zone shape file", NULL },
+    { NULL }
+  };
 
   /* Get the command-line options and arguments.  There should be at least one
    * command-line argument, the name of the herd shapefile, and optionally a
    * second argument giving the name of the image file to write. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip =
-    "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
+  if (argc >= 2)
+    herd_shapefile_name = argv[1];
+  else
+    {
+      g_error ("Need the name of an ArcView file of herds.");
+    }
 
-  options[1].longName = "zones";
-  options[1].shortName = 'z';
-  options[1].argInfo = POPT_ARG_STRING;
-  options[1].arg = &zone_shapefile_name;
-  options[1].val = 0;
-  options[1].descrip = "Zone shape file";
-  options[1].argDescrip = "zones";
-
-  options[2].longName = NULL;
-  options[2].shortName = '\0';
-  options[2].argInfo = 0;
-  options[2].arg = NULL;
-  options[2].val = 0;
-  options[2].descrip = NULL;
-  options[2].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **) argv, options, 0);
-  poptGetNextOpt (option);
-  herd_shapefile_name = poptGetArg (option);
-  if (herd_shapefile_name == NULL)
-    g_error ("Need the name of an ArcView file of herds.");
-
-  poptGetNextOpt (option);
-  image_file_name = (char *) poptGetArg (option);
-  poptFreeContext (option);
+  if (argc >= 3)
+    image_file_name = argv[2];
+  else
+    image_file_name = NULL;
+  g_option_context_free (context);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
   if (verbosity < 1)
     {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
+      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);

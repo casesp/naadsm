@@ -10,8 +10,6 @@
 
 --    With modifications by hand for the counter field inProductionType.productionTypeID
 
-
--- Update existing table `inProductionType`.
 create table `inProductionType_IM0` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -71,68 +69,44 @@ insert into `inProductionType_IM0` ( `productionTypeID`, `descr`, `transitionDis
            `inProductionType`.`vaccPriority`  
     from `inProductionType`;
 
-
 alter table `dynHerd`
 	drop constraint `inProductionType_dynHerd_FK1`;
-
 
 alter table `inProductionTypePair`
 	drop constraint `inProductionType_inProductionTypePairs_FK1`;
 
-
 alter table `inProductionTypePair`
 	drop constraint `inProductionType_inProductionTypePairs_FK2`;
-
 
 alter table `outDailyByProductionType`
 	drop constraint `inProductionType_outDailyByProductionType_FK1`;
 
-
 alter table `outIterationByProductionType`
 	drop constraint `inProductionType_outIterationByProductionType_FK1`;
-
 
 alter table `inProductionType`
 	drop constraint `FK1`;
 
-
 alter table `inProductionType`
 	drop constraint `FK2`;
-
 
 alter table `inProductionType`
 	drop constraint `FK4`;
 
-
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK3`;
-
 
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK5`;
 
-
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK6`;
-
 
 alter table `inProductionType`
 	drop constraint `inChart_inProductionType_FK7`;
 
-
 drop table `inProductionType`; 
-
-
--- `inProductionType` : Table of inProductionType
--- 	`costAppraisalPerUnit` : costAppraisalPerUnit is of inProductionType
--- 	`costCleaningPerUnit` : costCleaningPerUnit is of inProductionType
--- 	`costEuthanasiaPerAnimal` : costEuthanasiaPerAnimal is of inProductionType
--- 	`costIndemnificationPerAnimal` : costIndemnificationPerAnimal is of inProductionType
--- 	`costDisposalPerAnimal` : costDisposalPerAnimal is of inProductionType
--- 	`costVaccinationSetupPerUnit` : costVaccinationSetupPerUnit is of inProductionType
--- 	`costVaccinationThreshold` : costVaccinationThreshold is of inProductionType
--- 	`costVaccinationBaselinePerAnimal` : costVaccinationBaselinePerAnimal is of inProductionType
--- 	`costVaccinationAdditionalPerAnimal` : costVaccinationAdditionalPerAnimal is of inProductionType  
+ 
 create table `inProductionType` ( 
 	`productionTypeID` COUNTER,
 	`descr` VARCHAR(255),
@@ -202,15 +176,11 @@ insert into `inProductionType` (`productionTypeID`,`descr`, `useDiseaseTransitio
            `inProductionType_IM0`.`vaccPriority`  
     from `inProductionType_IM0`;
 
-
 drop table `inProductionType_IM0`; 
-
 
 alter table `inProductionType`
 	add constraint `inProductionType_PK` primary key (`productionTypeID`) ; 
 
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -252,11 +222,8 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
            `inGeneral`.`saveDailyExposures`  
     from `inGeneral`;
 
-
 drop table `inGeneral`; 
-
-
--- `inGeneral` : Table of inGeneral  
+  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` LONGTEXT,
@@ -298,19 +265,14 @@ insert into `inGeneral` (`inGeneralID`, `scenarioDescr`, `iterations`, `days`, `
            `inGeneral_IM0`.`saveDailyExposures`  
     from `inGeneral_IM0`;
 
-
 drop table `inGeneral_IM0`; 
-
 
 alter table `inGeneral`
 	add constraint `inGeneral_PK` primary key (`inGeneralID`) ; 
 
-
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Restore foreign key constraints for existing tables
 alter table `outEpidemicCurves`
 	add constraint `inProductionType_outEpidemicCurves_FK1` foreign key (
 		`productionTypeID`)
@@ -388,19 +350,7 @@ alter table `outIterationByProductionType`
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
-
-
--- Create new table `outIterationCosts`.
--- `outIterationCosts` : Table of outIterationCosts
--- 	`iteration` : iteration partly identifies outIterationCosts
--- 	`destrAppraisal` : destrAppraisal is of outIterationCosts
--- 	`destrCleaning` : destrCleaning is of outIterationCosts
--- 	`destrEuthanasia` : destrEuthanasia is of outIterationCosts
--- 	`destrIndemnification` : destrIndemnification is of outIterationCosts
--- 	`destrDisposal` : destrDisposal is of outIterationCosts
--- 	`vaccSetup` : vaccSetup is of outIterationCosts
--- 	`vaccVaccination` : vaccVaccination is of outIterationCosts
--- 	`productionTypeID` : productionTypeID identifies outIterationCosts  
+  
 create table `outIterationCosts` ( 
 	`iteration` INTEGER,
 	`productionTypeID` INTEGER,
@@ -413,13 +363,8 @@ create table `outIterationCosts` (
 	`vaccVaccination` CURRENCY, 
 	constraint `outIterationCosts_PK` primary key (`productionTypeID`, `iteration`) ); 
 
-
--- Add foreign key constraints to table `outIterationCosts`.
 alter table `outIterationCosts`
 	add constraint `inProductionType_outIterationCosts_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

@@ -1,7 +1,6 @@
 inherited FormOutputEvents: TFormOutputEvents
-  Left = 471
-  Top = 295
-  Width = 755
+  Left = 660
+  Top = 266
   Height = 510
   VertScrollBar.Visible = False
   Caption = 'Events for 1 iteration'
@@ -10,32 +9,13 @@ inherited FormOutputEvents: TFormOutputEvents
   PixelsPerInch = 96
   TextHeight = 13
   inherited pnlControls: TPanel
-    Width = 747
     inherited pnlProdTypes: TPanel
-      Width = 445
-      object lblIteration: TLabel [0]
-        Left = 328
-        Top = 8
-        Width = 41
-        Height = 13
-        Caption = 'Iteration:'
-      end
       inherited cboProdTypes: TComboBox
         Width = 169
       end
       inherited cboZones: TComboBox
         Left = 192
         Width = 129
-      end
-      object cboIteration: TComboBox
-        Left = 384
-        Top = 4
-        Width = 49
-        Height = 21
-        Style = csDropDownList
-        ItemHeight = 13
-        TabOrder = 4
-        OnChange = cboIterationChange
       end
     end
   end
@@ -124,7 +104,7 @@ inherited FormOutputEvents: TFormOutputEvents
       Font.Style = [fsBold]
       ParentFont = False
     end
-    object lblDay: TLabel
+    object lblTextEntry: TLabel
       Left = 304
       Top = 8
       Width = 22
@@ -148,6 +128,14 @@ inherited FormOutputEvents: TFormOutputEvents
       Caption = 'Unit ID:'
       Visible = False
     end
+    object lblDiseaseState: TLabel
+      Left = 384
+      Top = 6
+      Width = 51
+      Height = 13
+      Caption = 'New state:'
+      Visible = False
+    end
     object cboMainFilter: TComboBox
       Left = 152
       Top = 4
@@ -155,38 +143,29 @@ inherited FormOutputEvents: TFormOutputEvents
       Height = 21
       Style = csDropDownList
       ItemHeight = 13
-      ItemIndex = 0
       TabOrder = 0
-      Text = '(No filter)'
       OnChange = cboMainFilterChange
       Items.Strings = (
         '(No filter)'
         'Day'
         'Unit ID'
-        'Event type')
+        'Zone'
+        'Event type'
+        'New state'
+        'Test result')
     end
     object cboEvents: TComboBox
       Left = 404
       Top = 8
-      Width = 165
+      Width = 309
       Height = 21
       Style = csDropDownList
       ItemHeight = 13
       TabOrder = 1
       Visible = False
       OnChange = cboEventsChange
-      Items.Strings = (
-        'Infections'
-        'State changes'
-        'Detections'
-        'Destructions'
-        'Vaccinations'
-        'Traces of direct contact'
-        'Traces of indirect contact'
-        'Zone changes'
-        'Creation of zone foci')
     end
-    object rleDay: TREEdit
+    object rleTextEntry: TREEdit
       Left = 396
       Top = 4
       Width = 101
@@ -194,7 +173,7 @@ inherited FormOutputEvents: TFormOutputEvents
       EditAlign = eaLeft
       TabOrder = 2
       Visible = False
-      OnEnter = rleDayEnter
+      OnEnter = rleTextEntryEnter
       OnExit = rleExit
       OnKeyUp = rleKeyUp
     end
@@ -216,17 +195,27 @@ inherited FormOutputEvents: TFormOutputEvents
         OnClick = fraAcceptCancelbtnCancelClick
       end
     end
-    object rleHerdID: TREEdit
-      Left = 412
-      Top = 23
-      Width = 101
+    object cboDiseaseState: TComboBox
+      Left = 592
+      Top = 0
+      Width = 145
       Height = 21
-      EditAlign = eaLeft
+      Style = csDropDownList
+      ItemHeight = 13
       TabOrder = 4
       Visible = False
-      OnEnter = rleHerdIDEnter
-      OnExit = rleExit
-      OnKeyUp = rleKeyUp
+      OnChange = cboDiseaseStateChange
+    end
+    object cboTestResult: TComboBox
+      Left = 552
+      Top = 0
+      Width = 145
+      Height = 21
+      Style = csDropDownList
+      ItemHeight = 13
+      TabOrder = 5
+      Visible = False
+      OnChange = cboTestResultChange
     end
   end
   object pnlEventCounter: TPanel [4]
@@ -290,9 +279,11 @@ inherited FormOutputEvents: TFormOutputEvents
         'Event order on day'
         'Unit ID'
         'Unit type'
+        'Zone'
         'Event type'
         'New state'
-        'Successful trace')
+        'Successful trace'
+        'Test result')
     end
     object rdoAscending: TRadioButton
       Left = 384

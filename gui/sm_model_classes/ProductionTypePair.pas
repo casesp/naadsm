@@ -2,15 +2,15 @@ unit ProductionTypePair;
 
 (*
 ProductionTypePair.pas
------------------------
+----------------------
 Begin: 2005/05/03
-Last revision: $Date: 2008/11/25 22:00:58 $ $Author: areeves $
-Version number: $Revision: 1.39 $
+Last revision: $Date: 2011-10-19 01:30:22 $ $Author: areeves $
+Version number: $Revision: 1.49.6.5 $
 Project: NAADSM and related applications
 Website:
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,31 +19,40 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-  	Models,
-  	ProductionType,
-    ProductionTypeList,
+  uses
     Contnrs,
-    SMDatabase,
-    ContactModel,
-    AirborneSpreadModel,
+
+    QLists,
+
+    Sdew,
+
+    Models,
+    ModelDatabase,
     ProbDensityFunctions,
     ChartFunction,
     RelFunction,
+
+    ProductionType,
+    ProductionTypeList,
+    SMDatabase,
+    ContactSpreadParams,
+    AirborneSpreadParams,
+    LocalAreaSpreadParams,
     FunctionEnums
   ;
 
-	type TProductionTypePair = class( TModelWithFunctions )
-		protected
-  		_source: TProductionType;
-    	_dest: TProductionType;
+  type TProductionTypePair = class( TModelWithFunctions )
+    protected
+      _source: TProductionType;
+      _dest: TProductionType;
 
       _includeDirect: boolean;
       _includeIndirect: boolean;
 
-      _direct: TContactModel;
-      _indirect: TContactModel;
-      _airborne: TAirborneSpreadModel;
+      _direct: TContactSpreadParams;
+      _indirect: TContactSpreadParams;
+      _airborne: TAirborneSpreadParams;
+      _localArea: TLocalAreaSpreadParams;
 
       _isInDB: boolean;
       _added: boolean;
@@ -56,12 +65,14 @@ interface
       procedure setSource( pt: TProductionType );
       procedure setDest( pt: TProductionType );
 
-      procedure setDirect( val: TContactModel );
-      procedure setIndirect( val: TContactModel );
-      procedure setAirborne( val: TAirborneSpreadModel );
-      function getDirect(): TContactModel;
-      function getIndirect(): TContactModel;
-      function getAirborne(): TAirborneSpreadModel;
+      procedure setDirect( val: TContactSpreadParams );
+      procedure setIndirect( val: TContactSpreadParams );
+      procedure setAirborne( val: TAirborneSpreadParams );
+      procedure setLocalArea( val: TLocalAreaSpreadParams );
+      function getDirect(): TContactSpreadParams;
+      function getIndirect(): TContactSpreadParams;
+      function getAirborne(): TAirborneSpreadParams;
+      function getLocalArea(): TLocalAreaSpreadParams;
 
       function getPairDescr(): string;
 
@@ -76,6 +87,7 @@ interface
       function getIncludeDirect(): boolean;
       function getIncludeIndirect(): boolean;
       function getIncludeAirborne(): boolean;
+      function getIncludeLocalArea(): boolean;
 
       procedure setIncludeDirect( val: boolean );
       procedure setIncludeIndirect( val: boolean );
@@ -85,8 +97,10 @@ interface
       //-----------------------
       function getUpdated(): boolean; override;
 
+      function allCharts(): TChartSet;
+
     public
-    	constructor create( src, dst: TProductionType; smSim: TObject ); overload;
+      constructor create( src, dst: TProductionType; smSim: TObject ); overload;
       constructor create( const src: TProductionTypePair; const ptList: TProductionTypeList; sim: TObject ); overload;
       
       destructor destroy(); override;
@@ -94,27 +108,36 @@ interface
       function directContactXML(): string;
       function indirectContactXML(): string;
       function airborneSpreadXML(): string;
-
+      function localAreaSpreadXml(): string;
 
       // Overridden from TModel
       //-----------------------
       function validate( err: PString = nil ): boolean; override;
       procedure debug(); override;
       function ssXml(): string; override;
-      function populateDatabase( db: TSMDatabase; update: boolean = false ): integer; reintroduce;
+      function populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer; reintroduce;
 
+      // Overridden from TModelWithFunctions
+      //------------------------------------
+      function hasChartName( const chartName: string; const whichChart: TSMChart ): boolean; override;
       function functionsAreValid(): boolean; override;      
+
+      // XML import
+      //-----------
+      class function createXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
 
       // Properties
       //-----------
-    	property pairDescr: string read getPairDescr;
+      property pairDescr: string read getPairDescr;
 
       property source: TProductionType read getSource write setSource;
       property dest: TProductionType read getDest write setDest;
 
-      property direct: TContactModel read getDirect write setDirect;
-      property indirect: TContactModel read getIndirect write setIndirect;
-      property airborne: TAirborneSpreadModel read getAirborne write setAirborne;
+      property direct: TContactSpreadParams read getDirect write setDirect;
+      property indirect: TContactSpreadParams read getIndirect write setIndirect;
+      property airborne: TAirborneSpreadParams read getAirborne write setAirborne;
+      property localArea: TLocalAreaSpreadParams read getLocalArea write setLocalArea;
 
       property isInDB: boolean read getIsInDB write setIsInDB;
       property added: boolean read getAdded write setAdded;
@@ -123,6 +146,7 @@ interface
       property includeDirect: boolean read getIncludeDirect write setIncludeDirect;
       property includeIndirect: boolean read getIncludeIndirect write setIncludeIndirect;
       property includeAirborne: boolean read getIncludeAirborne;
+      property includeLocalArea: boolean read getIncludeLocalArea;
 
       procedure setChart( const whichChart: TSMChart; fn: TChartFunction; addlInfo: integer = -1 ); override;
       function chart( const whichChart: TSMChart; addlInfo: integer = -1 ): TChartFunction; override;
@@ -134,20 +158,19 @@ interface
         addlInfo: integer = -1
       ); override;
 
-  	end
+    end
   ;
 
 
   const
-  	DBPRODUCTIONTYPEPAIR: boolean = false; // set to true to enable debugging messages for this unit.
+    DBPRODUCTIONTYPEPAIR: boolean = false; // set to true to enable debugging messages for this unit.
 
 implementation
 
-	uses
-  	SysUtils,
+  uses
+    SysUtils,
     
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     SqlClasses,
     I88n,
@@ -159,13 +182,14 @@ implementation
 // Construction/destruction
 //-----------------------------------------------------------------------------
   constructor TProductionTypePair.create( src, dst: TProductionType; smSim: TObject );
-  	begin
-    	inherited create();
+    begin
+      inherited create();
+
 
       if ( ( Assigned( src ) ) and ( Assigned( dst ) ) and ( Assigned( smSim ) ) )then
         begin
-        	_source := src;
-      	  _dest := dst;
+          _source := src;
+          _dest := dst;
           _sim := smSim;
         end
       else
@@ -173,16 +197,13 @@ implementation
           _source := nil;
           _dest := nil;
           _sim := nil;
-        end;
+        end
+      ;
 
-      (*
-      _direct := nil;
-      _indirect := nil;
-      _airborne := nil;
-     *)
-     _direct := TContactModel.create( CMDirect, smSim, _dest.productionTypeID, _source.productionTypeID );
-     _indirect := TContactModel.create( CMIndirect, smSim, _dest.productionTypeID, _source.productionTypeID );
-     _airborne := TAirborneSpreadModel.create( smSim, _dest.productionTypeID, _source.productionTypeID );
+     _direct := TContactSpreadParams.create( CMDirect, smSim, _dest.productionTypeID, _source.productionTypeID );
+     _indirect := TContactSpreadParams.create( CMIndirect, smSim, _dest.productionTypeID, _source.productionTypeID );
+     _airborne := TAirborneSpreadParams.create( smSim, _dest.productionTypeID, _source.productionTypeID );
+     _localArea := TLocalAreaSpreadParams.create( smSim, _dest.productionTypeID, _source.productionTypeID );
 
       _includeDirect := false;
       _includeIndirect := false;
@@ -211,20 +232,29 @@ implementation
           _added := src._added;
           _removed := src._removed;
 
-          if ( src._direct <> nil ) then
-            _direct := TContactModel.create( src._direct, _sim )
+          if ( nil <> src._direct ) then
+            _direct := TContactSpreadParams.create( src._direct, _sim )
           else
-            _direct := nil;
+            _direct := nil
+          ;
 
-          if ( src._indirect <> nil ) then
-            _indirect := TContactModel.create( src._indirect, _sim )
+          if ( nil <> src._indirect ) then
+            _indirect := TContactSpreadParams.create( src._indirect, _sim )
           else
-            _indirect := nil;
+            _indirect := nil
+          ;
 
-          if ( src._airborne <> nil ) then
-            _airborne := TAirborneSpreadModel.create( src._airborne, _sim )
+          if ( nil <> src._airborne ) then
+            _airborne := TAirborneSpreadParams.create( src._airborne, _sim )
           else
-            _airborne := nil;
+            _airborne := nil
+          ;
+
+          if ( nil <> src._localArea ) then
+            _localArea := TLocalAreaSpreadParams.create( src._localArea, _sim )
+          else
+            _localArea := nil
+          ;
 
           _includeDirect := src._includeDirect;
           _includeIndirect := src._includeIndirect;
@@ -239,6 +269,7 @@ implementation
           _direct := nil;
           _indirect := nil;
           _airborne := nil;
+          _localArea := nil;
           _isInDB := false;
           _added := false;
           _removed := false;
@@ -249,13 +280,27 @@ implementation
 
 
   destructor TProductionTypePair.destroy();
-  	begin
-			// Instances of TProductionTypePair don't own any objects: they just hold references.
-      // Consequently, nothing should be freed here.
-    	inherited destroy();
+    begin
+      _direct.Free();
+      _indirect.Free();
+      _airborne.Free();
+      _localArea.Free();
+
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Overridden from TModelWithFunctions
+//-----------------------------------------------------------------------------
+  function TProductionTypePair.allCharts(): TChartSet;
+    begin
+      result := _direct.chartSet + _indirect.ChartSet;
+    end
+  ;
+
 
   procedure TProductionTypePair.changeChart(
         const whichChart: TSMChart;
@@ -264,45 +309,25 @@ implementation
         addlInfo: integer = -1
       );
     begin
-      if( nil <> newChart ) then
-        begin
-          if( oldChartName = _airborne.delayName ) then _airborne.delayName := newChart.name;
-
-          if( oldChartName = _direct.distanceName ) then _direct.distanceName := newChart.name;
-          if( oldChartName = _direct.delayName ) then _direct.delayName := newChart.name;
-          if( oldChartName = _direct.MovementControlName ) then _direct.MovementControlName := newChart.name;
-
-          if( oldChartName = _indirect.distanceName ) then _indirect.distanceName := newChart.name;
-          if( oldChartName = _indirect.delayName ) then _indirect.delayName := newChart.name;
-          if( oldChartName = _indirect.MovementControlName ) then _indirect.MovementControlName := newChart.name;
-        end
-      else
-        raise exception.Create( 'fn should not be nil in TProductionTypePair.changeChart' )
+      if( not( whichChart in allCharts() ) ) then
+        raise exception.Create( 'Unrecognized whichChart ' + intToStr( ord( whichChart ) ) + ' in TProductionTypePair.changeChart()' )
       ;
+
+      _direct.changeChart( whichChart, oldChartName, newChart, addlInfo );
+      _indirect.changeChart( whichChart, oldChartName, newChart, addlInfo );
 
       _updated := true;
     end
   ;
 
   procedure TProductionTypePair.setChart( const whichChart: TSMChart; fn: TChartFunction; addlInfo: integer = -1 );
-    var
-      newName: string;
     begin
-      if( nil = fn ) then
-        newName := ''
-      else
-        newName := fn.name
+      if( not( whichChart in allCharts() ) ) then
+        raise exception.Create( 'Unrecognized whichChart ' + intToStr( ord( whichChart ) ) + ' in TProductionTypePair.setChart()' )
       ;
 
-      case whichChart of
-        AIRDelay: _airborne.DelayName := newName;
-        CMDistanceDirect: _direct.DistanceName := newName;
-        CMDelayDirect: _direct.DelayName := newName;
-        CMMovementControlDirect: _direct.MovementControlName := newName;
-        CMDistanceIndirect: _indirect.DistanceName := newName;
-        CMDelayIndirect: _indirect.DelayName := newName;
-        CMMovementControlIndirect: _indirect.MovementControlName := newName;
-      end;
+      _direct.setChart( whichChart, fn, addlInfo );
+      _indirect.setChart( whichChart, fn, addlInfo );
 
       _updated := true;
     end
@@ -310,88 +335,38 @@ implementation
 
 
   function TProductionTypePair.chart( const whichChart: TSMChart; addlInfo: integer = -1 ): TChartFunction;
-    var
-      ret_val:TChartFunction;
     begin
-      ret_val := nil;
-
-      if ( self.fnDictionary <> nil ) then
-        begin
-          case whichChart of
-            AIRDelay:
-              begin
-                if ( self.fnDictionary.contains( self._airborne.delayName ) ) then
-                  ret_val := self.fnDictionary.value( self._airborne.delayName ).fn;
-              end;
-          CMDistanceDirect:
-              begin
-                if ( self.fnDictionary.contains( self._direct.distanceName ) ) then
-                  ret_val := self.fnDictionary.value( self._direct.distanceName ).fn;
-              end;
-          CMDelayDirect:
-              begin
-                if ( self.fnDictionary.contains( self._direct.delayName ) ) then
-                  ret_val := self.fnDictionary.value( self._direct.delayName ).fn;
-              end;
-          CMMovementControlDirect:
-              begin
-                if ( self.fnDictionary.contains( self._direct.movementControlName ) ) then
-                  ret_val := self.fnDictionary.value( self._direct.movementControlName ).fn;
-              end;
-          CMDistanceIndirect:
-              begin
-                if ( self.fnDictionary.contains( self._indirect.distanceName ) ) then
-                  ret_val := self.fnDictionary.value( self._indirect.distanceName ).fn;
-              end;
-          CMDelayIndirect:
-              begin
-                if ( self.fnDictionary.contains( self._indirect.delayName ) ) then
-                  ret_val := self.fnDictionary.value( self._indirect.delayName ).fn;
-              end;
-          CMMovementControlIndirect:
-              begin
-                if ( self.fnDictionary.contains( self._indirect.movementControlName ) ) then
-                  ret_val := self.fnDictionary.value( self._indirect.movementControlName ).fn;
-              end;
-          else
-            raise exception.create( 'Unrecognized whichChart in TProductionTypePair.chart' )
-          ;
-          end;
-
-
-        end
+      if( whichChart in _direct.chartSet ) then
+        result := _direct.chart( whichChart, addlInfo )
+      else if( whichChart in _indirect.chartSet ) then
+        result := _indirect.chart( whichChart, addlInfo )
+      else
+        result := nil;
       ;
-
-      result := ret_val;
     end
   ;
 
 
   procedure TProductionTypePair.removeChart( const chartName: string );
     begin
-      if( chartName = _airborne.delayName ) then _airborne.delayName := '';
-
-      if( chartName = _direct.distanceName ) then _direct.distanceName := '';
-      if( chartName = _direct.delayName ) then _direct.delayName := '';
-      if( chartName = _direct.MovementControlName ) then _direct.MovementControlName := '';
-
-      if( chartName = _indirect.distanceName ) then _indirect.distanceName := '';
-      if( chartName = _indirect.delayName ) then _indirect.delayName := '';
-      if( chartName = _indirect.MovementControlName ) then _indirect.MovementControlName := '';
+      _direct.removeChart( chartName );
+      _indirect.removeChart( chartName );
 
       // The _updated flag will be set by the properties above, if necessary
     end
   ;
+//-----------------------------------------------------------------------------
+
 
 
 //-----------------------------------------------------------------------------
 // Database handling
 //-----------------------------------------------------------------------------
-	function TProductionTypePair.updateDB( db: TSMDatabase ): boolean;
-  	var
-    	q: string;
+  function TProductionTypePair.updateDB( db: TSMDatabase ): boolean;
+    var
+      q: string;
       dict: TQueryDictionary;
-  	begin
+    begin
       if ( not self.removed ) then
         begin
           if ( self.added ) then   //Brand new...
@@ -400,45 +375,59 @@ implementation
 
           dict := TQueryDictionary.create();
 
-          dict['useDirectContact'] := boolToStr( _includeDirect );
+          dict['useDirectContact'] := db.sqlBool( _includeDirect );
 
           if( _includeDirect and ( _direct <> nil ) ) then
-          	begin
+            begin
               _direct.populateDatabase( db, true, QUpdate );
-          		dict['directContactSpreadID'] := intToStr( _direct.id );
+              dict['directContactSpreadID'] := intToStr( _direct.id );
             end
           else
-          	dict['directContactSpreadID'] := 'NULL'
+            dict['directContactSpreadID'] := DATABASE_NULL_VALUE
           ;
 
-          dict['useIndirectContact'] := boolToStr( _includeIndirect );
+          dict['useIndirectContact'] := db.sqlBool( _includeIndirect );
 
           if(_includeIndirect and ( _indirect <> nil ) ) then
-          	begin
-            	_indirect.populateDatabase( db, true, QUpdate );
-          		dict['indirectContactSpreadID'] := intToStr( _indirect.id );
+            begin
+              _indirect.populateDatabase( db, true, QUpdate );
+              dict['indirectContactSpreadID'] := intToStr( _indirect.id );
             end
           else
-          	dict['indirectContactSpreadID'] := 'NULL'
+            dict['indirectContactSpreadID'] := DATABASE_NULL_VALUE
           ;
 
           if( includeAirborne and ( _airborne <> nil ) ) then
-          	begin
-            	if( DBPRODUCTIONTYPEPAIR ) then _airborne.debug();
-          		dict['useAirborneSpread'] := boolToStr( true );
+            begin
+              if( DBPRODUCTIONTYPEPAIR ) then _airborne.debug();
+              dict['useAirborneSpread'] := db.sqlBool( true );
               _airborne.populateDatabase( db, true );
               dict['airborneContactSpreadID'] := intToStr( _airborne.id );
             end
           else
-          	begin
-          		dict['useAirborneSpread'] := boolToStr( false );
+            begin
+              dict['useAirborneSpread'] := db.sqlBool( false );
               dict['airborneContactSpreadID'] := DATABASE_NULL_VALUE;
+            end
+          ;
+
+          if( includeLocalArea and ( _localArea <> nil ) ) then
+            begin
+              if( DBPRODUCTIONTYPEPAIR ) then _localArea.debug();
+              dict['useLocalAreaSpread'] := db.sqlBool( true );
+              _localArea.populateDatabase( db, true );
+              dict['localAreaSpreadID'] := intToStr( _localArea.id );
+            end
+          else
+            begin
+              dict['useLocalAreaSpread'] := db.sqlBool( false );
+              dict['localAreaSpreadID'] := DATABASE_NULL_VALUE;
             end
           ;
 
 
           q := writeQuery(
-          	'inProductionTypePair',
+            'inProductionTypePair',
             QUpdate,
             dict,
             'WHERE `sourceProductionTypeID` = ' + intToStr( _source.productionTypeID ) + ' AND `destProductionTypeID` = ' + intToStr( _dest.productionTypeID )
@@ -453,99 +442,33 @@ implementation
         end
       else
         begin
-          //Remove this pair from the database.....
-          q := 'DELETE from inProductionTypePair WHERE `sourceProductionTypeID` =' + intToStr( _source.productionTypeID ) + ' AND `destProductionTypeID` =' + intToStr( _dest.productionTypeID ) + ';';
+          // Remove this pair from the database.....
+          q := 'DELETE from inProductionTypePair'
+            + ' WHERE `sourceProductionTypeID` =' + intToStr( _source.productionTypeID )
+            + ' AND `destProductionTypeID` =' + intToStr( _dest.productionTypeID )
+          ;
           dbcout( q, DBPRODUCTIONTYPEPAIR );
 
           result := db.execute( q );
-        end;
-
+        end
+      ;
     end
   ;
 
 
 
-  function TProductionTypePair.populateDatabase( db: TSMDatabase; update: boolean = false ): integer;
-  	begin
-  		if( update ) then
-      	result := integer( updateDB( db ) )
-      else
+  function TProductionTypePair.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer;
+    begin
+      if( MDBAForceInsert = updateAction ) then
         begin
-      	  dbcout( 'FIX ME: Populate the database!!', true );
-          result := -1;
+          self.removed := false;
+          self.added := true;
         end
       ;
+
+      result := integer( updateDB( db ) );
 
       _updated := false;
-    end
-  ;
-//-----------------------------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------
-// XML generation
-//-----------------------------------------------------------------------------
-  // Note: this function is not currently used.
-  // XML for individual components is written separately.
-  function TProductionTypePair.ssXml(): string;
-    begin
-      result :=
-        directContactXML()
-        + indirectContactXML()
-        + airborneSpreadXML()
-      ;
-    end
-  ;
-
-
-  function TProductionTypePair.directContactXML(): string;
-    begin
-      if( includeDirect and ( nil <> _direct ) ) then
-        result := _direct.ssXml() + endl + endl
-      else
-        begin
-          result := '  <!-- Not using direct contact for'
-            + ' source="' + source.xmlProdTypeDescr + '"'
-            + ' dest="' + dest.xmlProdTypeDescr + '" -->'
-            + endl + endl
-          ;
-        end
-      ;
-    end
-  ;
-
-
-  function TProductionTypePair.indirectContactXML(): string;
-    begin
-      if( includeIndirect and ( nil <> _indirect ) ) then
-        result := _indirect.ssXml() + endl + endl
-      else
-        begin
-          result := '  <!-- Not using indirect contact for'
-            + ' source="' + source.xmlProdTypeDescr + '"'
-            + ' dest="' + dest.xmlProdTypeDescr + '" -->'
-            + endl + endl
-          ;
-        end
-      ;
-    end
-  ;
-
-
-  function TProductionTypePair.airborneSpreadXML(): string;
-    begin
-      if( includeAirborne and ( nil <> _airborne ) ) then
-        result := _airborne.ssXml() + endl + endl
-      else
-        begin
-          result := '  <!-- Not using airborne spread for'
-            + ' source="' + source.xmlProdTypeDescr + '"'
-            + ' dest="' + dest.xmlProdTypeDescr + '" -->'
-            + endl + endl
-          ;
-        end
-      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -558,11 +481,13 @@ implementation
     var
       includeContactSpread: boolean;
       includeAirborneSpread: boolean;
+      includeLocalAreaSpread: boolean;
     begin
       result := true;
 
       includeContactSpread := (_sim as TSMSimulationInput).includeContactSpreadGlobal;
       includeAirborneSpread := (_sim as TSMSimulationInput).includeAirborneSpreadGlobal;
+      includeLocalAreaSpread := (_sim as TSMSimulationInput).includeLocalAreaSpreadGlobal;
 
       if( includeContactSpread ) then
         begin
@@ -610,6 +535,24 @@ implementation
           ;
         end
       ;
+
+
+      if( includeLocalAreaSpread ) then
+        begin
+          if( includeLocalArea ) then
+            begin
+              if( nil = _localArea ) then
+                begin
+                  result := false;
+                  err^ := err^ + tr( 'Local area spread parameters are not set' );
+                end
+              else if( not( _localArea.validate( err ) ) ) then
+                result := false
+              ;
+            end
+          ;
+        end
+      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -620,7 +563,7 @@ implementation
 // Debugging
 //-----------------------------------------------------------------------------
   procedure TProductionTypePair.debug();
-  	begin
+    begin
       dbcout( '== SOURCE:' + source.productionTypeDescr + ' DEST:' + dest.productionTypeDescr, true );
 
       if( includeDirect ) then
@@ -660,7 +603,18 @@ implementation
       else
         dbcout( 'Airborne is not included', true )
       ;
-      
+
+      if( includeLocalArea ) then
+        begin
+          if( nil <> _localArea ) then
+            _localArea.debug()
+          else
+            dbcout( 'LOCAL AREA SPREAD INCLUDED BUT NIL', true )
+          ;
+        end
+      else
+        dbcout( 'Local area spread is not included', true )
+      ;
     end
   ;
 //-----------------------------------------------------------------------------
@@ -671,8 +625,8 @@ implementation
 // Properties
 //-----------------------------------------------------------------------------
   function TProductionTypePair.getPairDescr(): string;
-  	begin
-    	result := _source.productionTypeDescr + ' > ' + _dest.productionTypeDescr;
+    begin
+      result := _source.productionTypeDescr + ' > ' + _dest.productionTypeDescr;
     end
   ;
 
@@ -688,17 +642,26 @@ implementation
 
 
   function TProductionTypePair.getIncludeAirborne(): boolean;
-  	begin
-    	if( nil = _airborne ) then
-      	result := false
+    begin
+      if( nil = _airborne ) then
+        result := false
       else
-    		result := _airborne.useAirborne
+        result := _airborne.useAirborne
       ;
     end
   ;
 
+  function TProductionTypePair.getIncludeLocalArea(): boolean;
+    begin
+      if( nil = _localArea ) then
+        result := false
+      else
+        result := _localArea.useLocalArea
+      ;
+    end
+  ;
   
-  procedure TProductionTypePair.setDirect( val: TContactModel );
+  procedure TProductionTypePair.setDirect( val: TContactSpreadParams );
     begin
       if( nil <> _direct ) then freeAndNil( _direct );
       _direct := val;
@@ -707,7 +670,7 @@ implementation
   ;
 
 
-  procedure TProductionTypePair.setIndirect( val: TContactModel );
+  procedure TProductionTypePair.setIndirect( val: TContactSpreadParams );
     begin
       if( nil <> _indirect ) then freeAndNil( _indirect );
       _indirect := val;
@@ -716,11 +679,72 @@ implementation
   ;
 
 
-  procedure TProductionTypePair.setAirborne( val: TAirborneSpreadModel );
+  procedure TProductionTypePair.setAirborne( val: TAirborneSpreadParams );
     begin
       if( nil <> _airborne ) then freeAndNil( _airborne );
       _airborne := val;
       _updated := true;
+    end
+  ;
+
+  procedure TProductionTypePair.setLocalArea( val: TLocalAreaSpreadParams );
+    begin
+      if( nil <> _localArea ) then freeAndNil( _localArea );
+      _localArea := val;
+      _updated := true;
+    end
+  ;
+
+
+  function TProductionTypePair.getDirect(): TContactSpreadParams; begin Result := _direct; end;
+  function TProductionTypePair.getIndirect(): TContactSpreadParams; begin Result := _indirect; end;
+  function TProductionTypePair.getAirborne(): TAirborneSpreadParams; begin Result := _airborne; end;
+  function TProductionTypePair.getLocalArea(): TLocalAreaSpreadParams; begin Result := _localArea; end;
+
+  procedure TProductionTypePair.setIsInDB( val: boolean ); begin _isInDB := val; end;
+  procedure TProductionTypePair.setAdded( val: boolean ); begin _added := val; _updated := true;  end;
+  procedure TProductionTypePair.setRemoved( val: boolean ); begin _removed := val; _updated := true;  end;
+
+  function TProductionTypePair.getIsInDB(): boolean; begin Result := _isInDB; end;
+  function TProductionTypePair.getAdded(): boolean; begin Result := _added; end;
+  function TProductionTypePair.getRemoved(): boolean; begin Result := _removed; end;
+
+  
+  function TProductionTypePair.getUpdated(): boolean;
+    begin
+      result := _updated;
+
+      if( nil <> _airborne ) then
+        if( _airborne.updated ) then result := true
+      ;
+
+      if( nil <> _localArea ) then
+        if( _localArea.updated ) then result := true
+      ;
+
+      if( ( _includeDirect ) and ( nil <> _direct ) ) then
+        if( _direct.updated ) then result := true
+      ;
+
+      if( (_includeDirect ) and ( nil <> _indirect ) ) then
+        if( _indirect.updated ) then result := true
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// Overridden from TModelWithFunctions
+//-----------------------------------------------------------------------------
+  function TProductionTypePair.hasChartName( const chartName: string; const whichChart: TSMChart ): boolean;
+    begin
+      result :=
+        direct.hasChartName( chartName, whichChart )
+      or
+        indirect.hasChartName( chartName, whichChart )
+      ;
     end
   ;
 
@@ -743,46 +767,162 @@ implementation
           ;
         end
       ;
-      if( includeAirborne ) then
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+
+//-----------------------------------------------------------------------------
+// XML generation
+//-----------------------------------------------------------------------------
+  // Note: this function is not currently used.
+  // XML for individual components is written separately.
+  function TProductionTypePair.ssXml(): string;
+    begin
+      result :=
+        directContactXml()
+        + indirectContactXml()
+        + airborneSpreadXml()
+        + localAreaSpreadXml()
+      ;
+    end
+  ;
+
+
+  function TProductionTypePair.directContactXML(): string;
+    begin
+      if( includeDirect and ( nil <> _direct ) ) then
+        result := _direct.ssXml() + endl + endl
+      else
         begin
-          if( not airborne.functionsAreValid() ) then
-            result := false
+          result := '  <!-- Not using direct contact for'
+            + ' source="' + encodeXml( source.productionTypeDescr ) + '"'
+            + ' dest="' + encodeXml( dest.productionTypeDescr ) + '" -->'
+            + endl + endl
           ;
         end
       ;
     end
   ;
 
-  function TProductionTypePair.getDirect(): TContactModel; begin Result := _direct; end;
-  function TProductionTypePair.getIndirect(): TContactModel; begin Result := _indirect; end;
-  function TProductionTypePair.getAirborne(): TAirborneSpreadModel; begin Result := _airborne; end;
 
-  procedure TProductionTypePair.setIsInDB( val: boolean ); begin _isInDB := val; end;
-  procedure TProductionTypePair.setAdded( val: boolean ); begin _added := val; _updated := true;  end;
-  procedure TProductionTypePair.setRemoved( val: boolean ); begin _removed := val; _updated := true;  end;
-
-  function TProductionTypePair.getIsInDB(): boolean; begin Result := _isInDB; end;
-  function TProductionTypePair.getAdded(): boolean; begin Result := _added; end;
-  function TProductionTypePair.getRemoved(): boolean; begin Result := _removed; end;
-
-  
-  function TProductionTypePair.getUpdated(): boolean;
-  	begin
-    	result := _updated;
-
-      if( nil <> _airborne ) then
-      	if( airborne.updated ) then result := true
+  function TProductionTypePair.indirectContactXML(): string;
+    begin
+      if( includeIndirect and ( nil <> _indirect ) ) then
+        result := _indirect.ssXml() + endl + endl
+      else
+        begin
+          result := '  <!-- Not using indirect contact for'
+            + ' source="' + encodeXml( source.productionTypeDescr ) + '"'
+            + ' dest="' + encodeXml( dest.productionTypeDescr ) + '" -->'
+            + endl + endl
+          ;
+        end
       ;
+    end
+  ;
 
-      if( ( _includeDirect ) and ( nil <> _direct ) ) then
-        if( _direct.updated ) then result := true
+
+  function TProductionTypePair.airborneSpreadXml(): string;
+    begin
+      if( includeAirborne and ( nil <> _airborne ) ) then
+        result := _airborne.ssXml() + endl + endl
+      else
+        begin
+          result := '  <!-- Not using airborne spread for'
+            + ' source="' + encodeXml( source.productionTypeDescr ) + '"'
+            + ' dest="' + encodeXml( dest.productionTypeDescr ) + '" -->'
+            + endl + endl
+          ;
+        end
       ;
+    end
+  ;
 
-      if( (_includeDirect ) and ( nil <> _indirect ) ) then
-        if( _indirect.updated ) then result := true
+
+  function TProductionTypePair.localAreaSpreadXml(): string;
+    begin
+      if( includeLocalArea and ( nil <> _localArea ) ) then
+        result := _localArea.ssXml() + endl + endl
+      else
+        begin
+          result := '  <!-- Not using local area spread for'
+            + ' source="' + encodeXml( source.productionTypeDescr ) + '"'
+            + ' dest="' + encodeXml( dest.productionTypeDescr ) + '" -->'
+            + endl + endl
+          ;
+        end
       ;
     end
   ;
 //-----------------------------------------------------------------------------
 
+
+//-----------------------------------------------------------------------------
+// XML import
+//-----------------------------------------------------------------------------
+  class function TProductionTypePair.createXmlModelList(): TQStringList;
+    var
+      list: TQStringList;
+    begin
+      result := TQStringList.create();
+
+      list := TContactSpreadParams.createXmlModelList();
+      result.merge( list );
+      list.Free();
+
+      list := TAirborneSpreadParams.createXmlModelList();
+      result.merge( list );
+      list.Free();
+    end
+  ;
+
+
+  procedure TProductionTypePair.importXml( model: pointer; sdew: TSdew; errMsg: pstring = nil );
+    var
+      contact: string;
+    begin
+      if
+        ( _direct.xmlModelList.contains( sdew.GetElementName( model ) ) )
+      or
+        ( _indirect.xmlModelList.contains( sdew.GetElementName( model ) ) )
+      then
+        begin
+          contact := sdew.GetElementAttribute( model, 'contact-type' );
+
+          if( 'direct' = contact ) then
+            begin
+              _direct.importXml( model, sdew, errMsg );
+              self.includeDirect := true;
+            end
+          else if( 'indirect' = contact ) then
+            begin
+              _indirect.importXml( model, sdew, errMsg );
+              self.includeIndirect := true;
+            end
+          else
+            raise exception.create( 'Someone forgot something in TProductionTypePair.importXml' )
+          ;
+        end
+      ;
+
+      if( _airborne.xmlModelList.contains( sdew.GetElementName( model ) ) ) then
+        begin
+          _airborne.importXml( model, sdew, errMsg );
+          _airborne.thisModelIsUsed := true;
+        end
+      ;
+
+      if( _localArea.xmlModelList.contains( sdew.GetElementName( model ) ) ) then
+        begin
+          _localArea.importXml( model, sdew, errMsg );
+          _localArea.thisModelIsUsed := true;
+        end
+      ;
+      
+    end
+  ;
+//-----------------------------------------------------------------------------
 end.
+

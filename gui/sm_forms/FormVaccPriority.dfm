@@ -1,6 +1,6 @@
 inherited FormVaccPriority: TFormVaccPriority
-  Left = -726
-  Top = -78
+  Left = 1136
+  Top = 24
   Caption = 'Scenario parameters: Vaccination priorities'
   PixelsPerInch = 96
   TextHeight = 13

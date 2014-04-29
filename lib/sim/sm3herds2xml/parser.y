@@ -60,9 +60,6 @@
 #define YYERROR_VERBOSE
 #define BUFFERSIZE 2048
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 HRD_herd_list_t * herds;
 gboolean first_exposure_fields = TRUE;
@@ -225,6 +222,10 @@ herd:
     }
   | INT COMMA INT COMMA INT COMMA FLOAT COMMA FLOAT COMMA INT COMMA INT COMMA INT COMMA int_list
     {
+      /* FIXME.  Argument $13 and $15 are not used.  Does the
+       * specification have too many entries or is the code ignorning
+       * things that it ought to be processing?
+       */
       GPtrArray *production_type_names;
       GString *tmp;
       int length;
@@ -257,26 +258,26 @@ herd:
 
       /* Copy the values from the variable-length part of the line into the
        * herd structure. */
-      length = 6 + g_slist_length ($13);
+      length = 6 + g_slist_length ($17);
       if (length < nfields)
         {
-	  snprintf (errmsg, BUFFERSIZE, "Too few fields (found %i, require %i)",
+          g_snprintf (errmsg, BUFFERSIZE, "Too few fields (found %i, require %i)",
 	    length, nfields);
           yyerror (errmsg);
 	}
       else if (length > nfields)
         {
-	  snprintf (errmsg, BUFFERSIZE, "Too many fields (found %i, require %i)",
+          g_snprintf (errmsg, BUFFERSIZE, "Too many fields (found %i, require %i)",
 	    length, nfields);
           yyerror (errmsg);
 	}
-      iter = $13;
+      iter = $17;
       for (i = 0; i < ntracked_exposures; i++)
 	{
 	  HRD_id_t exposing_herd;
 	  unsigned short int day;
 
-	  exposing_herd = GPOINTER_TO_INT (iter->data);
+	  exposing_herd = iter->data;
 	  iter = g_slist_next (iter);
 	  /* skip how_exposed field */
 	  iter = g_slist_next (iter);
@@ -297,7 +298,7 @@ herd:
 
       /* Destroy the linked list of integers now that its contents have been
        * copied. */
-      g_slist_free ($13);
+      g_slist_free ($17);
     }
   ;
 

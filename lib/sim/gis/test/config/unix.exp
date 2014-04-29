@@ -38,8 +38,40 @@ proc fcmp { a b tol } {
 
 
 #
-# simple_distance_test -- tests the square-grid approximate distance function
-#   (in which meridians do not converge).
+# distance_test -- tests the distance on a km grid function.
+#
+# Parameters:
+#   x1          x-coordinate of point 1
+#   y1          y-coordinate of point 1
+#   x2          x-coordinate of point 2
+#   y2          y-coordinate of point 2
+#   distance    the distance in km between the points
+#   test        a name to report in passes/fails.  (default = "distance")
+# Returns:
+#   nothing
+#
+proc distance_test { x1 y1 x2 y2 distance {test "distance"} } {
+	global prompt
+	global floatpat
+	global epsilon
+
+	send "distance ($x1,$y1,$x2,$y2)\n"
+	expect {
+		-re "($floatpat)\[\\n\\r\]+$prompt$" {
+			set answer $expect_out(1,string)
+			if { [fcmp $distance $answer $epsilon] == 0 } {
+				pass $test
+			} else {
+				fail "$test distance between ($x1,$y1) and ($x2,$y2) = $distance, not $answer"
+			}			
+		}
+	}
+}
+
+
+
+#
+# great_circle_distance_test -- tests the great circle distance function.
 #
 # Parameters:
 #   lat1          latitude of point 1, in degrees
@@ -47,16 +79,16 @@ proc fcmp { a b tol } {
 #   lat2          latitude of point 2, in degrees
 #   lon2          longitude of point 2, in degrees
 #   distance      the distance in km between the points
-#   test          a name to report in passes/fails.  (default = "simple_distance")
+#   test          a name to report in passes/fails.  (default = "great_circle_distance")
 # Returns:
 #   nothing
 #
-proc simple_distance_test { lat1 lon1 lat2 lon2 distance {test "simple_distance"} } {
+proc great_circle_distance_test { lat1 lon1 lat2 lon2 distance {test "great_circle_distance"} } {
 	global prompt
 	global floatpat
 	global epsilon
 
-	send "simple distance ($lat1,$lon1,$lat2,$lon2)\n"
+	send "great circle distance ($lat1,$lon1,$lat2,$lon2)\n"
 	expect {
 		-re "($floatpat)\[\\n\\r\]+$prompt$" {
 			set answer $expect_out(1,string)
@@ -72,60 +104,25 @@ proc simple_distance_test { lat1 lon1 lat2 lon2 distance {test "simple_distance"
 
 
 #
-# local_distance_test -- tests the local flat-Earth approximate distance
-#   function (in which meridians converge).
+# heading_test -- tests the heading on a km grid function.
 #
 # Parameters:
-#   lat1          latitude of point 1, in degrees
-#   lon1          longitude of point 1, in degrees
-#   lat2          latitude of point 2, in degrees
-#   lon2          longitude of point 2, in degrees
-#   distance      the distance in km between the points
-#   test          a name to report in passes/fails.  (default = "local_distance")
+#   x1          x-coordinate of point 1
+#   y1          y-coordinate of point 1
+#   x2          x-coordinate of point 2
+#   y2          y-coordinate of point 2
+#   heading     the heading in degrees from point 1 to point 2, where
+#               0/360 = N, 90 = E, 180 = S, 270 = W.
+#   test        a name to report in passes/fails.  (default = "heading")
 # Returns:
 #   nothing
 #
-proc local_distance_test { lat1 lon1 lat2 lon2 distance {test "local_distance"} } {
+proc heading_test { x1 y1 x2 y2 heading {test "heading"} } {
 	global prompt
 	global floatpat
 	global epsilon
 
-	send "local distance ($lat1,$lon1,$lat2,$lon2)\n"
-	expect {
-		-re "($floatpat)\[\\n\\r\]+$prompt$" {
-			set answer $expect_out(1,string)
-			if { [fcmp $distance $answer $epsilon] == 0 } {
-				pass $test
-			} else {
-				fail "$test distance between ($lat1,$lon1) and ($lat2,$lon2) = $distance, not $answer"
-			}			
-		}
-	}
-}
-
-
-
-#
-# simple_heading_test -- tests the square-grid approximate heading function
-#   (in which meridians do not converge).
-#
-# Parameters:
-#   lat1          latitude of point 1, in degrees
-#   lon1          longitude of point 1, in degrees
-#   lat2          latitude of point 2, in degrees
-#   lon2          longitude of point 2, in degrees
-#   heading       the heading in degrees from point 1 to point 2, where
-#                 0/360 = N, 90 = E, 180 = S, 270 = W.
-#   test          a name to report in passes/fails.  (default = "simple_heading")
-# Returns:
-#   nothing
-#
-proc simple_heading_test { lat1 lon1 lat2 lon2 heading {test "simple_heading"} } {
-	global prompt
-	global floatpat
-	global epsilon
-
-	send "simple heading ($lat1,$lon1,$lat2,$lon2)\n"
+	send "heading ($x1,$y1,$x2,$y2)\n"
 	expect {
 		-re "($floatpat)\[\\n\\r\]+$prompt$" {
 			set answer $expect_out(1,string)
@@ -140,50 +137,7 @@ proc simple_heading_test { lat1 lon1 lat2 lon2 heading {test "simple_heading"} }
 			if { [fcmp $heading $answer $epsilon] == 0 } {
 				pass $test
 			} else {
-				fail "$test heading from ($lat1,$lon1) to ($lat2,$lon2) = $heading, not $answer"
-			}			
-		}
-	}
-}
-
-
-
-#
-# local_heading_test -- tests the local flat-Earth approximate heading function
-#   (in which meridians converge).
-#
-# Parameters:
-#   lat1          latitude of point 1, in degrees
-#   lon1          longitude of point 1, in degrees
-#   lat2          latitude of point 2, in degrees
-#   lon2          longitude of point 2, in degrees
-#   heading       the heading in degrees from point 1 to point 2, where
-#                 0/360 = N, 90 = E, 180 = S, 270 = W.
-#   test          a name to report in passes/fails.  (default = "local_heading")
-# Returns:
-#   nothing
-#
-proc local_heading_test { lat1 lon1 lat2 lon2 heading {test "local_heading"} } {
-	global prompt
-	global floatpat
-	global epsilon
-
-	send "local heading ($lat1,$lon1,$lat2,$lon2)\n"
-	expect {
-		-re "($floatpat)\[\\n\\r\]+$prompt$" {
-			set answer $expect_out(1,string)
-
-			#
-			# Accept 360 for 0.
-			#
-			if { [fcmp $answer 360 $epsilon] == 0 } {
-				set answer 0
-			}
- 
-			if { [fcmp $heading $answer $epsilon] == 0 } {
-				pass $test
-			} else {
-				fail "$test heading from ($lat1,$lon1) to ($lat2,$lon2) = $heading, not $answer"
+				fail "$test heading from ($x1,$y1) to ($x2,$y2) = $heading, not $answer"
 			}			
 		}
 	}
@@ -282,6 +236,78 @@ proc local_polygon_area_test { points area {test "local_polygon_area"} } {
 			}			
 		}
 	}
+}
+
+
+
+#
+# polygon_perimeter_test -- tests the polygon perimeter function.
+#
+# Parameters:
+#   points        points of the polygon, as { x0 y0 x1 y1 ... }
+#   perimeter     the correct perimeter of the polygon
+#   test          a name to report in passes/fails.  (default = "polygon_perimeter")
+# Returns:
+#   nothing
+#
+proc polygon_perimeter_test { points perimeter {test "polygon_perimeter"} } {
+	global prompt
+	global floatpat
+	global epsilon
+
+	send "perimeter ([join $points ,])\n"
+	expect {
+		-re "($floatpat)\[\\n\\r\]+$prompt$" {
+			set answer $expect_out(1,string)
+
+			if { [fcmp $perimeter $answer $epsilon] == 0 } {
+				pass $test
+			} else {
+				fail "$test perimeter of polygon = $perimeter, not $answer"
+			}
+		}
+	}
+}
+
+
+
+#
+# point_in_poly_test -- tests the point-in-polygon function.
+#
+# Parameters:
+#   polygon       the polygon, as { x0 y0 x1 y1 ... }
+#   point         the point to check, as { x y }
+#   true_answer   the correct answer, "inside" or "outside"
+#   test          a name to report in passes/fails (default = "point_in_poly")
+# Returns:
+#   nothing
+#
+proc point_in_poly_test { polygon point true_answer {test "point_in_poly"} } {
+	global prompt
+	global rowpat
+
+	send "point in polygon ([join $point ,],[join $polygon ,])\n"
+	expect {
+		-re "(\[tf\])\[\\n\\r\]+$prompt$" {
+			set answer $expect_out(1,string)
+
+			#
+			# The shell returns 't' or 'f'; turn that into 'inside' or
+			# 'outside'.
+			if { [string compare $answer "t"] == 0 } {
+				set answer "inside"
+			} else {
+				set answer "outside"
+			}
+			
+			if { [string compare $answer $true_answer] != 0 } {
+				fail "$test: point is $true_answer the polygon, not $answer"
+				return			
+			}
+		}
+	}
+	
+	pass $test
 }
 
 

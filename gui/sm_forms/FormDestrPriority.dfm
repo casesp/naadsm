@@ -1,6 +1,6 @@
 inherited FormDestrPriority: TFormDestrPriority
-  Left = -1569
-  Top = -39
+  Left = 305
+  Top = 123
   Caption = 'Scenario parameters: Destruction priorities'
   PixelsPerInch = 96
   TextHeight = 13

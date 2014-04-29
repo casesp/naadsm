@@ -1,9 +1,24 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = -I$(top_srcdir)/herd -I$(top_srcdir)/rel_chart
-INCLUDES += @GLIB_CFLAGS@
-AM_LDFLAGS = -L$(top_srcdir)/herd -L$(top_srcdir)/wml
+INCLUDES = -I$(top_srcdir)/src -I$(top_srcdir)/herd -I$(top_srcdir)/rel_chart -I$(top_srcdir)/rng -I$(top_srcdir)/gis -I$(top_srcdir)/general \
+  -I$(top_srcdir)/spatial_search \
+  -I$(top_srcdir)/sc_guilib -I$(top_srcdir)/zone -I$(top_srcdir)/wml
+INCLUDES += @GLIB_CFLAGS@ @GSL_CFLAGS@ @SPRNG_CFLAGS@
 
 bin_PROGRAMS = xml2sm3herds
-xml2sm3herds_SOURCES = main.c
-xml2sm3herds_LDADD = -lherd -lwml @GLIB_LIBS@
+xml2sm3herds_SOURCES = main.c \
+  $(top_srcdir)/herd/herd.c \
+  $(top_srcdir)/rel_chart/rel_chart.c \
+  $(top_srcdir)/rng/rng.c \
+  $(top_srcdir)/replace/replace.c
+if USE_SC_GUILIB
+  xml2sm3herds_SOURCES += $(top_srcdir)/general/general.c \
+    $(top_srcdir)/zone/zone.c \
+    $(top_srcdir)/sc_guilib/production_type_data.c \
+    $(top_srcdir)/sc_guilib/sc_guilib_outputs.c \
+    $(top_srcdir)/sc_guilib/sc_database.c
+endif
+xml2sm3herds_LDADD = @GLIB_LIBS@ @GSL_LIBS@ @SPRNG_LIBS@
+if HAVE_MPI
+  xml2sm3herds_LDADD += @MPI_LIBS@
+endif

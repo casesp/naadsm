@@ -20,7 +20,7 @@
  * @version 0.1
  * @date October 2005
  *
- * Copyright &copy; University of Guelph, 2005-2006
+ * Copyright &copy; University of Guelph, 2005-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -33,7 +33,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include "herd.h"
 #include <shapefil.h>
 
@@ -153,8 +152,8 @@ write_herds (SHPHandle shape_file, DBFHandle attribute_file, int *attribute_id,
   for (i = 0; i < n; i++)
     {
       herd = HRD_herd_list_get (herds, i);
-      x = (double) herd->lon;
-      y = (double) herd->lat;
+      x = herd->longitude;
+      y = herd->latitude;
 
       /* Keep track of the minimum and maximum x and y values, in case the
        * shapefile library gets them wrong. */
@@ -205,8 +204,6 @@ write_herds (SHPHandle shape_file, DBFHandle attribute_file, int *attribute_id,
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[2];
   const char *herd_file_name = NULL;    /* name of the herd file */
   char *arcview_file_name = NULL;       /* base name of the ArcView files */
   char *attribute_file_name;
@@ -217,52 +214,43 @@ main (int argc, char *argv[])
   DBFHandle attribute_file;
   int attribute_id[NATTRIBUTES];
   double minbound[2], maxbound[2];
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { NULL }
+  };
 
   /* Get the command-line options and arguments.  There should be two command-
-   * line argument, the name of the herd file and the base name for the ArcView
+   * line arguments, the name of the herd file and the base name for the ArcView
    * output files. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip =
-    "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
-
-  options[1].longName = NULL;
-  options[1].shortName = '\0';
-  options[1].argInfo = 0;
-  options[1].arg = NULL;
-  options[1].val = 0;
-  options[1].descrip = NULL;
-  options[1].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **) argv, options, 0);
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
 
-  poptGetNextOpt (option);
-  herd_file_name = poptGetArg (option);
-  if (herd_file_name == NULL)
-    g_error ("Need the name of a herd file.");
+  if (argc >= 2)
+    herd_file_name = argv[1];
+  else
+    {
+      g_error ("Need the name of a herd file.");
+    }
 
-  poptGetNextOpt (option);
-  arcview_file_name = g_strdup (poptGetArg (option));
-  if (arcview_file_name == NULL)
+  if (argc >= 3)
+    arcview_file_name = g_strdup (argv[2]);
+  else
     {
       char *herd_file_base_name;
       char *dot_location;
@@ -280,16 +268,21 @@ main (int argc, char *argv[])
 #endif
       g_free (herd_file_base_name);
     }
-  poptFreeContext (option);
-
+  g_option_context_free (context);
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list (herd_file_name, NULL);
+#else
   herds = HRD_load_herd_list (herd_file_name);
+#endif
   nherds = HRD_herd_list_length (herds);
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i units read", nherds);
+#if DEBUG
+  g_debug ("%i units read", nherds);
 #endif
   if (nherds == 0)
-    g_error ("no units in file %s", herd_file_name);
+    {
+      g_error ("no units in file %s", herd_file_name);
+    }
 
   /* Initialize the shape and DBF (attribute) files for writing. */
   shape_file = SHPCreate (arcview_file_name, SHPT_POINT);

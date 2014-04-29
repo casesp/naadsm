@@ -4,13 +4,13 @@ unit FrameZone;
 FrameZone.pas/dfm
 -----------------
 Begin: 2006/12/19
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version number: $Revision: 1.7 $
+Last revision: $Date: 2011-03-28 23:12:26 $ $Author: areeves $
+Version number: $Revision: 1.11.10.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -19,26 +19,26 @@ Public License as published by the Free Software Foundation; either version 2 of
 
 interface
 
-	uses
-		Windows, 
-		Messages, 
-		SysUtils, 
-		Variants, 
-		Classes, 
-		Graphics, 
-		Controls, 
-		Forms, 
-		Dialogs,
+  uses
+    Windows, 
+    Messages, 
+    SysUtils, 
+    Variants, 
+    Classes, 
+    Graphics, 
+    Controls, 
+    Forms, 
+    Dialogs,
     StdCtrls,
     ExtCtrls,
 
     QIntegerMaps,
 
     ProductionType
-	;
+  ;
 
 
-	type TFrameZone = class( TFrame )
+  type TFrameZone = class( TFrame )
       pnlZoneTrigger: TPanel;
       lblZoneCreation: TLabel;
       cbxIndirectTraceTrigger: TCheckBox;
@@ -51,8 +51,8 @@ interface
       procedure processTextEntry( Sender: TObject );
       procedure processEffectClick( Sender: TObject );
 
-		protected
-    	// properties
+    protected
+      // properties
       _prodType: TProductionType;
 
       // for internal use
@@ -67,7 +67,7 @@ interface
       procedure setProdType( val: TProductionType );
       function getProdType(): TProductionType;
 
-		public
+    public
       paramFrameList: TQIntegerObjectMap;
 
       constructor create( AOwner: TComponent ); override;
@@ -79,8 +79,8 @@ interface
 
       // properties
       property prodType: TProductionType read getProdType write setProdType;
-		end
-	;
+    end
+  ;
 
 implementation
 
@@ -89,13 +89,14 @@ implementation
   uses
     RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
+    MyDialogs,
     I88n,
 
     FunctionEnums,
     Zone,
-    ZoneParams,
+    ProdTypeZoneParams,
+    ProductionTypeList,
 
     FormSMWizardBase,
     FormZone,
@@ -177,7 +178,7 @@ implementation
 
   procedure TFrameZone.processTextEntry( Sender: TObject );
     var
-      zpt: TZoneProdTypeParams;
+      zpt: TZoneProdTypeComboParams;
       zptFrame: TFrameZoneProdTypeParams;
       it: TZPTListIterator;
     begin
@@ -189,9 +190,9 @@ implementation
             if( nil <> it.value() ) then
               begin
                 zptFrame := paramFrameList.value( it.key() ) as TFrameZoneProdTypeParams;
-                zpt := it.value() as TZoneProdTypeParams;
+                zpt := it.value();
 
-                zpt.detectionMultiplier := myStrToFloat( zptFrame.rleDetectionMultiplier.Text, -1.0 );
+                zpt.detectionMultiplier := uiStrToFloat( zptFrame.rleDetectionMultiplier.Text, -1.0 );
 
                 (_myParent as TFormSMWizardBase).showStar();
               end
@@ -208,7 +209,7 @@ implementation
 
   procedure TFrameZone.processEffectClick( Sender: TObject );
     var
-      zpt: TZoneProdTypeParams;
+      zpt: TZoneProdTypeComboParams;
       zptFrame: TFrameZoneProdTypeParams;
       it: TZPTListIterator;
 
@@ -224,7 +225,7 @@ implementation
 
             if( not( _loading ) ) then
               begin
-                zpt := it.value() as TZoneProdTypeParams;
+                zpt := it.value();
 
                 zpt.useDirectMovementControl := zptFrame.cbxUseDirectMovementControl.Checked;
                 zpt.useIndirectMovementControl := zptFrame.cbxUseIndirectMovementControl.Checked;
@@ -295,8 +296,8 @@ implementation
   ;
 
 
-	procedure TFrameZone.updateDisplay();
-  	begin
+  procedure TFrameZone.updateDisplay();
+    begin
       //pnlCostParams.Visible := cbxUseCosts.Checked;
     end
   ;
@@ -308,29 +309,104 @@ implementation
 // Properties
 //-----------------------------------------------------------------------------
   function TFrameZone.isValid(): boolean;
+    var
+      zpt: TZoneProdTypeComboParams;
+      it: TZPTListIterator;
+      showDlg: boolean;
+      response: integer;
+
+      pt: TProductionType;
+      ptIt: TProductionTypeListIterator;
     begin
-      // There isn't actually anything that needs to be validated here.
-      result := true;
+      showDlg := false;
+
+      if( not( _loading ) ) then
+        begin
+          ptIt := TProductionTypeListIterator.create( _prodType.ptList as TProductionTypeList );
+
+          ptIt.toFirst();
+          
+          repeat
+            if( nil <> ptIt.current() ) then
+              begin
+                pt := ptIt.current();
+
+                it := TZPTListIterator.create( pt.zoneParams.zonePtParamsList );
+
+                repeat
+                  if( nil <> it.value() ) then
+                    begin
+                      zpt := it.value();
+
+                      if( zpt.useDetectionMultiplier ) then
+                        begin
+                          if( 1 > zpt.detectionMultiplier ) then
+                            begin
+                              showDlg := true;
+                              break;
+                            end
+                          ;
+                        end
+                      ;
+                    end
+                  ;
+                  it.incr();
+                until ( nil = it.value() );
+
+                it.Free();
+              end
+            ;
+
+            if( showDlg ) then
+              break;
+            ;
+            ptIt.incr();
+          until( nil = ptIt.current() );
+
+          ptIt.Free();
+        end
+      ;
+
+      if( showDlg ) then
+        begin
+          response := msgYesNo(
+            tr( 'The detection multiplier for one or more zones is set to a value less than 1.' )
+              + '  ' + tr( 'This will reduce the probability of detection inside the zone compared to outside of the zone.' )
+              + '  ' + tr( 'Is this what you want?' ),
+            tr( 'Unusual detection mulitiplier found' ),
+            IMGQuestion,
+            _myParent
+          );
+
+          if( mrYes = response ) then
+            result := true
+          else
+            result := false
+          ;
+        end
+      else
+        result := true
+      ;
     end
   ;
   
 
   function TFrameZone.getProdType(): TProductionType;
-  	begin
-    	result := _prodType;
+    begin
+      result := _prodType;
     end
   ;
 
 
   procedure TFrameZone.setProdType( val: TProductionType );
     var
-      zpt: TZoneProdTypeParams;
+      zpt: TZoneProdTypeComboParams;
       zptFrame: TFrameZoneProdTypeParams;
       it: TZPTListIterator;
-  	begin
-    	_loading := true;
+    begin
+      _loading := true;
 
-    	_prodType := val;
+      _prodType := val;
 
       cbxDetectionTrigger.Checked := _prodType.zoneParams.detectionIsZoneTrigger;
       cbxDirectTraceTrigger.Checked := _prodType.zoneParams.directTraceIsZoneTrigger;
@@ -343,7 +419,7 @@ implementation
           begin
             zptFrame := paramFrameList.value( it.key() ) as TFrameZoneProdTypeParams;
 
-            zpt := it.value() as TZoneProdTypeParams;
+            zpt := it.value();
 
             zptFrame.cbxUseDirectMovementControl.Checked := zpt.useDirectMovementControl;
             zptFrame.cbxUseIndirectMovementControl.Checked := zpt.useIndirectMovementControl;
@@ -351,8 +427,8 @@ implementation
 
             zptFrame.cbxClick( nil ); // This function call forces the frame to recalculate and report its height.
 
-            zptFrame.smrDirectMovement.showChart( _prodType.zoneParams, zpt.directMovement, ZONMovementDirect );
-            zptFrame.smrIndirectMovement.showChart( _prodType.zoneParams, zpt.indirectMovement, ZONMovementIndirect );
+            zptFrame.smrDirectMovement.showChart( _prodType.zoneParams, zpt.relDirectMovement, ZONMovementDirect );
+            zptFrame.smrIndirectMovement.showChart( _prodType.zoneParams, zpt.relIndirectMovement, ZONMovementIndirect );
 
             if( 0.0 <= zpt.detectionMultiplier ) then
               zptFrame.rleDetectionMultiplier.Text := uiFloatToStr( zpt.detectionMultiplier )

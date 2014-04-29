@@ -205,7 +205,8 @@ object FrameHerdListEditor: TFrameHerdListEditor
           'Latitude'
           'Longitude'
           'Status'
-          'Days left in staus')
+          'Days in state'
+          'Days left in state')
       end
     end
     object pnlSortControlsRight: TPanel
@@ -314,9 +315,9 @@ object FrameHerdListEditor: TFrameHerdListEditor
     object lblDaysLeft: TLabel
       Left = 128
       Top = 48
-      Width = 86
+      Width = 81
       Height = 13
-      Caption = 'Days left in status:'
+      Caption = 'Days left in state:'
       Visible = False
     end
     object lblStatus: TLabel
@@ -347,7 +348,8 @@ object FrameHerdListEditor: TFrameHerdListEditor
         'Specific latitude'
         'Specific longitude'
         'Status'
-        'Days left in status')
+        'Days in state'
+        'Days left in state')
     end
     object cboProdTypeFilter: TComboBox
       Left = 260
@@ -441,8 +443,8 @@ object FrameHerdListEditor: TFrameHerdListEditor
     object pnlGeoRange: TPanel
       Left = 176
       Top = 64
-      Width = 321
-      Height = 41
+      Width = 449
+      Height = 25
       BevelOuter = bvNone
       Color = clGradientActiveCaption
       TabOrder = 8
@@ -455,8 +457,8 @@ object FrameHerdListEditor: TFrameHerdListEditor
         Caption = 'Please specify a geographic range.'
       end
       object btnGeoRange: TButton
-        Left = 8
-        Top = 20
+        Left = 392
+        Top = 2
         Width = 49
         Height = 18
         Caption = 'Edit...'

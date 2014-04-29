@@ -8,8 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
--- Update existing table `inDiseaseSpread`.
 create table `inDiseaseSpread_IM0` ( 
 	`spreadID` COUNTER,
 	`spreadMethodCode` CHAR(1),
@@ -67,11 +65,7 @@ alter table `inDiseaseSpread`
 
 
 drop table `inDiseaseSpread`; 
-
-
--- `inDiseaseSpread` : Table of inDiseaseSpread
--- 	`useFixedContactRate` : useFixedContactRate is of inDiseaseSpread
--- 	`fixedContactRate` : fixedContactRate is of inDiseaseSpread  
+ 
 create table `inDiseaseSpread` ( 
 	`spreadID` COUNTER,
 	`spreadMethodCode` CHAR(1),
@@ -105,15 +99,11 @@ insert into `inDiseaseSpread` (`spreadID`, `spreadMethodCode`, `latentCanInfect`
            `inDiseaseSpread_IM0`.`windDirectionEnd`  
     from `inDiseaseSpread_IM0`;
 
-
 drop table `inDiseaseSpread_IM0`; 
-
 
 alter table `inDiseaseSpread`
 	add constraint `inProductionTypePair_PK` primary key (`spreadID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inDiseaseSpread`
 	add constraint `inChart_inDiseaseSpread_FK3` foreign key (
 		`transportDelayPdfID`)
@@ -150,5 +140,3 @@ alter table `inProductionTypePair`
 	 references `inDiseaseSpread` (
 		`spreadID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

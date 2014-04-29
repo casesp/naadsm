@@ -4,11 +4,11 @@ unit FormCostsDestr;
 FormCostsDestr.pas/dfm
 ----------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version number: $Revision: 1.6 $
+Last revision: $Date: 2010-09-09 14:34:00 $ $Author: rhupalo $
+Version number: $Revision: 1.7.6.1 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
 
@@ -135,7 +135,8 @@ implementation
 //-----------------------------------------------------------------------------
   function TFormCostsDestr.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.costTrackDestruction ) then
+    	// need detection of disease in order to conduct destruction campaign and incurr costs
+    	if ( _smScenarioCopy.simInput.includeDetectionGlobal and _smScenarioCopy.simInput.includeDestructionGlobal and _smScenarioCopy.simInput.costTrackDestruction ) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin
@@ -204,6 +205,10 @@ implementation
       dest.costParams.destrEuthanasiaPerAnimal := src.costParams.destrEuthanasiaPerAnimal;
       dest.costParams.destrIndemnificationPerAnimal := src.costParams.destrIndemnificationPerAnimal;
       dest.costParams.destrDisposalPerAnimal := src.costParams.destrDisposalPerAnimal;
+      dest.costParams.destrAppraiseDeadUnitsCode := src.costParams.destrAppraiseDeadUnitsCode;
+      dest.costParams.destrCleanDeadUnitsCode := src.costParams.destrCleanDeadUnitsCode;
+      dest.costParams.destrDisposeDeadUnitsCode := src.costParams.destrDisposeDeadUnitsCode;
+      dest.costParams.destrIndemnificationDeadUnitsCode := src.costParams.destrIndemnificationDeadUnitsCode;
 
       dest.updated := true;
     end

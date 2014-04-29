@@ -54,7 +54,8 @@ sprng_as_get (void *dummy)
 /**
  * Creates a new random number generator object.
  *
- * @param seed a seed value
+ * @param seed a seed value.  Use -1 to indicate that a seed should be picked
+ *  automatically.
  * @return a random number generator.
  */
 RAN_gen_t *

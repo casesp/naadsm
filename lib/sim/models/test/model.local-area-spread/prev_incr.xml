@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
+  xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
+  <description>Specs for a sample simulation run.</description>
+  <num-days>20</num-days>
+  <num-runs>1</num-runs>
+
+  <models>
+
+    <disease-model production-type="Beef Cattle">
+      <latent-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>20</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+      <prevalence-infectious>
+        <value>0</value> <value>0.01</value>
+        <value>2.5</value> <value>0.01</value>
+        <value>3.5</value> <value>0.1</value>
+        <value>4.5</value> <value>0.5</value>
+        <value>5.5</value> <value>0.99</value>
+        <value>6</value> <value>0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prevalence-infectious>
+    </disease-model>
+
+    <local-area-spread-model from-production-type="Beef Cattle" to-production-type="">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>10</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.505</prob>
+     </local-area-spread-model>
+
+    <conflict-resolver></conflict-resolver>
+
+    <state-table-writer />
+
+  </models>
+
+</naadsm:disease-simulation>

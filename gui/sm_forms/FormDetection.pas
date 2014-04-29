@@ -4,13 +4,13 @@ unit FormDetection;
 FormDetection.pas/dfm
 ---------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.31 $
+Last revision: $Date: 2011-03-24 18:46:24 $ $Author: areeves $
+Version: $Revision: 1.37.2.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008  Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -80,7 +80,6 @@ implementation
     SysUtils,
     FormMain,
     MyStrUtils,
-    GuiStrUtils,
     ChartFunction,
     ControlUtils,
     FunctionEnums,
@@ -166,16 +165,28 @@ implementation
 
           if( _selectedPT.useDetection ) then
             begin
-            	fraParams.smrProbReportVsDaysInfectious.showChart(
+            	fraParams.smrProbObsVsDaysInfectious.showChart(
               	_selectedPT,
                 _selectedPT.detectionParams.relObsVsTimeClinical,
                 DetProbObsVsTimeClinical
               );
 
-              fraParams.smrProbVsFirstDetection.showChart(
+            	fraParams.smrProbObsVsDaysDead.showChart(
               	_selectedPT,
-                _selectedPT.detectionParams.relReportVsFirstDetection,
-                DetProbReportVsFirstDetection
+                _selectedPT.detectionParams.relObsVsTimeDead,
+                DetProbObsVsTimeDead
+              );
+
+              fraParams.smrProbReportClinVsFirstDetection.showChart(
+              	_selectedPT,
+                _selectedPT.detectionParams.relReportClinVsFirstDetection,
+                DetProbReportClinVsFirstDetection
+              );
+
+              fraParams.smrProbReportDeadVsFirstDetection.showChart(
+              	_selectedPT,
+                _selectedPT.detectionParams.relReportDeadVsFirstDetection,
+                DetProbReportDeadVsFirstDetection
               );
             end
           ;
@@ -193,34 +204,50 @@ implementation
 
   procedure TFormDetection.prepFunctionDicts();
   	var
-    	pt: TProductionType;
-      i: integer;
       it: TFunctionDictionaryIterator;
   	begin
-			fraParams.smrProbReportVsDaysInfectious.ClearList();
-      fraParams.smrProbVsFirstDetection.ClearList();
+			fraParams.smrProbObsVsDaysInfectious.ClearList();
+      fraParams.smrProbObsVsDaysDead.ClearList();
+      fraParams.smrProbReportClinVsFirstDetection.ClearList();
+      fraParams.smrProbReportDeadVsFirstDetection.ClearList();
 
       it := TFunctionDictionaryIterator.create( _fnDict );
-
       repeat
         if( nil <> it.value() ) then
           begin
             if ( not it.value().removed ) then
               begin
-                case( it.value().fn.dbField ) of
-                  word(TSMChart( DetProbReportVsFirstDetection )):
+                case( TSMChart( integer( it.value().fn.dbField ) ) ) of
+                  DetProbObsVsTimeClinical:
                     begin
-                      fraParams.smrProbVsFirstDetection.appendFunction( it.value().fn );
-                      it.value().RefCounter:= 0;
-                    end;
+                      fraParams.smrProbObsVsDaysInfectious.appendFunction( it.value().fn );
+                      fraParams.smrProbObsVsDaysDead.appendFunction( it.value().fn );
+                    end
+                  ;
 
-                  word(TSMChart( DetProbObsVsTimeClinical )):
+                  DetProbObsVsTimeDead:
                     begin
-                      fraParams.smrProbReportVsDaysInfectious.appendFunction( it.value().fn );
-                      it.value().RefCounter:= 0;
-                    end;
-               end;
-              end;
+                      fraParams.smrProbObsVsDaysInfectious.appendFunction( it.value().fn );
+                      fraParams.smrProbObsVsDaysDead.appendFunction( it.value().fn );
+                    end
+                  ;
+
+                  DetProbReportClinVsFirstDetection:
+                    begin
+                      fraParams.smrProbReportClinVsFirstDetection.appendFunction( it.value().fn );
+                      fraParams.smrProbReportDeadVsFirstDetection.appendFunction( it.value().fn );
+                    end
+                  ;
+
+                  DetProbReportDeadVsFirstDetection:
+                    begin
+                      fraParams.smrProbReportClinVsFirstDetection.appendFunction( it.value().fn );
+                      fraParams.smrProbReportDeadVsFirstDetection.appendFunction( it.value().fn );
+                    end
+                  ;
+                end;
+              end
+            ;
           end
         ;
 
@@ -228,19 +255,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-      for i := 0 to _ptList.Count-1 do
-      	begin
-        	pt := _ptList.at(i);
-          if( _fnDict.contains( pt.detectionParams.relObsVsTimeClinicalName ) ) then
-          	_fnDict.value( pt.detectionParams.relObsVsTimeClinicalName ).incrRefCounter()
-          ;
-
-          if( _fnDict.contains( pt.detectionParams.relReportVsFirstDetectionName ) ) then
-          	_fnDict.value( pt.detectionParams.relReportVsFirstDetectionName).incrRefCounter()
-          ;
-        end
-      ;
     end
   ;
 
@@ -249,11 +263,15 @@ implementation
   	begin
    		with fraParams do
       	begin
-        	smrProbReportVsDaysInfectious.setFunctionDict( _fnDict );
-          smrProbVsFirstDetection.setFunctionDict( _fnDict );
+        	smrProbObsVsDaysInfectious.setFunctionDict( _fnDict );
+          smrProbObsVsDaysDead.setFunctionDict( _fnDict );
+          smrProbReportClinVsFirstDetection.setFunctionDict( _fnDict );
+          smrProbReportDeadVsFirstDetection.setFunctionDict( _fnDict );
 
-          smrProbReportVsDaysInfectious.setModelList( _ptList );
-          smrProbVsFirstDetection.setModelList( _ptList );
+          smrProbObsVsDaysInfectious.setModelList( _ptList );
+          smrProbObsVsDaysDead.setModelList( _ptList );
+          smrProbReportClinVsFirstDetection.setModelList( _ptList );
+          smrProbReportDeadVsFirstDetection.setModelList( _ptList );
         end
       ;
     end
@@ -268,7 +286,7 @@ implementation
   procedure TFormDetection.cbxDetectClick(Sender: TObject);
     begin
      	if( not( _ignoreClick ) ) then
-        _selectedPT.useDetection := fraParams.cbxDetect.Checked
+        _selectedPT.detectionParams.useDetection := fraParams.cbxDetect.Checked
       ;
      	updateDisplay();
     end
@@ -294,10 +312,12 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFormDetection.copyParameters( const src: TProductionType; dest: TProductionType );
     begin
-      dest.useDetection := src.useDetection;
+      dest.detectionParams.useDetection := src.detectionParams.useDetection;
 
       dest.setChart( DetProbObsVsTimeClinical, src.chart( DetProbObsVsTimeClinical ) );
-      dest.setChart( DetProbReportVsFirstDetection, src.chart( DetProbReportVsFirstDetection ) );
+      dest.setChart( DetProbObsVsTimeDead, src.chart( DetProbObsVsTimeDead ) );
+      dest.setChart( DetProbReportClinVsFirstDetection, src.chart( DetProbReportClinVsFirstDetection ) );
+      dest.setChart( DetProbReportDeadVsFirstDetection, src.chart( DetProbReportDeadVsFirstDetection ) );
 
       dest.updated := true;
     end

@@ -11,7 +11,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
     Top = 0
     Width = 555
     Height = 688
-    ActivePage = tabGraphs
+    ActivePage = tabTables
     Align = alClient
     TabOrder = 0
     object tabGraphs: TTabSheet
@@ -128,9 +128,9 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
       ImageIndex = 1
       object PanelInf: TPanel
         Left = 0
-        Top = 125
+        Top = 153
         Width = 547
-        Height = 123
+        Height = 125
         Align = alTop
         TabOrder = 0
         object pnlInfHeader: TPanel
@@ -154,7 +154,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
             Top = 0
             Width = 404
             Height = 17
-            Caption = 'Reasons for infection -- includes all infections'
+            Caption = 'Infection and exposure'
             Checked = True
             State = cbChecked
             TabOrder = 0
@@ -165,28 +165,37 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           Left = 1
           Top = 19
           Width = 545
-          Height = 103
+          Height = 105
           Align = alClient
           TabOrder = 1
           OnExit = exitStringGrid
           inherited stgGrid: TARSyncGrid
             Width = 535
-            Height = 103
+            Height = 105
             ColCount = 3
+            RowCount = 7
             FixedRows = 0
-            ScrollBars = ssNone
+            ScrollBars = ssVertical
+            RowHeights = (
+              19
+              19
+              19
+              19
+              19
+              19
+              19)
           end
           inherited pnlSpacer: TPanel
             Left = 535
-            Height = 103
+            Height = 105
           end
         end
       end
       object PanelVac: TPanel
         Left = 0
-        Top = 393
+        Top = 403
         Width = 547
-        Height = 72
+        Height = 90
         Align = alTop
         TabOrder = 1
         object pnlVacHeader: TPanel
@@ -221,32 +230,33 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           Left = 1
           Top = 19
           Width = 545
-          Height = 52
+          Height = 70
           Align = alClient
           TabOrder = 1
           OnExit = exitStringGrid
           inherited stgGrid: TARSyncGrid
             Width = 535
-            Height = 52
+            Height = 70
             ColCount = 3
-            RowCount = 2
+            RowCount = 3
             FixedRows = 0
             ScrollBars = ssVertical
             RowHeights = (
+              19
               19
               19)
           end
           inherited pnlSpacer: TPanel
             Left = 535
-            Height = 52
+            Height = 70
           end
         end
       end
       object pnlAsterisk: TPanel
         Left = 0
-        Top = 465
+        Top = 493
         Width = 547
-        Height = 195
+        Height = 167
         Align = alClient
         Alignment = taLeftJustify
         Anchors = [akLeft, akTop, akRight]
@@ -257,7 +267,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           Left = 5
           Top = 5
           Width = 537
-          Height = 185
+          Height = 157
           Align = alClient
           AutoSize = False
           Caption = 
@@ -268,9 +278,9 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
       end
       object pnlDestr: TPanel
         Left = 0
-        Top = 248
+        Top = 278
         Width = 547
-        Height = 145
+        Height = 125
         Align = alTop
         TabOrder = 3
         object pnlDestrHeader: TPanel
@@ -305,18 +315,19 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           Left = 1
           Top = 19
           Width = 545
-          Height = 125
+          Height = 105
           Align = alClient
           TabOrder = 1
           OnExit = exitStringGrid
           inherited stgGrid: TARSyncGrid
             Width = 535
-            Height = 125
+            Height = 105
             ColCount = 3
-            RowCount = 6
+            RowCount = 7
             FixedRows = 0
-            ScrollBars = ssNone
+            ScrollBars = ssVertical
             RowHeights = (
+              19
               19
               19
               19
@@ -326,10 +337,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           end
           inherited pnlSpacer: TPanel
             Left = 535
-            Height = 125
-          end
-          inherited StringGrid1: TStringGrid
-            DefaultRowHeight = 19
+            Height = 105
           end
         end
       end
@@ -337,7 +345,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
         Left = 0
         Top = 28
         Width = 547
-        Height = 97
+        Height = 125
         Align = alTop
         TabOrder = 4
         object pnlSurvHeader: TPanel
@@ -361,7 +369,7 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
             Top = 0
             Width = 228
             Height = 17
-            Caption = 'Detection and Tracing'
+            Caption = 'Detection and tracing'
             Checked = True
             State = cbChecked
             TabOrder = 0
@@ -372,25 +380,42 @@ object FrameEpiIterationSummary: TFrameEpiIterationSummary
           Left = 1
           Top = 19
           Width = 545
-          Height = 77
+          Height = 105
           Align = alClient
           TabOrder = 1
           OnExit = exitStringGrid
           inherited stgGrid: TARSyncGrid
             Width = 535
-            Height = 77
+            Height = 105
             ColCount = 3
-            RowCount = 3
+            RowCount = 20
             FixedRows = 0
             ScrollBars = ssVertical
             RowHeights = (
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
+              19
               19
               19
               19)
           end
           inherited pnlSpacer: TPanel
             Left = 535
-            Height = 77
+            Height = 105
           end
         end
       end

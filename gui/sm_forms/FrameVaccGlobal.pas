@@ -4,13 +4,13 @@ unit FrameVaccGlobal;
 FrameVaccGlobal.pas/dfm
 ------------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version: $Revision: 1.17 $
+Last revision: $Date: 2011-03-31 03:55:39 $ $Author: areeves $
+Version: $Revision: 1.20.10.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -87,7 +87,6 @@ implementation
 	uses
   	RegExpDefs,
     MyStrUtils,
-    GuiStrUtils,
     FormSMWizardBase,
     ChartFunction,
     FunctionEnums,
@@ -108,9 +107,10 @@ implementation
       smrVaccCapacity.chartType := CTRel;
       smrVaccCapacity.minY := 0.0;
       smrVaccCapacity.maxY := 0.0; // No maximum for this chart.
-      smrVaccCapacity.xUnits := UnitsDays;
-      smrVaccCapacity.yUnits := UnitsHerdsPerDay;
-      
+      smrVaccCapacity.xUnits := UDays;
+      smrVaccCapacity.yUnits := UHerdsPerDay;
+      smrVaccCapacity.setChartField( VaccCapacityGlobal );
+
       rleVaccDetectedUnitsBeforeStart.InputExpression := RE_INTEGER_INPUT;
     end
   ;
@@ -167,7 +167,7 @@ implementation
       // Do this regardless of whether destruction will occur.
       // The chart editor can handle nil charts, but it needs the
       // reference to the model entity _ctrlParams.
-      smrVaccCapacity.showChart( _ctrlParams, _ctrlParams.vaccCapacity, VaccCapacityGlobal );
+      smrVaccCapacity.showChart( _ctrlParams, _ctrlParams.relVaccCapacity, VaccCapacityGlobal );
     end
   ;
 //-----------------------------------------------------------------------------
@@ -180,7 +180,8 @@ implementation
   procedure TFrameVaccGlobal.cbxUseVaccinationClick(Sender: TObject);
     begin
       _ctrlParams.useVaccGlobal := cbxUseVaccination.Checked;
-      pnlVaccParams.visible := cbxUseVaccination.Checked;
+      //pnlVaccParams.visible := cbxUseVaccination.Checked;
+      updateDisplay();
     end
   ;
 

@@ -21,6 +21,7 @@
 #define MODEL_UTIL_H
 
 #include "herd.h"
+#include "scorecard.h"
 #include "zone.h"
 #include <glib.h>
 #include <scew/scew.h>
@@ -28,8 +29,12 @@
 
 
 /* Prototypes. */
-gboolean *ergadm_read_prodtype_attribute (scew_element *, char *, GPtrArray *);
-gboolean *ergadm_read_zone_attribute (scew_element *, ZON_zone_list_t *);
-void ergadm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index);
+gboolean *naadsm_read_prodtype_attribute (const scew_element *, char *, GPtrArray *);
+gboolean *naadsm_read_zone_attribute (const scew_element *, ZON_zone_list_t *);
+void naadsm_extend_rotating_array (GPtrArray * array, unsigned int length, unsigned int index);
+void g_queue_free_as_GDestroyNotify (gpointer data);
+char *naadsm_insert_node_number_into_filename (const char *filename);
+#define naadsm_get_scorecard(H) ((HSC_scorecard_t *)((H)->extra_data))
+HSC_scorecard_t *naadsm_get_or_create_scorecard (HRD_herd_t *);
 
 #endif /* !MODEL_UTIL_H */

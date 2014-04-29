@@ -4,13 +4,13 @@ unit FormSMOutputBase;
 FormSMOutputBase.pas/dfm
 -------------------------
 Begin: 2005/12/07
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.31 $
+Last revision: $Date: 2011-10-12 18:59:34 $ $Author: rhupalo $
+Version: $Revision: 1.36.6.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -71,10 +71,12 @@ interface
       { Top-aligned panel that contains all other controls }
       pnlControls: TPanel;
 
-      { Production type and zone selection }
+      { Production type, zone, and iteration selection }
       pnlProdTypes: TPanel;
       cboProdTypes: TComboBox;
       cboZones: TComboBox;
+      lblIteration: TLabel;
+      cboIteration: TComboBox;
 
       { Toolbar buttons for saving/copying/printing }
       pnlButtons: TPanel;
@@ -109,13 +111,18 @@ interface
       { Changes the selected zone, and calls zoneChanged }
       procedure cboZonesCloseUp(Sender: TObject);
 
+      { Changes the selected iteration and calls iterationChanged }
+      procedure cboIterationChange(Sender: TObject);
+
     protected
       _borderDisabled: boolean;
 
       _smdb: TSMDatabase; // Reference to the database that is currently open in the application
       _smSim: TSMSimulationInput; // Reference to the simulation that is currently loaded by the app
+      _smHerds: THerdList; // Reference to the herd list that is currently loaded by the app
       _selectedPT: TProductionType; // Reference to the production type selected on this form
       _selectedZone: TZone; // Reference to the zone selected on this form, if applicable
+      _displayedIteration: integer;
 
       _myForm: TForm; // Reference to the main form
 
@@ -138,8 +145,11 @@ interface
       { Updates the contents of the form when the selected production type changes }
       procedure productionTypeChanged(); virtual; abstract;
 
-      { Updates teh contents of the form when the selected zone changes }
+      { Updates the contents of the form when the selected zone changes }
       procedure zoneChanged(); virtual;
+
+      { Updates the contents of the form when the selected iteration changes }
+      procedure iterationChanged(); virtual;
 
       { Updates the contents of the form when the loaded database/simulation changes }
       procedure simChanged(); virtual; abstract;
@@ -169,9 +179,16 @@ interface
       { Enables/disables controls for saving/copying/printing charts }
       procedure setChartControlsEnabled( val: boolean );
 
+      { Nicely positions the label and combo box for iterations }
+      procedure placeIterationControls();
 
       { Adds all production types in the scenario to the dropdown box }
-      procedure setupComboBox();
+      procedure setupProdTypeComboBox();
+
+      { Adds all iterations in the scenario to the appropriate dropdown box.  Used for single-iteration forms }
+      procedure setupIterationComboBox();
+
+      procedure disableIterationComboBox();
 
       { Should be self-explanatory... }
       procedure saveCopyPrintCharts(Sender: TObject);
@@ -190,12 +207,18 @@ interface
       function getAcnCopyCharts(): TAction;
       function getAcnClose(): TAction;
 
+      function getAcnCopyRawData(): TAction;
+      function getAcnExportRawData(): TAction;
+
     public
       constructor create( AOwner: TComponent ); override;
       destructor destroy(); override;
 
       { Called when something big changes... }
       procedure resetSim( db: TSMDatabase; sim: TSMSimulationInput; herds: THerdList );
+
+      procedure updateSimStarted(); virtual;
+      procedure updateSimComplete(); virtual;
 
       property borderDisabled: boolean read _borderDisabled write _borderDisabled;
 
@@ -207,15 +230,15 @@ interface
       property acnCopyData: TAction read getAcnCopyData;
       property acnCopyCharts: TAction read getAcnCopyCharts;
       property acnClose: TAction read getAcnClose;
+
+      property acnCopyRawData: TAction read getAcnCopyRawData;
+      property acnExportRawData: TAction read getAcnExportRawData;
     end
   ;
 
-
-  const
-    DBFORMSMOUTPUTBASE: boolean = false; // Set to true to enable debugging messages for this unit
-
-
 implementation
+
+  {$R *.dfm}
 
   uses
     // Standard Delphi units
@@ -224,12 +247,12 @@ implementation
     
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     ControlUtils,
     MyDialogs,
     MyGraphicsUtils,
     I88n,
+    SqlClasses,
 
     // General purpose widgets
     FrameStringGridBase,
@@ -240,8 +263,10 @@ implementation
     FormMain
   ;
 
+  const
+    DBSHOWMSG: boolean = false; // Set to true to enable debugging messages for this unit
 
-{$R *.dfm}
+
   constructor TFormSMOutputBase.create( AOwner: TComponent );
     begin
       inherited create( AOwner );
@@ -281,6 +306,7 @@ implementation
 
       _selectedPT := nil;
       _selectedZone := nil;
+      _displayedIteration := frmMain.displayedIteration;
 
       _dm := TDMOutputActionManager.Create( self );
 
@@ -350,7 +376,7 @@ implementation
       _formUsesZones := false;
       cboZones.Visible := false;
 
-      dbcout( '--- TFormSMOutputBase.create done', DBFORMSMOUTPUTBASE );
+      dbcout( '--- TFormSMOutputBase.create done', DBSHOWMSG );
     end
   ;
 
@@ -372,6 +398,7 @@ implementation
           btnSaveCharts.Hint := tr( 'Save chart to file' );
           btnCopyCharts.Hint := tr( 'Copy chart to clipboard' );
           btnPrintCharts.Hint := tr( 'Print chart' );
+          lblIteration.Caption := tr( 'Iteration:' );
           mainMenuBar.Caption := tr( 'mainMenuBar' );
           dlgSaveWMF.Filter := tr( 'Windows Metafile (*.wmf)|*.wmf|All files (*.*)|*.*' );
           dlgSaveCSV.Filter := tr( 'CSV (Comma delimted) (*.csv)|*.csv|All files (*.*)|*.*' );
@@ -391,28 +418,153 @@ implementation
       freeAndNil( _stringGridDict );
       freeAndNil( _chartDict );
 
-      dbcout( endl + '--- ' + self.Name + ' destroyed!' + endl, DBFORMSMOUTPUTBASE );
+      dbcout( endl + '--- ' + self.Name + ' destroyed!' + endl, DBSHOWMSG );
       inherited destroy();
     end
   ;
 
   procedure TFormSMOutputBase.resetSim( db: TSMDatabase; sim: TSMSimulationInput; herds: THerdList );
+    var
+      selectedPTName: string;
+      i: integer;
+      prodTypeFound: boolean;
+
     begin
+      dbcout( '-- TFormSMOutputBase.resetSim()', DBSHOWMSG );
+
       _smSim := sim;
       _smdb := db;
+      _smHerds := herds;
 
       // FIX ME: try to find a matching pt name in the new list, and set
       // _selectedPT to it, if possible.
-      _selectedPT := nil;
+      //_selectedPT := nil;  // Fixed - see issue 2517 below
 
-      setupComboBox();
+      // Issue 2517 - maintain the user's selected production type unless it was deleted
+      selectedPTName := cboProdTypes.Text;
+      setupProdTypeComboBox();
+
+      if ( _selectedPT <> nil ) then
+        begin
+          prodTypeFound := false;
+          for i := 0 to cboProdTypes.Items.Count - 1 do
+            begin
+              if ( cboProdTypes.Items.Strings[i] = selectedPTName ) then
+                begin
+                  cboProdTypes.ItemIndex := i; // reselect their production type
+                  prodTypeFound := true;
+                  break;
+                end
+              ;
+            end
+          ;
+
+          if ( not prodTypeFound ) then  _selectedPT := nil;
+        end
+      ;
 
       simChanged();
+
+      dbcout( '-- Done TFormSMOutputBase.resetSim()', DBSHOWMSG );
     end
   ;
 
 
-	procedure TFormSMOutputBase.setupComboBox();
+  procedure TFormSMOutputBase.updateSimStarted();
+    begin
+      // Do nothing here.  Override if necessary in derived classes.
+    end
+  ;
+
+
+  procedure TFormSMOutputBase.updateSimComplete();
+    begin
+      raise exception.create( 'Calling "abstract" function TFormSMOutputBase.updateSimComplete()' );
+    end
+  ;
+
+
+  procedure TFormSMOutputBase.placeIterationControls();
+    begin
+      lblIteration.Left := cboProdTypes.Left + cboProdTypes.Width + 8;
+      cboIteration.Left := lblIteration.Left + lblIteration.Canvas.TextWidth( tr( 'Iteration:' ) ) + 8;
+    end
+  ;
+
+
+  procedure TFormSMOutputBase.disableIterationComboBox();
+    begin
+      cboIteration.Items.Clear();
+      cboIteration.Enabled := false;
+    end
+  ;
+
+
+  procedure TFormSMOutputBase.setupIterationComboBox();
+    var
+      res: TSqlResult;
+      row: TSqlRow;
+      q: string;
+    begin
+      cboIteration.Items.Clear();
+
+      q := 'SELECT DISTINCT (iteration) FROM outDailyByProductionType order by iteration desc';
+      res := TSqlResult.create( q, ( _smdb as TSqlDatabase ) );
+
+      // If the database contains iteration data, then fill in the combo box.
+      // Otherwise, leave it empty and disable it.
+
+      if ( 0 = res.numRows ) then
+        cboIteration.Enabled := false
+      else
+        begin
+          // Enable and populate the combo box
+          //----------------------------------
+          cboIteration.Enabled := true;
+
+          row := res.fetchArrayFirst();
+          while( nil <> row ) do
+            begin
+              cboIteration.Items.Add(row.field('iteration'));
+              row := res.fetchArrayNext();
+            end
+          ;
+
+          // Which iteration should be displayed?
+          //-------------------------------------
+          _displayedIteration := frmMain.displayedIteration;
+          if ( -1 = _displayedIteration ) then
+            begin
+              cboIteration.ItemIndex := 0;
+              _displayedIteration := StrToInt(cboIteration.Items[cboIteration.ItemIndex]);
+              frmMain.displayedIteration := _displayedIteration;
+            end
+          else
+            begin
+              if( 0 <= cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) ) ) then
+                cboIteration.ItemIndex := cboIteration.Items.IndexOf( IntToStr( _displayedIteration ) )
+              else
+                begin
+                  if( -1 = cboIteration.ItemIndex ) then
+                    _displayedIteration := -1
+                  else
+                    _displayedIteration := StrToInt( cboIteration.Items[cboIteration.ItemIndex] )
+                  ;
+
+                  frmMain.displayedIteration := _displayedIteration;
+                end
+              ;
+            end
+          ;
+        end
+      ;
+
+      res.free();
+    end
+  ;
+
+
+	procedure TFormSMOutputBase.setupProdTypeComboBox();
   	var
     	it: TProductionTypeListIterator;
       zit: TZoneListIterator;
@@ -478,6 +630,13 @@ implementation
   ;
 
 
+  procedure TFormSMOutputBase.cboIterationChange(Sender: TObject);
+    begin
+      iterationChanged();
+    end
+  ;
+
+
   procedure TFormSMOutputBase.setControlsEnabled( val: boolean );
     begin
       cboProdTypes.Enabled := val;
@@ -501,6 +660,9 @@ implementation
       _dm.acnSaveData.Enabled := val;
       _dm.acnPrintData.Enabled := val;
       _dm.acnCopyData.Enabled := val;
+      
+      _dm.acnExportRawData.Enabled := val;
+      _dm.acnCopyRawData.Enabled := val;
     end
   ;
 
@@ -542,6 +704,14 @@ implementation
   ;
 
 
+  procedure TFormSMOutputBase.iterationChanged();
+    begin
+      // Nothing happens in the base class.
+      // Reimplement as needed in derived classes
+    end
+  ;
+
+
   procedure TFormSMOutputBase.WMNCPaint( var Msg: TWMNCPaint );
     begin
       if( not _borderDisabled ) then
@@ -553,6 +723,7 @@ implementation
 
   procedure TFormSMOutputBase.FormClose( Sender: TObject; var Action: TCloseAction );
     begin
+      dbcout( '-- TFormSMOutputBase.FormClose()', DBSHOWMSG );
       try
         (_myForm as TFormMain).uncheckWindowMenuItem( self.name );
       except
@@ -560,13 +731,17 @@ implementation
       end;
 
       Action := caFree;
+
+      dbcout( '-- Done TFormSMOutputBase.FormClose()', DBSHOWMSG );
     end
   ;
 
 
   procedure TFormSMOutputBase.closeForm( sender: TObject );
     begin
+      dbcout( '-- TFormSMOutputBase.closeForm()', DBSHOWMSG );
       close();
+      dbcout( '-- Done TFormSMOutputBase.closeForm()', DBSHOWMSG );
     end
   ;
 
@@ -616,6 +791,20 @@ implementation
   function TFormSMOutputBase.getAcnClose(): TAction;
     begin
       result := _dm.acnClose;
+    end
+  ;
+
+
+  function TFormSMOutputBase.getAcnCopyRawData(): TAction;
+    begin
+      result := _dm.acnCopyRawData;
+    end
+  ;
+
+
+  function TFormSMOutputBase.getAcnExportRawData(): TAction;
+    begin
+      result := _dm.acnExportRawData;
     end
   ;
 
@@ -738,14 +927,14 @@ implementation
 
           if( success ) then
             msgOK(
-              ansiReplaceStr( tr( 'File xyz' ), 'xyz', abbrevPath( fileName, 40 ) ) + ' ' + 'has been successfully saved.',
+              ansiReplaceStr( tr( 'File xyz has been successfully saved.' ), 'xyz', abbrevPath( fileName, 40 ) ),
               tr( 'File saved' ),
               IMGSuccess,
               _myForm
             )
           else
             msgOK(
-              ansiReplaceStr( tr( 'File xyz' ), 'xyz', abbrevPath( fileName, 40 ) ) + ' ' + 'could not be written.  Please check your disk and your folder permissions.',
+              ansiReplaceStr( tr( 'File xyz could not be written.  Please check your disk and your folder permissions.' ), 'xyz', abbrevPath( fileName, 40 ) ),
               tr( 'Save failed' ),
               IMGCritical,
               _myForm
@@ -820,6 +1009,7 @@ implementation
               if( _stringGridDict.GetItemByIndex(i) is TFrameStringGridBase ) then
                 (_stringGridDict.GetItemByIndex(i) as TFrameStringGridBase).printGrid(
                   //textHeader() + _stringGridDict.GetKeyByIndex(i) // FIX ME: title printing doesn't work well
+                  _stringGridDict.GetKeyByIndex(i), textHeader()
                 )
               else if( _stringGridDict.GetItemByIndex(i) is TARSortGrid ) then
                 (_stringGridDict.GetItemByIndex(i) as TARSortGrid).print() // FIX ME: this needs work.
@@ -1053,6 +1243,8 @@ implementation
     end
   ;
 //-----------------------------------------------------------------------------
+
+
 
 
 end.

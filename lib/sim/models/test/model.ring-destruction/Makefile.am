@@ -26,4 +26,11 @@ EXTRA_DIST = radius_0.xml radius_0.5.xml radius_1.xml radius_2.5.xml \
  quarantine_waiting_0.xml quarantine_waiting_1.xml \
  early_exit_1.xml early_exit_2.xml early_exit_3.xml \
  early_exit_4.xml early_exit_5.xml early_exit_6.xml \
- lat_and_rtree.xml
+ lat_and_rtree.xml early_exit_2_disease_outbreak_end.xml \
+ early_exit_3_disease_outbreak_end.xml \
+ initially_destroyed.xml \
+ initially_destroyed_avg_wait.xml \
+ detected_dead_before_ring.xml \
+ detected_dead_sameday_ring.xml \
+ detected_dead_after_ring.xml \
+ dead_not_detected.xml dead_not_detected_resource_count.xml

@@ -1,14 +1,14 @@
 # LaramieInst.nsi
 # ---------------
 # Begin: 2008/10/21
-# Last revision: $Date: 2008/11/25 21:58:43 $ $Author: areeves $
-# Version: $Revision: 1.3 $
+# Last revision: $Date: 2010-07-14 17:45:02 $ $Author: areeves $
+# Version: $Revision: 1.4.10.2 $
 # Project: NSIS installer script for NAADSM, experimental version "Laramie"
 # Website: http://www.naadsm.org
 # Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
-# Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 # --------------------------------------------------
-# Copyright (C) 2008 Animal Population Health Institute, Colorado State University
+# Copyright (C) 2008 - 2010 Animal Population Health Institute, Colorado State University
 # 
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 # Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,14 +76,15 @@ file "C:\Qt\4.1.4\bin\QtCore4.dll"
 file "C:\Qt\4.1.4\bin\QtNetwork4.dll"
 file "C:\libs\C_libs\libiconv-1.9.1\bin\iconv.dll"
 file "C:\libs\C_libs\gettext-0.13.1\bin\intl.dll"
-file "C:\libs\C_libs\libaphi-0.1\bin\libaphi.dll"
-file "C:\libs\C_libs\glib-2.4.7\bin\libglib-2.0-0.dll"
-file "C:\libs\C_libs\gsl-1.6\bin\libgsl.dll"
-file "C:\libs\C_libs\gsl-1.6\bin\libgslcblas.dll" 
+file "C:\libs\C_libs\libaphi\bin\libaphi.dll"
+file "C:\libs\C_libs\gmp-5.0.1\bin\libgmp-10.dll"
+file "C:\libs\C_libs\glib-2.22.2\bin\libglib-2.0-0.dll"
+file "C:\libs\C_libs\gsl-1.8\bin\libgsl.dll"
+file "C:\libs\C_libs\gsl-1.8\bin\libgslcblas.dll" 
 file "C:\libs\C_libs\libiconv-1.8-1\bin\libiconv-2.dll"
 file "C:\libs\C_libs\libintl-0.14.4\bin\libintl-2.dll"
 file "C:\libs\C_libs\sprng-2.0a_naadsm\bin\sprng.dll"
-file "C:\libs\C_libs\popt-1.8.1\bin\popt1.dll"
+file "C:\libs\C_libs\proj-4.6.1\bin\proj.dll"
 file "C:\libs\Delphi_libs\sdew\dll\sdew.dll"
 file "C:\libs\Delphi_libs\qclasses\dll\qclasses.dll"
 file "C:\libs\Delphi_libs\zipmaster\dll\UnzDll.dll"
@@ -123,12 +124,13 @@ uninstPage uninstConfirm "" "" ""
 uninstPage instfiles
 
 section "Uninstall"
-  Delete "$INSTDIR\LaramieUninstall.exe"
+  Delete "$INSTDIR\NAADSMUninstall.exe"
   Delete "$INSTDIR\sdew.dll"
   Delete "$INSTDIR\license.txt"
   Delete "$INSTDIR\iconv.dll"
   Delete "$INSTDIR\intl.dll"
   Delete "$INSTDIR\libaphi.dll"
+  Delete "$INSTDIR\libgmp-10.dll"
   Delete "$INSTDIR\libglib-2.0-0.dll"
   Delete "$INSTDIR\libgsl.dll"
   Delete "$INSTDIR\libgslcblas.dll"
@@ -136,7 +138,7 @@ section "Uninstall"
   Delete "$INSTDIR\libintl-2.dll"
   Delete "$INSTDIR\mingwm10.dll"
   Delete "$INSTDIR\msvcrt.dll"
-  Delete "$INSTDIR\popt1.dll"
+  Delete "$INSTDIR\proj.dll"
   Delete "$INSTDIR\qclasses.dll"
   Delete "$INSTDIR\QtCore4.dll"
   Delete "$INSTDIR\QtNetwork4.dll"

@@ -4,7 +4,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include "herd.h"
 #include <shapefil.h>
 
@@ -49,9 +48,6 @@
 #define BUFFERSIZE 2048
 #define COPY_BUFFERSIZE 8192
 
-/* Prototype mysteriously not in <stdio.h> like the manpage says */
-int snprintf (char *str, size_t size, const char *format, ...);
-
 /* int yydebug = 1; must also compile with --debug to use this */
 char errmsg[BUFFERSIZE];
 
@@ -61,7 +57,7 @@ unsigned int nherds;
 unsigned int last_day; /**< The most recent run number we have seen in the
   table. */
 GArray *last_day_states; /**< Each item is of type HRD_status_t. */
-const char *arcview_shp_filename = NULL;
+const char *arcview_shp_filename;
 char *arcview_base_name;
 char *arcview_shx_filename = NULL;
 char *arcview_dbf_filename = NULL;
@@ -70,7 +66,7 @@ gboolean done;
 
 
 void
-copy (char *src_filename, char *dest_filename)
+copy (const char *src_filename, const char *dest_filename)
 {
   FILE *src, *dest;
   static char buffer [COPY_BUFFERSIZE];
@@ -259,46 +255,38 @@ silent_log_handler (const gchar * log_domain, GLogLevelFlags log_level,
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[2];
   int verbosity = 0;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { NULL }
+  };
 
   /* Get the command-line options and arguments.  There should be one command-
    * line argument, the name of the ArcView .shp file. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip = "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
-
-  options[1].longName = NULL;
-  options[1].shortName = '\0';
-  options[1].argInfo = 0;
-  options[1].arg = NULL;
-  options[1].val = 0;
-  options[1].descrip = NULL;
-  options[1].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **)argv, options, 0);
-  poptGetNextOpt (option);
-  arcview_shp_filename = poptGetArg (option);
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
+  if (argc >= 2)
+    arcview_shp_filename = argv[1];
+  else
+    arcview_shp_filename = NULL;
   if (arcview_shp_filename == NULL
       || !g_str_has_suffix (arcview_shp_filename, ".shp"))
-    g_error ("Need the name of an ArcView shape (.shp) file.");
-  poptFreeContext (option);
+    {
+      g_error ("Need the name of an ArcView shape (.shp) file.");
+    }
+  g_option_context_free (context);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);

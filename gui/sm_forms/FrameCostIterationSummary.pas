@@ -4,13 +4,13 @@ unit FrameCostIterationSummary;
 FrameCostIterationSummary.pas/dfm
 ---------------------------------
 Begin: 2005/01/23
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version number: $Revision: 1.17 $
+Last revision: $Date: 2011-10-12 14:42:21 $ $Author: rhupalo $
+Version number: $Revision: 1.23.2.10 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -110,7 +110,13 @@ interface
 
       procedure resetArrays( len: integer );
 
-      procedure calculateDestrCostsForDay( pt: TProductionType; const day, units, animals: integer );
+      procedure calculateDestrCostsForDay(
+        pt: TProductionType;
+        const day: integer;
+        const unitsDestroyedAll, animalsDestroyedAll: integer;
+        const unitsDcdOnly, animalsDcdOnly: integer;
+        const unitsDcdAfterDeadInQueue, animalsDcdAfterDeadInQueue: integer
+      );
 
       procedure calculateVaccCostsForDay(
         pt: TProductionType;
@@ -134,7 +140,7 @@ interface
       destructor destroy(); override;
 
       procedure resetSim( db: TSMDatabase; sim: TSMSimulationInput; pt: TProductionType; newItr: Integer = -1 );
-      procedure setProdType( pt: TProductionType );
+      procedure setProdType( pt: TProductionType; const simIsRunning: boolean );
 
       procedure reset();
 
@@ -156,7 +162,6 @@ implementation
   uses
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -336,7 +341,7 @@ implementation
           db2 := _smdb as TSqlDatabase;
           _sqlRes := TSqlResult.Create( db2 );
 
-          setProdType( pt );
+          setProdType( pt, false );
         end
       ;
 
@@ -345,10 +350,14 @@ implementation
   ;
 
 
-  procedure TFrameCostIterationSummary.setProdType( pt: TProductionType );
+  procedure TFrameCostIterationSummary.setProdType( pt: TProductionType; const simIsRunning: boolean );
     begin
       dbcout( 'TFrameCostIterationSummary.setProdType...', DBFRAMECOSTITERATIONSUMMARY );
       _selectedPT := pt;
+
+      if( simIsRunning ) then
+        _currentItr := -1
+      ;
 
 			setUpFromDatabase( _currentItr );
       dbcout( 'Done TFrameCostIterationSummary.setProdType', DBFRAMECOSTITERATIONSUMMARY );
@@ -381,7 +390,10 @@ implementation
       currentPTID: integer;
       currentPT: TProductionType;
 
-      destrUnitCount, destrAnimalCount: integer;
+      desnUAll, desnAAll: integer;
+      desnUDcd, desnADcd: integer;
+      desnUDcdInDestrQueue, desnADcdInDestrQueue: integer;
+
       vaccUnitCount, vaccAnimalCount: integer;
       animalsAlreadyVaccinated: longint;
     begin
@@ -445,9 +457,20 @@ implementation
           + ' desnUAll,'
           + ' desnAAll,'
 
+          // Subset of "destructions" that required only cleaning and disinfection
+          // (i.e., dead-from-disease units that are destroyed)
+          //AR:deadDV
+          + ' desnUDcd,'
+          + ' desnADcd,'
+
+          // Subset of destructions that required only cleaning and disinfection which
+          // were already queued for destruction when the units died
+          + ' desnUDcdInDestrQueue,'
+          + ' desnADcdInDestrQueue,'
+
           // New daily counts for vaccination for any reason
-          + ' vaccnUAll,'
-          + ' vaccnAAll'
+          + ' vacnUAll,'
+          + ' vacnAAll'
         + ' FROM'
           + ' outDailyByProductionType'
         + ' WHERE'
@@ -493,37 +516,72 @@ implementation
             raise exception.Create( 'Day is unspecified in TFrameSingleCostCurve.setUpFromDatabase' )
           ;
 
-          if( null <> row.field('desnUAll') ) then
-            destrUnitCount := row.field('desnUAll')
-          else
-            destrUnitCount := 0
-          ;
 
-          if( null <> row.field('desnAAll') ) then
-            destrAnimalCount := row.field('desnAAll')
-          else
-            destrAnimalCount := 0
-          ;
-
-          if( null <> row.field('vaccnUAll') ) then
-            vaccUnitCount := row.field('vaccnUAll')
+          if( null <> row.field('vacnUAll') ) then
+            vaccUnitCount := row.field('vacnUAll')
           else
             vaccUnitCount := 0
           ;
 
-          if( null <> row.field('vaccnAAll') ) then
-            vaccAnimalCount := row.field('vaccnAAll')
+          if( null <> row.field('vacnAAll') ) then
+            vaccAnimalCount := row.field('vacnAAll')
           else
             vaccAnimalCount := 0
           ;
 
-          // Calculate daily costs, if needed
-          //---------------------------------
-          if( _smSim.costTrackDestruction ) then
-            calculateDestrCostsForDay( currentPT, row.field('day'), destrUnitCount, destrAnimalCount )
+          //AR:deadDV
+          if( null <> row.field('desnUAll') ) then
+            desnUAll := row.field('desnUAll')
+          else
+            desnUAll := 0
           ;
 
-          if( _smSim.costTrackVaccination ) then
+          if( null <> row.field('desnAAll') ) then
+            desnAAll := row.field('desnAAll')
+          else
+            desnAAll := 0
+          ;
+
+          if( null <> row.field('desnUDcd') ) then
+            desnUDcd := row.field('desnUDcd')
+          else
+            desnUDcd := 0
+          ;
+
+          if( null <> row.field('desnADcd') ) then
+            desnADcd := row.field('desnADcd')
+          else
+            desnADcd := 0
+          ;
+
+          if( null <> row.field('desnUDcdInDestrQueue') ) then
+            desnUDcdInDestrQueue := row.field('desnUDcdInDestrQueue')
+          else
+            desnUDcdInDestrQueue := 0
+          ;
+
+          if( null <> row.field('desnADcdInDestrQueue') ) then
+            desnADcdInDestrQueue := row.field('desnADcdInDestrQueue')
+          else
+            desnADcdInDestrQueue := 0
+          ;
+
+          // Calculate daily costs, if needed
+          //---------------------------------
+          if( _smSim.controlParams.useDestructionGlobal And _smSim.costTrackDestruction ) then  // fix for issue 2529
+            calculateDestrCostsForDay(
+              currentPT,
+              row.field('day'),
+              desnUAll,
+              desnAAll,
+              desnUDcd,
+              desnADcd,
+              desnUDcdInDestrQueue,
+              desnADcdInDestrQueue
+            )
+          ;
+
+          if( _smSim.controlParams.useVaccGlobal And _smSim.costTrackVaccination ) then  // fix for issue 2529
             calculateVaccCostsForDay( currentPT, row.field('day'), vaccUnitCount, vaccAnimalCount, animalsAlreadyVaccinated )
           ;
 
@@ -574,9 +632,26 @@ implementation
          		( ptit.current().productionTypeDescr = selectedPTName ) // This production type is selected
 					then
             begin
-              animalsAlreadyVaccinated := ptit.current().currentOutputs.vaccATotal - ptit.current().currentOutputs.vaccnAAll;
-              calculateDestrCostsForDay( ptit.current(), day, ptit.current().currentOutputs.desnUAll, ptit.current().currentOutputs.desnAAll );
-              calculateVaccCostsForDay( ptit.current(), day, ptit.current().currentOutputs.vaccnUAll, ptit.current().currentOutputs.vaccnAAll, animalsAlreadyVaccinated );
+              if( _smSim.controlParams.useDestructionGlobal And _smSim.costTrackDestruction ) then  // fix for issues 2518, 2529
+                calculateDestrCostsForDay(
+                  ptit.current(),
+                  day,
+                  ptit.current().currentOutputs.desnUAll,
+                  ptit.current().currentOutputs.desnAAll,
+                  ptit.current().currentOutputs.desnUDcd,
+                  ptit.current().currentOutputs.desnADcd,
+                  ptit.current().currentOutputs.desnUDcdInDestrQueue,
+                  ptit.current().currentOutputs.desnADcdInDestrQueue
+                )
+              ;
+
+              if( _smSim.controlParams.useVaccGlobal And _smSim.costTrackVaccination ) then  // fix for issue 2518, 2529
+                begin
+                  animalsAlreadyVaccinated := ptit.current().currentOutputs.vaccAAll - ptit.current().currentOutputs.vacnAAll;
+                  calculateVaccCostsForDay( ptit.current(), day, ptit.current().currentOutputs.vacnUAll, ptit.current().currentOutputs.vacnAAll, animalsAlreadyVaccinated );
+                end
+              ;
+                  
               updateCumulArraysForDay( day );
             end
           ;
@@ -678,7 +753,13 @@ implementation
 //-----------------------------------------------------------------------------
 // Cost calculations
 //-----------------------------------------------------------------------------
-  procedure TFrameCostIterationSummary.calculateDestrCostsForDay( pt: TProductionType; const day, units, animals: integer );
+  procedure TFrameCostIterationSummary.calculateDestrCostsForDay(
+        pt: TProductionType;
+        const day: integer;
+        const unitsDestroyedAll, animalsDestroyedAll: integer;
+        const unitsDcdOnly, animalsDcdOnly: integer;
+        const unitsDcdAfterDeadInQueue, animalsDcdAfterDeadInQueue: integer
+      );
     var
       arrPos: integer;
       val: double;
@@ -690,30 +771,56 @@ implementation
       dbcout( 'arrPos: ' + intToStr( arrPos ), DBFRAMECOSTITERATIONSUMMARY );
       dbcout( '_arrAppraisal.count: ' + intToStr( _arrAppraisal.count ), DBFRAMECOSTITERATIONSUMMARY );
 
-      val := pt.costParams.destrAppraisalCosts( units );;
-      _arrAppraisal[arrPos] := _arrAppraisal[arrPos] + val;
-      _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+      if( pt.isDestrTarget ) then
+        begin
+          val := pt.costParams.destrAppraisalCosts( unitsDestroyedAll, unitsDcdOnly, unitsDcdAfterDeadInQueue );
+          _arrAppraisal[arrPos] := _arrAppraisal[arrPos] + val;
+          _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
 
-      val := pt.costParams.destrCleaningCosts( units );
-      _arrCAndD[arrPos] := _arrCAndD[arrPos] + val;
-      _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+          val := pt.costParams.destrCleaningCosts( unitsDestroyedAll, unitsDcdOnly, unitsDcdAfterDeadInQueue );
+          _arrCAndD[arrPos] := _arrCAndD[arrPos] + val;
+          _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
 
-      val := pt.costParams.destrEuthanasiaCosts( animals );
-      _arrEuthanasia[arrPos] := _arrEuthanasia[arrPos] + val;
-      _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+          val := pt.costParams.destrEuthanasiaCosts( animalsDestroyedAll, animalsDcdOnly );
+          _arrEuthanasia[arrPos] := _arrEuthanasia[arrPos] + val;
+          _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
 
-      val := pt.costParams.destrIndemnificationCosts( animals );
-      _arrIndemnification[arrPos] := _arrIndemnification[arrPos] + val;
-      _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+          val := pt.costParams.destrIndemnificationCosts( animalsDestroyedAll, animalsDcdOnly, animalsDcdAfterDeadInQueue );
+          _arrIndemnification[arrPos] := _arrIndemnification[arrPos] + val;
+          _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
 
-      val := pt.costParams.destrDisposalCosts( animals );
-      _arrDisposal[arrPos] := _arrDisposal[arrPos] + val;
-      _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+          val := pt.costParams.destrDisposalCosts( animalsDestroyedAll, animalsDcdOnly, animalsDcdAfterDeadInQueue );
+          _arrDisposal[arrPos] := _arrDisposal[arrPos] + val;
+          _arrDestrSubtotal[arrPos] := _arrDestrSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+        end
+      else
+        begin
+          _arrAppraisal[arrPos] := 0.0;
+          _arrDestrSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+
+          _arrCAndD[arrPos] := 0.0;
+          _arrDestrSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+
+          _arrEuthanasia[arrPos] := 0.0;
+          _arrDestrSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+
+          _arrIndemnification[arrPos] := 0.0;
+          _arrDestrSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+
+          _arrDisposal[arrPos] := 0.0;
+          _arrDestrSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+        end
+      ;
 
       dbcout( 'Done TFrameCostIterationSummary.calculateDestrCostsForDay', DBFRAMECOSTITERATIONSUMMARY );
     end
@@ -736,15 +843,29 @@ implementation
 
       arrPos := day - 1;
 
-      val := pt.costParams.vaccSetupCosts( units );
-      _arrVaccSetup[arrPos] := _arrVaccSetup[arrPos] + val;
-      _arrVaccSubtotal[arrPos] := _arrVaccSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+      if( pt.isVaccTarget ) then
+        begin
+          val := pt.costParams.vaccSetupCosts( units );
+          _arrVaccSetup[arrPos] := _arrVaccSetup[arrPos] + val;
+          _arrVaccSubtotal[arrPos] := _arrVaccSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
 
-      val := pt.costParams.vaccVaccinationDailyCosts( animals, allAnimalsVacc );
-      _arrVacc[arrPos] := _arrVacc[arrPos] + val;
-      _arrVaccSubtotal[arrPos] := _arrVaccSubtotal[arrPos] + val;
-      _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+          val := pt.costParams.vaccVaccinationDailyCosts( animals, allAnimalsVacc );
+          _arrVacc[arrPos] := _arrVacc[arrPos] + val;
+          _arrVaccSubtotal[arrPos] := _arrVaccSubtotal[arrPos] + val;
+          _arrTotal[arrPos] := _arrTotal[arrPos] + val;
+        end
+      else
+        begin
+          _arrVaccSetup[arrPos] := 0.0;
+          _arrVaccSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+
+          _arrVacc[arrPos] := 0.0;
+          _arrVaccSubtotal[arrPos] := 0.0;
+          _arrTotal[arrPos] := 0.0;
+        end
+      ;
       
       dbcout( 'TFrameCostIterationSummary.calculateVaccCostsForDay', DBFRAMECOSTITERATIONSUMMARY );
     end
@@ -961,7 +1082,6 @@ procedure TFrameCostIterationSummary.Splitter1Moved(Sender: TObject);
 
   procedure TFrameCostIterationSummary.cbxShowChartClick(Sender: TObject);
     begin
-      dbcout2('Inside cbxShowChartClick.');
       resizeContents();
     end
   ;

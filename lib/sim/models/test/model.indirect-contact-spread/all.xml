@@ -20,8 +20,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 contact each day.  The distance of contacts
     is fixed at 10 km.
     
     The probability of infection given exposure is 1.
@@ -69,8 +68,7 @@
     1 day, infectiousness with clinical signs lasts 1 day, and immunity lasts 3
     days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 contact each day.  The distance of contacts
     is fixed at 10 km.
     
     The probability of infection given exposure is 1.
@@ -119,8 +117,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 0.5 km.
     
     The probability of infection given exposure is 1.
@@ -129,10 +126,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>C</td>  <td>S</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -157,8 +154,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 2.95 km.
     
     The probability of infection given exposure is 1.
@@ -167,10 +163,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>         <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>C</td>  <td>S</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -195,8 +191,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 3.05 km.
     
     The probability of infection given exposure is 1.
@@ -205,10 +200,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>C</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -233,8 +228,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 7.45 km.
     
     The probability of infection given exposure is 1.
@@ -243,10 +237,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>         <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>C</td>  <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -271,8 +265,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 7.55 km.
     
     The probability of infection given exposure is 1.
@@ -281,10 +274,10 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>S</td>  <td>C</td></tr>
   </output>
 </deterministic-test>
 
@@ -309,8 +302,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 contact each day
-    when used with fixed "random" numbers of 0.5.  The distance of contacts is
+    The contact rate is fixed at 1 each day.  The distance of contacts is
     fixed at 15 km.
     
     The probability of infection given exposure is 1.
@@ -319,10 +311,235 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td>  <td>Susceptible</td>  <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td>  <td>Susceptible</td>  <td>InfectiousClinical</td></tr>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>S</td>  <td>C</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, &lt; distance to nearest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Test choice of units by distance.  Choose a contact distance less than the
+    distance to the nearest susceptible unit.
+
+    NB: This test case does not care about secondary spread, so we end the test
+    before that can happen.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_1</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 0.5 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>C</td>  <td>S</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, just &lt; 1/2 way from nearest to 2nd nearest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Run again, but choose a contact distance just under the halfway point
+    between the nearest and 2nd nearest susceptible units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_2</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 2.95 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>L</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>C</td>  <td>S</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, just &gt; 1/2 way from nearest to 2nd nearest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Run again, but choose a contact distance just past the halfway point
+    between the nearest and 2nd nearest susceptible units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_3</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 3.05 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>C</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, just &lt; 1/2 way from 2nd nearest to farthest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Run again, but choose a contact distance just under the halfway point
+    between the 2nd nearest and farthest susceptible units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_4</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 7.45 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>L</td>  <td>S</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>C</td>  <td>S</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, just &gt; 1/2 way from 2nd nearest to farthest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Run again, but choose a contact distance just past the halfway point
+    between the 2nd nearest and farthest susceptible units.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_5</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 7.55 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>S</td>  <td>C</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>indirect-contact-spread</category>
+  <short-name>4 units, &gt; distance to farthest, units' locations in projected coordinates</short-name>
+
+  <description>
+    Run again, but choose a contact distance greater than the distance to the
+    farthest susceptible unit.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>12 August 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>4herds_line_xy</herd-file>
+
+  <parameter-file>spread_dist_6</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 3 days.
+    
+    The contact rate is fixed at 1 each day.  The distance of contacts is
+    fixed at 15 km.
+    
+    The probability of infection given exposure is 1.
+    
+    There is no detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>S</td></tr>
+    <tr><td>C</td>  <td>S</td>  <td>S</td>  <td>L</td></tr>
+    <tr><td>N</td>  <td>S</td>  <td>S</td>  <td>C</td></tr>
   </output>
 </deterministic-test>
 
@@ -351,9 +568,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
 
-    The mean movement rate from cattle units to cattle units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  No parameters are set
+    The contact rate from cattle units to cattle units is fixed at 1 contact
+    each day.  The distance of contacts is fixed at 10 km.  No parameters are set
     for movement from cattle units to pig units.
 
     The probability of infection given exposure is 1.
@@ -403,9 +619,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
     
-    The mean movement rate from cattle units to pig units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  No parameters are set
+    The contact rate from cattle units to cattle units is fixed at 1 contact
+    each day.  The distance of contacts is fixed at 10 km.  No parameters are set
     for movement from cattle units to cattle units.
 
     The probability of infection given exposure is 1.
@@ -454,9 +669,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
 
-    The mean movement rate from cattle units to pig units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  The parameters for
+    The contact rate from cattle units to cattle units is fixed at 1 contact
+    each day.  The distance of contacts is fixed at 10 km.  The parameters for
     movement from cattle units to cattle units are the same.
 
     The probability of infection given exposure is 1.
@@ -508,9 +722,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  No parameters are
+    The contact rate from pig units to cattle units is fixed at 1 contact each
+    day.  The distance of contacts is fixed at 10 km.  No parameters are
     set for movement from cattle units to pig units.
 
     The probability of infection given exposure is 1.
@@ -560,9 +773,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  No parameters are set
+    The contact rate from pig units to cattle units is fixed at 1 contact each
+    day.  The distance of contacts is fixed at 10 km.  No parameters are set
     for movement from cattle units to pig units.
 
     The probability of infection given exposure is 1.
@@ -622,9 +834,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 contact each day when used with fixed "random" numbers
-    of 0.5.  The distance of contacts is fixed at 10 km.  No parameters are set
+    The contact rate from pig units to cattle units is fixed at 1 contact each
+    day.  The distance of contacts is fixed at 10 km.  No parameters are set
     for movement from cattle units to pig units.
 
     The probability of infection given exposure is 1.
@@ -688,7 +899,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>1</td></tr>
@@ -734,7 +945,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>2</td></tr>
@@ -779,7 +990,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>0</td></tr>
@@ -825,7 +1036,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>0</td></tr>
@@ -873,7 +1084,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>1</td></tr>

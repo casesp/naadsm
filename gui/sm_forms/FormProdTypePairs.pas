@@ -4,13 +4,13 @@ unit FormProdTypePairs;
 FormProdTypePairs.pas/dfm
 -------------------------
 Begin: 2005/04/02
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.26 $
+Last revision: $Date: 2009-11-09 00:46:53 $ $Author: areeves $
+Version: $Revision: 1.29 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -115,7 +115,6 @@ implementation
 
 	uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n,
@@ -230,8 +229,6 @@ implementation
       ;
 
       allPairsList := TProductionTypePairList.create( ptList );
-      dbcout2( 'allPairsList: ' + intToStr( allPairsList.Count ) );
-      dbcout2( 'selectedPairsList: ' + intToStr( selectedPairsList.Count ) );
 			allPairsList.subtract( selectedPairsList );
 
       it.Free();
@@ -261,7 +258,13 @@ implementation
 //-----------------------------------------------------------------------------
 	function TFormProdTypePairs.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.includeContactSpreadGlobal or _smScenarioCopy.simInput.includeAirborneSpreadGlobal ) then
+    	if
+        ( _smScenarioCopy.simInput.includeContactSpreadGlobal )
+      or
+        ( _smScenarioCopy.simInput.includeAirborneSpreadGlobal )
+      or
+        ( _smScenarioCopy.simInput.includeLocalAreaSpreadGlobal )
+      then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin
@@ -340,7 +343,9 @@ implementation
 						+ lbxDest.Items[lbxDest.ItemIndex]) = -1
 					;
 
-					if( not BitBtnAdd.Enabled ) then ShowMessage( 'This combination of production types is already selected' );
+					if( not BitBtnAdd.Enabled ) then
+            ShowMessage( tr( 'This combination of production types is already selected' ) )
+          ;
 				end
 			;
 
@@ -481,59 +486,7 @@ implementation
 
       inherited updateScenarioData();
     end;
-    
-(*
-//-----------------------------------------------------------------------------
-// Data and database functions
-//-----------------------------------------------------------------------------
-  procedure TFormProdTypePairs.updateDatabase();
-    var
-      ptp: TProductionTypePair;
-      q: string;
-    begin
 
-      ptp := selectedPairsList.first();
-      while( ptp <> nil ) do
-        begin
-          if( ptp.added ) and ( not ptp.isInDB ) then
-            begin
-              dbcout( 'PAIR ADDED: ' + ptp.pairDescr, DBFORMPRODTYPEPAIRS );
-              q := 'INSERT INTO inProductionTypePair ( sourceProductionTypeID, destProductionTypeID ) '
-                + 'VALUES ( ' + intToStr( ptp.source.productionTypeID ) + ', ' + intToStr( ptp.dest.productionTypeID ) + ' )'
-              ;
-              _smdb.execute(q);
-            end
-          ;
-          ptp := selectedPairsList.next();
-        end
-      ;
-
-      ptp := allPairsList.first();
-      while( ptp <> nil ) do
-        begin
-          if( ptp.removed ) then
-            begin
-              dbcout( 'PAIR REMOVED: ' + ptp.pairDescr, DBFORMPRODTYPEPAIRS );
-              q := 'DELETE FROM inProductionTypePair WHERE '
-                + 'sourceProductionTypeID = ' +  intToStr( ptp.source.productionTypeID ) + ' '
-                + 'AND destProductionTypeID = ' + intToStr( ptp.dest.productionTypeID )
-              ;
-              _smdb.execute( q );
-            end
-          ;
-          ptp := allPairsList.next();
-        end
-      ;
-
-      if( selectedPairsList.Count = 0 ) then
-        begin
-          q := 'UPDATE inGeneral SET includeContactSpread = 0, includeAirborneSpread = 0';
-          _smdb.execute( q );
-        end
-      ;
-    end
-  ;
-*)
 
   // FIX ME: I'm not crazy about the latter 1/2 of this function (it strikes me
   // as a bit of a hack), but it will do for now.

@@ -4,11 +4,11 @@ unit FormSelectProdTypes;
 FormSelectProdTypes.pas/dfm
 ---------------------------
 Begin: 2008/04/21
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
+Last revision: $Date: 2008-11-25 22:00:30 $ $Author: areeves $
 Version number: $Revision: 1.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2008 Animal Population Health Institute, Colorado State University
 

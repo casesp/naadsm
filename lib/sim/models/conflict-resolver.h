@@ -20,8 +20,7 @@
 #ifndef CONFLICT_RESOLVER_H
 #define CONFLICT_RESOLVER_H
 
-char *conflict_resolver_interface_version (void);
-ergadm_model_t *conflict_resolver_new (scew_element * params, HRD_herd_list_t * herds,
-                                       ZON_zone_list_t * zones);
+naadsm_model_t *conflict_resolver_new (scew_element * params, HRD_herd_list_t *,
+                                       projPJ, ZON_zone_list_t *);
 
 #endif

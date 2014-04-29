@@ -4,13 +4,13 @@ unit FormContactSpread;
 FormContactSpread.pas/dfm
 -------------------------
 Begin: 2005/06/17
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version number: $Revision: 1.36 $
+Last revision: $Date: 2009-11-09 04:23:08 $ $Author: areeves $
+Version number: $Revision: 1.41 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -20,7 +20,7 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
-  	// Standard includes
+    // Standard includes
     Windows,
     Messages,
     SysUtils,
@@ -33,6 +33,8 @@ interface
     ExtCtrls,
     StdCtrls,
     Buttons,
+    Menus,
+    ActnPopupCtrl,
 
     // Base class
     FormSMWizardBase,
@@ -44,7 +46,7 @@ interface
     FunctionDictionary,
 
     // Additional controls/widgets
-    FrameContactSpreadMaster, Menus, ActnPopupCtrl
+    FrameContactSpreadMaster
   ;
 
   type TFormContactSpread = class( TFormProdTypePairBase )
@@ -70,43 +72,42 @@ interface
       procedure prepFunctionDicts(); override;
       procedure giveListsToEditors(); override;
 
-    	function dataIsValid(): boolean; override;
+      function dataIsValid(): boolean; override;
 
       procedure copyParameters( const src: TProductionTypePair; dest: TProductionTypePair ); override;
 
     public
-    	constructor create( AOwner: TComponent ); override;
+      constructor create( AOwner: TComponent ); override;
       destructor destroy(); override;
 
-			function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
     end
    ;
 
    const
-   	DBFORMCONTACTSPREAD: boolean = false; // set to true to enable debugging messages for this unit.
+    DBFORMCONTACTSPREAD: boolean = false; // set to true to enable debugging messages for this unit.
 
 implementation
 
 {$R *.dfm}
 
-	uses
-		// Utility functions
+  uses
+    // Utility functions
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     I88n,
 
     // Data structures
-    ContactModel,
+    ContactSpreadParams,
     ChartFunction,
     QStringMaps,
     FunctionEnums
   ;
 
- 	constructor TFormContactSpread.create( AOwner: TComponent );
-  	begin
+  constructor TFormContactSpread.create( AOwner: TComponent );
+    begin
       inherited create( AOwner );
       translateUI();
 
@@ -118,22 +119,22 @@ implementation
       fraParams.fraIndirect.setForm( self );
 
       fraParams.fraDirect.smcDistanceDistr.setForm( self );
-      fraParams.fraDirect.smcTransportDelay.setForm( self );
+      fraParams.fraDirect.smcProportionInShipment.setForm( self );
       fraParams.fraDirect.smrMovementControl.setForm( self );
 
       fraParams.fraDirect.smrMovementControl.minY := 0.0;
       fraParams.fraDirect.smrMovementControl.maxY := 100.0;
-      fraParams.fraDirect.smrMovementControl.xUnits := UnitsDays;
-      fraParams.fraDirect.smrMovementControl.yUnits := UnitsPercent;
+      fraParams.fraDirect.smrMovementControl.xUnits := UDays;
+      fraParams.fraDirect.smrMovementControl.yUnits := UPercent;
 
       fraParams.fraIndirect.smcDistanceDistr.setForm( self );
-      fraParams.fraIndirect.smcTransportDelay.setForm( self );
+      fraParams.fraIndirect.smcProportionInShipment.setForm( self );
       fraParams.fraIndirect.smrMovementControl.setForm( self );
 
       fraParams.fraIndirect.smrMovementControl.minY := 0.0;
       fraParams.fraIndirect.smrMovementControl.maxY := 100.0;
-      fraParams.fraIndirect.smrMovementControl.xUnits := UnitsDays;
-      fraParams.fraIndirect.smrMovementControl.yUnits := UnitsPercent;
+      fraParams.fraIndirect.smrMovementControl.xUnits := UDays;
+      fraParams.fraIndirect.smrMovementControl.yUnits := UPercent;
 
       //fraParams.fraDirect.cbxFixedContactRate.OnClick := cbxFixedContactRateClick;
       //fraParams.fraIndirect.cbxFixedContactRate.OnClick := cbxFixedContactRateClick;
@@ -161,8 +162,8 @@ implementation
 
 
   destructor TFormContactSpread.destroy();
-  	begin
-   		inherited destroy();
+    begin
+      inherited destroy();
     end
   ;
 
@@ -171,24 +172,22 @@ implementation
   // Consequently, most wizard froms don't need to do any real validation.
   // Somewhere, the interface needs to have another check on this, though.
   function TFormContactSpread.dataIsValid(): boolean;
-  	begin
-    	result := fraParams.isValid();
+    begin
+      result := fraParams.isValid();
     end
   ;
 
 
   procedure TFormContactSpread.prepFunctionDicts();
-  	var
-    	ptp: TProductionTypePair;
-      i: integer;
+    var
       it: TFunctionDictionaryIterator;
     begin
       fraParams.fraDirect.smcDistanceDistr.clearList(); //.cboChartList.clear();
-      fraParams.fraDirect.smcTransportDelay.clearList(); //.cboChartList.clear();
+      fraParams.fraDirect.smcProportionInShipment.clearList(); //.cboChartList.clear();
       fraParams.fraDirect.smrMovementControl.clearList(); //.cboChartList.clear();
 
       fraParams.fraIndirect.smcDistanceDistr.clearList(); //.cboChartList.clear();
-      fraParams.fraIndirect.smcTransportDelay.clearList(); //.cboChartList.clear();
+      fraParams.fraIndirect.smcProportionInShipment.clearList(); //.cboChartList.clear();
       fraParams.fraIndirect.smrMovementControl.clearList(); //.cboChartList.clear();
 
       it := TFunctionDictionaryIterator.create( _fnList );
@@ -202,54 +201,37 @@ implementation
                   integer( CMDistanceDirect ):
                   if ( nil <> it.value().fn ) then
                     begin
-                  		fraParams.fraDirect.smcDistanceDistr.appendFunction( it.value().fn );
+                      fraParams.fraDirect.smcDistanceDistr.appendFunction( it.value().fn );
                       fraParams.fraIndirect.smcDistanceDistr.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
                     end
                   ;
 
                   integer( CMDistanceIndirect ):
                   if ( nil <> it.value().fn ) then
                     begin
-                  		fraParams.fraDirect.smcDistanceDistr.appendFunction( it.value().fn );
+                      fraParams.fraDirect.smcDistanceDistr.appendFunction( it.value().fn );
                       fraParams.fraIndirect.smcDistanceDistr.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
                     end
                   ;
 
-                  integer( CMDelayDirect ):
+                  integer( CMProportionInShipment ):
                   if ( nil <> it.value().fn ) then
-                    begin
-                  		fraParams.fraDirect.smcTransportDelay.appendFunction( it.value().fn );
-                      fraParams.fraIndirect.smcTransportDelay.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
-                    end
-                  ;
-
-                  integer( CMDelayIndirect ):
-                  if ( nil <> it.value().fn ) then
-                    begin
-                  		fraParams.fraDirect.smcTransportDelay.appendFunction( it.value().fn );
-                      fraParams.fraIndirect.smcTransportDelay.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
-                    end
+                    fraParams.fraDirect.smcProportionInShipment.appendFunction( it.value().fn )
                   ;
 
                   integer( CMMovementControlDirect ):
                   if ( nil <> it.value().fn ) then
                     begin
-             		      fraParams.fraDirect.smrMovementControl.appendFunction( it.value().fn );
+                      fraParams.fraDirect.smrMovementControl.appendFunction( it.value().fn );
                       fraParams.fraIndirect.smrMovementControl.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
                     end
                   ;
 
                   integer( CMMovementControlIndirect ):
                   if ( nil <> it.value().fn ) then
                     begin
-             		      fraParams.fraDirect.smrMovementControl.appendFunction( it.value().fn );
+                      fraParams.fraDirect.smrMovementControl.appendFunction( it.value().fn );
                       fraParams.fraIndirect.smrMovementControl.appendFunction( it.value().fn );
-                      it.value().RefCounter := 0;
                     end
                   ;
                 end;
@@ -261,43 +243,12 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-      for i := 0 to _ptpList.Count-1 do
-      	begin
-        	ptp := _ptpList.at(i);
-
-          if( ptp.direct <> nil ) then
-          	begin
-          		if( ptp.direct.pdfDistance <> nil ) then
-                _fnList.value( ptp.direct.distanceName ).incrRefCounter();
-
-              if( ptp.direct.pdfDelay <> nil ) then
-                _fnList.value( ptp.direct.delayName ).incrRefCounter();
-
-              if( ptp.direct.relMovementControl <> nil ) then
-                _fnList.value( ptp.direct.movementControlName ).incrRefCounter();
-            end
-          ;
-          if( ptp.indirect <> nil ) then
-          	begin
-          		if( ptp.indirect.pdfDistance <> nil ) then
-                _fnList.value( ptp.indirect.distanceName ).incrRefCounter();
-
-              if( ptp.indirect.pdfDelay <> nil ) then
-                _fnList.value( ptp.indirect.delayName ).incrRefCounter();
-
-              if( ptp.indirect.relMovementControl <> nil ) then
-                _fnList.value( ptp.indirect.movementControlName ).incrRefCounter();
-            end
-          ;
-        end
-      ;
     end
   ;
   
 
   procedure TFormContactSpread.giveListsToEditors();
-  	begin
+    begin
       // Each of the function editors needs to have access to the lists,
       // in order to know which have been updated.
 
@@ -310,32 +261,32 @@ implementation
       // This seems to be an adequate solution...
 
       fraParams.fraDirect.smcDistanceDistr.setFunctionDict( _fnList );
-      fraParams.fraDirect.smcTransportDelay.setFunctionDict( _fnList );
+      fraParams.fraDirect.smcProportionInShipment.setFunctionDict( _fnList );
       fraParams.fraDirect.smrMovementControl.setFunctionDict( _fnList );
 
       fraParams.fraIndirect.smcDistanceDistr.setFunctionDict( _fnList );
-      fraParams.fraIndirect.smcTransportDelay.setFunctionDict( _fnList );
+      fraParams.fraIndirect.smcProportionInShipment.setFunctionDict( _fnList );
       fraParams.fraIndirect.smrMovementControl.setFunctionDict( _fnList );
 
       fraParams.fraDirect.smcDistanceDistr.setModelList( _ptpList );
-      fraParams.fraDirect.smcTransportDelay.setModelList( _ptpList );
+      fraParams.fraDirect.smcProportionInShipment.setModelList( _ptpList );
       fraParams.fraDirect.smrMovementControl.setModelList( _ptpList );
 
       fraParams.fraIndirect.smcDistanceDistr.setModelList( _ptpList );
-      fraParams.fraIndirect.smcTransportDelay.setModelList( _ptpList );
+      fraParams.fraIndirect.smcProportionInShipment.setModelList( _ptpList );
       fraParams.fraIndirect.smrMovementControl.setModelList( _ptpList );
     end
   ;
 
 
-	function TFormContactSpread.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
-  	begin
-    	if( _smScenarioCopy.simInput.includeContactSpreadGlobal ) then
-    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+  function TFormContactSpread.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+    begin
+      if( _smScenarioCopy.simInput.includeContactSpreadGlobal ) then
+        result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
-      	begin
+        begin
           formDisplayed := false;
-      		nextForm := nextFormToShow;
+          nextForm := nextFormToShow;
           result := 0;
         end
       ;
@@ -344,7 +295,7 @@ implementation
 
 
   procedure TFormContactSpread.updateDisplay();
-  	begin
+    begin
       if( 0 = _ptpList.count ) then
         begin
           sbxAllParams.Visible := false;
@@ -354,27 +305,13 @@ implementation
         sbxAllParams.Visible := true
       ;
 
-    	if( nil <> _selectedPTP ) then
-      	begin
+      if( nil <> _selectedPTP ) then
+        begin
           _loadingForm := true;
 
-        	fraParams.Visible := true;
+          fraParams.Visible := true;
 
           fraParams.pnlIndirectContact.Align := alTop;
-          (*
-          // If both sets of parameters are visible,
-          // make sure that the vertical scrollbar is visible.
-          //--------------------------------------------------
-          if
-            ( fraParams.cbxIncludeDirect.checked )
-          and
-            ( fraParams.cbxIncludeIndirect.checked )
-          then
-            fraParams.pnlIndirectContact.Align := alTop
-          else
-            fraParams.pnlIndirectContact.Align := alTop //alClient
-          ;
-          *)
           
           // Set up the direct contact panel
           //--------------------------------
@@ -383,18 +320,25 @@ implementation
           if( _selectedPTP.includeDirect ) then
             begin
               fraParams.pnlDirectParams.Visible := true;
-          	  fraparams.pnlDirectContact.Height := _frameHeight + fraParams.pnlUseDirectContact.Height + 2;
+              fraparams.pnlDirectContact.Height := _frameHeight + fraParams.pnlUseDirectContact.Height + 2;
 
-            	if( nil = _selectedPTP.direct ) then
-                _selectedPTP.direct := TContactModel.create( CMDirect, _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
+              if( nil = _selectedPTP.direct ) then
+                _selectedPTP.direct := TContactSpreadParams.create( CMDirect, _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
               ;
 
-              fraParams.fraDirect.setContactModel( _selectedPTP.direct, _selectedPTP )
+              fraParams.fraDirect.setContactSpreadParams( _selectedPTP.direct, _selectedPTP );
+
+              if( not( _smScenarioCopy.simInput.useWithinHerdPrevalence ) ) then
+                begin
+                  fraParams.pnlDirectContact.Height := fraParams.pnlDirectContact.Height - 81;
+                  fraParams.Height := fraParams.Height - 81;
+                end
+              ;
             end
           else
             begin
               fraParams.pnlDirectParams.Visible := false;
-          	  fraparams.pnlDirectContact.Height := fraParams.pnlUseDirectContact.Height + 2;
+              fraparams.pnlDirectContact.Height := fraParams.pnlUseDirectContact.Height + 2;
             end
           ;
 
@@ -404,15 +348,15 @@ implementation
           fraParams.cbxIncludeIndirect.checked := _selectedPTP.includeIndirect;
 
           if( _selectedPTP.includeIndirect ) then
-          	begin
+            begin
               fraParams.pnlIndirectParams.visible := true;
               fraParams.pnlIndirectContact.Height := _frameHeight + fraParams.pnlUseIndirectContact.Height + 2;
 
-            	if( nil = _selectedPTP.indirect ) then
-              	_selectedPTP.indirect := TContactModel.create( CMIndirect, _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
+              if( nil = _selectedPTP.indirect ) then
+                _selectedPTP.indirect := TContactSpreadParams.create( CMIndirect, _selectedPTP.sim, _selectedPTP.dest.productionTypeID, _selectedPTP.source.productionTypeID )
               ;
               
-              fraParams.fraIndirect.setContactModel( _selectedPTP.indirect, _selectedPTP );
+              fraParams.fraIndirect.setContactSpreadParams( _selectedPTP.indirect, _selectedPTP );
             end
           else
             begin
@@ -422,26 +366,12 @@ implementation
           ;
 
           fraParams.pnlIndirectContact.Align := alTop;
-          (*
-          // If both sets of parameters are visible,
-          // make sure that the vertical scrollbar is visible.
-          //--------------------------------------------------
-          if
-            ( fraParams.cbxIncludeDirect.checked )
-          and
-            ( fraParams.cbxIncludeIndirect.checked )
-          then
-            fraParams.pnlIndirectContact.Align := alTop
-          else
-            fraParams.pnlIndirectContact.Align := alTop //alClient
-          ;
-          *)
 
           hideStar();
           _loadingForm := false;
         end
       else
-      	fraParams.Visible := false;
+        fraParams.Visible := false;
       ;
     end
   ;
@@ -452,8 +382,8 @@ implementation
       inherited;
 
       if( nil <> _selectedPTP ) then
-      	begin
-					_selectedPTP.includeDirect := fraParams.cbxIncludeDirect.Checked;
+        begin
+          _selectedPTP.includeDirect := fraParams.cbxIncludeDirect.Checked;
           updateDisplay();
           if ( not _loadingForm ) then
             showStar();
@@ -463,13 +393,13 @@ implementation
   ;
 
 
-	procedure TFormContactSpread.fraParamscbxIncludeIndirectClick( Sender: TObject );
+  procedure TFormContactSpread.fraParamscbxIncludeIndirectClick( Sender: TObject );
     begin
       inherited;
 
       if( nil <> _selectedPTP ) then
-      	begin
-      		_selectedPTP.includeIndirect := fraParams.cbxIncludeIndirect.checked;
+        begin
+          _selectedPTP.includeIndirect := fraParams.cbxIncludeIndirect.checked;
           updateDisplay();
           if ( not _loadingForm ) then
             showStar();
@@ -567,11 +497,8 @@ implementation
       dest.direct.meanContactRate := src.direct.meanContactRate;
       dest.direct.probInfect := src.direct.probInfect;
 
-      dest.direct.latentCanInfect := src.direct.latentCanInfect;
-      dest.direct.subClinicalCanInfect := src.direct.subClinicalCanInfect;
-
       dest.setChart( CMDistanceDirect, src.chart( CMDistanceDirect ) );
-      dest.setChart( CMDelayDirect, src.chart( CMDelayDirect ) );
+      dest.setChart( CMProportionInShipment, src.chart( CMProportionInShipment ) );
       dest.setChart( CMMovementControlDirect, src.chart( CMMovementControlDirect ) );
 
       // Indirect contact
@@ -583,12 +510,7 @@ implementation
       dest.indirect.meanContactRate := src.indirect.meanContactRate;
       dest.indirect.probInfect := src.indirect.probInfect;
 
-      // Remember that latent units cannot spread disease by indirect contact
-      dest.indirect.latentCanInfect := false;
-      dest.indirect.subClinicalCanInfect := src.indirect.subClinicalCanInfect;
-
       dest.setChart( CMDistanceIndirect, src.chart( CMDistanceIndirect ) );
-      dest.setChart( CMDelayIndirect, src.chart( CMDelayIndirect ) );
       dest.setChart( CMMovementControlIndirect, src.chart( CMMovementControlIndirect ) );
 
       dest.updated := true;
@@ -598,6 +520,6 @@ implementation
 
 
 initialization
-	RegisterClass( TFormContactSpread );
+  RegisterClass( TFormContactSpread );
 
 end.

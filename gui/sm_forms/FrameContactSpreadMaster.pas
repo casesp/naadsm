@@ -4,12 +4,12 @@ unit FrameContactSpreadMaster;
 FrameContactSpreadMaster.pas/dfm
 --------------------------------
 Begin: 2005/06/17
-Last revision: $Date: 2008/03/12 22:10:49 $ $Author: areeves $
+Last revision: $Date: 2009-11-09 04:23:08 $ $Author: areeves $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -69,11 +69,10 @@ implementation
 
   uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
-    ContactModel,
+    ContactSpreadParams,
 
     FormSMWizardBase
   ;
@@ -92,10 +91,10 @@ implementation
       fraIndirect.setContactType( CMIndirect );
 
       fraDirect.smcDistanceDistr.setForm( AOwner as TFormSMWizardBase );
-      fraDirect.smcTransportDelay.setForm( AOwner as TFormSMWizardBase );
+      fraDirect.smcProportionInShipment.setForm( AOwner as TFormSMWizardBase );
 
       fraIndirect.smcDistanceDistr.setForm( AOwner as TFormSMWizardBase );
-      fraIndirect.smcTransportDelay.setForm( AOwner as TFormSMWizardBase );
+      fraIndirect.smcProportionInShipment.setForm( AOwner as TFormSMWizardBase );
     end
   ;
 
@@ -120,9 +119,9 @@ implementation
   
   
   function TFrameContactSpreadMaster.isValid(): boolean;
-  	begin
+    begin
       if( pnlDirectParams.Visible ) and ( pnlIndirectParams.Visible ) then
-    	  result := ( fraDirect.isValid() ) and ( fraIndirect.isValid() )
+        result := ( fraDirect.isValid() ) and ( fraIndirect.isValid() )
       else if( pnlDirectParams.Visible ) and ( not( pnlIndirectParams.Visible ) ) then
         result := fraDirect.isValid()
       else if( not( pnlDirectParams.Visible ) ) and ( pnlIndirectParams.Visible ) then

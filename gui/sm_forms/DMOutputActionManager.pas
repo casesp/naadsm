@@ -4,13 +4,13 @@ unit DMOutputActionManager;
 DMOutputActionManager.pas
 -------------------------
 Begin: 2005/12/07
-Last revision: $Date: 2008/03/12 22:10:44 $ $Author: areeves $
-Version number: $Revision: 1.7 $
+Last revision: $Date: 2010-06-28 18:29:03 $ $Author: areeves $
+Version number: $Revision: 1.8.12.1 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -31,6 +31,7 @@ interface
 
 	type TDMOutputActionManager = class(TDataModule)
 			ActionManager1: TActionManager;
+
 			acnSaveData: TAction;
 			acnSaveCharts: TAction;
 			acnPrintData: TAction;
@@ -38,6 +39,10 @@ interface
 			acnCopyData: TAction;
 			acnCopyCharts: TAction;
 			acnClose: TAction;
+
+      acnCopyRawData: TAction;
+      acnExportRawData: TAction;
+
 			ImageList1: TImageList;
 
     protected
@@ -49,9 +54,6 @@ interface
 			destructor destroy(); override;
 		end
 	;
-	
-	const
-		DBDMOUTPUTACTIONMANAGER: boolean = false; // Set to true to enable debugging messages for this unit.
 
 
 implementation
@@ -60,16 +62,23 @@ implementation
 
   uses
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
+
+	
+	const
+		DBSHOWMSG: boolean = false; // Set to true to enable debugging messages for this unit.
+
 
 
   constructor TDMOutputActionManager.create( AOwner: TComponent );
     begin
       inherited create( AOwner );
       translateUI();
+
+      acnCopyRawData.visible := false;
+      acnExportRawData.visible := false;
     end
   ;
 
@@ -90,6 +99,7 @@ implementation
           acnPrintCharts.Caption := tr( 'Print chart(s)...' );
           acnCopyData.Caption := tr( 'Copy data to clipboard' );
           acnCopyCharts.Caption := tr( 'Copy chart(s) to clipboard' );
+          acnExportRawData.Caption := tr( 'Export &raw data for selected output to file...' );
           acnClose.Caption := tr( 'Close' );
         end
       ;
@@ -104,6 +114,7 @@ implementation
           acnClose.Caption := tr( '&Close' );
           acnCopyData.Caption := tr( '&Copy data to clipboard' );
           acnCopyCharts.Caption := tr( 'C&opy chart(s) to clipboard' );
+          acnCopyRawData.Caption := tr( 'Copy &raw data for selected output to clipboard' );
         end
       ;
 
@@ -123,11 +134,13 @@ implementation
     end
   ;
 
+
   destructor TDMOutputActionManager.destroy();
     begin
-      dbcout( 'DATA MODULE IS BEING DESTROYED', DBDMOUTPUTACTIONMANAGER );
+      dbcout( 'DATA MODULE IS BEING DESTROYED', DBSHOWMSG );
       inherited destroy();
     end
   ;
+
 
 end.

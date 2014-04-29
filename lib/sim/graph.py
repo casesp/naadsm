@@ -7,18 +7,18 @@ number of units in each state on each day.  It will plot results from specific
 requested simulations on specific requested nodes or, by default, will plot the
 variables from all simulations."""
 
-__author__ = "Neil Harvey <neilharvey@canada.com>"
+__author__ = "Neil Harvey <neilharvey@gmail.com>"
 __date__ = "August 2004"
 
 import getopt
 import os
+import re
 import string
 import sys
-from line import Line
+from math import floor
+from sets import Set
 
-STATE_NAMES = ["Susceptible", "Latent", "Infectious Subclinical",
-  "Infectious Clinical", "Naturally Immune", "Vaccine Immune", "Destroyed"]
-
+STATE_NAMES = ["Susc", "Lat", "Subc", "Clin", "NImm", "VImm", "Dest", "Dead"]
 
 
 
@@ -35,8 +35,126 @@ Options are:
 -e, --exclude TEXT          exclude matching variable names
 --lw N                      set the gnuplot linewidth
 --lt N                      set the gnuplot linetype
+--hline N                   draw a horizontal line at value N
+--right-y                   put 0-100 marks on the right y-axis
 --eps, --epsfile FILENAME   output to an encapsulated postscript file
 --png, --pngfile FILENAME   output to a portable network graphics file"""
+
+
+
+def odd (n):
+	"""Returns 1 if the given number is odd, 0 otherwise."""
+	return n%2
+
+
+
+def median (X, sorted=0):
+	"""Returns the median for a variable."""
+	if not sorted:
+		X.sort()
+	n = len(X)
+	# The usual formula says take element (n+1)/2, but since Python uses zero-
+	# based indexing, we substitute (n-1)/2.
+	midpoint = (n-1)/2 # integer arithmetic; no fractional part
+	if odd(n):
+		return X[midpoint]
+	else:
+		return 0.5*(X[midpoint]+X[midpoint+1])
+
+
+
+def percentile (X, p, sorted=0):
+	"""Returns a quantile value for a variable.  For example, to get the
+	75th percentile, use p=0.75."""
+	if not sorted:
+		X.sort()
+	n = len(X)
+	i = int (floor (p * (n-1)))
+	delta = p * (n-1) - i
+
+	try:
+		v = (1 - delta)*X[i] + delta*X[i+1]
+	except IndexError, details:
+		print "X =", X
+		print "p =", p
+		print "i =", i
+		raise IndexError (details)
+	
+	return v
+
+
+
+class Line (list):
+	"""A line for a plot or graph; contains a title and a set of points."""
+	def __init__ (self, title=None, points=[]):
+		"""Constructor."""
+		self.title = title
+		self += points
+
+
+
+	def medianx (self, quantiles=False):
+		"""Combines multiple points with the same x-coordinate into a median
+		value.
+		
+		Parameters:
+		quantiles = True  adds error bars showing 5% and 95% quantiles
+		"""
+		xcoords = Set ([x for x,y in self])
+		yvalue = {}
+		lowerbar = {}
+		upperbar = {}
+		for x in xcoords:
+			yvalue[x] = []
+			
+		for x,y in self:
+			yvalue[x].append (y)
+		
+		for x in xcoords:
+			yvalue[x].sort()
+			med = median (yvalue[x], sorted=True)
+			if quantiles:
+				if len (yvalue[x]) >= 2:
+					lowerbar[x] = percentile (yvalue[x], 0.05, sorted=True)
+					upperbar[x] = percentile (yvalue[x], 0.95, sorted=True)
+				else:
+					lowerbar[x] = yvalue[x][0]
+					upperbar[x] = yvalue[x][0]
+			yvalue[x] = med
+
+		i = 0
+		while (i < len(self)):
+			x = self[i][0]
+			# This is the first point with x-coordinate 'x'.  Set its y-
+			# coordinate to the median value for 'x',
+			if quantiles:
+				self[i] = (x, yvalue[x], lowerbar[x], upperbar[x])
+			else:
+				self[i] = (x, yvalue[x])
+			# then erase all other points with that x-coordinate.
+			for j in range (len(self)-1, i, -1):
+				if self[j][0] == x:
+					del self[j]
+			i += 1
+
+
+
+	def __repr__ (self):
+		"""Returns a Python expression that could be used to re-create this
+		object."""
+		return "Line (" + self.title.__repr__() + ", " + list.__repr__ (self) \
+		  + ")"
+
+
+
+	def __str__ (self):
+		"""Returns the informal string representation of this object."""
+		s = ""
+		if self.title:
+			s += self.title + " "
+		s += list.__repr__ (self)
+		return s
+
 
 
 def main ():
@@ -51,6 +169,8 @@ def main ():
 	yrange = ('', '')
 	linewidth = 3
 	linetype = 1
+	hline = None
+	righty = False
 	excluded_varnames = []
 
 	# Get any command-line arguments.
@@ -58,7 +178,7 @@ def main ():
 		opts, args = getopt.getopt (sys.argv[1:], "o:y:x:n:r:e:h", ["eps=",
 		  "epsfile=", "outfile=", "png=", "pngfile=", "ylabel=", "xlabel=",
 		  "yrange=", "xrange=", "node=", "run=", "lw=", "lt=", "exclude=",
-		  "help"])
+		  "hline=", "right-y", "help"])
 	except getopt.GetoptError, details:
 		print details
 		sys.exit()
@@ -87,13 +207,21 @@ def main ():
 			linewidth = int(a)
 		elif o == "--lt":
 			linetype = int(a)
+		elif o == "--hline":
+			hline = float(a)
+		elif o == "--right-y":
+			righty= True
 		elif o in ("-e", "--exclude"):
 			excluded_varnames = a.split(",")
 
 	if len (args) >= 1:
 		desired_varnames = args[0].split(",")
 	else:
-		desired_varnames = ["num-units-in-each-state:" + statename for statename in STATE_NAMES]
+		desired_varnames = ["tsdU" + statename for statename in STATE_NAMES]
+
+	# Treat the desired and excluded varnames as regular expressions.
+	desired_varnames = [re.compile (desired_varname) for desired_varname in desired_varnames]
+	excluded_varnames = [re.compile (excluded_varname) for excluded_varname in excluded_varnames]
 
 	# Read the header line.
 	header = sys.stdin.readline().strip()
@@ -104,10 +232,12 @@ def main ():
 	for i in range (len (varnames)):
 		keep = False
 		for desired_varname in desired_varnames:
-			if varnames[i].find (desired_varname) >= 0:
+			match = desired_varname.search (varnames[i])
+			if match:
 				keep = True
 		for excluded_varname in excluded_varnames:
-			if varnames[i].find (excluded_varname) >= 0:
+			match = excluded_varname.search (varnames[i])
+			if match:
 				keep = False
 		if keep:
 			indices.append (i)
@@ -122,8 +252,10 @@ def main ():
 	for line in sys.stdin:
 		# Pick off the run # and day.  The remainder of the line is output
 		# variable values.
-		dummy, day, fields = line.strip().split(",", 2)
-		day = int (day)
+		fields = line.strip().split(",", 2)
+		if len (fields) > 2:
+			day = int (fields[1])
+			fields = fields[2]
 
 		j = 0
 		for i in indices:
@@ -139,7 +271,11 @@ def main ():
 				if fields.startswith ('"'):
 					end = fields.find ('"', 1)
 					fields = fields[end + 1:]
-				varvalue, fields = fields.split(",", 1)
+				if fields.find (",") >= 0:
+					varvalue, fields = fields.split(",", 1)
+				else:
+					varvalue = fields
+					fields = ""
 				j += 1
 			varname = varnames[i]
 			if varvalue != "":
@@ -160,9 +296,14 @@ def main ():
 	plot.write ("set xrange [%s:%s]\n" % xrange)
 	plot.write ("set ylabel '%s'\n" % ylabel)
 	plot.write ("set yrange [%s:%s]\n" % yrange)
+	if righty:
+		plot.write ("set ytics nomirror\n")
+		plot.write ("set y2range [0:100]\n")
+		plot.write ('set y2tics 0,10,100\n')
 	if no_data:
 		plot.write ("set noxtics\n")
 		plot.write ("set noytics\n")
+		plot.write ("set noy2tics\n")
 	if eps_filename != None:
 		plot.write ("set terminal postscript eps color 16\n")
 		plot.write ("set output '%s'\n" % eps_filename)
@@ -170,13 +311,34 @@ def main ():
 		plot.write ("set terminal png large\n")
 		plot.write ("set output '%s'\n" % png_filename)
 
+	cmd = []
+	if hline != None:
+		cmd.append ("%g notitle w lines lt 0 lw %i" % (hline, linewidth))
 	# Gnuplot requires that you plot each line twice: once for the line and
 	# once for the errorbars.
-	cmd = []
-	for i in indices:
-		varname = varnames[i]
-		cmd.append ("'-' title '%s' w lines lt %i lw %i" % (lines[varname].title, i+linetype, linewidth))
-		cmd.append ("'-' notitle w errorbars lt %i" % (i+linetype))
+	for i in range (len (indices)):
+		index = indices[i]
+		varname = varnames[index]
+		if varname == "tsdUSusc":
+			custom_linetype = 0
+		elif varname == "tsdULat":
+			custom_linetype = 6
+		elif varname == "tsdUSubc":
+			custom_linetype = 8
+		elif varname == "tsdUClin":
+			custom_linetype = 1
+		elif varname == "tsdUNImm":
+			custom_linetype = 2
+		elif varname == "tsdUVImm":
+			custom_linetype = 3
+		elif varname == "tsdUDest":
+			custom_linetype = 7
+		elif varname == "tsdUDead":
+			custom_linetype = 9
+		else:
+			custom_linetype = i+linetype
+		cmd.append ("'-' title '%s' w lines lt %i lw %i" % (lines[varname].title, custom_linetype, linewidth))
+		cmd.append ("'-' notitle w errorbars lt %i" % custom_linetype)
 	if len(cmd) > 0:
 		plot.write ("plot " + string.join (cmd, ",") + "\n")
 

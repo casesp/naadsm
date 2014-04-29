@@ -128,51 +128,6 @@ proc hull_test { points answer {test "hull"} } {
 
 
 #
-# point_in_poly_test -- tests the point-in-polygon function.
-#
-# Parameters:
-#   polygon       the polygon, as { x0 y0 x1 y1 ... }
-#   point         the point to check, as { x y }
-#   true_answer   the correct answer, "inside" or "outside"
-#   test          a name to report in passes/fails (default = "point_in_poly")
-# Returns:
-#   nothing
-#
-proc point_in_poly_test { polygon point true_answer {test "point_in_poly"} } {
-	global prompt
-	global rowpat
-
-	send "pointset ([join $polygon ,])\n"
-	expect {
-		-re "$prompt$" { }
-	}
-	send "point_in_poly ([join $point ,])\n"
-	expect {
-		-re "(\[tf\])\[\\n\\r\]+$prompt$" {
-			set answer $expect_out(1,string)
-
-			#
-			# The shell returns 't' or 'f'; turn that into 'inside' or
-			# 'outside'.
-			if { [string compare $answer "t"] == 0 } {
-				set answer "inside"
-			} else {
-				set answer "outside"
-			}
-			
-			if { [string compare $answer $true_answer] != 0 } {
-				fail "$test: point is $true_answer the polygon, not $answer"
-				return			
-			}
-		}
-	}
-	
-	pass $test
-}
-
-
-
-#
 # shell_load -- loads the program
 #
 proc shell_load { arg } {

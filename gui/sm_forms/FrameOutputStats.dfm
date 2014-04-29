@@ -14,17 +14,6 @@ object FrameOutputStats: TFrameOutputStats
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
-    object Splitter2: TSplitter
-      Left = 0
-      Top = 473
-      Width = 410
-      Height = 2
-      Cursor = crVSplit
-      Align = alTop
-      MinSize = 20
-      ResizeStyle = rsLine
-      OnMoved = Splitter2Moved
-    end
     object pnlTopSection: TPanel
       Left = 0
       Top = 0
@@ -102,7 +91,7 @@ object FrameOutputStats: TFrameOutputStats
         Height = 276
         Align = alClient
         Caption = 'Select an output above to display this chart'
-        Constraints.MinHeight = 25
+        Constraints.MinHeight = 28
         TabOrder = 1
         object pnlHistogramHeader: TPanel
           Left = 1
@@ -144,71 +133,18 @@ object FrameOutputStats: TFrameOutputStats
           Height = 249
           Align = alClient
           TabOrder = 1
-          inherited pnlControls: TPanel
-            Top = 218
-            Width = 408
-          end
           inherited chtHistogram: TChart
             Width = 408
-            Height = 218
+            Height = 164
           end
-        end
-      end
-    end
-    object pnlConvergence: TPanel
-      Left = 0
-      Top = 475
-      Width = 410
-      Height = 345
-      Align = alClient
-      Caption = 'Select an output above to display this chart'
-      Constraints.MinHeight = 25
-      TabOrder = 1
-      object pnlConvergenceHeader: TPanel
-        Left = 1
-        Top = 1
-        Width = 408
-        Height = 25
-        Align = alTop
-        Alignment = taLeftJustify
-        BorderWidth = 5
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
-        Font.Style = [fsBold]
-        ParentFont = False
-        TabOrder = 0
-        object cbxConvergence: TCheckBox
-          Left = 5
-          Top = 4
-          Width = 404
-          Height = 17
-          Caption = 'Convergence'
-          Checked = True
-          State = cbChecked
-          TabOrder = 0
-          OnClick = cbxClick
-        end
-      end
-      inline fraConvergence: TFrameArrayConvergence
-        Left = 1
-        Top = 26
-        Width = 408
-        Height = 318
-        Align = alClient
-        TabOrder = 1
-        inherited pnlControls: TPanel
-          Top = 275
-          Width = 408
-          inherited rdgConvergenceParam: TRadioGroup
-            Width = 406
+          inherited gbxBreaks: TGroupBox
+            Top = 164
+            Width = 408
           end
-        end
-        inherited chtConvergence: TChart
-          Width = 408
-          Height = 275
-          Align = alClient
+          inherited Panel1: TPanel
+            Top = 229
+            Width = 408
+          end
         end
       end
     end

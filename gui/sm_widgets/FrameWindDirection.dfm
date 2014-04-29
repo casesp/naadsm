@@ -5,35 +5,36 @@ object FrameWindDirection: TFrameWindDirection
   Height = 225
   TabOrder = 0
   object lblWindRange: TLabel
-    Left = 0
+    Left = 8
     Top = 8
-    Width = 284
-    Height = 41
+    Width = 280
+    Height = 39
     Caption = 
-      'Range of wind direction (0-360 degrees,  0 degrees = north, proc' +
-      'eeding clockwise):'
+      'Area at risk of exposure around an infectious unit located at th' +
+      'e center of the circle (0-360 degrees, 0/360 degrees = north, pr' +
+      'oceeding clockwise):'
     WordWrap = True
   end
   object lblWindStart: TLabel
     Left = 12
     Top = 64
-    Width = 23
+    Width = 22
     Height = 13
-    Caption = 'From'
+    Caption = 'Start'
   end
   object lblWindEnd: TLabel
     Left = 149
     Top = 64
-    Width = 13
+    Width = 19
     Height = 13
-    Caption = 'To'
+    Caption = 'End'
   end
   object lblWindDir: TLabel
     Left = 12
     Top = 102
-    Width = 117
-    Height = 91
-    Caption = 'Wind direction (blue indicates selected range):'
+    Width = 114
+    Height = 39
+    Caption = 'Area at risk of exposure (blue indicates affected area):'
     WordWrap = True
   end
   object pbxWindDir: TPaintBox

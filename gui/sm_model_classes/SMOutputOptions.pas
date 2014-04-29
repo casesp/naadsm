@@ -4,13 +4,13 @@ unit SMOutputOptions;
 SMOutputOptions.pas
 -------------------
 Begin: 2005/09/01
-Last revision: $Date: 2008/03/12 22:10:53 $ $Author: areeves $
-Version number: $Revision: 1.15 $
+Last revision: $Date: 2011-10-19 01:24:13 $ $Author: areeves $
+Version number: $Revision: 1.18.10.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -21,8 +21,10 @@ Public License as published by the Free Software Foundation; either version 2 of
 interface
 
   uses
-    SMDatabase,
-    Models
+    Models,
+    ModelDatabase,
+    
+    SMDatabase
   ;
 
   type TSMOutputOptions = class( TModel )
@@ -71,7 +73,7 @@ interface
 
       destructor destroy(); override;
 
-      procedure populateDatabase( db: TSMDatabase; update: boolean = false ); reintroduce;
+      procedure populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ); reintroduce;
 
       function validate( err: PString = nil ): boolean; override;
 
@@ -81,8 +83,8 @@ interface
       property dailyStatesFileName: string read getDailyStatesFileName write setDailyStatesFileName;
       property saveAllDailyOutputs: boolean read getSaveAllDailyOutputs write setSaveAllDailyOutputs;
       property dailyOutputsForIterations: integer read getDailyOutputsForIterations write setDailyOutputsForIterations;
-      property saveDailyExposures: boolean read getSaveDailyExposures write setSaveDailyExposures;
       property saveDailyEvents: boolean read getSaveDailyEvents write setSaveDailyEvents;
+      property saveDailyExposuresAndTraces: boolean read getSaveDailyExposures write setSaveDailyExposures;
 
       property writeNAADSMapOutput: boolean read _writeMapOutput write setWriteMapOutput;
       property NAADSMapOutputDirectory: string read getMapOutputDir write setMapOutputDir;
@@ -102,7 +104,6 @@ implementation
     WindowsUtils,
     
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
     SqlClasses,
     I88n
@@ -211,24 +212,24 @@ implementation
 
 
 
-  procedure TSMOutputOptions.populateDatabase( db: TSMDatabase; update: boolean = false );
+  procedure TSMOutputOptions.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType );
     var
       qDict: TQueryDictionary;
       q: string;
     begin
       qDict := TQueryDictionary.create();
 
-      qDict['saveAllDailyOutputs'] := boolToStr( saveAllDailyOutputs );
+      qDict['saveAllDailyOutputs'] := db.sqlBool( saveAllDailyOutputs );
       qDict['saveDailyOutputsForIterations'] := intToStr( dailyOutputsForIterations );
-      qDict['writeDailyStatesFile'] := boolToStr( writeDailyStatesFile );
-      qDict['saveDailyEvents'] := boolToStr( _saveDailyEvents );
-      qDict['saveDailyExposures'] := boolToStr( _saveDailyExposures );
+      qDict['writeDailyStatesFile'] := db.sqlBool( writeDailyStatesFile );
+      qDict['saveDailyEvents'] := db.sqlBool( _saveDailyEvents );
+      qDict['saveDailyExposures'] := db.sqlBool( _saveDailyExposures );
 
       if( 0 < length( trim( dailyStatesFileName ) ) ) then
         qDict['dailyStatesFileName'] := db.sqlQuote( dailyStatesFileName )
       ;
 
-      qDict['writeNAADSMapOutput'] := boolToStr( writeNAADSMapOutput );
+      qDict['writeNAADSMapOutput'] := db.sqlBool( writeNAADSMapOutput );
 
       if( 0 < length( trim( NAADSMapOutputDirectory ) ) ) then
         qDict['NAADSMapDirectory'] := db.sqlQuote( NAADSMapOutputDirectory )
@@ -236,7 +237,7 @@ implementation
         qDict['NAADSMapDirectory'] := DATABASE_NULL_VALUE
       ;
 
-      if( update ) then
+      if( MDBAForceUpdate = updateAction ) then
         q := writeQuery( 'inGeneral', QUpdate, qDict )
       else
         q := writeQuery( 'inGeneral', QInsert, qDict )
@@ -306,14 +307,14 @@ implementation
   procedure TSMOutputOptions.debug();
     begin
       dbcout( endl + '--Begin output options:', true );
-      dbcout( '_writeDailyStatesFile: ' + boolToStr( _writeDailyStatesFile ), true );
+      dbcout( '_writeDailyStatesFile: ' + usBoolToText( _writeDailyStatesFile ), true );
       dbcout( '_dailyStatesFileName: ' + _dailyStatesFileName, true );
-      dbcout( '_saveAllDailyOutputs: ' + boolToStr( _saveAllDailyOutputs ), true );
+      dbcout( '_saveAllDailyOutputs: ' + usBoolToText( _saveAllDailyOutputs ), true );
       dbcout( '_dailyOutputsForIterations: ' + intToStr( _dailyOutputsForIterations ), true );
-      dbcout( '_saveDailyEvents: ' + boolToStr( _saveDailyEvents ), true );
-      dbcout( '_saveDailyExposures: ' + boolToStr( _saveDailyExposures ), true );
+      dbcout( '_saveDailyEvents: ' + usBoolToText( _saveDailyEvents ), true );
+      dbcout( '_saveDailyExposures: ' + usBoolToText( _saveDailyExposures ), true );
 
-      dbcout( '_writeMapOutput: ' + boolToStr( _writeMapOutput ), true );
+      dbcout( '_writeMapOutput: ' + usBoolToText( _writeMapOutput ), true );
       dbcout( '_mapOutputDir: ' + _mapOutputDir, true );
 
       dbcout( '--End output options' + endl, true );

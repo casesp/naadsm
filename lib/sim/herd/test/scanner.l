@@ -38,7 +38,11 @@
 #define BUFFERSIZE 2048
 #define ADJUST (tokenpos = charpos, charpos += yyleng)
 
+#ifdef USE_PLAIN_YACC 
+int yyerror (char *s);
+#else
 int yyerror (char *s, int fatal);
+#endif
 
 char linebuf[BUFFERSIZE];
 int charpos = 0, tokenpos = 0;
@@ -102,7 +106,11 @@ int charpos = 0, tokenpos = 0;
   [[:space:]] { /* Ignore whitespace */ }
   . {
     /* Report an unrecognized token. */
+#ifdef USE_PLAIN_YACC 
+    yyerror ("Unrecognized token");
+#else
     yyerror ("Unrecognized token", 1);
+#endif
   }
 }
 %%

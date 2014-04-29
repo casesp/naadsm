@@ -56,18 +56,29 @@ expect_after {
 	}
 }"""
 
+	state_code = {
+	  'Susceptible': 'S', # map long names to short ones
+	  'Latent': 'L',
+	  'InfectiousSubclinical': 'B',
+	  'InfectiousClinical': 'C',
+	  'NaturallyImmune': 'N',
+	  'VaccineImmune': 'V',
+	  'Destroyed': 'D',
+	  'DeadFromDisease': 'X'
+	}
+
 	# Print the deterministic herd-state tests.
 	tests = doc.getElementsByTagName ("deterministic-test")
 	for test in tests:
 		description = getText (test.getElementsByTagName ("description")[0])
 		print '\n\n\n#'
 		for line in description.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		parameters = getText (test.getElementsByTagName ("parameter-description")[0])
 		for line in parameters.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		category = getText (test.getElementsByTagName ("category")[0])
@@ -81,7 +92,10 @@ expect_after {
 		for row in table.getElementsByTagName ("tr"):
 			print '  {',
 			for cell in row.getElementsByTagName ("td"):
-				print getText (cell),
+				state = getText (cell)
+				if state_code.has_key(state):
+					state = state_code[state]
+				print state,
 			print '}'
 		print '}'
 
@@ -94,12 +108,12 @@ expect_after {
 		description = getText (test.getElementsByTagName ("description")[0])
 		print '\n\n\n#'
 		for line in description.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		parameters = getText (test.getElementsByTagName ("parameter-description")[0])
 		for line in parameters.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		category = getText (test.getElementsByTagName ("category")[0])
@@ -115,7 +129,10 @@ expect_after {
 			for row in table.getElementsByTagName ("tr"):
 				print '    {',
 				for cell in row.getElementsByTagName ("td"):
-					print getText (cell),
+					state = getText (cell)
+					if state_code.has_key(state): # convert long name to short 
+						state = state_code[state]
+					print state,
 				print '}'
 			print '  }'
 		print '}'
@@ -152,7 +169,7 @@ expect_after {
 			print ('  { "%s"' % varnames[i].encode(OUTPUT_ENCODING, "replace")),
 			for row in rows:
 				cell = row.getElementsByTagName ("td")[i]
-				print getText (cell),
+				print getText (cell) or '""',
 			print '}'
 		print '}'
 
@@ -165,12 +182,12 @@ expect_after {
 		description = getText (test.getElementsByTagName ("description")[0])
 		print '\n\n\n#'
 		for line in description.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		parameters = getText (test.getElementsByTagName ("parameter-description")[0])
 		for line in parameters.split('\n'):
-			print '# %s' % line.strip()
+			print '# %s' % line.strip().encode(OUTPUT_ENCODING, "replace")
 		print '#'
 
 		category = getText (test.getElementsByTagName ("category")[0])
@@ -190,7 +207,7 @@ expect_after {
 				print ('    { "%s"' % varnames[i]),
 				for row in rows:
 					cell = row.getElementsByTagName ("td")[i]
-					print getText (cell),
+					print getText (cell) or '""',
 				print '}'
 			print '  }'
 		print '}'

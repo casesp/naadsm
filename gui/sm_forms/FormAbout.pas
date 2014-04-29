@@ -4,13 +4,13 @@ unit FormAbout;
 FormAbout.pas/dfm
 -----------------
 Begin: 2006/04/03
-Last revision: $Date: 2008/03/12 22:10:44 $ $Author: areeves $
-Version: $Revision: 1.17 $
+Last revision: $Date: 2012-10-01 21:31:36 $ $Author: areeves $
+Version: $Revision: 1.20.10.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2013 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -30,13 +30,11 @@ interface
     Forms,
     Dialogs,
     StdCtrls,
-    ExtCtrls,
-
-    FrameCredits
+    ExtCtrls
   ;
 
   type TFormAbout = class( TForm )
-  		pnlWholeForm: TPanel;
+      pnlWholeForm: TPanel;
       pnlBody: TPanel;
 
       pnlAppTitleContainer: TPanel;
@@ -50,21 +48,21 @@ interface
       pnlButtons: TPanel;
       btnOK: TButton;
       btnLicense: TButton;
-    	lblCopyright: TLabel;
-    	lblWebsite: TLabel;
-      sbxCredits: TScrollBox;
-      fraCredits: TFrameCredits;
+      lblCopyright: TLabel;
+      lblWebsite: TLabel;
+      lblSupport: TLabel;
 
       procedure btnOKClick(Sender: TObject);
       procedure btnLicenseClick(Sender: TObject);
 
-    	procedure lblWebsiteClick(Sender: TObject);
+      procedure lblWebsiteClick(Sender: TObject);
 
       procedure FormCreate(Sender: TObject);
       procedure FormClose(Sender: TObject; var Action: TCloseAction);
 
     protected
       procedure translateUI();
+      procedure translateUIManual();
 
     public
       constructor create( AOwner: TComponent ); override;
@@ -91,13 +89,12 @@ implementation
     begin
       inherited create( AOwner );
       translateUI();
-      
-      lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
-      lblWebsite.Caption := WEBSITE;
 
       pnlWholeForm.bevelWidth := 1;
       pnlWholeForm.BevelOuter := bvNone;
       pnlWholeForm.BevelInner := bvNone;
+
+      centerChildren( pnlAppTitle );
     end
   ;
 
@@ -122,10 +119,23 @@ implementation
           lblVersion.Caption := ansiReplaceStr( ansiReplaceStr( tr( 'Version xyz Build abc' ), 'xyz', MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER ), 'abc', BUILDNUMBER);
           lblWebsite.Caption := tr( 'lblWebsite' );
           lblLicenseBlurb.Caption := tr( longString );
-          lblCopyright.Caption := tr( 'Copyright © 2003 - 2008 Animal Population Health Institute at Colorado State University and University of Guelph' );
+          lblCopyright.Caption := tr( 'Copyright © 2003 - 2013 NAADSM Development Team' );
+          lblSupport.Caption := tr( 'Please see the NAADSM website for contact and support information:' );
         end
       ;
 
+      // If any phrases are found that could not be automatically extracted by
+      // Caption Collector, modify the following function to take care of them.
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFormAbout.translateUIManual();
+    begin
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'NAADSM Development Team' );
+      lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
+      lblWebsite.Caption := WEBSITE;
     end
   ;
 
@@ -143,14 +153,14 @@ implementation
 
   procedure TFormAbout.lblWebsiteClick(Sender: TObject);
     begin
-        ShellExecute(
-          Application.Handle,
-          PChar( 'open' ),
-          PChar( WEBSITE ),
-          PChar( 0 ),
-          nil,
-          SW_NORMAL
-        );
+      ShellExecute(
+        Application.Handle,
+        PChar( 'open' ),
+        PChar( WEBSITE ),
+        PChar( 0 ),
+        nil,
+        SW_NORMAL
+      );
     end
   ;
 
@@ -180,7 +190,7 @@ implementation
       self.Hide();
 
       frm.ShowModal();
-      frm.Free();
+      frm.Release();
 
       self.Show();
     end

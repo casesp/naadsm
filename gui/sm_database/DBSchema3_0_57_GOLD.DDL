@@ -9,15 +9,6 @@
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
 
-
--- Create new table `outIteration`.
--- `outIteration` : Table of outIteration
--- 	`iteration` : iteration identifies outIteration
--- 	`firstDet` : firstDet is of outIteration
--- 	`firstDestr` : firstDestr is of outIteration
--- 	`firstVacc` : firstVacc is of outIteration
--- 	`length` : length is of outIteration
--- 	`outbreakEnded` : outbreakEnded is of outIteration  
 create table `outIteration` ( 
 	`iteration` INTEGER,
 	`firstDet` INTEGER,
@@ -26,12 +17,3 @@ create table `outIteration` (
 	`length` INTEGER,
 	`outbreakEnded` BIT, constraint `outIteration_PK` primary key (`iteration`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIteration`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIteration' :
--- 	`iteration`
-
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

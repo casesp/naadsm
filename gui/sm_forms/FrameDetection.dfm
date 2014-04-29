@@ -2,13 +2,13 @@ object FrameDetection: TFrameDetection
   Left = 0
   Top = 0
   Width = 471
-  Height = 253
+  Height = 431
   TabOrder = 0
   object pnlParams: TPanel
     Left = 0
     Top = 0
     Width = 471
-    Height = 253
+    Height = 431
     Align = alClient
     TabOrder = 0
     object pnlUseDetection: TPanel
@@ -39,11 +39,11 @@ object FrameDetection: TFrameDetection
       Left = 1
       Top = 34
       Width = 469
-      Height = 218
+      Height = 396
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
-      object lblReportVsDaysInfectious: TLabel
+      object lblObsVsDaysInfectious: TLabel
         Left = 48
         Top = 6
         Width = 359
@@ -53,14 +53,15 @@ object FrameDetection: TFrameDetection
           's that a unit is clinically infectious:'
         WordWrap = True
       end
-      object lblProbReportVsFirstDetection: TLabel
+      object lblProbReportClinVsFirstDetection: TLabel
         Left = 48
-        Top = 110
-        Width = 377
+        Top = 206
+        Width = 367
         Height = 26
         Caption = 
-          'Probability of reporting an observed clinical unit, given the nu' +
-          'mber of days since disease was first detected in any unit:'
+          'Probability of reporting a unit with observed clinical signs, gi' +
+          'ven the number of days since disease was first detected in any u' +
+          'nit:'
         WordWrap = True
       end
       object imgRel1: TImage
@@ -100,9 +101,9 @@ object FrameDetection: TFrameDetection
           0000}
         ShowHint = True
       end
-      object imgRel2: TImage
+      object imgRel3: TImage
         Left = 24
-        Top = 116
+        Top = 212
         Width = 16
         Height = 16
         Hint = 'This parameter is a relational function'
@@ -137,7 +138,102 @@ object FrameDetection: TFrameDetection
           0000}
         ShowHint = True
       end
-      inline smrProbReportVsDaysInfectious: TFrameSMFunctionEditor
+      object imgRel2: TImage
+        Left = 24
+        Top = 108
+        Width = 16
+        Height = 16
+        Hint = 'This parameter is a relational function'
+        ParentShowHint = False
+        Picture.Data = {
+          07544269746D617036030000424D360300000000000036000000280000001000
+          000010000000010018000000000000030000120B0000120B0000000000000000
+          0000000000000000000000000000000000000000000000000000000000000000
+          000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000008000008000F6F5F6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000080000080000080000080
+          00008000008000F1F8F1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFF0EFF0008000008000C4E3C5FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFC7DFC7008000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF008000008000FFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFCFCFC008000008000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF008000
+          F9F7F9FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFEDEDED008000008000FFFFFFF5FAF5E1F1E200
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          008000008000008000008000008000000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCBE6CCA5D2A6F3F3F300800000800000
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000
+          0000000000000000000000000000000000000000000000000000000000000000
+          0000}
+        ShowHint = True
+      end
+      object lblObsVsDaysDead: TLabel
+        Left = 48
+        Top = 102
+        Width = 379
+        Height = 26
+        Caption = 
+          'Probability of observing death from disease, given the number of' +
+          ' days that a unit ihas been dead from disease:'
+        WordWrap = True
+      end
+      object imgRel4: TImage
+        Left = 24
+        Top = 316
+        Width = 16
+        Height = 16
+        Hint = 'This parameter is a relational function'
+        ParentShowHint = False
+        Picture.Data = {
+          07544269746D617036030000424D360300000000000036000000280000001000
+          000010000000010018000000000000030000120B0000120B0000000000000000
+          0000000000000000000000000000000000000000000000000000000000000000
+          000000000000000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000008000008000F6F5F6FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000080000080000080000080
+          00008000008000F1F8F1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFF0EFF0008000008000C4E3C5FFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFC7DFC7008000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF008000008000FFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFCFCFC008000008000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF008000
+          F9F7F9FFFFFFFFFFFFFFFFFFFFFFFF000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFEDEDED008000008000FFFFFFF5FAF5E1F1E200
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          008000008000008000008000008000000000000000FFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFCBE6CCA5D2A6F3F3F300800000800000
+          0000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+          FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000
+          0000000000000000000000000000000000000000000000000000000000000000
+          0000}
+        ShowHint = True
+      end
+      object lblProbReportDeadVsFirstDetection: TLabel
+        Left = 48
+        Top = 310
+        Width = 381
+        Height = 26
+        Caption = 
+          'Probability of reporting a unit that is dead from disease, given' +
+          ' the number of days since disease was first detected in any unit' +
+          ':'
+        WordWrap = True
+      end
+      inline smrProbObsVsDaysInfectious: TFrameSMFunctionEditor
         Left = 32
         Top = 32
         Width = 401
@@ -146,14 +242,32 @@ object FrameDetection: TFrameDetection
         Constraints.MinWidth = 390
         TabOrder = 0
       end
-      inline smrProbVsFirstDetection: TFrameSMFunctionEditor
+      inline smrProbReportClinVsFirstDetection: TFrameSMFunctionEditor
         Left = 32
-        Top = 140
+        Top = 236
         Width = 401
         Height = 49
         Constraints.MinHeight = 45
         Constraints.MinWidth = 390
         TabOrder = 1
+      end
+      inline smrProbObsVsDaysDead: TFrameSMFunctionEditor
+        Left = 32
+        Top = 132
+        Width = 401
+        Height = 49
+        Constraints.MinHeight = 45
+        Constraints.MinWidth = 390
+        TabOrder = 2
+      end
+      inline smrProbReportDeadVsFirstDetection: TFrameSMFunctionEditor
+        Left = 32
+        Top = 340
+        Width = 401
+        Height = 49
+        Constraints.MinHeight = 45
+        Constraints.MinWidth = 390
+        TabOrder = 3
       end
     end
   end

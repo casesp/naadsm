@@ -4,11 +4,11 @@ unit FormZone;
 FormZone.pas/dfm
 ----------------
 Begin: 2006/12/19
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version number: $Revision: 1.9 $
+Last revision: $Date: 2010-09-09 14:34:02 $ $Author: rhupalo $
+Version number: $Revision: 1.12.10.1 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
 
@@ -56,20 +56,20 @@ interface
 
       function getZoneList(): TZoneList;
 
-  		procedure updateDisplay(); override;
+      procedure updateDisplay(); override;
 
       function dataIsValid(): boolean; override;
 
-  		procedure giveListsToEditors(); override;
+      procedure giveListsToEditors(); override;
       procedure prepFunctionDicts(); override;
 
       procedure copyParameters( const src: TProductionType; dest: TProductionType ); override;
       
     public
-    	constructor create( Aowner: TComponent ); override;
+      constructor create( Aowner: TComponent ); override;
       destructor destroy(); override;
 
-			function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
       property zoneList: TZoneList read getZoneList;
     end
@@ -77,7 +77,7 @@ interface
 
 
   const
-  	DBFORMZONE: boolean = false; // set to true to enable debugging messages for this unit.
+    DBFORMZONE: boolean = false; // set to true to enable debugging messages for this unit.
 
 
 implementation
@@ -90,7 +90,7 @@ implementation
 
     FunctionEnums,
     FunctionDictionary,
-    ZoneParams,
+    ProdTypeZoneParams,
 
     FrameZoneProdTypeParams
   ;
@@ -130,8 +130,8 @@ implementation
 
 
   destructor TFormZone.destroy();
-  	begin
-   		inherited destroy();
+    begin
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -141,14 +141,15 @@ implementation
 //-----------------------------------------------------------------------------
 // Display functions
 //-----------------------------------------------------------------------------
-	function TFormZone.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
-  	begin
-    	if( _smScenarioCopy.simInput.includeZonesGlobal ) then
+  function TFormZone.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+    begin
+      // must first detect disease in order to implement zone restrictions
+      if (( _smScenarioCopy.simInput.includeZonesGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
         result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
-      	begin
+        begin
           formDisplayed := false;
-      		nextForm := nextFormToShow;
+          nextForm := nextFormToShow;
           result := 0;
         end
       ;
@@ -157,16 +158,16 @@ implementation
 
 
   procedure TFormZone.updateDisplay();
-  	begin
-    	if( nil <> _selectedPT ) then
-      	begin
+    begin
+      if( nil <> _selectedPT ) then
+        begin
           lblProdType.Caption := _selectedPT.productionTypeDescr;
           fraParams.Visible := true;
-					fraParams.prodType := _selectedPT;
+          fraParams.prodType := _selectedPT;
         end
       else
         begin
-      	  fraParams.visible := false;
+          fraParams.visible := false;
           lblProdType.Caption := '';
         end
       ;
@@ -176,9 +177,7 @@ implementation
 
   procedure TFormZone.prepFunctionDicts();
     var
-      i, j: integer;
-    	pt: TProductionType;
-      zpt: TZoneProdTypeParams;
+      i: integer;
       zptFrame: TFrameZoneProdTypeParams;
       it: TFunctionDictionaryIterator;
     begin
@@ -215,7 +214,6 @@ implementation
                         zptFrame := fraParams.paramFrameList.itemAtIndex( i ) as TFrameZoneProdTypeParams;
                         zptFrame.smrDirectMovement.appendFunction( it.value().fn );
                         zptFrame.smrIndirectMovement.appendFunction( it.value().fn );
-                        it.value().RefCounter := 0;
                       end
                     ;
                   end
@@ -228,23 +226,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-      for i := 0 to _ptList.Count-1 do
-      	begin
-        	pt := _ptList.at(i);
-          for j := 0 to pt.zoneParams.zonePtParamsList.count - 1 do
-            begin
-              zpt := pt.zoneParams.zonePtParamsList.itemAtIndex( j ) as TZoneProdTypeParams;
-              if( nil <> zpt ) then
-                begin
-                  if( nil <> zpt.directMovement ) then _fnDict.value( zpt.directMovementName ).incrRefCounter();
-                  if( nil <> zpt.indirectMovement ) then _fnDict.value( zpt.indirectMovementName ).incrRefCounter();
-                end
-              ;
-            end
-          ;
-        end
-      ;
     end
   ;
 
@@ -275,8 +256,8 @@ implementation
 // Data and database functions
 //-----------------------------------------------------------------------------
   function TFormZone.dataIsValid(): boolean;
-		begin
-   		result := fraParams.isValid();
+    begin
+      result := fraParams.isValid();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -305,7 +286,7 @@ implementation
   procedure TFormZone.copyParameters( const src: TProductionType; dest: TProductionType );
     var
       it: TZPTListIterator;
-      zptDest, zptSrc: TZoneProdTypeParams;
+      zptDest, zptSrc: TZoneProdTypeComboParams;
     begin
       dest.zoneParams.detectionIsZoneTrigger := src.zoneParams.detectionIsZoneTrigger;
       dest.zoneParams.directTraceIsZoneTrigger := src.zoneParams.directTraceIsZoneTrigger;
@@ -315,8 +296,8 @@ implementation
 
       while( nil <> it.value() ) do
         begin
-          zptSrc := it.value() as TZoneProdTypeParams;
-          zptDest := dest.zoneParams.zonePtParamsList[ it.key()] as TZoneProdTypeParams;
+          zptSrc := it.value();
+          zptDest := dest.zoneParams.zonePtParamsList[ it.key()] ;
 
           zptDest.useDetectionMultiplier := zptSrc.useDetectionMultiplier;
           zptDest.detectionMultiplier := zptSrc.detectionMultiplier;
@@ -340,6 +321,6 @@ implementation
 
 initialization
 
-	RegisterClass( TFormZone );
+  RegisterClass( TFormZone );
 
 end.

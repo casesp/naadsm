@@ -2,14 +2,13 @@
  * Tracks the number of units waiting to be destroyed.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date April 2004
  *
- * Copyright &copy; University of Guelph, 2004-2006
+ * Copyright &copy; University of Guelph, 2004-2009
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -21,25 +20,22 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version destruction_list_monitor_LTX_interface_version
-#define new destruction_list_monitor_LTX_new
-#define run destruction_list_monitor_LTX_run
-#define reset destruction_list_monitor_LTX_reset
-#define events_listened_for destruction_list_monitor_LTX_events_listened_for
-#define is_listening_for destruction_list_monitor_LTX_is_listening_for
-#define has_pending_actions destruction_list_monitor_LTX_has_pending_actions
-#define has_pending_infections destruction_list_monitor_LTX_has_pending_infections
-#define to_string destruction_list_monitor_LTX_to_string
-#define local_printf destruction_list_monitor_LTX_printf
-#define local_fprintf destruction_list_monitor_LTX_fprintf
-#define local_free destruction_list_monitor_LTX_free
-#define handle_new_day_event destruction_list_monitor_LTX_handle_new_day_event
-#define handle_commitment_to_destroy_event destruction_list_monitor_LTX_handle_commitment_to_destroy_event
-#define handle_destruction_event destruction_list_monitor_LTX_handle_destruction_event
-#define events_created destruction_list_monitor_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new destruction_list_monitor_new
+#define run destruction_list_monitor_run
+#define reset destruction_list_monitor_reset
+#define events_listened_for destruction_list_monitor_events_listened_for
+#define is_listening_for destruction_list_monitor_is_listening_for
+#define has_pending_actions destruction_list_monitor_has_pending_actions
+#define to_string destruction_list_monitor_to_string
+#define local_printf destruction_list_monitor_printf
+#define local_fprintf destruction_list_monitor_fprintf
+#define local_free destruction_list_monitor_free
+#define handle_before_any_simulations_event destruction_list_monitor_handle_before_any_simulations_event
+#define handle_new_day_event destruction_list_monitor_handle_new_day_event
+#define handle_commitment_to_destroy_event destruction_list_monitor_handle_commitment_to_destroy_event
+#define handle_destruction_event destruction_list_monitor_handle_destruction_event
+#define handle_destruction_canceled_event destruction_list_monitor_handle_destruction_canceled_event
 
 #include "model.h"
 
@@ -47,26 +43,16 @@
 #  include <string.h>
 #endif
 
+#include "destruction-list-monitor.h"
+
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "destruction-list-monitor"
 
-#define MODEL_DESCRIPTION "\
-A module to track units waiting to be destroyed.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 April 2004\
-"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
-
-#define NEVENTS_CREATED 0
-EVT_event_type_t events_created[] = { 0 };
-
-#define NEVENTS_LISTENED_FOR 3
-EVT_event_type_t events_listened_for[] = { EVT_NewDay, EVT_CommitmentToDestroy,
-  EVT_Destruction
+#define NEVENTS_LISTENED_FOR 5
+EVT_event_type_t events_listened_for[] = { EVT_BeforeAnySimulations, EVT_NewDay,
+  EVT_CommitmentToDestroy, EVT_DestructionCanceled, EVT_Destruction
 };
 
 
@@ -75,107 +61,98 @@ extern const char *RPT_frequency_name[];
 
 
 
-#define NOT_ON_WAITING_LIST 0
-#define DESTROYED -1
-
-
-
 /** Specialized information for this model. */
 typedef struct
 {
   GPtrArray *production_types;
   unsigned int nherds;          /* Number of herds. */
-  int *status; /**< The status of each unit with respect to destruction.  The
-    value can be the special code NOT_ON_WAITING_LIST (0), the day on which a
-    commitment to destroy the herd was made, or the special code DESTROYED
-    (-1). */
+  GHashTable *status; /**< The status of each unit with respect to destruction.
+    If the unit is not awaiting destruction, it will not be present in the
+    table. */
   unsigned int peak_nherds, peak_nanimals;
   unsigned int peak_wait;
-  double sum_for_average; /**< The numerator for calculating the average wait
-    time.  This is the fixed part, for units already destroyed. */
-  unsigned int count_for_average; /**< The denominator for calculating the
-    average wait time.  This is the fixed part, for units already destroyed. */
+  double sum; /**< The numerator for calculating the average wait time. */
+  unsigned int count; /**< The denominator for calculating the average wait time. */
   RPT_reporting_t *nherds_awaiting_destruction;
   RPT_reporting_t *nherds_awaiting_destruction_by_prodtype;
   RPT_reporting_t *nanimals_awaiting_destruction;
   RPT_reporting_t *nanimals_awaiting_destruction_by_prodtype;
   RPT_reporting_t *peak_nherds_awaiting_destruction;
+  RPT_reporting_t *peak_nherds_awaiting_destruction_day;
   RPT_reporting_t *peak_nanimals_awaiting_destruction;
+  RPT_reporting_t *peak_nanimals_awaiting_destruction_day;
   RPT_reporting_t *peak_wait_time;
   RPT_reporting_t *average_wait_time;
+  RPT_reporting_t *unit_days_in_queue;
+  RPT_reporting_t *animal_days_in_queue;
 }
 local_data_t;
 
 
 
 /**
- * Responds to a new day event by updating the peak and average wait times.
+ * Before any simulations, this module announces the output variables it is
+ * recording.
  *
- * @param self the model.
- * @param event a new day event.
+ * @param self this module.
+ * @param queue for any new events this function creates.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self, EVT_new_day_event_t * event)
+handle_before_any_simulations_event (struct naadsm_model_t_ *self,
+                                     EVT_event_queue_t *queue)
+{
+  unsigned int n, i;
+  RPT_reporting_t *output;
+  GPtrArray *outputs = NULL;
+
+  n = self->outputs->len;
+  for (i = 0; i < n; i++)
+    {
+      output = (RPT_reporting_t *) g_ptr_array_index (self->outputs, i);
+      if (output->frequency != RPT_never)
+        {
+          if (outputs == NULL)
+            outputs = g_ptr_array_new();
+          g_ptr_array_add (outputs, output);
+        }
+    }
+
+  if (outputs != NULL)
+    EVT_event_enqueue (queue, EVT_new_declaration_of_outputs_event (outputs));
+  /* We don't free the pointer array, that will be done when the event is freed
+   * after all interested modules have processed it. */
+
+  return;
+}
+
+
+
+/**
+ * Responds to a new day event by updating unit-days in queue and animal-days
+ * in queue.
+ *
+ * @param self the model.
+ */
+void
+handle_new_day_event (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  unsigned int i;
-  int status;
-  unsigned int wait;
-  double todays_sum;
-  unsigned int todays_count;
-  unsigned int denom;
-  double average;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  /* Don't do any work if we don't have to. */
-  if (local_data->peak_wait_time->frequency == RPT_never
-      && local_data->average_wait_time->frequency == RPT_never)
-    goto end;
+  RPT_reporting_add_integer (local_data->unit_days_in_queue,
+                             RPT_reporting_get_integer (local_data->nherds_awaiting_destruction, NULL),
+                             NULL);
+  RPT_reporting_add_integer (local_data->animal_days_in_queue,
+                             RPT_reporting_get_integer (local_data->nanimals_awaiting_destruction, NULL),
+                             NULL);
 
-  /* The average is calculated using a fixed part (units already destroyed) and
-   * a part that varies daily (units waiting to be destroyed).  Initialize the
-   * daily sum & count to 0. */
-  todays_sum = todays_count = 0;
-
-  for (i = 0; i < local_data->nherds; i++)
-    {
-      status = local_data->status[i];
-      if (status != NOT_ON_WAITING_LIST && status != DESTROYED)
-        {
-          /* The herd is on a waiting list.  The day when it went onto the
-           * waiting list is recorded in the "status" array. */
-          wait = event->day - status;
-
-          /* Update the peak wait time. */
-          if (wait > local_data->peak_wait)
-            local_data->peak_wait = wait;
-
-          /* Record values for the average wait time calculation. */
-          todays_sum += wait;
-          todays_count += 1;
-        }
-    }
-  RPT_reporting_set_integer (local_data->peak_wait_time, local_data->peak_wait, NULL);
-
-  denom = local_data->count_for_average + todays_count;
-  if (denom == 0)
-    average = 0;
-  else
-    average = (local_data->sum_for_average + todays_sum) / denom;
-  RPT_reporting_set_real (local_data->average_wait_time, average, NULL);
-
-  /* This calculation is done at the start of a new day.  If, later in the day,
-   * units are destroyed, the fixed parts of the average wait time calculation
-   * will be updated, but it won't change today's value for that output. */
-
-end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
 #endif
 
   return;
@@ -191,7 +168,7 @@ end:
  * @param event a commitment to destroy event.
  */
 void
-handle_commitment_to_destroy_event (struct ergadm_model_t_ *self,
+handle_commitment_to_destroy_event (struct naadsm_model_t_ *self,
                                     EVT_commitment_to_destroy_event_t * event)
 {
   local_data_t *local_data;
@@ -199,16 +176,15 @@ handle_commitment_to_destroy_event (struct ergadm_model_t_ *self,
   unsigned int nherds, nanimals;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_commitment_to_destroy_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_commitment_to_destroy_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 
-  if (local_data->status[herd->index] == NOT_ON_WAITING_LIST)
+  if (g_hash_table_lookup (local_data->status, herd) == NULL)
     {
-      local_data->status[herd->index] = event->day;
+      g_hash_table_insert (local_data->status, herd, GINT_TO_POINTER(1));
 
       /* Increment the count of herds awaiting destruction. */
       RPT_reporting_add_integer (local_data->nherds_awaiting_destruction, 1, NULL);
@@ -220,6 +196,7 @@ handle_commitment_to_destroy_event (struct ergadm_model_t_ *self,
         {
           local_data->peak_nherds = nherds;
           RPT_reporting_set_integer (local_data->peak_nherds_awaiting_destruction, nherds, NULL);
+          RPT_reporting_set_integer (local_data->peak_nherds_awaiting_destruction_day, event->day, NULL);
         }
 
       /* Increment the count of animals awaiting destruction. */
@@ -233,12 +210,13 @@ handle_commitment_to_destroy_event (struct ergadm_model_t_ *self,
           local_data->peak_nanimals = nanimals;
           RPT_reporting_set_integer (local_data->peak_nanimals_awaiting_destruction, nanimals,
                                      NULL);
+          RPT_reporting_set_integer (local_data->peak_nanimals_awaiting_destruction_day, event->day,
+                                     NULL);
         }
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_commitment_to_destroy_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_commitment_to_destroy_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -246,41 +224,46 @@ handle_commitment_to_destroy_event (struct ergadm_model_t_ *self,
 
 /**
  * Responds to a destruction event by removing the herd's "waiting" status and
- * recording the waiting time.
+ * updating the peak and average wait times.
  *
  * @param self the model.
  * @param event a destruction event.
  */
 void
-handle_destruction_event (struct ergadm_model_t_ *self, EVT_destruction_event_t * event)
+handle_destruction_event (struct naadsm_model_t_ *self, EVT_destruction_event_t * event)
 {
   local_data_t *local_data;
   HRD_herd_t *herd;
-  int status;
   unsigned int wait;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_destruction_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_destruction_event (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 
-  status = local_data->status[herd->index];
-  if (status != NOT_ON_WAITING_LIST && status != DESTROYED)
+  /* Special case: if a unit's starting state is Destroyed, it won't be on a
+   * waiting list and it won't affect the various counts maintained by this
+   * monitor. */
+  if (g_hash_table_lookup (local_data->status, herd) != NULL)
     {
-      /* The herd is on a waiting list.  The day when it went onto the waiting
-       * list is recorded in the "status" array. */
-      wait = event->day - status;
+      /* The day when the unit went onto the waiting list is recorded in the
+       * destruction event. */
+      wait = event->day - event->day_commitment_made;
 
-      /* Update the fixed parts of the average wait time calculation.  Note
-       * that this doesn't change the average wait time we calculated in the
-       * handle_new_day_event function. */
-      local_data->sum_for_average += wait;
-      local_data->count_for_average += 1;
+      /* Update the peak wait time. */
+      local_data->peak_wait = MAX (local_data->peak_wait, wait);
+      RPT_reporting_set_integer (local_data->peak_wait_time, local_data->peak_wait, NULL);
 
-      /* Mark the herd as destroyed and no longer on a waiting list. */
-      local_data->status[herd->index] = DESTROYED;
+      /* Update the average wait time. */
+      local_data->sum += wait;
+      local_data->count += 1;
+      RPT_reporting_set_real (local_data->average_wait_time,
+                              local_data->sum / local_data->count, NULL);
+
+      /* Mark the herd as no longer on a waiting list. */
+      g_hash_table_remove (local_data->status, herd);
 
       /* Decrement the counts of herds and animals awaiting destruction. */
       RPT_reporting_sub_integer (local_data->nherds_awaiting_destruction, 1, NULL);
@@ -294,7 +277,48 @@ handle_destruction_event (struct ergadm_model_t_ *self, EVT_destruction_event_t 
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_destruction_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_destruction_event (%s)", MODEL_NAME);
+#endif
+}
+
+
+
+/**
+ * Responds to a destruction canceled event by removing the herd's "waiting"
+ * status, if it is waiting for destruction.
+ *
+ * @param self the model.
+ * @param event a destruction canceled event.
+ */
+void
+handle_destruction_canceled_event (struct naadsm_model_t_ *self,
+                                   EVT_destruction_canceled_event_t * event)
+{
+  local_data_t *local_data;
+  HRD_herd_t *herd;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_destruction_canceled_event (%s)", MODEL_NAME);
+#endif
+
+  local_data = (local_data_t *) (self->model_data);
+  herd = event->herd;
+
+  /* Mark the herd as no longer on a waiting list. */
+  g_hash_table_remove (local_data->status, herd);
+
+  /* Decrement the counts of herds and animals awaiting destruction. */
+  RPT_reporting_sub_integer (local_data->nherds_awaiting_destruction, 1, NULL);
+  if (local_data->nherds_awaiting_destruction_by_prodtype->frequency != RPT_never)
+    RPT_reporting_sub_integer1 (local_data->nherds_awaiting_destruction_by_prodtype, 1,
+                                herd->production_type_name);
+  RPT_reporting_sub_integer (local_data->nanimals_awaiting_destruction, herd->size, NULL);
+  if (local_data->nanimals_awaiting_destruction_by_prodtype->frequency != RPT_never)
+    RPT_reporting_sub_integer1 (local_data->nanimals_awaiting_destruction_by_prodtype,
+                                herd->size, herd->production_type_name);
+
+#if DEBUG
+  g_debug ("----- EXIT handle_destruction_canceled_event (%s)", MODEL_NAME);
 #endif
 }
 
@@ -311,20 +335,26 @@ handle_destruction_event (struct ergadm_model_t_ *self, EVT_destruction_event_t 
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
 
   switch (event->type)
     {
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (self, queue);
+      break;
     case EVT_NewDay:
-      handle_new_day_event (self, &(event->u.new_day));
+      handle_new_day_event (self);
       break;
     case EVT_CommitmentToDestroy:
       handle_commitment_to_destroy_event (self, &(event->u.commitment_to_destroy));
+      break;
+    case EVT_DestructionCanceled:
+      handle_destruction_canceled_event (self, &(event->u.destruction_canceled));
       break;
     case EVT_Destruction:
       handle_destruction_event (self, &(event->u.destruction));
@@ -336,7 +366,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
 }
 
@@ -348,36 +378,37 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  int i;
 
-  local_data = (local_data_t *) (self->model_data);
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
 
-  for (i = 0; i < local_data->nherds; i++)
-    local_data->status[i] = NOT_ON_WAITING_LIST;
+  g_hash_table_remove_all (local_data->status);
 
   RPT_reporting_zero (local_data->nherds_awaiting_destruction);
   RPT_reporting_zero (local_data->nherds_awaiting_destruction_by_prodtype);
   RPT_reporting_zero (local_data->nanimals_awaiting_destruction);
   RPT_reporting_zero (local_data->nanimals_awaiting_destruction_by_prodtype);
   RPT_reporting_zero (local_data->peak_nherds_awaiting_destruction);
+  RPT_reporting_set_null (local_data->peak_nherds_awaiting_destruction_day, NULL);
   RPT_reporting_zero (local_data->peak_nanimals_awaiting_destruction);
-  RPT_reporting_zero (local_data->peak_wait_time);
-  RPT_reporting_zero (local_data->average_wait_time);
+  RPT_reporting_set_null (local_data->peak_nanimals_awaiting_destruction_day, NULL);
+  RPT_reporting_set_null (local_data->peak_wait_time, NULL);
+  RPT_reporting_set_null (local_data->average_wait_time, NULL);
+  RPT_reporting_zero (local_data->unit_days_in_queue);
+  RPT_reporting_zero (local_data->animal_days_in_queue);
 
   local_data->peak_nherds = local_data->peak_nanimals = 0;
   local_data->peak_wait = 0;
-  local_data->sum_for_average = local_data->count_for_average = 0;
+  local_data->sum = local_data->count = 0;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -391,7 +422,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -410,21 +441,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
-{
-  return FALSE;
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -438,7 +455,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *chararray;
@@ -462,7 +479,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -482,7 +499,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -495,45 +512,38 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
-  g_free (local_data->status);
+  g_hash_table_destroy (local_data->status);
 
-  RPT_free_reporting (local_data->nherds_awaiting_destruction, TRUE);
-  RPT_free_reporting (local_data->nherds_awaiting_destruction_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->nanimals_awaiting_destruction, TRUE);
-  RPT_free_reporting (local_data->nanimals_awaiting_destruction_by_prodtype, TRUE);
-  RPT_free_reporting (local_data->peak_nherds_awaiting_destruction, TRUE);
-  RPT_free_reporting (local_data->peak_nanimals_awaiting_destruction, TRUE);
-  RPT_free_reporting (local_data->peak_wait_time, TRUE);
-  RPT_free_reporting (local_data->average_wait_time, TRUE);
+  RPT_free_reporting (local_data->nherds_awaiting_destruction);
+  RPT_free_reporting (local_data->nherds_awaiting_destruction_by_prodtype);
+  RPT_free_reporting (local_data->nanimals_awaiting_destruction);
+  RPT_free_reporting (local_data->nanimals_awaiting_destruction_by_prodtype);
+  RPT_free_reporting (local_data->peak_nherds_awaiting_destruction);
+  RPT_free_reporting (local_data->peak_nherds_awaiting_destruction_day);
+  RPT_free_reporting (local_data->peak_nanimals_awaiting_destruction);
+  RPT_free_reporting (local_data->peak_nanimals_awaiting_destruction_day);
+  RPT_free_reporting (local_data->peak_wait_time);
+  RPT_free_reporting (local_data->average_wait_time);
+  RPT_free_reporting (local_data->unit_days_in_queue);
+  RPT_free_reporting (local_data->animal_days_in_queue);
 
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -541,121 +551,127 @@ interface_version (void)
 /**
  * Returns a new destruction list monitor.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *self;
   local_data_t *local_data;
   scew_element *e, **ee;
-  unsigned int noutputs;
-  RPT_reporting_t *output;
-  RPT_reporting_t *old_peak_wait_time, *old_average_wait_time;
+  unsigned int n;
   const XML_Char *variable_name;
-  unsigned short int i, j;      /* loop counters */
+  RPT_frequency_t freq;
+  gboolean success;
+  gboolean broken_down;
+  unsigned int i;      /* loop counter */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  self = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
-  m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
-  m->events_listened_for = events_listened_for;
-  m->nevents_listened_for = NEVENTS_LISTENED_FOR;
-  m->outputs = g_ptr_array_sized_new (10);
-  m->model_data = local_data;
-  m->run = run;
-  m->reset = reset;
-  m->is_listening_for = is_listening_for;
-  m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
-  m->to_string = to_string;
-  m->printf = local_printf;
-  m->fprintf = local_fprintf;
-  m->free = local_free;
+  self->name = MODEL_NAME;
+  self->events_listened_for = events_listened_for;
+  self->nevents_listened_for = NEVENTS_LISTENED_FOR;
+  self->outputs = g_ptr_array_sized_new (10);
+  self->model_data = local_data;
+  self->run = run;
+  self->reset = reset;
+  self->is_listening_for = is_listening_for;
+  self->has_pending_actions = has_pending_actions;
+  self->to_string = to_string;
+  self->printf = local_printf;
+  self->fprintf = local_fprintf;
+  self->free = local_free;
 
   /* Make sure the right XML subtree was sent. */
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
 
   local_data->nherds_awaiting_destruction =
-    RPT_new_reporting ("num-units-awaiting-destruction", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("deswUAll", RPT_integer, RPT_never);
   local_data->nherds_awaiting_destruction_by_prodtype =
-    RPT_new_reporting ("num-units-awaiting-destruction-by-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("deswU", RPT_group, RPT_never);
   local_data->nanimals_awaiting_destruction =
-    RPT_new_reporting ("num-animals-awaiting-destruction", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("deswAAll", RPT_integer, RPT_never);
   local_data->nanimals_awaiting_destruction_by_prodtype =
-    RPT_new_reporting ("num-animals-awaiting-destruction-by-production-type", NULL, RPT_group,
-                       RPT_never, TRUE);
+    RPT_new_reporting ("deswA", RPT_group, RPT_never);
   local_data->peak_nherds_awaiting_destruction =
-    RPT_new_reporting ("peak-num-units-awaiting-destruction", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("deswUMax", RPT_integer, RPT_never);
+  local_data->peak_nherds_awaiting_destruction_day =
+    RPT_new_reporting ("deswUMaxDay", RPT_integer, RPT_never);
   local_data->peak_nanimals_awaiting_destruction =
-    RPT_new_reporting ("peak-num-animals-awaiting-destruction", NULL, RPT_integer, RPT_never, TRUE);
-  /* The name of these variables changed from "peak-wait-time" and "average-
-   * wait-time" to "peak-destruction-wait-time" and "average-destruction-wait-
-   * time", so that they're distinguishable from the similarly-named outputs in
-   * the vaccination list monitor.  Check for the old names, though, so that
-   * old parameter files will still work. */
+    RPT_new_reporting ("deswAMax", RPT_integer, RPT_never);
+  local_data->peak_nanimals_awaiting_destruction_day =
+    RPT_new_reporting ("deswAMaxDay", RPT_integer, RPT_never);
   local_data->peak_wait_time =
-    RPT_new_reporting ("peak-destruction-wait-time", NULL, RPT_integer, RPT_never, TRUE);
+    RPT_new_reporting ("deswUTimeMax", RPT_integer, RPT_never);
   local_data->average_wait_time =
-    RPT_new_reporting ("average-destruction-wait-time", NULL, RPT_real, RPT_never, TRUE);
-  old_peak_wait_time = RPT_new_reporting ("peak-wait-time", NULL, RPT_integer, RPT_never, TRUE);
-  old_average_wait_time = RPT_new_reporting ("average-wait-time", NULL, RPT_real, RPT_never, TRUE);
-  g_ptr_array_add (m->outputs, old_peak_wait_time);
-  g_ptr_array_add (m->outputs, old_average_wait_time);
-  g_ptr_array_add (m->outputs, local_data->nherds_awaiting_destruction);
-  g_ptr_array_add (m->outputs, local_data->nherds_awaiting_destruction_by_prodtype);
-  g_ptr_array_add (m->outputs, local_data->nanimals_awaiting_destruction);
-  g_ptr_array_add (m->outputs, local_data->nanimals_awaiting_destruction_by_prodtype);
-  g_ptr_array_add (m->outputs, local_data->peak_nherds_awaiting_destruction);
-  g_ptr_array_add (m->outputs, local_data->peak_nanimals_awaiting_destruction);
-  g_ptr_array_add (m->outputs, local_data->peak_wait_time);
-  g_ptr_array_add (m->outputs, local_data->average_wait_time);
+    RPT_new_reporting ("deswUTimeAvg", RPT_real, RPT_never);
+  local_data->unit_days_in_queue =
+    RPT_new_reporting ("deswUDaysInQueue", RPT_integer, RPT_never);
+  local_data->animal_days_in_queue =
+    RPT_new_reporting ("deswADaysInQueue", RPT_integer, RPT_never);
+  g_ptr_array_add (self->outputs, local_data->nherds_awaiting_destruction);
+  g_ptr_array_add (self->outputs, local_data->nherds_awaiting_destruction_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->nanimals_awaiting_destruction);
+  g_ptr_array_add (self->outputs, local_data->nanimals_awaiting_destruction_by_prodtype);
+  g_ptr_array_add (self->outputs, local_data->peak_nherds_awaiting_destruction);
+  g_ptr_array_add (self->outputs, local_data->peak_nherds_awaiting_destruction_day);
+  g_ptr_array_add (self->outputs, local_data->peak_nanimals_awaiting_destruction);
+  g_ptr_array_add (self->outputs, local_data->peak_nanimals_awaiting_destruction_day);
+  g_ptr_array_add (self->outputs, local_data->peak_wait_time);
+  g_ptr_array_add (self->outputs, local_data->average_wait_time);
+  g_ptr_array_add (self->outputs, local_data->unit_days_in_queue);
+  g_ptr_array_add (self->outputs, local_data->animal_days_in_queue);
 
   /* Set the reporting frequency for the output variables. */
-  ee = scew_element_list (params, "output", &noutputs);
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "%i output variables", noutputs);
+  ee = scew_element_list (params, "output", &n);
+#if DEBUG
+  g_debug ("%u output variables", n);
 #endif
-  for (i = 0; i < noutputs; i++)
+  for (i = 0; i < n; i++)
     {
       e = ee[i];
       variable_name = scew_element_contents (scew_element_by_name (e, "variable-name"));
-      /* Do the outputs include a variable with this name? */
-      for (j = 0; j < m->outputs->len; j++)
+      freq = RPT_string_to_frequency (scew_element_contents
+                                      (scew_element_by_name (e, "frequency")));
+      broken_down = PAR_get_boolean (scew_element_by_name (e, "broken-down"), &success);
+      if (!success)
+      	broken_down = FALSE;
+      if (strcmp (variable_name, "deswU") == 0)
         {
-          output = (RPT_reporting_t *) g_ptr_array_index (m->outputs, j);
-          if (strcmp (output->name, variable_name) == 0)
-            break;
+          RPT_reporting_set_frequency (local_data->nherds_awaiting_destruction, freq);
+          if (broken_down)
+            RPT_reporting_set_frequency (local_data->nherds_awaiting_destruction_by_prodtype, freq);
         }
-      if (j == m->outputs->len)
-        g_warning ("no output variable named \"%s\", ignoring", variable_name);
+      else if (strcmp (variable_name, "deswA") == 0)
+        {
+          RPT_reporting_set_frequency (local_data->nanimals_awaiting_destruction, freq);
+          if (broken_down)
+            RPT_reporting_set_frequency (local_data->nanimals_awaiting_destruction_by_prodtype, freq);
+        }
+      else if (strcmp (variable_name, "deswUMax") == 0)
+        RPT_reporting_set_frequency (local_data->peak_nherds_awaiting_destruction, freq);
+      else if (strcmp (variable_name, "deswUMaxDay") == 0)
+        RPT_reporting_set_frequency (local_data->peak_nherds_awaiting_destruction_day, freq);
+      else if (strcmp (variable_name, "deswAMax") == 0)
+        RPT_reporting_set_frequency (local_data->peak_nanimals_awaiting_destruction, freq);
+      else if (strcmp (variable_name, "deswAMaxDay") == 0)
+        RPT_reporting_set_frequency (local_data->peak_nanimals_awaiting_destruction_day, freq);
+      else if (strcmp (variable_name, "deswUTimeMax") == 0)
+        RPT_reporting_set_frequency (local_data->peak_wait_time, freq);
+      else if (strcmp (variable_name, "deswUTimeAvg") == 0)
+        RPT_reporting_set_frequency (local_data->average_wait_time, freq);
+      else if (strcmp (variable_name, "deswUDaysInQueue") == 0)
+        RPT_reporting_set_frequency (local_data->unit_days_in_queue, freq);
+      else if (strcmp (variable_name, "deswADaysInQueue") == 0)
+        RPT_reporting_set_frequency (local_data->animal_days_in_queue, freq);
       else
-        {
-          RPT_reporting_set_frequency (output,
-                                       RPT_string_to_frequency (scew_element_contents
-                                                                (scew_element_by_name
-                                                                 (e, "frequency"))));
-#if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "report \"%s\" %s", variable_name,
-                 RPT_frequency_name[output->frequency]);
-#endif
-        }
+        g_warning ("no output variable named \"%s\", ignoring", variable_name);        
     }
   free (ee);
-  if (old_peak_wait_time->frequency != RPT_never)
-    RPT_reporting_set_frequency (local_data->peak_wait_time, old_peak_wait_time->frequency);
-  if (old_average_wait_time->frequency != RPT_never)
-    RPT_reporting_set_frequency (local_data->average_wait_time, old_average_wait_time->frequency);
-  g_ptr_array_remove (m->outputs, old_peak_wait_time);
-  g_ptr_array_remove (m->outputs, old_average_wait_time);
-  RPT_free_reporting (old_peak_wait_time, TRUE);
-  RPT_free_reporting (old_average_wait_time, TRUE);
 
   local_data->nherds = HRD_herd_list_length (herds);
   local_data->production_types = herds->production_type_names;
@@ -667,17 +683,14 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
                                   (char *) g_ptr_array_index (local_data->production_types, i));
     }
 
-  /* No herds have been destroyed or slated for destruction yet. */
-  local_data->status = g_new0 (int, local_data->nherds);
-  local_data->peak_nherds = local_data->peak_nanimals = 0;
-  local_data->peak_wait = 0;
-  local_data->sum_for_average = local_data->count_for_average = 0;
+  /* Initialize the herd status table. */
+  local_data->status = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
-  return m;
+  return self;
 }
 
 /* end of file destruction-list-monitor.c */

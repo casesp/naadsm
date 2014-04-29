@@ -4,13 +4,13 @@ unit FormPriorityBase;
 FormPriorityBase.pas/dfm
 ------------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.20 $
+Last revision: $Date: 2011-08-23 21:40:53 $ $Author: areeves $
+Version: $Revision: 1.24.10.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -59,6 +59,8 @@ interface
       lbxReason: TListBox;
       lblDaysHolding: TLabel;
       pnlSpacer: TPanel;
+      lblNoProdTypes: TLabel;
+      lblNoReasons: TLabel;
 
       procedure lbxPrimaryDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
       procedure lbxPrimaryDragDrop(Sender, Source: TObject; X, Y: Integer);
@@ -72,14 +74,13 @@ interface
       //---------------------------------------------------------------
     	datahasChanged: boolean;
       LastDraw: shortint;
+      displayUpdated: boolean; // eliminates the "jerk" the priority examples make on every click in the listbox after ONE change is made
 
-    	_ptList: TProductionTypeList;
+    	_ptList: TProductionTypeList; // Used by derived classes
 
-      // These three variables need to be reset in derived classes!
-      //-----------------------------------------------------------
+      // This variable needs to be reset in derived classes!
+      //----------------------------------------------------
       reasonForActivity: string;
-      //sortOrder: TProdTypeOrder; // apparently unused?
-      //prodTypePriorityColumn: string; // apparently unused?
 
       procedure translateUI();
 
@@ -122,11 +123,11 @@ implementation
 
 	uses
     StrUtils,
+    MyDialogs,
 
     SqlClasses,
     CStringList,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n
   ;
@@ -138,8 +139,12 @@ implementation
       translateUI();
 
       reasonForActivity := tr( 'Reason for xyz' );
-      //sortOrder := OrderUnspecified;
-      //prodTypePriorityColumn := tr( 'Unknown' );
+
+      lblNoProdTypes.Left := lbxProdType.Left;
+      lblNoProdTypes.Top := lbxProdType.Top;
+
+      lblNoReasons.Left := lbxProdType.Left;
+      lblNoReasons.Top := lbxProdType.Top;
 
    		lbxProdType.Clear();
       lbxReason.Clear();
@@ -165,6 +170,8 @@ implementation
           lblPrimary.Caption := tr( 'Primary' );
           lblSecondary.Caption := tr( 'Secondary' );
           lblDaysHolding.Caption := tr( 'The more days holding, the higher the priority' );
+          lblNoProdTypes.Caption := tr( '(No production types use this control measure)' );
+          lblNoReasons.Caption := tr( '(This activity is never used)' );
         end
       ;
 
@@ -180,9 +187,12 @@ implementation
           lbxProdType.Items[2] := tr( 'Dairy' );
 
           lbxReason.Items[0] := tr( 'Detected' );
-          lbxReason.Items[1] := tr( 'Direct contact' );
-          lbxReason.Items[2] := tr( 'Indirect contact' );
+          lbxReason.Items[1] := tr( 'Trace forward of direct contact' );
+          lbxReason.Items[2] := tr( 'Trace forward of indirect contact' );
           lbxReason.Items[3] := tr( 'Ring' );
+          lbxReason.Items[4] := tr( 'Trace back of direct contact' );
+          lbxReason.Items[5] := tr( 'Trace back of indirect contact' );
+          lbxReason.Items[6] := tr( 'Cleanup after death from disease' );  //AR:deadDV
         end
       ;
 
@@ -203,7 +213,7 @@ implementation
       fillReasons();
       lbxPrimary.ItemIndex := 0;
       lbxPrimaryClick( lbxPrimary );
-
+      displayUpdated := false;
       updateDisplay();
     end
   ;
@@ -233,6 +243,14 @@ implementation
       Line : string;
     begin
       mmoExamples.Lines.Clear();
+
+      if( 0 = lbxProdType.Count ) then
+        begin
+          mmoExamples.Lines.Append( tr( 'No production types are affected.' ) );
+          exit;
+        end
+      ;
+
       L1 := lbxPrimary.Items;
       L2 := lbxPrimary.Items;
       L3 := lbxPrimary.Items;
@@ -328,6 +346,7 @@ implementation
         	end
         ;
 
+        displayUpdated := true;
       finally
         L.Free;
         mmoExamples.SelStart := 0;
@@ -374,7 +393,7 @@ implementation
           st := (Source as TListBox).ItemIndex;
           ih := (Source as TListBox).ItemHeight;
           w := (Sender as TListBox).Width;
-          ds := Y div ih;
+          ds := Y div ih;  //rbh Don't change this to reference topIndex!
 
           if ds > (Source as TListBox).Items.Count then
             ds := (Source as TListBox).Items.Count
@@ -400,39 +419,45 @@ implementation
         X, Y: Integer
       );
     var
-      ih : integer;
-      st, ds : integer;
-      s : string;
+      itemHeight : integer;
+      sourceIndex, destinationIndex : integer;
+      itemValue : string;
+      topIndex: integer;
     begin
       if (Source is TListBox) and (Sender is TListBox) then
         begin
           // erase the line
           ClearMarkerInListBox(Source as TListBox,LastDraw);
-          ih := (Source as TListBox).ItemHeight;
-          st := (Source as TListBox).ItemIndex;
-          ds := Y div ih;
+          itemHeight := (Source as TListBox).ItemHeight;
+          sourceIndex := (Source as TListBox).ItemIndex;
+          topIndex := (Source as TListBox).TopIndex;  // fix for issue 2431
 
-          if ds > (Source as TListBox).Items.Count - 1 then
-            ds := (Source as TListBox).Items.Count
+          // The value of Y is relative to the topmost item showing in the listbox, which is not necessarily
+          // the first item in the list if the list is long. The TopIndex property compensates for this.
+          destinationIndex := (Y + (topIndex * itemHeight)) div itemHeight;
+
+          if destinationIndex > (Source as TListBox).Items.Count - 1 then
+            destinationIndex := (Source as TListBox).Items.Count
           ;
 
-          if ds > st then
+          if (destinationIndex > sourceIndex) then
             begin
-              s := (Sender as TListBox).Items[st];
-              (Sender as TListBox).Items.Delete(st);
-              (Sender as TListBox).Items.Insert(ds-1,s);
-              (Sender as TListBox).ItemIndex := ds-1;
+              itemValue := (Sender as TListBox).Items[sourceIndex];
+              (Sender as TListBox).Items.Delete(sourceIndex);
+              (Sender as TListBox).Items.Insert(destinationIndex - 1, itemValue);
+              (Sender as TListBox).ItemIndex := destinationIndex - 1;
             end
           else
             begin
-              s := (Sender as TListBox).Items[st];
-              (Sender as TListBox).Items.Delete(st);
-              (Sender as TListBox).Items.Insert(ds,s);
-              (Sender as TListBox).ItemIndex := ds;
+              itemValue := (Sender as TListBox).Items[sourceIndex];
+              (Sender as TListBox).Items.Delete(sourceIndex);
+              (Sender as TListBox).Items.Insert(destinationIndex, itemValue);
+              (Sender as TListBox).ItemIndex := destinationIndex;
             end
           ;
 
           DataHasChanged := True;
+          displayUpdated := false;
           updateDisplay();
         end
       ;
@@ -469,32 +494,58 @@ implementation
         begin
           lblDaysHolding.Hide();
           lbxProdType.Hide();
+          lblNoProdTypes.Hide();
           lbxReason.Top := tp;
           lbxReason.Left := lft;
-          lbxReason.Show();
+
+          if( 0 = lbxReason.Count ) then
+            begin
+              lblNoReasons.show();
+              lbxReason.hide();
+            end
+          else
+            begin
+              lblNoReasons.hide();
+              lbxReason.Show();
+            end
+          ;
         end
-      else
-      if cp = tr( 'Production type' ) then
+      else if( cp = tr( 'Production type' ) ) then
         begin
           lblDaysHolding.Hide();
           lbxReason.Hide();
+          lblNoReasons.Hide();
           lbxProdType.Top := tp;
           lbxProdType.Left := lft;
-          lbxProdType.Show();
+          if( 0 = lbxProdType.Count ) then
+            begin
+              lblNoProdTypes.Show();
+              lbxProdType.Hide();
+            end
+          else
+            begin
+              lbxProdType.Show();
+              lblNoProdTypes.Hide();
+            end
+          ;
         end
-      else
-      if cp = tr( 'Days holding' ) then
+      else if( cp = tr( 'Days holding' ) ) then
         begin
           lbxReason.Hide();
           lbxProdType.Hide();
-          lblDaysHolding.Top := tp + lblDaysHolding.Height;
+          lblNoReasons.Hide();
+          lblNoProdTypes.Hide();
+          lblDaysHolding.Top := tp;
           lblDaysHolding.Left := lft;
           lblDaysHolding.Show();
         end
       else
         begin
+          // FIX ME: When does this occur?  Should this be an exception?
           lblDaysHolding.Hide();
           lbxProdType.Hide();
+          lblNoProdTypes.Hide();
+          lblNoReasons.Hide();
           lbxReason.Hide();
         end
       ;
@@ -509,39 +560,60 @@ implementation
         var DataHasChanged : boolean
       );
     var
-      ih, p, np, xe : integer;
-      ns : string;
-      Entry : string;
+      itemHeight, sourceIndex, destinationIndex, errorCode: integer;
+      inputPriorityOrder, itemValue: string;
+      topIndex: integer;
+
     begin
       if Button = mbRight then
         begin
-          ih := lb.ItemHeight;
-          p := y div ih;
-          if p < (lb.Items.Count) then
-            begin
-              lb.ItemIndex := p;
+          itemHeight := lb.ItemHeight;
+          topIndex := lb.TopIndex;  // fix for issue 2431
+          // The value of Y is relative to the topmost item showing in the listbox, which is not necessarily
+          // the first item in the list if the list is long. The TopIndex property compensates for this.
+          sourceIndex := (Y + (topIndex * itemHeight)) div itemHeight;
 
-              ns := Inputbox(
-              	tr( 'Priority order' ),
+          if sourceIndex < (lb.Items.Count) then
+            begin
+              lb.ItemIndex := sourceIndex;
+
+              inputPriorityOrder := msgInput(
                 tr( 'Enter a new order number to change priority' ),
-                IntToStr(p+1)
+                '', // regexp
+                tr( 'Priority order' ), // caption
+                IMGQuestion,
+                self,
+                IntToStr(sourceIndex + 1)
               );
 
-              Val(ns, np, xe);
+              Val(inputPriorityOrder, destinationIndex, errorCode);
 
-              if (xe = 0) and (ns <> IntToStr(p+1)) then
+              if (1 > destinationIndex) then
                 begin
-                  Entry := lb.Items[p];
-                  lb.Items.Delete(p);
+                  msgOK(
+                    tr( 'Your entry is not a valid priority order.' ),
+                    '', // no custom caption
+                    imgWarning,
+                    self
+                  );
+                  exit;
+                end
+              ;
 
-                  if np > lb.Items.Count then
-                    lb.Items.Append(Entry)
+              if (errorCode = 0) and (inputPriorityOrder <> IntToStr(sourceIndex + 1)) then
+                begin
+                  itemValue := lb.Items[sourceIndex];
+                  lb.Items.Delete(sourceIndex);
+
+                  if destinationIndex > lb.Items.Count then
+                    lb.Items.Append(itemValue)
                   else
-                    lb.Items.Insert(np-1, Entry)
+                    lb.Items.Insert(destinationIndex -1 , itemValue)
                   ;
 
-                  lb.ItemIndex := lb.Items.IndexOf(Entry);
+                  lb.ItemIndex := lb.Items.IndexOf(itemValue);
                   DataHasChanged := True;
+                  displayUpdated := false;
                 end
               ;
             end
@@ -561,7 +633,7 @@ implementation
     begin
       changeListOrder( Button, y, (sender as TListBox), DataHasChanged );
       if (Sender as TListBox).Name = 'lbxPrimary' then lbxPrimaryClick(Sender);
-      if DataHasChanged then updateDisplay();
+      if (DataHasChanged) and (not displayUpdated) then updateDisplay();
     end
   ;
 

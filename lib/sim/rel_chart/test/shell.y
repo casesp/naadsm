@@ -73,7 +73,7 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
 %token LOOKUP RANGE
 %token NUM
 %token LPAREN RPAREN COMMA
-%token <fval> NUM
+%type <fval> NUM
 %type <lval> num_list
 
 %%
@@ -172,7 +172,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s)
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;

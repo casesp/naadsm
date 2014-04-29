@@ -4,13 +4,13 @@ unit FormHerdListEditor;
 FormHerdListEditor.pas/dfm
 --------------------------
 Begin: 2005/09/02
-Last revision: $Date: 2008/04/18 20:35:16 $ $Author: areeves $
-Version number: $Revision: 1.31 $
+Last revision: $Date: 2011-07-18 21:24:00 $ $Author: rhupalo $
+Version number: $Revision: 1.36.6.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -40,6 +40,12 @@ interface
     ActnCtrls,
     ActnMenus,
     Buttons,
+    Menus,
+    ActnPopupCtrl,
+
+    // QClasses,
+    QVectors,
+
     // Base class
     FormSMWizardBase,
     
@@ -48,7 +54,7 @@ interface
 
 		// Data structures
     SMScenario,
-    Herd, Menus, ActnPopupCtrl
+    Herd
   ;
 
 
@@ -129,7 +135,7 @@ interface
       // Import/export
       //--------------
       { Creates a new list from a CSV or XML file }
-      function createListFromFile( fileName: string; fileFormat: integer ): THerdList;
+      function createListFromFile( const fileName: string; fileFormat: integer; ids: TQIntegerVector = nil ): THerdList;
 
 
       // Simple properties
@@ -155,16 +161,19 @@ implementation
 {$R *.dfm}
 
   uses
+     // Simple Delphi Expat Wrapper
+    Sdew,
+
     StrUtils,
-    
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     DebugWindow,
     MyDialogs,
     FunctionPointers,
     I88n,
     CsvParser,
+
+    DialogLongMessage,
 
     FormHerdExportOptions,
     FormProgress,
@@ -191,6 +200,8 @@ implementation
       btnRemoveSelected.Enabled := false;
 
       _replaceHerdsInDatabase := false;
+
+      self.Width := 810;
     end
   ;
 
@@ -285,6 +296,8 @@ implementation
     var
       fnProgress: TObjFnBool1Int;
       frm: TFormProgress;
+      hListUpdateSuccess: boolean;
+      errMsg: string;
     begin
 
       if( not( _indexExists ) ) then
@@ -322,10 +335,7 @@ implementation
         end
       ;
 
-      (*
-      fnProgress := nil;
-      frm := nil;
-      *)
+      Screen.Cursor := crHourglass;
 
       // Don't delete the herd list, since
       // other units (e.g. FormMap) depend
@@ -362,10 +372,25 @@ implementation
 
       if( _replaceHerdsInDatabase ) then _smScenarioOriginal.simInput.database.clearHerds();
 
-      _smScenarioOriginal.herdList.populateDatabase( _smScenarioOriginal.simInput.database, fnProgress );
+      hListUpdateSuccess := _smScenarioOriginal.herdList.populateDatabase( _smScenarioOriginal.simInput.database, fnProgress, @errMsg );
 
-      freeAndNil( frm );
-      
+      Screen.Cursor := crDefault;
+
+      if( not hListUpdateSuccess ) then
+        begin
+          msgOK(
+            errMsg,
+            tr( 'Problems encountered with list of units' ),
+            imgWarning,
+            self
+          );
+        end
+      ;
+
+      if( nil <> frm ) then
+        frm.Release()
+      ;
+      application.ProcessMessages(); //rbh to resolve issue 2408
       self.SetFocus();
     end
   ;
@@ -433,11 +458,12 @@ implementation
 
       frm := TFormHerdExportOptions.create( self );
 
+      // FIX ME: Use of the projected coordinate system is not currently allowed by herd export.
       if( frm.execute() ) then
         begin
           case frm.fileFormat of
-            XML_FILE_FORMAT: success := _herdList.writeXMLFile( frm.fileName );
-            CSV_FILE_FORMAT: success := _herdList.writeCSVFile( frm.fileName, frm.productionTypeByName, frm.initialStateAsCharacter );
+            XML_FILE_FORMAT: success := _herdList.writeXMLFile( frm.fileName, false );
+            CSV_FILE_FORMAT: success := _herdList.writeCSVFile( frm.fileName, frm.productionTypeByName, frm.initialStateAsCharacter, false );
             else success := false;
           end;
 
@@ -460,12 +486,12 @@ implementation
         end
       ;
 
-      frm.Free();
+      frm.Release();
     end
   ;
 
 
-  function TFormHerdListEditor.createListFromFile( fileName: string; fileFormat: integer ): THerdList;
+  function TFormHerdListEditor.createListFromFile( const fileName: string; fileFormat: integer; ids: TQIntegerVector = nil ): THerdList;
     var
       h: THerd;
       localHerdList: THerdList;
@@ -479,13 +505,24 @@ implementation
       counter: integer;
 
       csv: TCSVContents;
+
+      errFrm: TDialogLongMessage;
+      errCaption, errHeader, errMsg: string;
+
+      sdew: TSdew;
+      root: pointer;
+      n: integer;
     begin
+      Screen.Cursor := crHourglass;
+
       // Do some easy checks first...
       //-----------------------------
       if( not( fileExists( fileName ) ) ) then
         begin
+          Screen.Cursor := crDefault;
+
           msgOK(
-            ansiReplaceStr( tr( 'The selected file xyz does not exits.' ), 'xyz', abbrevPath( fileName ) ),
+            ansiReplaceStr( tr( 'The selected file xyz does not exist.' ), 'xyz', abbrevPath( fileName ) ),
             tr( 'Missing file' ),
             IMGCritical,
             self
@@ -507,18 +544,39 @@ implementation
           else
             begin
               // Try parsing as a CSV file.
-              csv := TCSVContents.createFromFile( fileName, true );
-
-              if( csv.parseSuccess ) then
+              csv := TCSVContents.createFromFile( fileName, csvListSep(), true );
+              // Presently, ANY text file that can be opened will return parseSuccess of true.
+              // So, if there typically is >5 fields per line then this might be a CSV herd file.
+              if( csv.parseSuccess and ( csv.avgFieldCount > 5 )) then
                 fileFormat := CSV_FILE_FORMAT
               ;
-
-              // FIX ME: is there a cheap way to try to parse the file as XML?
-
               csv.Free();
+
+              // if not a CSV file then try to parse the file as XML
+              n:= 0;
+              sdew := nil;
+              if( UNKNOWN_FILE_FORMAT = fileFormat ) then
+                begin
+                  try
+                    // _rootTree will be nil if the XML is misformed or non-existant.
+                    sdew := TSdew.createFromFile( pAnsiChar( fileName ) );
+                    if assigned(sdew) then
+                      begin
+                        root := sdew.GetRootTree();
+                        if (root <> nil) then n := sdew.GetElementCount( root );
+                      end
+                    ;
+                  finally
+                    if (0 < n) then fileFormat := XML_FILE_FORMAT;
+                    if assigned(sdew) then sdew.Free();
+                  end;
+                end
+              ;
 
               if( UNKNOWN_FILE_FORMAT = fileFormat ) then
                 begin
+                  Screen.Cursor := crDefault;
+
                   msgOK(
                     ansiReplaceStr( tr( 'The format of the selected file xyz' ), 'xyz', abbrevPath( fileName ) )  + ' ' + tr( 'could not be determined.' )
                       + '  ' + tr( 'Files must be XML or CSV format' )
@@ -537,11 +595,12 @@ implementation
         end
       ;
 
+      
       // Set up the data structure.
       //---------------------------
       localHerdList := THerdList.create();
       localHerdList.setDB( _smScenarioOriginal.simInput.database );
-
+      localHerdList.setSim( _smScenarioOriginal.simInput );
 
       // Set up the progress form.
       //--------------------------
@@ -551,6 +610,7 @@ implementation
       fn3 := frm.setMessage;
       frm.Show();
 
+
       // Try to parse the file.
       //-----------------------
       if
@@ -558,30 +618,37 @@ implementation
       or
         ( XML_FILE_FORMAT = fileFormat )
       then
-        success := localHerdList.importFromFile( fileName, fileFormat, fn1, fn2, fn3 )
+        success := localHerdList.importFromFile( fileName, fileFormat, @errMsg, fn1, fn2, fn3, false, ids )
       else // file format is not supported
         success := false
       ;
+
 
       // Failure here will be due to a file problem.
       if( not( success ) ) then
         begin
           frm.Close();
-          frm.Free();
+          frm.Release();
 
-          msgOK(
-            ansiReplaceStr( tr( 'The file xyz' ), 'xyz', abbrevPath( fileName, 35 ) ) + ' ' +  tr( 'could not be parsed.' ) + ' '
-              + tr( 'Please check that the file exists, is not open in another application, and is formatted properly.' )
-              + ' ' + tr( 'For more information, please see your user''s documentation.' ),
-            tr( 'File import failed' ),
-            IMGCritical,
-            Self
-          );
+          errCaption := tr( 'File import failed' );
+          errHeader := ansiReplaceStr( tr( 'The file xyz could not be parsed.' ), 'xyz', abbrevPath( fileName, 35 ) )
+            + ' ' + tr( 'Please check that the file exists, is not open in another application, and is formatted properly.' )
+            + ' ' + tr( 'The following errors were reported.' )
+            + ' ' + tr( 'For more information, please see your user''s documentation:' )
+          ;
+
+          Screen.Cursor := crDefault;
+
+          errFrm := TDialogLongMessage.create( self , errCaption, errHeader, errMsg );
+          errFrm.showModal();
+          errFrm.Release();
+
           freeAndNil( localHerdList );
           result := nil;
           exit;
         end
       ;
+      
 
       // If the file is successfully parsed, we still need to make sure that
       // the appropriate production types exist in the scenario.
@@ -620,12 +687,14 @@ implementation
       frm.setSecondary( 100 );
 
       frm.Close();
-      frm.Free();
+      frm.Release();
 
       self.setFocus();
 
       if( not( success ) ) then
         begin
+          Screen.Cursor := crDefault;
+
           msgOK(
             ansiReplaceStr( tr( 'The file xyz' ), 'xyz', abbrevPath( fileName, 25 ) ) + ' ' + tr( 'was successfully parsed,' )
               + ' '
@@ -645,6 +714,8 @@ implementation
       localHerdList.resetSim( _smScenarioOriginal.simInput );
 
       result := localHerdList;
+
+      Screen.Cursor := crDefault;
     end
   ;
 
@@ -653,6 +724,7 @@ implementation
     var
       hList: THerdList;
       h: THerd;
+      fileFormatIndex: integer;
     begin
       inherited;
 
@@ -666,7 +738,10 @@ implementation
         begin
           _iniHandler.update( 'LastImportDirectory', directory( dlgOpenImport.FileName ) );
 
-          hList := createListFromFile( dlgOpenImport.FileName, dlgOpenImport.FilterIndex - 1 );
+          fileFormatIndex := dlgOpenImport.FilterIndex - 1;
+          // make adjustment for when filterIndex was 4 (*.*)
+          if (2 < fileFormatIndex) then fileFormatIndex := UNKNOWN_FILE_FORMAT;
+          hList := createListFromFile( dlgOpenImport.FileName, fileFormatIndex );
 
           if( nil <> hList ) then
             begin
@@ -709,6 +784,11 @@ implementation
   procedure TFormHerdListEditor.acnImportReplaceExecute(Sender: TObject);
     var
       hList: THerdList;
+      fileFormatIndex: integer;
+      ids: TQIntegerVector;
+      uniqueIds: boolean;
+      response: integer;
+      i: integer;
     begin
       inherited;
 
@@ -722,10 +802,59 @@ implementation
         begin
           _iniHandler.update( 'LastImportDirectory', directory( dlgOpenImport.FileName ) );
 
-          hList := createListFromFile( dlgOpenImport.FileName, dlgOpenImport.FilterIndex - 1 );
+          fileFormatIndex := dlgOpenImport.FilterIndex - 1;
+          // make adjustment for when filterIndex was 4 (*.*)
+          if (2 < fileFormatIndex) then fileFormatIndex := UNKNOWN_FILE_FORMAT;
+
+          // This vector will store a list of herds IDs as they are imported from the selected file.
+          // Remember that every herd ID must be unique.  This requirement will be enforced below.
+          ids := TQIntegerVector.create();
+
+          hList := createListFromFile( dlgOpenImport.FileName, fileFormatIndex, ids );
 
           if( nil <> hList ) then
             begin
+              // Are all assigned herd IDs unique?
+              uniqueIds := true; // Until shown otherwise
+              ids.sort();
+              for i := 0 to ids.count - 2 do
+                begin
+                  if( ids.at( i ) = ids.at( i+1 ) ) then
+                    begin
+                      uniqueIDs := false;
+                      break;
+                    end
+                  ;
+                end
+              ;
+
+              if( not( uniqueIds ) ) then
+                begin
+                  response := msgYesNo(
+                    tr( 'Not all unit ID numbers in this file are unique.  If you continue with this import operation, all unit ID numbers will be replaced.' )
+                      + endl + endl
+                      + tr( 'Continue?' ),
+                    tr( 'Unit IDs are not unique' ),
+                    IMGWarning,
+                    self
+                  );
+
+                  if( mrNo = response ) then
+                    begin
+                      hList.Free();
+                      ids.Free();
+                      exit;
+                    end
+                  else
+                    begin
+                      for i := 0 to hList.Count - 1 do
+                        hList.at(i).id := -1
+                      ;
+                    end
+                  ;
+                end
+              ;
+
               // Reset the herd list for the editor.
               setHerdList( hList );
 
@@ -746,6 +875,7 @@ implementation
             end
           ;
 
+          ids.Free();
         end
       ;
     end
@@ -842,6 +972,7 @@ end;
 procedure TFormHerdListEditor.acnFinishExecute(Sender: TObject);
 begin
   inherited;
+  fraHerdListEditor.stgHerdsExit(self); // fixes issue 2217
   btnFinish.Click();
 end;
 

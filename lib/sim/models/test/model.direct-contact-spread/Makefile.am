@@ -22,7 +22,6 @@ EXTRA_DIST = spread_1.xml spread_2.xml spread_2_poisson.xml spread_3.xml \
   spread_dist_5.xml spread_dist_6.xml spread_same_loc_1.xml \
   spread_same_loc_2.xml spread_same_loc_3.xml no_quarantine.xml \
   quarantine_fast.xml quarantine_slow.xml \
-  spread_delay_1.xml  spread_delay_2.xml spread_delay_3.xml \
   mult_exposure_1.xml mult_exposure_2.xml mult_exposure_2b.xml \
   fixed_rate_1.xml fixed_rate_2.xml fixed_rate_0.xml \
   fixed_rate_0.5.xml fixed_rate_0.33.xml \
@@ -32,4 +31,6 @@ EXTRA_DIST = spread_1.xml spread_2.xml spread_2_poisson.xml spread_3.xml \
   spread_ascii.xml spread_ascii_w_vars.xml spread_iso88591_w_vars.xml \
   spread_utf8_w_vars.xml spread_utf8_no_bom_w_vars.xml \
   spread_utf16_big_endian_w_vars.xml spread_utf16_big_endian_no_bom_w_vars.xml \
-  spread_utf16_little_endian_w_vars.xml spread_utf16_little_endian_no_bom_w_vars.xml
+  spread_utf16_little_endian_w_vars.xml spread_utf16_little_endian_no_bom_w_vars.xml \
+  shipment_size_1.xml shipment_size_2.xml shipment_size_3.xml \
+  no_spread_dead_1_w_vars.xml

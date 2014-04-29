@@ -4,11 +4,11 @@ unit FrameCosts;
 FrameCosts.pas/dfm
 ------------------
 Begin: 2005/12/15
-Last revision: $Date: 2008/03/12 22:10:49 $ $Author: areeves $
+Last revision: $Date: 2008-03-12 22:10:49 $ $Author: areeves $
 Version number: $Revision: 1.12 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
 

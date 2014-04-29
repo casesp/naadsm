@@ -1,7 +1,7 @@
 object FormSMOutputBase: TFormSMOutputBase
-  Left = 1037
-  Top = 465
-  Width = 589
+  Left = 629
+  Top = 353
+  Width = 755
   Height = 500
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'SM Output Base Class'
@@ -24,17 +24,24 @@ object FormSMOutputBase: TFormSMOutputBase
   object pnlControls: TPanel
     Left = 0
     Top = 0
-    Width = 581
+    Width = 747
     Height = 33
     Align = alTop
     TabOrder = 0
     object pnlProdTypes: TPanel
-      Left = 301
+      Left = 333
       Top = 1
-      Width = 279
+      Width = 413
       Height = 31
       Align = alClient
       TabOrder = 2
+      object lblIteration: TLabel
+        Left = 280
+        Top = 8
+        Width = 44
+        Height = 13
+        Caption = 'Iteration: '
+      end
       object cboProdTypes: TComboBox
         Left = 16
         Top = 4
@@ -70,9 +77,19 @@ object FormSMOutputBase: TFormSMOutputBase
         Visible = False
         OnCloseUp = cboZonesCloseUp
       end
+      object cboIteration: TComboBox
+        Left = 340
+        Top = 4
+        Width = 65
+        Height = 21
+        Style = csDropDownList
+        ItemHeight = 13
+        TabOrder = 4
+        OnChange = cboIterationChange
+      end
     end
     object pnlButtons: TPanel
-      Left = 97
+      Left = 129
       Top = 1
       Width = 204
       Height = 31
@@ -468,14 +485,14 @@ object FormSMOutputBase: TFormSMOutputBase
     object pnlMenu: TPanel
       Left = 1
       Top = 1
-      Width = 96
+      Width = 128
       Height = 31
       Align = alLeft
       TabOrder = 0
       object mainMenuBar: TActionMainMenuBar
         Left = 1
         Top = 1
-        Width = 94
+        Width = 126
         Height = 29
         Caption = 'mainMenuBar'
         ColorMap.HighlightColor = 14410210
@@ -494,18 +511,18 @@ object FormSMOutputBase: TFormSMOutputBase
   object dlgSaveWMF: TSaveDialog
     DefaultExt = 'wmf'
     Filter = 'Windows Metafile (*.wmf)|*.wmf|All files (*.*)|*.*'
-    Left = 8
-    Top = 9
+    Left = 24
+    Top = 57
   end
   object dlgSaveCSV: TSaveDialog
     DefaultExt = 'csv'
     Filter = 'CSV (Comma delimted) (*.csv)|*.csv|All files (*.*)|*.*'
     Title = 'Select a file name'
-    Left = 40
-    Top = 8
+    Left = 56
+    Top = 56
   end
   object dlgPrint: TPrintDialog
-    Left = 72
-    Top = 8
+    Left = 88
+    Top = 48
   end
 end

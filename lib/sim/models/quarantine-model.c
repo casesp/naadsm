@@ -25,24 +25,19 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version quarantine_model_LTX_interface_version
-#define new quarantine_model_LTX_new
-#define run quarantine_model_LTX_run
-#define reset quarantine_model_LTX_reset
-#define events_listened_for quarantine_model_LTX_events_listened_for
-#define is_listening_for quarantine_model_LTX_is_listening_for
-#define has_pending_actions quarantine_model_LTX_has_pending_actions
-#define has_pending_infections quarantine_model_LTX_has_pending_infections
-#define to_string quarantine_model_LTX_to_string
-#define local_printf quarantine_model_LTX_printf
-#define local_fprintf quarantine_model_LTX_fprintf
-#define local_free quarantine_model_LTX_free
-#define handle_detection_event quarantine_model_LTX_handle_detection_event
-#define handle_request_for_destruction_event quarantine_model_LTX_handle_request_for_destruction_event
-#define events_created quarantine_model_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new quarantine_model_new
+#define run quarantine_model_run
+#define reset quarantine_model_reset
+#define events_listened_for quarantine_model_events_listened_for
+#define is_listening_for quarantine_model_is_listening_for
+#define has_pending_actions quarantine_model_has_pending_actions
+#define to_string quarantine_model_to_string
+#define local_printf quarantine_model_printf
+#define local_fprintf quarantine_model_fprintf
+#define local_free quarantine_model_free
+#define handle_detection_event quarantine_model_handle_detection_event
+#define handle_request_for_destruction_event quarantine_model_handle_request_for_destruction_event
 
 #include "model.h"
 
@@ -50,27 +45,12 @@
 #  include <string.h>
 #endif
 
-#include "guilib.h"
-
 #include "quarantine-model.h"
 
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "quarantine-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate a policy of quarantining diseased herds and herds that\n\
-are going to be destroyed.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 November 2003\
-"
 
-#define MODEL_INTERFACE_VERSION "0.93"
-
-
-
-#define NEVENTS_CREATED 0
-EVT_event_type_t events_created[] = { 0 };
 
 #define NEVENTS_LISTENED_FOR 2
 EVT_event_type_t events_listened_for[] = { EVT_Detection,
@@ -95,14 +75,14 @@ local_data_t;
  * @param event a detection event.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * event)
+handle_detection_event (struct naadsm_model_t_ *self, EVT_detection_event_t * event)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "quarantining herd %s", event->herd->official_id);
+#if DEBUG
+  g_debug ("quarantining herd %s", event->herd->official_id);
 #endif
   HRD_quarantine (event->herd);
 
@@ -120,7 +100,7 @@ handle_detection_event (struct ergadm_model_t_ *self, EVT_detection_event_t * ev
  * @param event a request for destruction event.
  */
 void
-handle_request_for_destruction_event (struct ergadm_model_t_ *self,
+handle_request_for_destruction_event (struct naadsm_model_t_ *self,
                                       EVT_request_for_destruction_event_t * event)
 {
 #if DEBUG
@@ -128,8 +108,8 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
          "----- ENTER handle_request_for_destruction_event (%s)", MODEL_NAME);
 #endif
 
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "quarantining herd %s", event->herd->official_id);
+#if DEBUG
+  g_debug ("quarantining herd %s", event->herd->official_id);
 #endif
   HRD_quarantine (event->herd);
 
@@ -152,18 +132,13 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   switch (event->type)
     {
     case EVT_Detection:
@@ -181,11 +156,6 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -196,7 +166,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
@@ -219,7 +189,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -238,21 +208,7 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
-{
-  return FALSE;
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   return FALSE;
 }
@@ -266,7 +222,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *chararray;
@@ -292,7 +248,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -312,7 +268,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -325,7 +281,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
 
@@ -347,36 +303,23 @@ local_free (struct ergadm_model_t_ *self)
 
 
 /**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
-}
-
-
-
-/**
  * Returns a new quarantine model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -385,7 +328,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   m->reset = reset;
   m->is_listening_for = is_listening_for;
   m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
   m->to_string = to_string;
   m->printf = local_printf;
   m->fprintf = local_fprintf;
@@ -399,19 +341,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
 #endif
 
   return m;
-}
-
-
-char *
-quarantine_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-quarantine_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file quarantine-model.c */

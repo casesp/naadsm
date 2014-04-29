@@ -19,8 +19,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.683 per day, which will give 0 shipments each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 0 shipments each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -54,6 +53,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>29 January 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>2herds</herd-file>
@@ -64,8 +64,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.683 per day, which will give 0 shipments each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The mean movement rate is fixed at 0 shipments each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -77,17 +76,19 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>0</td> <td>1</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <!--              Ini       Cattle   Ini/Cattle   Total     -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -112,8 +113,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -148,6 +148,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>29 January 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>2herds</herd-file>
@@ -158,8 +159,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -168,9 +168,9 @@
     
     There is no detection, vaccination, or destruction.
 
-    Recapping what should happen as a result of all this:
+    What should happen:
      - On day 1 unit 0 will ship to and infect unit 1, for a total of 1
-       exposure and 1 infection.
+       exposure and 1 infection by direct contact.
      - On day 2 unit 0 will be Infectious Clinical and unit 1 will be Latent.
        They will ship to each other, for a total of 2 exposures but no new
        infections.
@@ -184,18 +184,20 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td> <td>1</td> <td>1</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <!--              Ini       Cattle   Ini/Cattle   Total     -->
+    <tr><td>1</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>2</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -220,8 +222,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -255,6 +256,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>29 January 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>2herds</herd-file>
@@ -265,8 +267,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -286,18 +287,20 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td> <td>1</td> <td>0</td></tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
-  </output>
+    <!--              Ini       Cattle   Ini/Cattle   Total     -->
+    <tr><td>1</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+   </output>
 </variable-test>
 
 <deterministic-test>
@@ -322,8 +325,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -358,6 +360,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>29 January 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>2herds</herd-file>
@@ -368,8 +371,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
 
     Latent units can be the source of an exposure.
@@ -394,157 +396,22 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td> <td>1</td> <td>1</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>2</td> <td>0</td> <td>0</td></tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <!--              Ini       Cattle   Ini/Cattle   Total     -->
+    <tr><td>1</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>2</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
-
-<deterministic-test>
-  <category>direct-contact-spread</category>
-  <short-name>2 units, direct contact spread, 1 day shipping delay</short-name>
-
-  <description>
-    Test a scenario where the source unit infects the neighbour unit through
-    direct contact with a 1-day shipping delay.
-  </description>
-
-  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
-  <creation-date>7 April 2004</creation-date>
-  <model-version>3.0</model-version>
-
-  <herd-file>2herds</herd-file>
-
-  <parameter-file>spread_delay_1</parameter-file>
-  
-  <parameter-description>
-    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
-    accompany infectiousness immediately, and immunity lasts 3 days.
-    
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
-    shipments is fixed at 10 km.  The shipping delay is 1 day.
-
-    Latent units can be the source of an exposure.
-    
-    The probability of infection given exposure is 1.
-    
-    There is no detection, vaccination, or destruction.
-  </parameter-description>
-
-  <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
-    <tr><td>Susceptible</td>         <td>NaturallyImmune</td></tr>
-<!--
-    Nothing to do, simulation stops.
--->
-  </output>
-</deterministic-test>
-
-<deterministic-test>
-  <category>direct-contact-spread</category>
-  <short-name>2 units, direct contact spread, 2 day shipping delay</short-name>
-
-  <description>
-    Test a scenario where the source unit infects the neighbour unit through
-    direct contact with a 2-day shipping delay.
-
-    NB: This test case does not care about secondary spread, so we end the test
-    before that can happen.
-  </description>
-
-  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
-  <creation-date>15 October 2004</creation-date>
-  <model-version>3.0</model-version>
-
-  <herd-file>2herds</herd-file>
-
-  <parameter-file>spread_delay_2</parameter-file>
-
-  <parameter-description>
-    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
-    accompany infectiousness immediately, and immunity lasts 3 days.
-
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
-    shipments is fixed at 10 km.  The shipping delay is 2 days.
-
-    Latent units can be the source of an exposure.
-
-    The probability of infection given exposure is 1.
-
-    There is no detection, vaccination, or destruction.
-  </parameter-description>
-
-  <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-  </output>
-</deterministic-test>
-
-<deterministic-test>
-  <category>direct-contact-spread</category>
-  <short-name>2 units, direct contact spread, 3 day shipping delay</short-name>
-
-  <description>
-    Test a scenario where the source unit infects the neighbour unit through
-    direct contact with a 3-day shipping delay.
-
-    NB: This test case does not care about secondary spread, so we end the test
-    before that can happen.
-  </description>
-
-  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
-  <creation-date>7 April 2004</creation-date>
-  <model-version>3.0</model-version>
-
-  <herd-file>2herds</herd-file>
-
-  <parameter-file>spread_delay_3</parameter-file>
-  
-  <parameter-description>
-    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
-    accompany infectiousness immediately, and immunity lasts 3 days.
-    
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
-    shipments is fixed at 10 km.  The shipping delay is 3 days.
-
-    Latent units can be the source of an exposure.
-    
-    The probability of infection given exposure is 1.
-    
-    There is no detection, vaccination, or destruction.
-  </parameter-description>
-
-  <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>Susceptible</td>         <td>InfectiousClinical</td></tr>
-  </output>
-</deterministic-test>
 
 <deterministic-test>
   <category>direct-contact-spread</category>
@@ -568,8 +435,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
     
     Latent units cannot be the source of an exposure.
@@ -615,8 +481,7 @@
     1 day, infectiousness with clinical signs lasts 1 day, and immunity lasts 3
     days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 10 km.
     
     Latent units cannot be the source of an exposure.
@@ -663,8 +528,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 0.5 km.
 
     Latent units can be the source of an exposure.
@@ -701,8 +565,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 2.95 km.
 
     Latent units can be the source of an exposure.
@@ -739,8 +602,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 3.05 km.
 
     Latent units can be the source of an exposure.
@@ -777,8 +639,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 7.45 km.
 
     Latent units can be the source of an exposure.
@@ -815,8 +676,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 7.55 km.
 
     Latent units can be the source of an exposure.
@@ -853,8 +713,7 @@
     The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
     accompany infectiousness immediately, and immunity lasts 3 days.
     
-    The mean movement rate is 0.694 per day, which will give 1 shipment each
-    day when used with fixed "random" numbers of 0.5.  The distance of
+    The movement rate is fixed at 1 shipment each day.  The distance of
     shipments is fixed at 15 km.
 
     Latent units can be the source of an exposure.
@@ -895,9 +754,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
 
-    The mean movement rate from cattle units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    The movement rate from cattle units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  No parameters are
     set for movement from cattle units to pig units.
 
     Latent units can be the source of an exposure.
@@ -944,9 +802,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
     
-    The mean movement rate from cattle units to pig units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    The movement rate from cattle units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  No parameters are
     set for movement from cattle units to cattle units.
 
     Latent units can be the source of an exposure.
@@ -992,9 +849,8 @@
     clinical signs lasts 1 day, infectiousness with clinical signs lasts 1 day,
     and immunity lasts 3 days.
 
-    The mean movement rate from cattle units to pig units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  The parameters for
+    The movement rate from cattle units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The parameters for
     movement from cattle units to cattle units are the same.
 
     Latent units can be the source of an exposure.
@@ -1043,9 +899,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    The movement rate from pig units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  No parameters are
     set for movement from cattle units to pig units.
 
     Latent units can be the source of an exposure.
@@ -1097,9 +952,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    The movement rate from pig units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  No parameters are
     set for movement from cattle units to pig units.
 
     Latent units can be the source of an exposure.
@@ -1163,9 +1017,8 @@
     These parameters cause the cattle to be infected, recover, and be
     re-infected repeatedly.
 
-    The mean movement rate from pig units to cattle units is 0.694 per day,
-    which will give 1 shipment each day when used with fixed "random" numbers
-    of 0.5.  The distance of shipments is fixed at 10 km.  No parameters are
+    The movement rate from pig units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  No parameters are
     set for movement from cattle units to pig units.
 
     Latent units can be the source of an exposure.
@@ -1448,6 +1301,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>16 August 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>2herds</herd-file>
@@ -1470,11 +1324,16 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>1</td> <td>2</td> <td>1</td></tr>
+    <tr><td>2</td> <td>1</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>4</td> <td>0</td> <td>0</td> <td>1</td> <td>1</td></tr>
   </output>
 </variable-test>
 
@@ -1489,6 +1348,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>16 August 2005</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
@@ -1514,27 +1374,37 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
+      <td>expnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUSheep</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUPigs</td>
+      <td>infnUIniSheep</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUIniPigs</td>
+      <td>infnUAll</td>
     </tr>
-    <tr><td>2</td> <td>2</td> <td>1</td></tr>
+    <!--              Ini       Sheep      Cattle      Pigs    Ini/Sheep  Ini/Cattle  Ini/Pigs    Total     -->
+    <tr><td>2</td> <td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>2</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td></tr>
   </output>
 </variable-test>
 
-<stochastic-variable-test>
+<variable-test>
   <category>direct-contact-spread</category>
   <short-name>multiple exposure from 2 sources, different causes, check reporting variables</short-name>
 
   <description>
     Test a scenario where a unit is recipient of both a direct and indirect
     contacts on the same day.  Two exposures should be counted, but only one
-    new infection.  The cause of infection (direct or indirect contact) should
-    be chosen randomly.
+    new infection.
   </description>
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>10 September 2007</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.0</model-version>
 
   <herd-file>3herds_pigs_cattle_sheep_pigs_sheep_infected</herd-file>
@@ -1557,30 +1427,38 @@
     There is no detection, vaccination, or destruction.
   </parameter-description>
 
-  <output probability="0.5">
+  <output>
     <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-exposed-by-cause:Indirect Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Indirect Contact</td>
+      <td>expnUAll</td>
+      <td>expnUDir</td>
+      <td>expnUInd</td>
+      <td>expnUBeefCattle</td>
+      <td>expnUSheep</td>
+      <td>expnUPigs</td>
+      <td>expnUDirBeefCattle</td>
+      <td>expnUDirSheep</td>
+      <td>expnUDirPigs</td>
+      <td>expnUIndBeefCattle</td>
+      <td>expnUIndSheep</td>
+      <td>expnUIndPigs</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUSheep</td>
+      <td>infnUPigs</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUIniSheep</td>
+      <td>infnUIniPigs</td>
     </tr>
-    <tr><td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>1</td> <td>0</td></tr>
+    <!--  Exposures                                                                                                                         |   Infections                                                                             -->
+    <!--  Total       Dir        Ind       Cattle     Sheep       Pigs    Dir/Cattle Dir/Sheep   Dir/Pigs  Ind/Cattle Ind/Sheep   Ind/Pigs  |   Total       Ini       Cattle     Sheep       Pigs    Ini/Cattle Ini/Sheep   Ini/Pigs   -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td> <td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>1</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>2</td> <td>1</td> <td>1</td> <td>2</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>2</td> <td>1</td> <td>1</td> <td>2</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td>   <td>1</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
-
-  <output probability="0.5">
-    <tr>
-      <td>num-units-infected-by-cause:initially infected</td>
-      <td>num-units-exposed-by-cause:Direct Contact</td>
-      <td>num-units-exposed-by-cause:Indirect Contact</td>
-      <td>num-units-infected-by-cause:Direct Contact</td>
-      <td>num-units-infected-by-cause:Indirect Contact</td>
-    </tr>
-    <tr><td>2</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>1</td> <td>1</td> <td>0</td> <td>1</td></tr>
-  </output>
-</stochastic-variable-test>
+</variable-test>
 
 <variable-test>
   <category>direct-contact-spread</category>
@@ -1615,7 +1493,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>1</td></tr>
@@ -1663,7 +1541,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>2</td></tr>
@@ -1710,7 +1588,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>0</td></tr>
@@ -1758,7 +1636,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>0</td></tr>
@@ -1808,7 +1686,7 @@
 
   <output>
     <tr>
-      <td>num-units-exposed</td>
+      <td>expnUAll</td>
     </tr>
     <tr><td>0</td></tr>
     <tr><td>1</td></tr>
@@ -1847,8 +1725,9 @@
     accompany infectiousness immediately, and immunity lasts 3 days.  The
     prevalence is 0.505 throughout the course of the disease.
 
-    The movement rate is fixed at 1 shipment each day.  The distance of
-    shipments is fixed at 10 km.
+    The movement rate is fixed at 1 shipment each day, containing 4% of the
+    unit, which in this case is 1 animal.  The distance of shipments is fixed
+    at 10 km.
 
     Latent units can be the source of an exposure.
 
@@ -1858,16 +1737,13 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <tr><td>S12L13</td>  <td>S</td></tr>
+    <tr><td>S12C13</td>  <td>S12L13</td></tr>
+    <tr><td>S12C13</td>  <td>S12C13</td></tr>
+    <tr><td>S12C13</td>  <td>S12C13</td></tr>
+    <tr><td>S12C13</td>  <td>S12C13</td></tr>
+    <tr><td>N</td>       <td>S12C13</td></tr>
+    <tr><td>N</td>       <td>N</td></tr>
   </output>
 </deterministic-test>
 
@@ -1893,8 +1769,9 @@
     accompany infectiousness immediately, and immunity lasts 3 days.  The
     prevalence is 0.495 throughout the course of the disease.
 
-    The movement rate is fixed at 1 shipment each day.  The distance of
-    shipments is fixed at 10 km.
+    The movement rate is fixed at 1 shipment each day, containing 4% of the
+    unit, which in this case is 1 animal.  The distance of shipments is fixed
+    at 10 km.
 
     Latent units can be the source of an exposure.
 
@@ -1904,15 +1781,12 @@
   </parameter-description>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>Susceptible</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <tr><td>S13L12</td>  <td>S</td></tr>
+    <tr><td>S13C12</td>  <td>S</td></tr>
+    <tr><td>S13C12</td>  <td>S</td></tr>
+    <tr><td>S13C12</td>  <td>S</td></tr>
+    <tr><td>S13C12</td>  <td>S</td></tr>
+    <tr><td>N</td>       <td>S</td></tr>
   </output>
 </deterministic-test>
 
@@ -1939,8 +1813,9 @@
     prevalence is 0.1 throughout the course of the disease except on day 2,
     when it jumps to 1.0.
     
-    The movement rate is fixed at 1 shipment each day.  The distance of
-    shipments is fixed at 10 km.
+    The movement rate is fixed at 1 shipment each day, containing 4% of the
+    unit, which in this case is 1 animal.  The distance of shipments is fixed
+    at 10 km.
 
     Latent units can be the source of an exposure.
     
@@ -1953,17 +1828,14 @@
   <diagram>2herds</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>NaturallyImmune</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+    <tr><td>S22L3</td>  <td>S</td></tr>
+    <tr><td>C</td>      <td>S</td></tr>
+    <tr><td>S22C3</td>  <td>S22L3</td></tr>
+    <tr><td>S22C3</td>  <td>C</td></tr>
+    <tr><td>S22C3</td>  <td>S22C3</td></tr>
+    <tr><td>N</td>      <td>S22C3</td></tr>
+    <tr><td>N</td>      <td>S22C3</td></tr>
+    <tr><td>N</td>      <td>N</td></tr>
   </output>
 </deterministic-test>
 
@@ -1990,8 +1862,9 @@
     prevalence is 0.1 throughout the course of the disease except on day 4,
     when it jumps to 1.0.
     
-    The movement rate is fixed at 1 shipment each day.  The distance of
-    shipments is fixed at 10 km.
+    The movement rate is fixed at 1 shipment each day, containing 4% of the
+    unit, which in this case is 1 animal.  The distance of shipments is fixed
+    at 10 km.
 
     Latent units can be the source of an exposure.
     
@@ -2004,14 +1877,16 @@
   <diagram>2herds</diagram>
 
   <output>
-    <tr><td>Latent</td>              <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
-    <tr><td>InfectiousClinical</td>  <td>Latent</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td>     <td>InfectiousClinical</td></tr>
+    <tr><td>S22L3</td>  <td>S</td></tr>
+    <tr><td>S22C3</td>  <td>S</td></tr>
+    <tr><td>S22C3</td>  <td>S</td></tr>
+    <tr><td>C</td>      <td>S</td></tr>
+    <tr><td>S22C3</td>  <td>S22L3</td></tr>
+    <tr><td>N</td>      <td>S22C3</td></tr>
+    <tr><td>N</td>      <td>S22C3</td></tr>
+    <tr><td>N</td>      <td>C</td></tr>
+    <tr><td>S</td>      <td>S22C3</td></tr>
+    <tr><td>S</td>      <td>N</td></tr>
   </output>
 </deterministic-test>
 
@@ -2166,6 +2041,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>12 May 2008</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_ascii</herd-file>
@@ -2187,15 +2063,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:aeiou</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:aeiou</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:cCnN</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUAeiou</td> <!-- note the conversion to CamelCase -->
+      <td>infnUCCnN</td>
+      <td>infnUIniAeiou</td>
+      <td>infnUIniCCnN</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       aeiou      cCnN     Ini/aeiou   Ini/cCnN   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2215,6 +2097,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_iso88591</herd-file>
@@ -2236,15 +2119,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2268,6 +2157,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf8</herd-file>
@@ -2289,15 +2179,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2320,6 +2216,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf8_no_bom</herd-file>
@@ -2341,15 +2238,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2374,6 +2277,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf16_big_endian</herd-file>
@@ -2395,15 +2299,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2427,6 +2337,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf16_big_endian_no_bom</herd-file>
@@ -2448,15 +2359,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2481,6 +2398,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf16_little_endian</herd-file>
@@ -2502,15 +2420,21 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>
 
@@ -2534,6 +2458,7 @@
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
   <creation-date>12 May 2008</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
   <model-version>3.1.17</model-version>
 
   <herd-file>2herds_utf16_little_endian_no_bom</herd-file>
@@ -2555,14 +2480,248 @@
 
   <output>
     <tr>
-      <td>num-units-infected-by-cause-and-production-type:initially infected:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:ãêïòú</td>
-      <td>num-units-infected-by-cause-and-production-type:Direct Contact:çÇñÑ</td>
+      <td>infnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUãêïòú</td>
+      <td>infnUçÇñÑ</td>
+      <td>infnUIniãêïòú</td>
+      <td>infnUIniçÇñÑ</td>
     </tr>
-    <tr><td>1</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>1</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td></tr>
+    <!--  Total       Ini       ãêïòú      çÇñÑ     Ini/ãêïòú   Ini/çÇñÑ   -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>direct-contact-spread</category>
+  <short-name>shipment size 1 animal</short-name>
+
+  <description>
+    This is one of a set of 3 scenarios that tests the effect of shipment size
+    on probability of infection transfer.  In this scenario, the shipment size
+    is 1 animal.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>16 November 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>shipment_size_1</parameter-file>
+  
+  <parameter-description>
+    The latent period lasts 5 days, the infectious subclinical period lasts 5
+    days, the infectious clinical period lasts 5 days, and immunity lasts 5
+    days.  The prevalence increases such that there is 1 more infected animal
+    each day.
+    
+    The movement rate is fixed at 1 shipment each day.  The movement proportion
+    is 0.04, which gives 1 animal with a herd size of 25.
+
+    What should happen:
+     - The plot below shows the probability that a shipment will contain at
+       least one infected animal.  With a shipment size of 1 animal, and fixed
+       “random” numbers of 0.5, the prevalence will be high enough to cause
+       infection transfer on day 13.  The scenario is deliberately stopped on
+       the following day, when unit 1 should start its Latent period.
+  </parameter-description>
+
+  <diagram>shipment_size_transfer_prob</diagram>
+  <diagram>2herds</diagram>
+
+  <output>
+    <tr><td>S24L1</td> <td>S</td></tr>
+    <tr><td>S23L2</td> <td>S</td></tr>
+    <tr><td>S22L3</td> <td>S</td></tr>
+    <tr><td>S21L4</td> <td>S</td></tr>
+    <tr><td>S20L5</td> <td>S</td></tr>
+    <tr><td>S19B6</td> <td>S</td></tr>
+    <tr><td>S18B7</td> <td>S</td></tr>
+    <tr><td>S17B8</td> <td>S</td></tr>
+    <tr><td>S16B9</td> <td>S</td></tr>
+    <tr><td>S15B10</td> <td>S</td></tr>
+    <tr><td>S14C11</td> <td>S</td></tr>
+    <tr><td>S13C12</td> <td>S</td></tr>
+    <tr><td>S12C13</td> <td>S</td></tr>
+    <tr><td>S11C14</td> <td>S24L1</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>direct-contact-spread</category>
+  <short-name>shipment size 2 animals</short-name>
+
+  <description>
+    This is one of a set of 3 scenarios that tests the effect of shipment size
+    on probability of infection transfer.  In this scenario, the shipment size
+    is 2 animals.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>16 November 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>shipment_size_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 5 days, the infectious subclinical period lasts 5
+    days, the infectious clinical period lasts 5 days, and immunity lasts 5
+    days.  The prevalence increases such that there is 1 more infected animal
+    each day.
+    
+    The movement rate is fixed at 1 shipment each day.  The movement proportion
+    is 0.08, which gives 2 animals with a herd size of 25.
+
+    What should happen:
+     - The plot below shows the probability that a shipment will contain at
+       least one infected animal.  With a shipment size of 2 animals, and fixed
+       “random” numbers of 0.5, the prevalence will be high enough to cause
+       infection transfer on day 8.  The scenario is deliberately stopped on
+       the following day, when unit 1 should start its Latent period.
+  </parameter-description>
+
+  <diagram>shipment_size_transfer_prob</diagram>
+  <diagram>2herds</diagram>
+
+  <output>
+    <tr><td>S24L1</td> <td>S</td></tr>
+    <tr><td>S23L2</td> <td>S</td></tr>
+    <tr><td>S22L3</td> <td>S</td></tr>
+    <tr><td>S21L4</td> <td>S</td></tr>
+    <tr><td>S20L5</td> <td>S</td></tr>
+    <tr><td>S19B6</td> <td>S</td></tr>
+    <tr><td>S18B7</td> <td>S</td></tr>
+    <tr><td>S17B8</td> <td>S</td></tr>
+    <tr><td>S16B9</td> <td>S24L1</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>direct-contact-spread</category>
+  <short-name>shipment size 3 animals</short-name>
+
+  <description>
+    This is one of a set of 3 scenarios that tests the effect of shipment size
+    on probability of infection transfer.  In this scenario, the shipment size
+    is 3 animals.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>16 November 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>shipment_size_3</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 5 days, the infectious subclinical period lasts 5
+    days, the infectious clinical period lasts 5 days, and immunity lasts 5
+    days.  The prevalence increases such that there is 1 more infected animal
+    each day.
+    
+    The movement rate is fixed at 1 shipment each day.  The movement proportion
+    is 0.12, which gives 3 animals with a herd size of 25.
+
+    What should happen:
+     - The plot below shows the probability that a shipment will contain at
+       least one infected animal.  With a shipment size of 3 animals, and fixed
+       “random” numbers of 0.5, the prevalence will be high enough to cause
+       infection transfer on day 5.  The scenario is deliberately stopped on
+       the following day, when unit 1 should start its Latent period.
+  </parameter-description>
+
+  <diagram>shipment_size_transfer_prob</diagram>
+  <diagram>2herds</diagram>
+
+  <output>
+    <tr><td>S24L1</td> <td>S</td></tr>
+    <tr><td>S23L2</td> <td>S</td></tr>
+    <tr><td>S22L3</td> <td>S</td></tr>
+    <tr><td>S21L4</td> <td>S</td></tr>
+    <tr><td>S20L5</td> <td>S</td></tr>
+    <tr><td>S19B6</td> <td>S24L1</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>direct-contact-spread</category>
+  <short-name>exposures allowed to Dead unit</short-name>
+
+  <description>
+    Test that the number of exposures and infections are counted correctly.  In
+    this scenario, the same as "2 units, just &lt; threshold for shipment"
+    above, the shipment rate is just too low for a source unit to ship animals,
+    so there are no exposures or infections.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>30 November 2009</creation-date>
+  <last-modified-date>28 January 2010</last-modified-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_pigs_cattle_pigs_infected</herd-file>
+
+  <parameter-file>no_spread_dead_1_w_vars</parameter-file>
+  
+  <parameter-description>
+    For cattle (unit 0), the latent period lasts 1 day and, as soon as the unit
+    is through the latent period, it dies.  For pigs (unit 2), the latent
+    period lasts 1 day, the infectious subclinical period lasts 1 day, the
+    infectious clinical period lasts 20 days, and immunity lasts 3 days.
+
+    The movement rate from pig units to cattle units is fixed at 1 shipment
+    each day.  The distance of shipments is fixed at 10 km.  The probability of
+    infection given exposure is 1.
+
+    No infected units will be detected on the basis of clinical signs.  Dead
+    cattle units will be detected on their 3rd day dead.
+    
+    There is no destruction or vaccination.
+
+    What should happen:
+     - On each day there will be a shipment from unit 1 (pigs) to unit 0
+       (cattle).
+     - On day 1 unit 1 will infect unit 0.
+     - On day 2 unit 0 will be Latent.
+     - On day 3 unit 0 will be Dead from Disease.
+     - On day 4, nothing happens.
+     - On day 5 unit 0 will be detected.
+     - On day 6 and forward, there will be no more shipments to unit 0, because
+       it is now known to be Dead from Disease.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>expnUAll</td>
+      <td>detnUAll</td>
+      <td>infnUIni</td>
+      <td>infnUPigs</td>
+      <td>infnUIniPigs</td>
+      <td>infnUBeefCattle</td>
+      <td>infnUIniBeefCattle</td>
+      <td>infnUAll</td>
+    </tr>
+    <!--                      | Infections                                                         -->
+    <!--   Exp        Det     |    Ini       Pigs      Ini/Pigs    Cattle   Ini/Cattle   Total     -->
+    <tr><td>1</td> <td>0</td>   <td>1</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>1</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>1</td></tr>
+    <tr><td>1</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>1</td> <td>1</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td>   <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
   </output>
 </variable-test>

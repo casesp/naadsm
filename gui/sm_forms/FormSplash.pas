@@ -4,13 +4,13 @@ unit FormSplash;
 FormSplash.pas/dfm
 ------------------
 Begin: 2006/04/03
-Last revision: $Date: 2008/03/14 19:19:57 $ $Author: areeves $
-Version: $Revision: 1.17 $
+Last revision: $Date: 2012-10-01 21:31:37 $ $Author: areeves $
+Version: $Revision: 1.19.12.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2012 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -45,6 +45,7 @@ interface
 
     protected
       procedure translateUI();
+      procedure translateUIManual();
 
     public
       constructor create( AOwner: TComponent ); override;
@@ -68,7 +69,6 @@ implementation
     DialogLongMessage,
     ControlUtils,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -85,7 +85,6 @@ implementation
       translateUI();
 
       self.Hide();
-      lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
 
       borderStyle := bsNone;
 
@@ -117,15 +116,26 @@ implementation
           Caption := tr( 'NAADSM splash screen' );
           lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER;
           lblAdditionalInfo.Caption := tr( 'Please see ''About NAADSM'' for contact and support information.' );
-          lblCopyright.Caption := tr( 'Copyright © 2003 - 2008 Animal Population Health Institute at Colorado State University and University of Guelph' );
+          lblCopyright.Caption := tr( 'Copyright © 2003 - 2012 Colorado State University and University of Guelph' );
         end
       ;
 
+      // If any phrases are found that could not be automatically extracted by
+      // Caption Collector, modify the following function to take care of them.
+      translateUIManual();
+    end
+  ;
+
+
+  procedure TFormSplash.translateUIManual();
+    begin
+      lblCopyright.Caption := tr( 'Copyright ©' ) + ' ' + COPYRIGHTDATES + ' ' + tr( 'Colorado State University and University of Guelph' );
+      lblVersion.Caption := tr( 'Version' ) + ' ' + MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' ' + tr( 'Build' ) + ' ' + BUILDNUMBER + ' ' + BRANCHNAME;
     end
   ;
 
   
- 	destructor TFormSplash.destroy();
+  destructor TFormSplash.destroy();
     begin
       dbcout( 'Splash screen will be destroyed.', DBSHOWMSG );
       frmSplash := nil;

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -15,7 +16,7 @@
     </annotation>
     <sequence>
       <!-- Model parameters. -->
-      <element name="delay" type="ergadm:time">
+      <element name="delay" type="naadsm:time">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -24,7 +25,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="immunity-period" type="ergadm:PDF">
+      <element name="immunity-period" type="naadsm:PDF">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -32,13 +33,14 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
           </appinfo>
         </annotation>
       </element>
     </sequence>
     <attribute name="version" type="string" fixed="0.1" />
     <attribute name="production-type" type="string" />
+    <attribute name="production-type-id" type="integer" use="optional"  />
   </complexType>
 
 </schema>

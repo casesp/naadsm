@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
+  xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
+  <description>Specs for a sample simulation run.</description>
+  <num-days>10</num-days>
+  <num-runs>1</num-runs>
+
+  <models>
+
+    <disease-model production-type="Sheep">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>2</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <disease-model production-type="Beef Cattle">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>2</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <disease-model production-type="Pigs">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>2</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <local-area-spread-model from-production-type="Sheep" to-production-type="Beef Cattle">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>10</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.505</prob>
+    </local-area-spread-model>
+
+    <local-area-spread-model from-production-type="Sheep" to-production-type="Pigs">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>20</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.495</prob>
+    </local-area-spread-model>
+
+    <conflict-resolver></conflict-resolver>
+
+    <state-table-writer />
+
+  </models>
+
+</naadsm:disease-simulation>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
+  xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
+  <description>Specs for a sample simulation run.</description>
+  <num-days>20</num-days>
+  <num-runs>1</num-runs>
+
+  <models>
+
+    <disease-model production-type="Beef Cattle">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <mortality>0.9</mortality>
+      <immunity-period>
+        <point>3</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <!-- A unit will be detected if it dies. -->
+    <detection-model production-type="Beef Cattle">
+      <prob-detect-vs-time-clinical>
+        <value>0</value> <value>0.0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prob-detect-vs-time-clinical>
+      <prob-detect-vs-time-dead>
+        <value>0</value> <value>1.0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prob-detect-vs-time-dead>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
+        <value>0</value> <value>1.0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
+    </detection-model>
+
+    <resources-and-implementation-of-controls-model>
+      <!-- "Unlimited" destruction capacity, but a wait before it is ready. -->
+      <destruction-program-delay>
+        <value>0</value>
+        <units><xdf:unit>day</xdf:unit></units>	
+      </destruction-program-delay>
+      <destruction-capacity>
+        <value>0</value> <value>0</value>
+        <value>9</value> <value>0</value>
+        <value>10</value> <value>1000</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>
+      </destruction-capacity>
+      <destruction-priority-order>
+        reason,production type,time waiting
+      </destruction-priority-order>
+      <!-- No vaccination. -->
+      <vaccination-program-delay>1</vaccination-program-delay>
+      <vaccination-capacity>
+        <value>0</value> <value>0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>
+      </vaccination-capacity>
+      <vaccination-priority-order>
+        reason,production type,time waiting
+      </vaccination-priority-order>
+    </resources-and-implementation-of-controls-model>
+
+    <basic-destruction-model production-type="Beef Cattle">
+      <priority>1</priority>
+    </basic-destruction-model>
+
+    <detection-monitor>
+      <output>
+        <variable-name>detnU</variable-name>
+        <frequency>daily</frequency>
+      </output>
+    </detection-monitor>
+
+    <destruction-list-monitor>
+      <output>
+        <variable-name>deswU</variable-name>
+        <frequency>daily</frequency>
+      </output>
+    </destruction-list-monitor>
+
+    <destruction-monitor>
+      <output>
+        <variable-name>desnU</variable-name>
+        <frequency>daily</frequency>
+      </output>
+    </destruction-monitor>
+
+    <economic-model production-type="Beef Cattle">
+      <appraisal>
+        <value>100</value>
+        <units>USD</units>
+      </appraisal>
+      <euthanasia>
+        <value>1</value>
+        <units>USD</units>
+      </euthanasia>
+      <indemnification>
+        <value>1</value>
+        <units>USD</units>
+      </indemnification>
+      <carcass-disposal>
+        <value>1</value>
+        <units>USD</units>
+      </carcass-disposal>
+      <cleaning-disinfecting>
+        <value>100</value>
+        <units>USD</units>
+      </cleaning-disinfecting>
+      <appraisal-applies-to-dead-units>sometimes</appraisal-applies-to-dead-units>
+      <indemnification-applies-to-dead-units>sometimes</indemnification-applies-to-dead-units>
+      <carcass-disposal-applies-to-dead-units>yes</carcass-disposal-applies-to-dead-units>
+      <cleaning-disinfecting-applies-to-dead-units>yes</cleaning-disinfecting-applies-to-dead-units>
+      <output>
+        <variable-name>costsTotal</variable-name>
+        <frequency>daily</frequency>
+      </output>
+    </economic-model>
+
+    <conflict-resolver />
+
+    <full-table-writer />
+
+  </models>
+
+</naadsm:disease-simulation>

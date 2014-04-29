@@ -4,13 +4,13 @@ unit FrameZoneProdTypeParams;
 FrameZoneProdTypeParams.pas/dfm
 -------------------------------
 Begin: 2007/01/08
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version number: $Revision: 1.4 $
+Last revision: $Date: 2011-03-31 03:55:39 $ $Author: areeves $
+Version number: $Revision: 1.7.10.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -62,7 +62,6 @@ interface
       rleDetectionMultiplier: TREEdit;
       pnlFooter: TPanel;
 
-      procedure rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
       procedure cbxClick(Sender: TObject);
 
     protected
@@ -102,15 +101,15 @@ implementation
       smrDirectMovement.chartType := CTRel;
       smrDirectMovement.minY := 0.0;
       smrDirectMovement.maxY := 0.0; // there is no maximum
-      smrDirectMovement.xUnits := UnitsDays;
-      smrDirectMovement.yUnits := UnitsPercent;
+      smrDirectMovement.xUnits := UDays;
+      smrDirectMovement.yUnits := UPercent;
       smrDirectMovement.setChartField( ZONMovementDirect );
 
       smrIndirectMovement.chartType := CTRel;
       smrIndirectMovement.minY := 0.0;
       smrIndirectMovement.maxY := 0.0; // there is no maximum
-      smrIndirectMovement.xUnits := UnitsDays;
-      smrIndirectMovement.yUnits := UnitsPercent;
+      smrIndirectMovement.xUnits := UDays;
+      smrIndirectMovement.yUnits := UPercent;
       smrIndirectMovement.setChartField( ZONMovementIndirect );
 
       rleDetectionMultiplier.InputExpression := RE_DECIMAL_INPUT;
@@ -158,21 +157,7 @@ implementation
     end
   ;
 
-
-  // This function deals with a little bug in TREEdit.
-  procedure TFrameZoneProdTypeParams.rleKeyDown( Sender: TObject; var Key: Word; Shift: TShiftState );
-    var
-      rle: TREEdit;
-    begin
-      if( sender is TREEdit ) then
-        begin
-          rle := sender as TREEdit;
-          if( rle.SelLength = length( rle.Text ) ) then rle.Text := '';
-        end
-      ;
-    end
-  ;
-
+  
   procedure TFrameZoneProdTypeParams.cbxClick( Sender: TObject );
     begin
       if( cbxUseDirectMovementControl.Checked ) then

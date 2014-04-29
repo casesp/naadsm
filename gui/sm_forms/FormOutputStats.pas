@@ -4,13 +4,13 @@ unit FormOutputStats;
 FormOutputStats.pas/dfm
 -----------------------
 Begin: 2005/08/01
-Last revision: $Date: 2008/03/12 22:10:47 $ $Author: areeves $
-Version: $Revision: 1.33 $
+Last revision: $Date: 2011-02-24 15:01:55 $ $Author: rhupalo $
+Version: $Revision: 1.38.6.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -57,8 +57,7 @@ interface
     ProductionType,
     Herd,
 
-    SMSimulationStats,
-    SMZoneStats,
+    IterationOutputs,
     OutputDescriptions,
 
     // Application-specific widgets
@@ -82,15 +81,16 @@ interface
 
       tabCostOutputs: TTabSheet;
       fraStatsCost: TFrameOutputStats;
+      
+      tabPTZoneOutputs: TTabSheet;
+      fraStatsPTZones: TFrameOutputStats;
 
       tabZoneOutputs: TTabSheet;
       fraStatsZones: TFrameOutputStats;
 
-      procedure FormCanResize(Sender: TObject; var NewWidth, NewHeight: Integer; var Resize: Boolean);
       procedure pgcOutputsChange(Sender: TObject);
 
 		protected
-      _superList: TSMIterationOutputSuperList;
       _scenarioStats: TScenarioOutputSet;
 
       _resizingForm: boolean;
@@ -122,6 +122,9 @@ interface
 
       procedure initialize();
 
+      procedure copyRawData( sender: TObject );
+      procedure exportRawData( sender: TObject );
+
 		public
 			constructor create( AOwner: TComponent; sim: TSMSimulationInput; db: TSMDatabase ); reintroduce;
       destructor destroy(); override;
@@ -144,14 +147,16 @@ implementation
 
     // General purpose units
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     MyDialogs,
     MyGraphicsUtils,
     I88n,
 
+    // APHI Modeling Library
+    HistogramData,
 
     // Application-specific units
+    FrameArrayHistogram,
     StringConsts
   ;
 
@@ -172,6 +177,9 @@ implementation
 
       //pgcOutputs.Visible := false; // Set at run-time
 
+      lblIteration.Visible := false;
+      cboIteration.Visible := false;
+
       _smSim := sim;
       _smdb := db;
       _selectedPT := nil;
@@ -191,14 +199,26 @@ implementation
         end
       ;
 
-      setupComboBox();
+      _dm.acnCopyRawData.visible := true;
+      _dm.acnExportRawData.visible := true;
+
+      acnCopyRawData.OnExecute := copyRawData;
+      acnExportRawData.OnExecute := exportRawData;
+
+      setupProdTypeComboBox();
 
       // FIX ME: check for completed output before displaying anything.
       // (FormMain should also do a check.  This is just a backup.)
       pgcOutputs.ActivePage := tabEpiOutputs;
 
+      self.fraStatsEpi.setDatabase( _smdb );
+      self.fraStatsCost.setDatabase( _smdb );
+      self.fraStatsPTZones.setDatabase( _smdb );
+      self.fraStatsZones.setDatabase( _smdb );
+
       self.fraStatsEpi.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       self.fraStatsCost.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
+      self.fraStatsPTZones.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
       self.fraStatsZones.fraHistogram.setBinNumberPtr := setHistogramBinNumbers;
 
       _formUsesZones := true;
@@ -223,21 +243,20 @@ implementation
           Caption := tr( 'Output statistics' );
           tabEpiOutputs.Caption := tr( 'Epidemiology' );
           tabCostOutputs.Caption := tr( 'Cost accounting' );
+          tabPTZoneOutputs.Caption := tr( 'Zones/production types' );
           tabZoneOutputs.Caption := tr( 'Zones' );
         end
       ;
-
     end
   ;
 
 
   procedure TFormOutputStats.initialize();
     begin
-      _superList := TSMIterationOutputSuperList.create( _smdb );
-      _scenarioStats := TScenarioOutputSet.create( _smdb, _smSim.includeCostsGlobal, _smSIm.includeZonesGlobal );
+      _scenarioStats := TScenarioOutputSet.create( _smdb, _smSim.includeCostsGlobal, _smSIm.includeZonesGlobal, _smSim.costTrackZoneSurveillance );
 
       fraStatsEpi.setOutputType( StatsEpi );
-			fraStatsEpi.setSuperList( _superList );
+			fraStatsEpi.setEpiStats( _scenarioStats.epiStats );
 			fraStatsEpi.setProdType( _selectedPT );
       fraStatsEpi.resizeContents();
 
@@ -259,10 +278,19 @@ implementation
       if( not( _smSim.includeZonesGlobal ) ) then
         begin
           pgcOutputs.ActivePage := tabEpiOutputs;
+          tabPTZoneOutputs.Enabled := false;
+
           tabZoneOutputs.Enabled := false;
         end
       else
         begin
+          tabPTZoneOutputs.enabled := true;
+          fraStatsPTZones.setOutputType( StatsPTZones );
+          fraStatsPTZones.setZonePTStats( _scenarioStats.zonePTStats );
+          fraStatsPTZones.setProdType( _selectedPT );
+          fraStatsPTZones.setZone( _selectedZone );
+          fraStatsPTZones.resizeContents();
+
           tabZoneOutputs.enabled := true;
           fraStatsZones.setOutputType( StatsZones );
           fraStatsZones.setZoneStats( _scenarioStats.zoneStats );
@@ -280,7 +308,6 @@ implementation
 
   destructor TFormOutputStats.destroy();
     begin
-      freeAndNil( _superList );
       freeAndNil( _scenarioStats );
       inherited destroy();
     end
@@ -295,6 +322,8 @@ implementation
         _stringGridDict['Epidemiological statistics'] := fraStatsEpi.fraTable
       else if( tabCostOutputs = pgcOutputs.ActivePage ) then
         _stringGridDict['Cost statistics'] := fraStatsCost.fraTable
+      else if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        _stringGridDict['Zone/production type statistics'] := fraStatsPTZones.fraTable
       else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
         _stringGridDict['Zone statistics'] := fraStatsZones.fraTable
       ;
@@ -307,20 +336,13 @@ implementation
       _chartDict.Clear();
 
       if( tabEpiOutputs = pgcOutputs.ActivePage ) then
-        begin
-          _chartDict['EpiHistogram'] := fraStatsEpi.fraHistogram;
-          _chartDict['EpiConvergence'] := fraStatsEpi.fraConvergence;
-        end
+        _chartDict['EpiHistogram'] := fraStatsEpi.fraHistogram
       else if( tabCostOutputs = pgcOutputs.ActivePage ) then
-        begin
-          _chartDict['CostHistogram'] := fraStatsCost.fraHistogram;
-          _chartDict['CostConvergence'] := fraStatsCost.fraConvergence;
-        end
+        _chartDict['CostHistogram'] := fraStatsCost.fraHistogram
+      else if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        _chartDict['ZonePTHistogram'] := fraStatsPTZones.fraHistogram
       else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
-        begin
-          _chartDict['ZoneHistogram'] := fraStatsZones.fraHistogram;
-          _chartDict['ZoneConvergence'] := fraStatsZones.fraConvergence;
-        end
+        _chartDict['ZoneHistogram'] := fraStatsZones.fraHistogram
       ;
     end
   ;
@@ -333,7 +355,6 @@ implementation
 //-----------------------------------------------------------------------------
   procedure TFormOutputStats.simChanged();
     begin
-      freeAndNil( _superList );
       freeAndNil( _scenarioStats );
 
       initialize();
@@ -364,6 +385,7 @@ implementation
 
         if( _smSim.includeZonesGlobal ) then
           begin
+            fraStatsPTZones.setProdType( _selectedPT );
             fraStatsZones.setProdType( _selectedPT );
             pgcOutputs.ActivePageIndex := activePage;
           end
@@ -371,6 +393,9 @@ implementation
           pgcOutputs.ActivePage := tabEpiOutputs
         ;
       finally
+        fillChartDict();
+        fillStringGridDict();
+        
         setControlsEnabled( true );
         screen.Cursor := crDefault;
       end;
@@ -390,6 +415,7 @@ implementation
 
         if( _smSim.includeZonesGlobal ) then
           begin
+            fraStatsPTZones.setZone( _selectedZone );
             fraStatsZones.setZone( _selectedZone );
             pgcOutputs.ActivePageIndex := activePage;
           end
@@ -397,6 +423,9 @@ implementation
           pgcOutputs.ActivePage := tabEpiOutputs
         ;
       finally
+        fillChartDict();
+        fillStringGridDict();
+
         setControlsEnabled( true );
         screen.Cursor := crDefault;
       end;
@@ -405,15 +434,29 @@ implementation
 
 
   procedure TFormOutputStats.setHistogramBinNumbers( sender: TComponent; const nBins: integer );
+    var
+      frame: TFrameArrayHistogram;
     begin
-      if( sender <> self.fraStatsEpi.fraHistogram ) then
-        self.fraStatsEpi.fraHistogram.nHistogramBins := nBins
+      if( sender is TFrameArrayHistogram ) then
+        frame := sender as TFrameArrayHistogram
+      else
+        begin
+          raise exception.create( 'Unexpected sender type in TFormOutputStats.setHistogramBinNumbers()' );
+          exit;
+        end
       ;
-      if( fraStatsCost.Enabled and ( sender <> self.fraStatsCost.fraHistogram ) ) then
-        self.fraStatsCost.fraHistogram.nHistogramBins := nBins
+
+      if( frame <> self.fraStatsEpi.fraHistogram ) then
+        self.fraStatsEpi.setHistogramBinNumber( frame.breakType, nBins )
       ;
-      if( fraStatsZones.Enabled and ( sender <> self.fraStatsZones.fraHistogram ) ) then
-        self.fraStatsZones.fraHistogram.nHistogramBins := nBins
+      if( tabCostOutputs.Enabled and ( frame <> self.fraStatsCost.fraHistogram ) ) then
+        self.fraStatsCost.setHistogramBinNumber( frame.breakType, nBins )
+      ;
+      if( tabPTZoneOutputs.Enabled and ( frame <> self.fraStatsPTZones.fraHistogram ) ) then
+        self.fraStatsPTZones.setHistogramBinNumber( frame.breakType, nBins )
+      ;
+      if( tabZoneOutputs.Enabled and ( frame <> self.fraStatsZones.fraHistogram ) ) then
+        self.fraStatsZones.setHistogramBinNumber( frame.breakType, nBins )
       ;
     end
   ;
@@ -430,62 +473,27 @@ implementation
 
       dbcout( '*** Active page changed to ' + intToStr( pgcOutputs.ActivePageIndex ), DBFORMOUTPUTSTATS );
 
-      if( tabZoneOutputs = pgcOutputs.ActivePage ) then
-        cboZones.Visible := true
+      if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        begin
+          cboProdTypes.Visible := true;
+          cboZones.Visible := true;
+        end
+      else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
+        begin
+          cboProdTypes.Visible := false;
+          cboZones.Visible := true;
+        end
       else
-        cboZones.Visible := false
+        begin
+          cboProdTypes.Visible := true;
+          cboZones.Visible := false;
+        end
       ;
 
       fillStringGridDict();
       fillChartDict();
 
       setControlsEnabled( true );
-    end
-  ;
-
-
-
-  // FIX ME: why is this commented out??  Can it be discarded?
-  procedure TFormOutputStats.FormCanResize(Sender: TObject; var NewWidth, NewHeight: Integer; var Resize: Boolean);
-    begin
-      (*
-      inherited;
-
-      dbcout( 'My width is ' + intToStr( self.Width ), DBFORMOUTPUTSTATS );
-
-      if( not( _resizingForm ) ) then
-        begin
-          if( newHeight < self.Height ) then
-            begin
-              _resizingForm := true;
-              dbcout( '@@@ Form is shrinking to ' + intToStr( newHeight ), DBFORMOUTPUTSTATS );
-
-              // When shrinking the form, remember to break the alignment temporarily.
-              fraStatsEpi.Align := alNone;
-              fraStatsCost.Align := alNone;
-              self.Height := newHeight;
-							fraStatsEpi.resizeContents();
-              fraStatsCost.resizeContents();
-              fraStatsEpi.Align := alClient;
-              fraStatsCost.Align := alClient;
-
-              _resizingForm := false;
-            end
-          ;
-
-          if( newHeight > self.Height ) then
-            begin
-              _resizingForm := true;
-              dbcout( '*** Form is embiggened to ' + intToStr( newHeight ), DBFORMOUTPUTSTATS );
-              self.Height := newHeight;
-              fraStatsEpi.resizeContents();
-              fraStatsCost.resizeContents();
-              _resizingForm := false;
-            end
-          ;
-        end
-      ;
-      *)
     end
   ;
 //-----------------------------------------------------------------------------
@@ -505,6 +513,16 @@ implementation
         ptName := _selectedPT.productionTypeDescr
       ;
 
+      if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        begin
+          if( nil = _selectedZone ) then
+            zoneName := tr( 'All zones' )
+          else
+            zoneName := _selectedZone.descr
+          ;
+        end
+      ;
+      
       if( tabZoneOutputs = pgcOutputs.ActivePage ) then
         begin
           if( nil = _selectedZone ) then
@@ -519,6 +537,8 @@ implementation
         result := '## ' + tr( 'NAADSM scenario output summary (epidemiology)' ) + endl
       else if( tabCostOutputs = pgcOutputs.ActivePage ) then
         result := '## ' + tr( 'NAADSM scenario output summary (direct costs)' ) + endl
+      else if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        result := '## ' + tr( 'NAADSM scenario output summary (zones and production types)' ) + endl  
       else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
         result := '## ' + tr( 'NAADSM scenario output summary (zones)' ) + endl
       else
@@ -532,6 +552,10 @@ implementation
         + '## ' + tr( 'Production type:' ) + ' ' + ptName + endl
       ;
 
+      if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        result := result + '## ' + tr( 'Zone:' ) + ' ' + zoneName + endl
+      ;
+      
       if( tabZoneOutputs = pgcOutputs.ActivePage ) then
         result := result + '## ' + tr( 'Zone:' ) + ' ' + zoneName + endl
       ;
@@ -544,5 +568,43 @@ implementation
   ;
 //-----------------------------------------------------------------------------
 
+
+
+//-----------------------------------------------------------------------------
+// Form-specific menu items
+//-----------------------------------------------------------------------------
+  procedure TFormOutputStats.copyRawData( sender: TObject );
+    begin
+      if( tabEpiOutputs = pgcOutputs.ActivePage ) then
+        fraStatsEpi.fraTable.writeOutputToClipboard()
+      else if( tabCostOutputs = pgcOutputs.ActivePage ) then
+        fraStatsCost.fraTable.writeOutputToClipboard()
+      else if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        fraStatsPTZones.fraTable.writeOutputToClipboard()
+      else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
+        fraStatsZones.fraTable.writeOutputToClipboard()
+      else
+        raise exception.Create( 'There is a problem in TFormOutputStats.copyRawData()' )
+      ;
+    end
+  ;
+
+
+  procedure TFormOutputStats.exportRawData( sender: TObject );
+    begin
+      if( tabEpiOutputs = pgcOutputs.ActivePage ) then
+        fraStatsEpi.fraTable.writeOutputToFile()
+      else if( tabCostOutputs = pgcOutputs.ActivePage ) then
+        fraStatsCost.fraTable.writeOutputToFile()
+      else if( tabPTZoneOutputs = pgcOutputs.ActivePage ) then
+        fraStatsPTZones.fraTable.writeOutputToFile()
+      else if( tabZoneOutputs = pgcOutputs.ActivePage ) then
+        fraStatsZones.fraTable.writeOutputToFile()
+      else
+        raise exception.Create( 'There is a problem in TFormOutputStats.exportRawData()' )
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
 
 end.

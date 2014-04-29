@@ -54,13 +54,14 @@ def main ():
 
 	doc = parse (sys.stdin)
 	statepats = [
-	  re.compile (r"0|Susceptible", re.I),
-	  re.compile (r"1|Incubating|Latent", re.I),
-	  re.compile (r"Infectious ?Subclinical|Inapparent ?Shedding", re.I),
-	  re.compile (r"2|Infectious ?Clinical", re.I),
-	  re.compile (r"3|Naturally ?Immune", re.I),
-	  re.compile (r"4|Vaccine ?Immune", re.I),
-	  re.compile (r"5|Destroyed|Dead", re.I)
+	  re.compile (r"0|S|Susceptible", re.I),
+	  re.compile (r"1|L|Latent", re.I),
+	  re.compile (r"2|B|Infectious ?Subclinical", re.I),
+	  re.compile (r"3|C|Infectious ?Clinical", re.I),
+	  re.compile (r"4|N|Naturally ?Immune", re.I),
+	  re.compile (r"5|V|Vaccine ?Immune", re.I),
+	  re.compile (r"6|D|Destroyed", re.I),
+	  re.compile (r"7|X|DeadFromDisease", re.I)
 	]
 
 	# Read the herds.
@@ -72,15 +73,23 @@ def main ():
 		else:
 			herd_id = str (count)
 		size = int (getText (herd.getElementsByTagName ("size")[0]))
-		lat = float (getText (herd.getElementsByTagName ("latitude")[0]))
-		lon = float (getText (herd.getElementsByTagName ("longitude")[0]))
+		# Read either lat-lon or x-y (assumed to be in km).
+		lat_elements = herd.getElementsByTagName ("latitude")
+		if lat_elements:
+			lat = float (getText (lat_elements[0]))
+			lon = float (getText (herd.getElementsByTagName ("longitude")[0]))
+			x = lon * DEG2KM
+			y = lat * DEG2KM
+		else:
+			x = float (getText (herd.getElementsByTagName ("x")[0]))
+			y = float (getText (herd.getElementsByTagName ("y")[0]))
 		state = getText (herd.getElementsByTagName ("status")[0])
 		for i in range (len(statepats)):
 			match = statepats[i].match (state)
 			if match:
 				state = i
 				break		
-		herds.append (Herd (size, lon * DEG2KM, lat * DEG2KM, state, herd_id))
+		herds.append (Herd (size, x, y, state, herd_id))
 		count += 1
 
 	bbox = [
@@ -144,14 +153,15 @@ set ylabel "km (N-S)"\
 
 	# Colour comes from the line type in gnuplot.  Create an array of line
 	# types for the colours in the herd state-transition diagram.
-	linetype = [7,6,8,1,2,3,7,7]
+	linetype = [7,6,8,1,2,3,7,9]
 
 	# Create an array of point types for dot shapes.
 	pointtype = [71,7,7,7,7,7,7,7]
 
 	# Create array of text description for states.
 	statename = ["Susceptible", "Incubating", "Infectious Subclinical",
-	  "Infectious Clinical", "Naturally immune", "Vaccine Immune", "Destroyed"]
+	  "Infectious Clinical", "Naturally Immune", "Vaccine Immune", "Destroyed",
+	  "Dead from Disease"]
 
 	# Create commands to plot the herds.
 	command = []

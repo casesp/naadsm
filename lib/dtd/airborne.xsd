@@ -1,36 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
-
+  
   <complexType name="airborne-spread-model-type">
     <annotation>
       <documentation xml:lang="en">
         <![CDATA[
           These parameters describe airborne spread of the disease.
-          Probability of infection falls off linearly with increasing distance
-          from the source.
+          Probability of infection falls off exponentially with distance and is
+          relative to the sizes of the infectious and susceptible herds.
         ]]>
       </documentation>
     </annotation>
     <sequence>
       <!-- Model parameters. -->
-      <element name="prob-spread-1km" type="ergadm:probability">
+      <element name="herd-size-infectious" type="nonNegativeInteger">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
-              The probability of infection at 1 km from the source.
+              Size of the infectious herd used to compute k.
             ]]>
           </documentation>
         </annotation>
       </element>
-      <element name="wind-direction-start" type="ergadm:angle">
+      <element name="herd-size-susceptible" type="nonNegativeInteger">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
-              The beginning of the range of angles in which airborne spread is
+              Size of the susceptible herd used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="herd-distance" type="naadsm:length">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The distance between herd-size-infectious to
+              herd-size-susceptible.  Used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="prob" type="naadsm:probability">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The probability of infection from herd-size-infectious to
+              herd-size-susceptible at herd-distance.  Used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="wind-direction-start" type="naadsm:angle">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The beginning of the range of angles in which local spread is
               allowed.  Given in degrees, where N=0/360, E=90, S=180, and
               W=270.  For example, for north winds (from the north), you might
               use wind-direction-start=135 and wind-direction-end=225.
@@ -41,11 +71,11 @@
           </appinfo>
         </annotation>
       </element>
-      <element name="wind-direction-end" type="ergadm:angle">
+      <element name="wind-direction-end" type="naadsm:angle">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
-              The end of the range of angles in which airborne spread is
+              The end of the range of angles in which local spread is
               allowed.  Given in degrees, where N=0/360, E=90, S=180, and
               W=270.  Note that wind-direction-end can be a smaller number than
               wind-direction-start.  For example, for south winds (from the
@@ -53,30 +83,6 @@
               wind-direction-end=45.
             ]]>
           </documentation>
-        </annotation>
-      </element>
-      <element name="max-spread" type="ergadm:length">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The maximum distance of spread.  The probability of infection
-              falls off linearly with increasing distance from the source, and
-              becomes 0 at this distance.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
-      <element name="delay" type="ergadm:PDF">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The in-air time between the source of the contact and the
-              destination, given as a probability distribution.
-            ]]>
-          </documentation>
-          <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-          </appinfo>
         </annotation>
       </element>
     </sequence>

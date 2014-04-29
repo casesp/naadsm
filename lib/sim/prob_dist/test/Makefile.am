@@ -1,13 +1,16 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = -I.. -I$(top_srcdir)/rng @GLIB_CFLAGS@ @SPRNG_CFLAGS@
-AM_LDFLAGS = -L.. -L$(top_srcdir)/rng
+INCLUDES = -I.. -I$(top_srcdir)/rng @GLIB_CFLAGS@ @GSL_CFLAGS@ @SPRNG_CFLAGS@
 
 AM_YFLAGS = -d -v
 
 noinst_PROGRAMS = shell fcmp
-shell_SOURCES = shell.y scanner.l
-shell_LDADD = -lprob_dist -lrng @SPRNG_LIBS@
+shell_SOURCES = shell.y scanner.l ../prob_dist.c ../prob_dist.h \
+  $(top_srcdir)/rng/rng.c $(top_srcdir)/rng/rng.h
+shell_LDADD = @GLIB_LIBS@ @GSL_LIBS@ @SPRNG_LIBS@
+if HAVE_MPI
+shell_LDADD += @MPI_LIBS@
+endif
 
 fcmp_SOURCES = fcmp.c
 fcmp_LDADD = @GLIB_LIBS@ @GSL_LIBS@

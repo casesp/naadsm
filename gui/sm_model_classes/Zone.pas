@@ -4,13 +4,13 @@ unit Zone;
 Zone.pas
 --------
 Begin: 2006/12/19
-Last revision: $Date: 2008/11/25 22:00:59 $ $Author: areeves $
-Version number: $Revision: 1.19 $
+Last revision: $Date: 2010-07-08 17:32:37 $ $Author: rhupalo $
+Version number: $Revision: 1.26.6.3 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2006 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2006 - 2010 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -27,8 +27,13 @@ interface
     Contnrs,
 
     QIntegerMaps,
+    QLists,
+
+    Sdew,
   
     Models,
+    ModelDatabase,
+
     SMDatabase
   ;
 
@@ -60,6 +65,10 @@ interface
       _area: double;
       _maxArea: double;
       _maxAreaDay: integer;
+
+      _perimeter: double;
+      _maxPerimeter: double;
+      _maxPerimeterDay: integer;
 
       // Housekeeping properties
       _removed: boolean;
@@ -114,7 +123,7 @@ interface
 
       function ssXml( const zoneLevel: integer ): string; reintroduce;
 
-      function populateDatabase( db: TSMDatabase; const forceInsert: boolean = false ): integer; reintroduce;
+      function populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer; reintroduce;
 
       function getUnitCountById( prodTypeId: integer ): integer;
       function getAnimalCountById( prodTypeId: integer ): integer;
@@ -124,6 +133,7 @@ interface
       // Outputs
       procedure addToZoneTotals( const prodTypeID: integer; const herdAnimalCount: integer; const day: integer ); // Called at the end of every day
       procedure setArea( const val: double; const simDay: integer );
+      procedure setPerimeter( const val: double; const simDay: integer );
 
       // Basic properties
       property id: integer read getId write setId;
@@ -136,6 +146,7 @@ interface
       property animalCount: integer read getAnimalCount;
       property unitDays: integer read getUnitDays;
       property animalDays: integer read getAnimalDays;
+      property perimeter: double read _perimeter;
 
       // Housekeeping properties
       property removed: boolean read getRemoved write setRemoved;
@@ -145,6 +156,7 @@ interface
   
   type TZoneList = class( TModelList )
     protected
+      _xmlModelList: TQStringList;
       _currentIndex: integer;
 
       _firstZoneFocusDay: integer;
@@ -153,16 +165,22 @@ interface
       procedure setObject( index: integer; item: TZone );
       function getObject( index: integer ): TZone;
 
+      procedure initialize( sim: TObject );
+
+      function getXmlModelList(): TQStringList;
+      procedure importXml( model: pointer; sdew: TSdew; const nextZoneID: integer; errMsg: pstring = nil );
+
       function getUpdated(): boolean;
 
     public
       constructor create( sim: TObject ); overload;
       constructor create( db: TSMDatabase; sim: TObject ); overload;
+      constructor create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil ); overload;
       constructor create( const src: TZoneList; sim: TObject ); overload;
 
       destructor destroy(); override;
 
-      procedure populateDatabase( db: TSMDatabase; ptList: TObject );
+      procedure populateDatabase( db: TSMDatabase; ptList: TObject; const updateAction: TDBUpdateActionType );
 
       function ssXml(): string;
 
@@ -192,6 +210,7 @@ interface
       //-----------------------
       function find( const zoneID: integer ): TZone; overload;
       function find( const zoneName: string ): TZone; overload;
+      function contains( const zoneName: string ): boolean;
 
       function append( dm: TZone ): integer; reintroduce;
       procedure insert( index: integer; dm: TZone );
@@ -205,6 +224,10 @@ interface
       // Properties
       //-----------
       property focusCreated: boolean read _focusCreated;
+
+      // Useful properties
+      //------------------
+      property xmlModelList: TQStringList read getXmlModelList;
       property updated: boolean read getUpdated;
     end
   ;
@@ -229,7 +252,6 @@ implementation
 
     DebugWindow,
     MyStrUtils,
-    USStrUtils,
     sqlClasses,
     RemoteDatabaseParams,
     I88n,
@@ -284,6 +306,10 @@ implementation
       _maxArea := src._maxArea;
       _maxAreaDay := src._maxAreaDay;
 
+      _perimeter := src._perimeter;
+      _maxPerimeter := src._maxPerimeter;
+      _maxPerimeterDay := src._maxPerimeterDay;
+
       _removed := src._removed;
       _updated := src._updated;
     end
@@ -303,8 +329,13 @@ implementation
       _descr := '';
       _radius := -1.0;
       _level := -1;
+
       _area := 0.0;
       _maxArea := 0.0;
+      _maxAreaDay := 0;
+
+      _perimeter := 0.0;
+      _maxPerimeter := 0.0;
       _maxAreaDay := 0;
 
       _removed := false;
@@ -524,7 +555,7 @@ implementation
 //-----------------------------------------------------------------------------
 // TZone database population
 //-----------------------------------------------------------------------------
-  function TZone.populateDatabase( db: TSMDatabase; const forceInsert: boolean = false ): integer;
+  function TZone.populateDatabase( db: TSMDatabase; const updateAction: TDBUpdateActionType ): integer;
   	var
     	q: string;
       dict: TQueryDictionary;
@@ -536,7 +567,7 @@ implementation
 
       // Level isn't included in the database.  It is set as needed when a simulation is launched.
 
-      if( ( 0 < _id ) and ( not forceInsert ) ) then
+      if( ( 0 < _id ) and ( MDBAForceInsert <> updateAction ) ) then
         begin
           q := writeQuery( 'inZone', QUpdate, dict, 'WHERE `zoneID` = ' + intToStr( self.id ) );
           db.execute( q );
@@ -576,6 +607,20 @@ implementation
         begin
           _maxArea := val;
           _maxAreaDay := simDay;
+        end
+      ;
+    end
+  ;
+
+
+  procedure TZone.setPerimeter( const val: double; const simDay: integer );
+    begin
+      _perimeter := val;
+
+      if( val > _maxPerimeter ) then
+        begin
+          _maxPerimeter := val;
+          _maxPerimeterDay := simDay;
         end
       ;
     end
@@ -645,6 +690,10 @@ implementation
       _area := 0.0;
       _maxArea := 0.0;
       _maxAreaDay := 0;
+
+      _perimeter := 0.0;
+      _maxPerimeter := 0.0;
+      _maxPerimeterDay := 0;
     end
   ;
 
@@ -752,22 +801,27 @@ implementation
         end
       ;
 
-      q := 'INSERT INTO `outDailyByZone` ( `iteration`, `day`, `zoneID`, `area` )'
+      q := 'INSERT INTO `outDailyByZone` ( `iteration`, `day`, `zoneID`, `zoneArea`, `zonePerimeter` )'
         + ' VALUES ( '
-        + intToStr( iteration ) + ', ' + intToStr( day ) + ', ' + intToStr( self.id ) + ', ' + usFloatToStr( _area )
+        + intToStr( iteration )
+        + ', ' + intToStr( day )
+        + ', ' + intToStr( self.id )
+        + ', ' + usFloatToStr( _area )
+        + ',' + usFloatToStr( _perimeter )
         + ' )'
       ;
       db.execute( q );
 
       if( db.saveAllDailyOutputs and remoteDBParams.useRemoteDatabase ) then
         begin
-          q := 'INSERT INTO `outDailyByZone` ( `jobID`, `iteration`, `day`, `zoneID`, `area` )'
+          q := 'INSERT INTO `outDailyByZone` ( `jobID`, `iteration`, `day`, `zoneID`, `zoneArea`, `zonePerimeter` )'
             + ' VALUES ( '
             + intToStr( remoteDBParams.jobID ) + ', '
             + intToStr( iteration ) + ', '
             + intToStr( day ) + ', '
             + intToStr( self.id ) + ', '
-            + usFloatToStr( _area )
+            + usFloatToStr( _area ) + ','
+            + usFloatToStr( _perimeter )
             + ' )'
           ;
 
@@ -816,7 +870,7 @@ implementation
 
               if( includeCosts ) then
                 begin
-                  survCostPerDay := (_sim as TSMSimulationInput).ptList.byID( prodTypeID ).zoneParams.zonePtParamsList.paramsForZone( self.id ).costSurvPerAnimalDay;
+                  survCostPerDay := ptList.byID( prodTypeID ).zoneParams.zonePtParamsList.paramsForZone( self.id ).costSurvPerAnimalDay;
                   qDict['costSurveillance'] := usFloatToStr( survCostPerDay * _animalDays.value( prodTypeID ), 2, true );
                 end
               else
@@ -861,15 +915,21 @@ implementation
 
       if( focusCreated ) then
         begin
-          qDict['finalArea'] := usFloatToStr( _area );
-          qDict['maxArea'] := usFloatToStr( _maxArea );
-          qDict['maxAreaDay'] := intToStr( _maxAreaDay );
+          qDict['finalZoneArea'] := usFloatToStr( _area );
+          qDict['maxZoneArea'] := usFloatToStr( _maxArea );
+          qDict['maxZoneAreaDay'] := intToStr( _maxAreaDay );
+          qDict['finalZonePerimeter'] := usFloatToStr( _perimeter );
+          qDict['maxZonePerimeter'] := usFloatToStr( _maxPerimeter );
+          qDict['maxZonePerimeterDay'] := intToStr( _maxPerimeterDay );
         end
       else
         begin
-          qDict['finalArea'] := DATABASE_NULL_VALUE;
-          qDict['maxArea'] := DATABASE_NULL_VALUE;
-          qDict['maxAreaDay'] := DATABASE_NULL_VALUE;
+          qDict['finalZoneArea'] := DATABASE_NULL_VALUE;
+          qDict['maxZoneArea'] := DATABASE_NULL_VALUE;
+          qDict['maxZoneAreaDay'] := DATABASE_NULL_VALUE;
+          qDict['finalZonePerimeter'] := DATABASE_NULL_VALUE;
+          qDict['maxZonePerimeter'] := DATABASE_NULL_VALUE;
+          qDict['maxZonePerimeterDay'] := DATABASE_NULL_VALUE;
         end
       ;
 
@@ -960,16 +1020,7 @@ implementation
   constructor TZoneList.create( sim: TObject );
     begin
       inherited create( true );
-      
-      _currentIndex := 0;
-      if ( Assigned( sim ) ) then
-        _sim := sim
-      else
-        _sim := nil
-      ;
-
-      _focusCreated := false;
-      _firstZoneFocusDay := -1;
+      initialize( sim );
     end
   ;
 
@@ -980,11 +1031,11 @@ implementation
       newZ: TZone;
     begin
       inherited create( src );
+      _xmlModelList := nil;
+      initialize( sim );
 
       if ( ( Assigned( src ) ) and ( Assigned( sim ) ) ) then
         begin
-          _sim := sim;
-
           srcZ := src.first();
           while( nil <> srcZ ) do
             begin
@@ -994,17 +1045,9 @@ implementation
             end
           ;
         end
-      else
-        begin
-          _sim := nil;
-          _currentIndex := 0;          
-        end
       ;
 
       sortByRadius();
-
-      _focusCreated := false;
-      _firstZoneFocusDay := -1;
     end
   ;
 
@@ -1020,11 +1063,10 @@ implementation
       z: TZone;
     begin
   		inherited create( true );
+      initialize( sim );
 
       if ( ( Assigned( db ) ) and ( Assigned( sim ) ) ) then
         begin 
-          _sim := sim;
-
           db2 := db as TSqlDatabase;
 
           q := 'SELECT'
@@ -1066,10 +1108,58 @@ implementation
   ;
 
 
+  constructor TZoneList.create( db: TSMDatabase; sim: TObject; sdew: TSdew; models: pointer; errMsg: pstring = nil );
+    var
+      i: integer;
+      model: pointer;
+      nModels: integer;
+      modelName: string;
+      nextZoneID: integer;
+    begin
+      inherited create( true );
+      initialize( sim );
+
+      nModels := sdew.GetElementCount( models );
+
+      nextZoneID := 1;
+      for i := 0 to nModels - 1 do
+        begin
+          model := sdew.GetElementByIndex( models, i );
+          modelName := sdew.GetElementName( model );
+
+          if( xmlModelList.contains( modelName ) ) then
+            begin
+              importXml( model, sdew, nextZoneID, errMsg );
+              inc( nextZoneID );
+            end
+          ;
+        end
+      ;
+    end
+  ;
+
+
+  procedure TZoneList.initialize( sim: TObject );
+    begin
+      _currentIndex := 0;
+      if ( Assigned( sim ) ) then
+        _sim := sim
+      else
+        _sim := nil
+      ;
+
+      _focusCreated := false;
+      _firstZoneFocusDay := -1;
+
+      _xmlModelList := nil;
+    end
+  ;
+
+
 	destructor TZoneList.destroy();
   	begin
-      // The base class takes care of this.
-    	inherited destroy();
+      freeAndNil( _xmlModelList );
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -1079,7 +1169,7 @@ implementation
 //-----------------------------------------------------------------------------
 // TZoneList: Database handling
 //-----------------------------------------------------------------------------
-  procedure TZoneList.populateDatabase( db: TSMDatabase; ptList: TObject );
+  procedure TZoneList.populateDatabase( db: TSMDatabase; ptList: TObject; const updateAction: TDBUpdateActionType );
   	var
     	dm: TZone;
       tempID: integer;
@@ -1113,7 +1203,7 @@ implementation
               if( dm.updated ) then
                 begin
                   tempID := dm.id;
-                  dm.populateDatabase( db );
+                  dm.populateDatabase( db, updateAction );
                   
                   if( 0 > tempID ) then // This was a new zone.  Make sure that the production types know about it.
                     ptList2.addZone( dm.id )
@@ -1125,41 +1215,6 @@ implementation
             end
           ;
         end
-      ;
-    end
-  ;
-//-----------------------------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------
-// TZone XML output
-//-----------------------------------------------------------------------------
-  function TZoneList.ssXml(): string;
-  	var
-      i: integer;
-    	z: TZone;
-    begin
-      self.sortByRadius();
-
-      // Write all of the zones.
-      for i := 0 to self.Count - 1 do
-        begin
-          z := self.at( i );
-        	result := result + z.ssXml( i + 1 );
-        end
-      ;
-
-      // Add the background zone.
-      result := result +
-          '  <zone-model>' + endl
-        + '    <name>Background</name>' + endl
-        + '    <level>' + intToStr( self.Count + 1 ) + '</level>' + endl
-        + '    <radius>' + endl
-        + '      <value>0</value>' + endl
-        + '      <units><xdf:unit>km</xdf:unit></units>' + endl
-        + '    </radius>' + endl
-        + '  </zone-model>' + endl + endl
       ;
     end
   ;
@@ -1542,6 +1597,32 @@ implementation
   ;
 
 
+  function TZoneList.contains( const zoneName: string ): boolean;
+  	var
+      it: TZoneListIterator;
+  	begin
+    	result := false;
+
+      it := TZoneListIterator.create( self );
+      it.toFirst();
+
+      while( nil <> it.current() ) do
+      	begin
+       		if( zoneName = it.current().descr ) then
+          	begin
+           		result := true;
+              break;
+            end
+          ;
+          it.incr();
+        end
+      ;
+
+      it.Free();
+    end
+  ;
+
+
   // FIX ME: this mechanism will be too slow.  Find a better way to look up a zone by its level.
   // (Maybe a QMap/QHash...)
   function TZoneList.findByLevel( const level: integer ): TZone;
@@ -1686,6 +1767,110 @@ implementation
   ;
 //-----------------------------------------------------------------------------
 
+
+//-----------------------------------------------------------------------------
+// TZoneList XML output
+//-----------------------------------------------------------------------------
+  function TZoneList.ssXml(): string;
+  	var
+      i: integer;
+    	z: TZone;
+    begin
+      self.sortByRadius();
+
+      // Write all of the zones.
+      for i := 0 to self.Count - 1 do
+        begin
+          z := self.at( i );
+        	result := result + z.ssXml( i + 1 );
+        end
+      ;
+
+      // Add the background zone.
+      result := result +
+          '  <zone-model>' + endl
+        + '    <name>Background</name>' + endl
+        + '    <level>' + intToStr( self.Count + 1 ) + '</level>' + endl
+        + '    <radius>' + endl
+        + '      <value>0</value>' + endl
+        + '      <units><xdf:unit>km</xdf:unit></units>' + endl
+        + '    </radius>' + endl
+        + '  </zone-model>' + endl + endl
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// TZoneList: XML import
+//-----------------------------------------------------------------------------
+  function TZoneList.getXmlModelList(): TQStringList;
+    begin
+      if( nil = _xmlModelList ) then
+        begin
+          _xmlModelList := TQStringList.create();
+          _xmlModelList.append( 'zone-model' );
+        end
+      ;
+
+      result := _xmlModelList;
+    end
+  ;
+
+
+  procedure TZoneList.importXml( model: pointer; sdew: TSdew; const nextZoneID: integer; errMsg: pstring = nil );
+    var
+      zone: TZone;
+
+      zoneName: string;
+      radius: double;
+    begin
+      // NOTES:
+      // 1) Since the units used in the zone-model remain constant, they
+      //    are not read in here.  If this changes in the future, remember to
+      //    add the code here to read them in.
+
+      // 2) The Level stored in the XML is not stored in the current database
+      //    schema.  Consequently, it, also, is not read in here.  If this changes
+      //    then be sure to remember to add the code to read the level here.
+
+
+      // Ignore any zone ID number that might be in the XML file.  It will screw things up later on.
+      //zoneID := myStrToInt( sdew.GetElementAttribute( model, 'zone-id' ), -1 );
+      radius := -1.0;
+      zoneName := '';
+
+      if( nil <> sdew.GetElementByName( model, 'name' ) ) then
+        zoneName := sdew.GetElementContents( sdew.GetElementByName( model, 'name' ) )
+      ;
+
+      if( nil <> sdew.GetElementByName( model, 'radius') ) then
+        begin
+          if ( nil <> sdew.GetElementByName( Sdew.GetElementByName( model, 'radius'), 'value' ) ) then
+            radius := usStrToFloat( Sdew.GetElementContents( Sdew.GetElementByName( Sdew.GetElementByName( model, 'radius'), 'value')), -1.0 )
+          ;
+        end
+      ;
+
+      if( self.contains( zoneName ) ) then
+        appendToPstring( errMsg, tr( 'XML contains duplicate zone names.' ) )
+      else if( strIsEmpty( zoneName ) ) then
+        appendToPstring( errMsg, tr( 'XML contains an unnamed zone.' ) )
+      else if( 0.0 > radius ) then
+        appendToPstring( errMsg, tr( 'XML contains a zone with an invalid radius.' ) )
+      else if( 'Background' = zoneName ) then
+        // Don't import the background zone.  It will be automatically created later.
+      else
+        begin
+          zone := TZone.create( nextZoneID, zoneName, radius, sim );
+          zone.updated := true;
+          self.append( zone );
+        end
+      ;
+    end
+  ;
+//-----------------------------------------------------------------------------
 
 
 //-----------------------------------------------------------------------------

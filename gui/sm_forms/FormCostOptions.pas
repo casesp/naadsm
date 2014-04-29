@@ -4,13 +4,13 @@ unit FormCostOptions;
 FormCostOptions.pas/dfm
 ----------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/03/12 22:10:45 $ $Author: areeves $
-Version: $Revision: 1.3 $
+Last revision: $Date: 2010-09-09 14:34:00 $ $Author: rhupalo $
+Version: $Revision: 1.4.12.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -76,7 +76,6 @@ implementation
   uses
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
     ControlUtils,
     I88n
   ;
@@ -157,11 +156,15 @@ implementation
       frm: TForm;
     begin
       if
-        ( _smScenarioCopy.simInput.includeDestructionGlobal )
+        // there are no control measure costs unless disease can be detected
+        (  _smScenarioCopy.simInput.includeDetectionGlobal  )
+      and
+        // at least one type of control measure is being simulated
+        (( _smScenarioCopy.simInput.includeDestructionGlobal )
       or
         ( _smScenarioCopy.simInput.includeVaccinationGlobal )
       or
-        ( _smScenarioCopy.simInput.includeZonesGlobal )
+        ( _smScenarioCopy.simInput.includeZonesGlobal ))
       then // This form should be shown
         begin
           _settingUp := true;

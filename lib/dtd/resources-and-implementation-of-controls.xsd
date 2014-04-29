@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
 
   <include schemaLocation="base_types.xsd" />
 
@@ -20,7 +21,7 @@
     </annotation>    
     <sequence>
       <!-- Model parameters. -->
-      <element name="destruction-program-delay" type="ergadm:time">
+      <element name="destruction-program-delay" type="naadsm:time">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -31,7 +32,7 @@
           </documentation>
         </annotation>
       </element>
-      <element name="destruction-capacity" type="ergadm:REL">
+      <element name="destruction-capacity" type="naadsm:REL">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -42,17 +43,47 @@
             ]]>
           </documentation>
           <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:frequency</y-axis-type>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:frequency</y-axis-type>
           </appinfo>
         </annotation>
       </element>
-      <element name="destruction-priority-order" type="ergadm:text">
+      <element name="destruction-priority-order" type="naadsm:text">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
               The relative priorities given to production type, reason for
               destruction, and time waiting.  This is a text string, e.g.,
+              "production type,reason,time waiting",
+              "time waiting,reason,production type".  The three items in the
+              text string must be spelled as shown and separated only by
+              commas.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="vaccination-capacity" type="naadsm:REL">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The number of units that can be vaccinated per unit of time,
+              based on time since the first detection of a diseased unit.  The
+              capacity can be increased as time goes on, to simulate bringing
+              more resources on-line.
+            ]]>
+          </documentation>
+          <appinfo>
+            <x-axis-type>naadsm:time</x-axis-type>
+            <y-axis-type>naadsm:frequency</y-axis-type>
+          </appinfo>
+        </annotation>
+      </element>
+      <element name="vaccination-priority-order" type="naadsm:text">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The relative priorities given to production type, reason for
+              vaccination, and time waiting.  This is a text string, e.g.,
               "production type,reason,time waiting",
               "time waiting,reason,production type".  The three items in the
               text string must be spelled as shown and separated only by
@@ -70,40 +101,8 @@
             ]]>
           </documentation>
         </annotation>    
-      </element>
-      <element name="vaccination-capacity" type="ergadm:REL">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The number of units that can be vaccinated per unit of time,
-              based on time since the first detection of a diseased unit.  The
-              capacity can be increased as time goes on, to simulate bringing
-              more resources on-line.
-            ]]>
-          </documentation>
-          <appinfo>
-            <x-axis-type>ergadm:time</x-axis-type>
-            <y-axis-type>ergadm:frequency</y-axis-type>
-          </appinfo>
-        </annotation>
-      </element>
-      <element name="vaccination-priority-order" type="ergadm:text">
-        <annotation>
-          <documentation xml:lang="en">
-            <![CDATA[
-              The relative priorities given to production type, reason for
-              vaccination, and time waiting.  This is a text string, e.g.,
-              "production type,reason,time waiting",
-              "time waiting,reason,production type".  The three items in the
-              text string must be spelled as shown and separated only by
-              commas.
-            ]]>
-          </documentation>
-        </annotation>
-      </element>
+      </element>  
     </sequence>
-
     <attribute name="version" type="string" fixed="0.1" />
   </complexType>
-
 </schema>

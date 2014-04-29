@@ -8,17 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Create new table `outDailyEvents`.
--- `outDailyEvents` : Table of outDailyEvents
--- 	`iteration` : iteration partly identifies outDailyEvents
--- 	`day` : day identifies outDailyEvents
--- 	`event` : event partly identifies outDailyEvents
--- 	`herdID` : herdID partly identifies outDailyEvents
--- 	`eventCode` : eventCode is of outDailyEvents
--- 	`newStateCode` : newStateCode is of outDailyEvents  
--- 	`traceSuccess` : traceSuccess is of outDailyEvents 
 create table `outDailyEvents` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -28,18 +17,6 @@ create table `outDailyEvents` (
 	`newStateCode` CHAR(1), 
 	`traceSuccess` BIT, constraint `outDailyEvents_PK` primary key (`day`, `iteration`, `event`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyEvents`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyEvents' :
--- 	`iteration`
--- 	`day`
--- 	`event`
--- 	`herdID`
-
-
--- Create new table `outDailyExposures`.
--- `outDailyExposures` : Table of outDailyExposures  
 create table `outDailyExposures` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -49,18 +26,6 @@ create table `outDailyExposures` (
 	`spreadMethodCode` CHAR(1),
 	`success` BIT, constraint `outDailyExposures_PK` primary key (`day`, `exposure`, `iteration`) ); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyExposures`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyExposures' :
--- 	`iteration`
--- 	`day`
--- 	`exposure`
--- 	`exposedHerdID`
--- 	`exposingHerdID`
-
-
--- Update existing table `inGeneral`.
 create table `inGeneral_IM0` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -99,8 +64,6 @@ insert into `inGeneral_IM0` (`inGeneralID`, `scenarioDescr`, `iterations`, `days
 
 drop table `inGeneral`; 
 
-
--- `inGeneral` : Table of inGeneral  
 create table `inGeneral` ( 
 	`inGeneralID` VARCHAR(10),
 	`scenarioDescr` VARCHAR(255),
@@ -139,26 +102,20 @@ insert into `inGeneral` (`inGeneralID`, `scenarioDescr`, `iterations`, `days`, `
            `inGeneral_IM0`.`dailyStatesFileName`  
     from `inGeneral_IM0`;
 
-
 drop table `inGeneral_IM0`; 
-
 
 alter table `inGeneral`
 	add constraint `inGeneral_PK` primary key (`inGeneralID`) ; 
 
-
 create index `inGeneralID` on `inGeneral` (
 	`inGeneralID` ASC); 
 
-
--- Add foreign key constraints to table `outDailyEvents`.
 alter table `outDailyEvents`
 	add constraint `dynHerd_outDailyEvents_FK1` foreign key (
 		`herdID`)
 	 references `dynHerd` (
 		`herdID`); 
 
--- Add foreign key constraints to table `outDailyExposures`.
 alter table `outDailyExposures`
 	add constraint `dynHerd_outDailyExposures_FK1` foreign key (
 		`exposedHerdID`)
@@ -171,9 +128,6 @@ alter table `outDailyExposures`
 	 references `dynHerd` (
 		`herdID`); 
 
-
-
--- Update existing table `dynHerd`.
 create table `dynHerd_IM0` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -201,27 +155,20 @@ insert into `dynHerd_IM0` ( `herdID`, `productionTypeID`, `latitude`, `longitude
            `dynHerd`.`cumVaccinated`  
     from `dynHerd`;
 
-
 alter table `outDailyExposures`
 	drop constraint `dynHerd_outDailyExposures_FK1`;
-
 
 alter table `outDailyExposures`
 	drop constraint `dynHerd_outDailyExposures_FK2`;
 
-
 alter table `outDailyEvents`
 	drop constraint `dynHerd_outDailyEvents_FK1`;
-
 
 alter table `dynHerd`
 	drop constraint `inProductionType_dynHerd_FK1`;
 
-
 drop table `dynHerd`; 
 
-
--- `dynHerd` : Table of dynHerd  
 create table `dynHerd` ( 
 	`herdID` COUNTER,
 	`productionTypeID` INTEGER,
@@ -235,13 +182,6 @@ create table `dynHerd` (
 	`cumInfected` INTEGER,
 	`cumDestroyed` INTEGER,
 	`cumVaccinated` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`dynHerd`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'dynHerd' :
--- 	`productionTypeID`
-
 
 insert into `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `initialStateCode`, `initialSize`, `finalStateCode`, `finalApparentStateCode`, `cumInfected`, `cumDestroyed`, `cumVaccinated`) 
     select `dynHerd_IM0`.`herdID`, 
@@ -257,15 +197,11 @@ insert into `dynHerd` (`herdID`, `productionTypeID`, `latitude`, `longitude`, `i
            `dynHerd_IM0`.`cumVaccinated`  
     from `dynHerd_IM0`;
 
-
 drop table `dynHerd_IM0`; 
-
 
 alter table `dynHerd`
 	add constraint `dynHerd_PK` primary key (`herdID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `dynHerd`
 	add constraint `inProductionType_dynHerd_FK1` foreign key (
 		`productionTypeID`)
@@ -289,6 +225,3 @@ alter table `outDailyEvents`
 		`herdID`)
 	 references `dynHerd` (
 		`herdID`); 
-
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

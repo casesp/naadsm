@@ -8,17 +8,10 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\SPREADMODEL\_Databases\template-3_0_50.mdb
 
-
-
--- Drop primary key, unique and non-unique index constraints from table `outDailyByProductionType`.
 alter table `outDailyByProductionType` drop constraint `outDailyEpiByProductionType_PK`; 
 
-
--- Drop primary key, unique and non-unique index constraints from table `outIterationByProductionType`.
 alter table `outIterationByProductionType` drop constraint `outDailyEpiByProductionType_PK`; 
 
-
--- Update existing table `outDailyByProductionType`.
 create table `outDailyByProductionType_IM0` ( 
 	`outDailyByPTID` COUNTER,
 	`iteration` INTEGER,
@@ -167,84 +160,11 @@ insert into `outDailyByProductionType_IM0` ( `iteration`, `day`, `productionType
            `outDailyByProductionType`.`vaccARing`  
     from `outDailyByProductionType`;
 
-
 alter table `outDailyByProductionType`
 	drop constraint `inProductionType_outDailyByProductionType_FK1`;
 
-
 drop table `outDailyByProductionType`; 
 
-
--- `outDailyByProductionType` : Table of outDailyByProductionType
--- 	`tsdUSusc` : Number of susceptible units on the given day
--- 	`tsdASusc` : Number of animals in susceptible units on the given day
--- 	Number of animals in susceptible units on the given day
--- 	`tsdULat` : Number of latent units on the given day
--- 	`tsdALat` : Number of animals in latent units on the given day
--- 	`tsdUSubc` : Number of subclinically infectious units on the given day
--- 	`tsdASubc` : Number of animals in subclinically infected units on the given day
--- 	`tsdUClin` : Number of clinical units on the given day
--- 	`tsdAClin` : Number of animals in clinical units on the given day
--- 	`tsdUNImm` : Number of naturally immune units on the given day
--- 	`tsdANImm` : Number of animals in naturally immune units on the given day
--- 	`tsdUVImm` : Number of vaccine-immune units on the given day
--- 	`tsdAVImm` : Number of animals in vaccine-immune units on the given day
--- 	`tsdUDest` : Number of units with the state "destroyed" on the given day (NOT the number of units destroyed on the given day!!)
--- 	`tsdADest` : Number of animals in units with the state "destroyed" on the given day (NOT the number of animals in units destroyed on the given day!!)
--- 	`tscUSusc` : Number of units that are or become susceptible over the course of an iteration
--- 	`tscASusc` : Total number of animals in all units that are or become susceptible over the course of an iteration
--- 	`tscULat` : Number of units that are or become latent over the course of an iteration
--- 	`tscALat` : Total number of animals in all units that are or become latent over the course of an iteration
--- 	`tscUSubc` : Number of units that are or become subclinically infectious over the course of an iteration
--- 	`tscASubc` : Total number of animals in all units that are or become infectious over the course of an iteration
--- 	`tscUClin` : Number of units that are or become clinical over the course of an iteration
--- 	`tscAClin` : Total number of animals in all units that are or become clinical over the course of an iteration
--- 	`tscUNImm` : Number of units that are or become naturally immune over the course of an iteration
--- 	`tscANImm` : Total number of animals in all units that are or become naturally immune over the course of an iteration
--- 	`tscUVImm` : Number of units that are or become vaccine immune over the course of an iteration
--- 	`tscAVImm` : Total number of animals in all units that are or become vaccine immune over the course of an iteration
--- 	`tscUDest` : Number of units that are destroyed over the course of an iteration
--- 	`tscADest` : Total number of animals in all units that are destroyed over the course of an iteration
--- 	`infnUAir` : Number of new units infected on this day by airborne spread
--- 	`infnAAir` : Number of animals in new units infected on this day by airborne spread
--- 	`infnUDir` : Number of new units infected on this day by direct contact
--- 	`infnADir` : Number of animals in new units infected on this day by direct contact
--- 	`infnUInd` : Number of new units infected on this day by indirect contact
--- 	`infnAInd` : Number of animals in new units infected on this day by indirect contact
--- 	`infcUIni` : Number of units that are initially infected at the beginning of an iteration
--- 	`infcAIni` : Number of animals in units that are initially infected at the beginning of an iteration
--- 	`infcUAir` : Number of units that become infected by airborne spread over the course of an iteration
--- 	`infcAAir` : Number of animals in units that become infected by airborne spread over the course of an iteration
--- 	`infcUDir` : Number of units that become infected by direct contact over the course of an iteration
--- 	`infcADir` : Number of animals in units that become infected by direct contact over the course of an iteration
--- 	`infcUInd` : Number of units that become infected by indirect contact over the course of an iteration
--- 	`infcAInd` : Number of animals in units that become infected by indirect contact over the course of an iteration
--- 	`expcUDir` : Total number of units directly exposed to any infected unit over the course of an iteration
--- 	`expcADir` : Total number of animals in units directly exposed to any infected unit over the course of an iteration
--- 	`expcUInd` : Total number of units indirectly exposed to any infected unit over the course of an iteration
--- 	`expcAInd` : Total number of animals in units indirectly exposed to any infected unit over the course of an iteration
--- 	`trcUDir` : Number of units directly exposed and successfully traced over the course of an iteration
--- 	`trcADir` : Total number of animals in all units directly exposed and successfully traced over the course of an iteration
--- 	`trcUInd` : Number of units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcAInd` : Total number of animals in all units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcUDirp` : Number of units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcADirp` : Total number of animals in all units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcUIndp` : Number of units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`trcAIndp` : Total number of animals in units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`detnUClin` : Number of units detected by clinical signs on this day
--- 	`detnAClin` : Total number of animals in units detected by clinical signs on this day
--- 	`detcUClin` : Number of units detected by clinical signs over the course of an iteration
--- 	`detcAClin` : Total number of animals in all units detected by clinical signs over the course of an iteration
--- 	`descUDet` : Number of units destroyed because they were detected positive over the course of an iteration
--- 	`descADet` : Total number of animals in all units destroyed because they were detected positive over the course of an iteration
--- 	`descUDir` : Number of units destroyed because they were direct traces over the course of an iteration
--- 	`descADir` : Total number of animals in units destroyed because they were direct traces over the course of an iteration
--- 	`descUInd` : Number of units destroyed because they were indirect traces over the course of an iteration
--- 	`descAInd` : Total number of animals in units destroyed because they were indirect traces over the course of an iteration
--- 	`descURing` : Number of units destroyed because they were in a destruction ring over the course of an iteration
--- 	`descARing` : Total number of animals in all units destroyed because they were in a destruction ring over the course of an iteration
--- 	`vaccURing` : Number of units vaccinated in rings around detected-infected units over the course of an iteration
--- 	`vaccARing` : Total number of animals in all units vaccinated in rings around detected-infected units over the course of an iteration  
 create table `outDailyByProductionType` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -317,15 +237,6 @@ create table `outDailyByProductionType` (
 	`descARing` INTEGER,
 	`vaccURing` INTEGER,
 	`vaccARing` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outDailyByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outDailyByProductionType' :
--- 	`iteration`
--- 	`day`
--- 	`productionTypeID`
-
 
 update `outDailyByProductionType_IM0` set `iteration` = 1 where `iteration` is null;
 
@@ -405,11 +316,8 @@ insert into `outDailyByProductionType` (`iteration`, `day`, `productionTypeID`, 
            `outDailyByProductionType_IM0`.`vaccARing`  
     from `outDailyByProductionType_IM0`;
 
-
 drop table `outDailyByProductionType_IM0`; 
 
-
--- Update existing table `outIterationByProductionType`.
 create table `outIterationByProductionType_IM0` ( 
 	`outIterationByPTID` COUNTER,
 	`iteration` INTEGER,
@@ -516,57 +424,8 @@ insert into `outIterationByProductionType_IM0` ( `iteration`, `productionTypeID`
 alter table `outIterationByProductionType`
 	drop constraint `inProductionType_outIterationByProductionType_FK1`;
 
-
 drop table `outIterationByProductionType`; 
 
-
--- `outIterationByProductionType` : Table of outIterationByProductionType
--- 	`tscUSusc` : Number of units that are or become susceptible over the course of an iteration
--- 	`tscASusc` : Total number of animals in all units that are or become susceptible over the course of an iteration
--- 	`tscULat` : Number of units that are or become latent over the course of an iteration
--- 	`tscALat` : Total number of animals in all units that are or become latent over the course of an iteration
--- 	`tscUSubc` : Number of units that are or become subclinically infectious over the course of an iteration
--- 	`tscASubc` : Total number of animals in all units that are or become infectious over the course of an iteration
--- 	`tscUClin` : Number of units that are or become clinical over the course of an iteration
--- 	`tscAClin` : Total number of animals in all units that are or become clinical over the course of an iteration
--- 	`tscUNImm` : Number of units that are or become naturally immune over the course of an iteration
--- 	`tscANImm` : Total number of animals in all units that are or become naturally immune over the course of an iteration
--- 	`tscUVImm` : Number of units that are or become vaccine immune over the course of an iteration
--- 	`tscAVImm` : Total number of animals in all units that are or become vaccine immune over the course of an iteration
--- 	`tscUDest` : Number of units that are destroyed over the course of an iteration
--- 	`tscADest` : Total number of animals in all units that are destroyed over the course of an iteration
--- 	`infcUIni` : Number of units that are initially infected at the beginning of an iteration
--- 	`infcAIni` : Number of animals in units that are initially infected at the beginning of an iteration
--- 	`infcUAir` : Number of units that become infected by airborne spread over the course of an iteration
--- 	`infcAAir` : Number of animals in units that become infected by airborne spread over the course of an iteration
--- 	`infcUDir` : Number of units that become infected by direct contact over the course of an iteration
--- 	`infcADir` : Number of animals in units that become infected by direct contact over the course of an iteration
--- 	`infcUInd` : Number of units that become infected by indirect contact over the course of an iteration
--- 	`infcAInd` : Number of animals in units that become infected by indirect contact over the course of an iteration
--- 	`expcUDir` : Total number of units directly exposed to any infected unit over the course of an iteration
--- 	`expcADir` : Total number of animals in units directly exposed to any infected unit over the course of an iteration
--- 	`expcUInd` : Total number of units indirectly exposed to any infected unit over the course of an iteration
--- 	`expcAInd` : Total number of animals in units indirectly exposed to any infected unit over the course of an iteration
--- 	`trcUDir` : Number of units directly exposed and successfully traced over the course of an iteration
--- 	`trcADir` : Total number of animals in all units directly exposed and successfully traced over the course of an iteration
--- 	`trcUInd` : Number of units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcAInd` : Total number of animals in all units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcUDirp` : Number of units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcADirp` : Total number of animals in all units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcUIndp` : Number of units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`trcAIndp` : Total number of animals in units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`detcUClin` : Number of units detected by clinical signs over the course of an iteration
--- 	`detcAClin` : Total number of animals in all units detected by clinical signs over the course of an iteration
--- 	`descUDet` : Number of units destroyed because they were detected positive over the course of an iteration
--- 	`descADet` : Total number of animals in all units destroyed because they were detected positive over the course of an iteration
--- 	`descUDir` : Number of units destroyed because they were direct traces over the course of an iteration
--- 	`descADir` : Total number of animals in units destroyed because they were direct traces over the course of an iteration
--- 	`descUInd` : Number of units destroyed because they were indirect traces over the course of an iteration
--- 	`descAInd` : Total number of animals in units destroyed because they were indirect traces over the course of an iteration
--- 	`descURing` : Number of units destroyed because they were in a destruction ring over the course of an iteration
--- 	`descARing` : Total number of animals in all units destroyed because they were in a destruction ring over the course of an iteration
--- 	`vaccURing` : Number of units vaccinated in rings around detected-infected units over the course of an iteration
--- 	`vaccARing` : Total number of animals in all units vaccinated in rings around detected-infected units over the course of an iteration  
 create table `outIterationByProductionType` ( 
 	`iteration` INTEGER,
 	`productionTypeID` INTEGER,
@@ -616,14 +475,6 @@ create table `outIterationByProductionType` (
 	`descARing` INTEGER,
 	`vaccURing` INTEGER,
 	`vaccARing` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIterationByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIterationByProductionType' :
--- 	`iteration`
--- 	`productionTypeID`
-
 
 update `outIterationByProductionType_IM0` set `iteration` = 1 where `iteration` is null;
 
@@ -678,11 +529,8 @@ insert into `outIterationByProductionType` (`iteration`, `productionTypeID`, `ts
            `outIterationByProductionType_IM0`.`vaccARing`  
     from `outIterationByProductionType_IM0`;
 
-
 drop table `outIterationByProductionType_IM0`; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `outDailyByProductionType`
 	add constraint `inProductionType_outDailyByProductionType_FK1` foreign key (
 		`productionTypeID`)
@@ -695,18 +543,12 @@ alter table `outIterationByProductionType`
 	 references `inProductionType` (
 		`productionTypeID`); 
 
--- Add the remaining keys, constraints and indexes for the table `outDailyByProductionType`.
 alter table `outDailyByProductionType`
 	add constraint `outDailyEpiByProductionType_PK` primary key (`day`, `iteration`, `productionTypeID`) ; 
 
-
--- Add the remaining keys, constraints and indexes for the table `outIterationByProductionType`.
 alter table `outIterationByProductionType`
 	add constraint `outDailyEpiByProductionType_PK` primary key (`productionTypeID`, `iteration`) ; 
 
-
-
--- Update existing table `outIteration`.
 create table `outIteration_IM0` ( 
 	`iteration` INTEGER,
 	`firstDet` INTEGER,
@@ -724,25 +566,12 @@ insert into `outIteration_IM0` (`iteration`, `firstDet`, `firstDestr`, `firstVac
            `outIteration`.`outbreakEnded`  
     from `outIteration`;
 
-
 drop table `outIteration`; 
-
-
--- `outIteration` : Table of outIteration
--- 	`iteration` : iteration identifies outIteration
--- 	`length` : length is of outIteration
--- 	`outbreakEnded` : outbreakEnded is of outIteration  
+ 
 create table `outIteration` ( 
 	`iteration` INTEGER,
 	`length` INTEGER,
 	`outbreakEnded` BIT); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIteration`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIteration' :
--- 	`iteration`
-
 
 insert into `outIteration` (`iteration`, `length`, `outbreakEnded`) 
     select `outIteration_IM0`.`iteration`, 
@@ -750,15 +579,11 @@ insert into `outIteration` (`iteration`, `length`, `outbreakEnded`)
            `outIteration_IM0`.`outbreakEnded`  
     from `outIteration_IM0`;
 
-
 drop table `outIteration_IM0`; 
-
 
 alter table `outIteration`
 	add constraint `outIteration_PK` primary key (`iteration`) ; 
 
-
--- Update existing table `outIterationByProductionType`.
 create table `outIterationByProductionType_IM0` ( 
 	`iteration` INTEGER,
 	`productionTypeID` INTEGER,
@@ -860,64 +685,11 @@ insert into `outIterationByProductionType_IM0` (`iteration`, `productionTypeID`,
            `outIterationByProductionType`.`vaccARing`  
     from `outIterationByProductionType`;
 
-
 alter table `outIterationByProductionType`
 	drop constraint `inProductionType_outIterationByProductionType_FK1`;
 
-
 drop table `outIterationByProductionType`; 
 
-
--- `outIterationByProductionType` : Table of outIterationByProductionType
--- 	`tscUSusc` : Number of units that are or become susceptible over the course of an iteration
--- 	`tscASusc` : Total number of animals in all units that are or become susceptible over the course of an iteration
--- 	`tscULat` : Number of units that are or become latent over the course of an iteration
--- 	`tscALat` : Total number of animals in all units that are or become latent over the course of an iteration
--- 	`tscUSubc` : Number of units that are or become subclinically infectious over the course of an iteration
--- 	`tscASubc` : Total number of animals in all units that are or become infectious over the course of an iteration
--- 	`tscUClin` : Number of units that are or become clinical over the course of an iteration
--- 	`tscAClin` : Total number of animals in all units that are or become clinical over the course of an iteration
--- 	`tscUNImm` : Number of units that are or become naturally immune over the course of an iteration
--- 	`tscANImm` : Total number of animals in all units that are or become naturally immune over the course of an iteration
--- 	`tscUVImm` : Number of units that are or become vaccine immune over the course of an iteration
--- 	`tscAVImm` : Total number of animals in all units that are or become vaccine immune over the course of an iteration
--- 	`tscUDest` : Number of units that are destroyed over the course of an iteration
--- 	`tscADest` : Total number of animals in all units that are destroyed over the course of an iteration
--- 	`infcUIni` : Number of units that are initially infected at the beginning of an iteration
--- 	`infcAIni` : Number of animals in units that are initially infected at the beginning of an iteration
--- 	`infcUAir` : Number of units that become infected by airborne spread over the course of an iteration
--- 	`infcAAir` : Number of animals in units that become infected by airborne spread over the course of an iteration
--- 	`infcUDir` : Number of units that become infected by direct contact over the course of an iteration
--- 	`infcADir` : Number of animals in units that become infected by direct contact over the course of an iteration
--- 	`infcUInd` : Number of units that become infected by indirect contact over the course of an iteration
--- 	`infcAInd` : Number of animals in units that become infected by indirect contact over the course of an iteration
--- 	`expcUDir` : Total number of units directly exposed to any infected unit over the course of an iteration
--- 	`expcADir` : Total number of animals in units directly exposed to any infected unit over the course of an iteration
--- 	`expcUInd` : Total number of units indirectly exposed to any infected unit over the course of an iteration
--- 	`expcAInd` : Total number of animals in units indirectly exposed to any infected unit over the course of an iteration
--- 	`trcUDir` : Number of units directly exposed and successfully traced over the course of an iteration
--- 	`trcADir` : Total number of animals in all units directly exposed and successfully traced over the course of an iteration
--- 	`trcUInd` : Number of units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcAInd` : Total number of animals in all units indirectly exposed and successfully traced over the course of an iteration
--- 	`trcUDirp` : Number of units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcADirp` : Total number of animals in all units directly exposed that could possibly have been traced over the course of an iteration
--- 	`trcUIndp` : Number of units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`trcAIndp` : Total number of animals in units indirectly exposed that could possibly have been traced over the course of an iteration
--- 	`detcUClin` : Number of units detected by clinical signs over the course of an iteration
--- 	`detcAClin` : Total number of animals in all units detected by clinical signs over the course of an iteration
--- 	`descUDet` : Number of units destroyed because they were detected positive over the course of an iteration
--- 	`descADet` : Total number of animals in all units destroyed because they were detected positive over the course of an iteration
--- 	`descUDir` : Number of units destroyed because they were direct traces over the course of an iteration
--- 	`descADir` : Total number of animals in units destroyed because they were direct traces over the course of an iteration
--- 	`descUInd` : Number of units destroyed because they were indirect traces over the course of an iteration
--- 	`descAInd` : Total number of animals in units destroyed because they were indirect traces over the course of an iteration
--- 	`descURing` : Number of units destroyed because they were in a destruction ring over the course of an iteration
--- 	`descARing` : Total number of animals in all units destroyed because they were in a destruction ring over the course of an iteration
--- 	`vaccURing` : Number of units vaccinated in rings around detected-infected units over the course of an iteration
--- 	`vaccARing` : Total number of animals in all units vaccinated in rings around detected-infected units over the course of an iteration
--- 	`firstDetection` : firstDetection is of outIterationByProductionType
--- 	`firstDestruction` : firstDestruction is of outIterationByProductionType
--- 	`firstVaccination` : firstVaccination is of outIterationByProductionType  
 create table `outIterationByProductionType` ( 
 	`iteration` INTEGER,
 	`productionTypeID` INTEGER,
@@ -971,14 +743,6 @@ create table `outIterationByProductionType` (
 	`firstDestruction` INTEGER,
 	`firstVaccination` INTEGER); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outIterationByProductionType`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outIterationByProductionType' :
--- 	`iteration`
--- 	`productionTypeID`
-
-
 insert into `outIterationByProductionType` (`iteration`, `productionTypeID`, `tscUSusc`, `tscASusc`, `tscULat`, `tscALat`, `tscUSubc`, `tscASubc`, `tscUClin`, `tscAClin`, `tscUNImm`, `tscANImm`, `tscUVImm`, `tscAVImm`, `tscUDest`, `tscADest`, `infcUIni`, `infcAIni`, `infcUAir`, `infcAAir`, `infcUDir`, `infcADir`, `infcUInd`, `infcAInd`, `expcUDir`, `expcADir`, `expcUInd`, `expcAInd`, `trcUDir`, `trcADir`, `trcUInd`, `trcAInd`, `trcUDirp`, `trcADirp`, `trcUIndp`, `trcAIndp`, `detcUClin`, `detcAClin`, `descUDet`, `descADet`, `descUDir`, `descADir`, `descUInd`, `descAInd`, `descURing`, `descARing`, `vaccURing`, `vaccARing`) 
     select `outIterationByProductionType_IM0`.`iteration`, 
            `outIterationByProductionType_IM0`.`productionTypeID`, 
@@ -1030,27 +794,18 @@ insert into `outIterationByProductionType` (`iteration`, `productionTypeID`, `ts
            `outIterationByProductionType_IM0`.`vaccARing`  
     from `outIterationByProductionType_IM0`;
 
-
 drop table `outIterationByProductionType_IM0`; 
-
 
 alter table `outIterationByProductionType`
 	add constraint `outDailyEpiByProductionType_PK` primary key (`productionTypeID`, `iteration`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `outIterationByProductionType`
 	add constraint `inProductionType_outIterationByProductionType_FK1` foreign key (
 		`productionTypeID`)
 	 references `inProductionType` (
 		`productionTypeID`); 
 
-
-
 alter table `inProductionType` drop column `proportion`;
 alter table `inProductionType` drop column `unitSizePdf`;
 alter table `inGeneral` drop column `isStochastic`;
 
--- CUT STARTED HERE
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

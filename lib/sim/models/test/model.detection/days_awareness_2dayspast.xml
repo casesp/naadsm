@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>10</num-days>
@@ -53,18 +53,18 @@
       and later.
     -->
     <detection-model production-type="Beef Cattle">
-      <prob-report-vs-time-clinical>
+      <prob-detect-vs-time-clinical>
         <value>0</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-clinical>
-      <prob-report-vs-time-since-outbreak>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
         <value>0</value> <value>0.55</value>
         <value>1</value> <value>0.55</value>
         <value>2</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-since-outbreak>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
     </detection-model>
 
     <!-- The probability of detecting a diseased pig herd vs. days clinical is
@@ -74,18 +74,18 @@
       and later.
     -->
     <detection-model production-type="Pigs">
-      <prob-report-vs-time-clinical>
+      <prob-detect-vs-time-clinical>
         <value>0</value> <value>0.6</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-clinical>
-      <prob-report-vs-time-since-outbreak>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
         <value>0</value> <value>0.55</value>
         <value>1</value> <value>0.55</value>
         <value>2</value> <value>1.0</value>
         <units><xdf:unit>day</xdf:unit></units>
         <units><xdf:unitless /></units>
-      </prob-report-vs-time-since-outbreak>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
     </detection-model>
 
     <resources-and-implementation-of-controls-model>
@@ -126,11 +126,8 @@
 
     <conflict-resolver></conflict-resolver>
 
+    <state-table-writer />
+
   </models>
 
-  <output>
-    <variable-name>all-units-states</variable-name>
-    <frequency>daily</frequency>
-  </output>
-
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

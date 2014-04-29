@@ -41,7 +41,7 @@ inherited FormVaccination: TFormVaccination
       Visible = False
       inherited pnlRingVacc: TPanel
         Width = 551
-        Height = 131
+        Height = 91
       end
       inherited pnlVaccination: TPanel
         Width = 551

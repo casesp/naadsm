@@ -4,7 +4,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include "herd.h"
 #include "gis.h"
 #include <shapefil.h>
@@ -18,9 +17,14 @@
 #  include <strings.h>
 #endif
 
+#if HAVE_MATH_H
+#  include <math.h>
+#endif
+
 #include <assert.h>
 
 #define GRID_SIDE_LENGTH 10
+#define DEGREE_DISTANCE 111.31949 /**< 1/360th of equatorial radius, in km */
 
 /** @file filters/summary_gis.c
  * A filter that takes a state table (output from state_table_filter), a herd
@@ -58,7 +62,7 @@
  * @version 0.1
  * @date November 2005
  *
- * Copyright &copy; University of Guelph, 2005-2007
+ * Copyright &copy; University of Guelph, 2005-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -95,12 +99,12 @@ double *ndestroyed; /**< Counts of the number of herds in a polygon that were
   the number of polygons. */
 unsigned int last_run = 0; /**< The most recent run number we have seen in the
   table. */
-const char *arcview_shp_filename = NULL;
+const char *arcview_shp_filename;
 
 
 
 void
-copy (char *src_filename, char *dest_filename)
+copy (const char *src_filename, const char *dest_filename)
 {
   FILE *src = NULL;
   FILE *dest = NULL;
@@ -132,6 +136,35 @@ end:
   return;
 }
 
+
+
+/**
+ * Returns the approximate distance in km between points 1 and 2.  Latitudes
+ * and longitudes must be given in degrees.  The calculation is from the
+ * Aviation Formulary by Ed Williams (http://williams.best.vwh.net/avform.htm).
+ *
+ * @param lat1 latitude of point 1, in degrees.
+ * @param lon1 longitude of point 1, in degrees.
+ * @param lat2 latitude of point 2, in degrees.
+ * @param lon2 longitude of point 2, in degrees.
+ * @return the distance (in km) between points 1 and 2.
+ */
+double
+approx_distance (double lat1, double lon1, double lat2, double lon2)
+{
+  double dlat, dlon;
+  double x;
+
+  dlat = lat2 - lat1;
+  dlon = fabs (lon2 - lon1);
+  /* Handle the case where the shortest line between the points crosses the
+   * +180/-180 line. */
+  if (dlon > 180)
+    dlon = 360 - dlon;
+
+  x = dlon * cos (DEG_TO_RAD * lat1);
+  return sqrt (x * x + dlat * dlat) * DEGREE_DISTANCE;
+}
 
 
 /**
@@ -194,55 +227,6 @@ end:
 
 
 /**
- * Finds the minimum and maximum lat and long in a herd list.
- *
- * @param herds a list of herds.
- * @param min_lat a location in which to store the minimum latitude found.
- * @param min_lon a location in which to store the minimum longitude found.
- * @param max_lat a location in which to store the maximum latitude found.
- * @param max_lon a location in which to store the maximum longitude found.
- */
-void
-get_bounds (HRD_herd_list_t *herds,
-	    double *min_lat, double *min_lon,
-	    double *max_lat, double *max_lon)
-{
-  unsigned int nherds, i;
-  HRD_herd_t *herd;
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER get_bounds");
-#endif
-
-  nherds = HRD_herd_list_length (herds);
-  g_assert (nherds >= 1);
-
-  /* Find the minimum and maximum lat and long. */
-  herd = HRD_herd_list_get (herds, 0);
-  *min_lat = *max_lat = herd->lat;
-  *min_lon = *max_lon = herd->lon;
-  for (i = 1; i < nherds; i++)
-    {
-      herd = HRD_herd_list_get (herds, i);
-      if (herd->lat < *min_lat)
-	*min_lat = herd->lat;
-      else if (herd->lat > *max_lat)
-	*max_lat = herd->lat;
-      if (herd->lon < *min_lon)
-	*min_lon = herd->lon;
-      else if (herd->lon > *max_lon)
-	*max_lon = herd->lon;
-    }
-
-#if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT get_bounds");
-#endif
-  return;
-}
-
-
-
-/**
  * Creates ArcView files containing a grid that covers the herds.  Sets the
  * global npolys to a count of polygons.  Allocates and fills in the global
  * herd_count (number of herds in each polygon) array.  Fills in the global
@@ -270,7 +254,29 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER create_polys_as_grid");
 #endif
 
-  get_bounds (herds, &min_lat, &min_lon, &max_lat, &max_lon);
+  nherds = HRD_herd_list_length (herds);
+  for (i = 0; i < nherds; i++)
+    {
+      herd = HRD_herd_list_get (herds, i);
+      herd->x = herd->longitude;
+      herd->y = herd->latitude;
+    }
+  /* Find the minimum and maximum latitude and longitude. */
+  herd = HRD_herd_list_get (herds, 0);
+  min_lat = max_lat = herd->latitude;
+  min_lon = max_lon = herd->longitude;
+  for (i = 1; i < nherds; i++)
+    {
+      herd = HRD_herd_list_get (herds, i);
+      if (herd->latitude < min_lat)
+        min_lat = herd->latitude;
+      else if (herd->latitude > max_lat)
+        max_lat = herd->latitude;        
+      if (herd->longitude < min_lon)
+        min_lon = herd->longitude;
+      else if (herd->longitude > max_lon)
+        max_lon = herd->longitude;
+    }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
          "herds bound by (lat,lon) (%.1f,%.1f),(%.1f,%.1f)",
@@ -278,7 +284,7 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 #endif
 
   /* Work out the step size for the grid. */
-  height = GIS_local_distance (min_lat, min_lon, max_lat, min_lon);
+  height = approx_distance (min_lat, min_lon, max_lat, min_lon);
   lat_step = GRID_SIDE_LENGTH / height * (max_lat - min_lat);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -288,8 +294,8 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	 "latitude step to get %i km grid squares = %.3f",
 	 GRID_SIDE_LENGTH, lat_step);
 #endif
-  width = (GIS_local_distance (min_lat, min_lon, min_lat, max_lon)
-	    + GIS_local_distance (max_lat, min_lon, max_lat, max_lon)) * 0.5;
+  width = (approx_distance (min_lat, min_lon, min_lat, max_lon)
+	    + approx_distance (max_lat, min_lon, max_lat, max_lon)) * 0.5;
   lon_step = GRID_SIDE_LENGTH / width * (max_lon - min_lon);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
@@ -300,7 +306,6 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	 GRID_SIDE_LENGTH, lon_step);
 #endif
 
-  nherds = HRD_herd_list_length (herds);
   npolys = 0;
   tmp_herd_count = g_array_new (/* zero-terminated = */ FALSE,
 				/* clear = */ TRUE,
@@ -321,8 +326,8 @@ create_polys_as_grid (HRD_herd_list_t *herds, char *shape_filename)
 	      continue;
 
 	    herd = HRD_herd_list_get (herds, i);
-	    if (herd->lat > lat || herd->lat <= (lat - lat_step)
-		|| herd->lon < lon || herd->lon >= (lon + lon_step))
+	    if (herd->latitude > lat || herd->latitude <= (lat - lat_step)
+		|| herd->longitude < lon || herd->longitude >= (lon + lon_step))
 	      continue;
 
 	    if (no_herds_yet)
@@ -448,7 +453,7 @@ read_polys_from_file (HRD_herd_list_t *herds, char *shape_filename)
 	    continue;
 
 	  herd = HRD_herd_list_get (herds, i);
-	  if (GIS_point_in_polygon (poly, herd->lon, herd->lat))
+	  if (GIS_point_in_polygon (poly, herd->longitude, herd->latitude))
 	    {
 	      herd_map[i] = shape_index;
 	      herd_count[shape_index] += 1;
@@ -487,7 +492,7 @@ end:
 
 
 void
-write_polys_with_stats (char *input_shp_filename, char *output_shp_filename)
+write_polys_with_stats (const char *input_shp_filename, const char *output_shp_filename)
 {
   char *input_base_filename; /**< Without the .shp ending. */
   char *output_base_filename; /**< Without the .shp ending. */
@@ -764,8 +769,10 @@ header_line:
     RUN COMMA DAY COMMA herd_seqs
     {
       if ($5 != nherds)
-        g_error ("number of herds in state table (%i) does not match number of herds in herd file (%u)",
-		 $5, nherds);
+        {
+          g_error ("number of herds in state table (%i) does not match number of herds in herd file (%u)",
+                   $5, nherds);
+        }
     }
   ;
 
@@ -886,12 +893,16 @@ silent_log_handler (const gchar * log_domain, GLogLevelFlags log_level,
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[2];
   int verbosity = 0;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { NULL }
+  };
   const char *herd_filename = NULL;
   char *arcview_base_name;
-  char *polygon_shp_filename = NULL;
+  char *polygon_shp_filename;
   gboolean created_grid;
   HRD_herd_list_t *herds;
   int i;
@@ -900,55 +911,45 @@ main (int argc, char *argv[])
    * command-line arguments, the name of the herd file to read, and the name of
    * the ArcView .shp file to write.  There may also be a third argument, the
    * name of a polygon file to base the output map on. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip = "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
+  if (argc >= 2)
+    herd_filename = argv[1];
+  else
+    {
+      g_error ("Need the name of a herd file.");
+    }
 
-  options[1].longName = NULL;
-  options[1].shortName = '\0';
-  options[1].argInfo = 0;
-  options[1].arg = NULL;
-  options[1].val = 0;
-  options[1].descrip = NULL;
-  options[1].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **)argv, options, 0);
-  poptGetNextOpt (option);
-  herd_filename = poptGetArg (option);
-  if (herd_filename == NULL)
-    g_error ("Need the name of a herd file file.");
-
-  poptGetNextOpt (option);
-  arcview_shp_filename = poptGetArg (option);
+  if (argc >= 3)
+    arcview_shp_filename = argv[2];
+  else
+    arcview_shp_filename = NULL;
   if (arcview_shp_filename == NULL
       || !g_str_has_suffix (arcview_shp_filename, ".shp"))
-    g_error ("Need the name of an ArcView shape (.shp) file.");
+    {
+      g_error ("Need the name of an ArcView shape (.shp) file.");
+    }
 
-  poptGetNextOpt (option);
-  polygon_shp_filename = (char *) poptGetArg (option);
-  /* Allowed to be NULL. */
-  poptFreeContext (option);
+  if (argc >= 4)
+    polygon_shp_filename = argv[3];
+  else
+    polygon_shp_filename = NULL;  
+  g_option_context_free (context);
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
+  if (verbosity < 1)
     {
       g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
-  if (verbosity < 1)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
   g_log_set_handler ("herd", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-  g_log_set_handler ("herd", G_LOG_LEVEL_INFO, silent_log_handler, NULL);
 
   /* Get the base part (without the .shp) of the ArcView file name. */
   arcview_base_name = g_strndup (arcview_shp_filename,
@@ -959,7 +960,11 @@ main (int argc, char *argv[])
 #endif
 
   /* Read in the herds file. */
+#ifdef USE_SC_GUILIB
+  herds = HRD_load_herd_list (herd_filename, NULL);
+#else
   herds = HRD_load_herd_list (herd_filename);
+#endif
   nherds = HRD_herd_list_length (herds);
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,

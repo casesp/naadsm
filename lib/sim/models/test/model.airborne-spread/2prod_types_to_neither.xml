@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>10</num-days>
@@ -65,13 +65,61 @@
       </immunity-period>
     </disease-model>
 
+    <airborne-spread-model from-production-type="Sheep" to-production-type="Beef Cattle">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>10</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.495</prob>
+      <wind-direction-start>
+        <value>0</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-start>
+      <wind-direction-end>
+        <value>360</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-end>
+    </airborne-spread-model>
+
+    <airborne-spread-model from-production-type="Sheep" to-production-type="Pigs">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>20</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.495</prob>
+      <wind-direction-start>
+        <value>0</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-start>
+      <wind-direction-end>
+        <value>360</value>
+        <units><xdf:unit>degree</xdf:unit></units>
+      </wind-direction-end>
+    </airborne-spread-model>
+
     <!-- With all herds equal-sized, HerdSizeFactor=1.  The value of
       prob-spread-1km that will give a probability of infection p is then
       p / ((max-spread - distance between herds) / (max-spread - 1)).  The
       parameters below give a 0.495 probability of infection for herds 10 km
       apart. -->
     <airborne-spread-model from-production-type="Sheep" to-production-type="Beef Cattle">
-      <prob-spread-1km>0.606375</prob-spread-1km>
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>10</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.495</prob>
       <wind-direction-start>
         <value>0</value>
         <units><xdf:unit>degree</xdf:unit></units>
@@ -80,18 +128,20 @@
         <value>360</value>
         <units><xdf:unit>degree</xdf:unit></units>
       </wind-direction-end>
-      <max-spread>
-	<value>50</value>
-	<units>
-	  <xdf:unit>km</xdf:unit>
-	</units>
-      </max-spread>
     </airborne-spread-model>
 
     <!-- The parameters below give a 0.495 probability of infection for herds
       20 km apart. -->
     <airborne-spread-model from-production-type="Sheep" to-production-type="Pigs">
-      <prob-spread-1km>0.8085</prob-spread-1km>
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>20</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.495</prob>
       <wind-direction-start>
         <value>0</value>
         <units><xdf:unit>degree</xdf:unit></units>
@@ -100,21 +150,12 @@
         <value>360</value>
         <units><xdf:unit>degree</xdf:unit></units>
       </wind-direction-end>
-      <max-spread>
-	<value>50</value>
-	<units>
-	  <xdf:unit>km</xdf:unit>
-	</units>
-      </max-spread>
     </airborne-spread-model>
 
     <conflict-resolver></conflict-resolver>
 
+    <state-table-writer />
+
   </models>
 
-  <output>
-    <variable-name>all-units-states</variable-name>
-    <frequency>daily</frequency>
-  </output>
-
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

@@ -1,17 +1,17 @@
 inherited FormOutputStats: TFormOutputStats
-  Left = 975
-  Top = 106
-  Width = 625
+  Left = 468
+  Top = 85
+  Width = 660
   Height = 876
   Caption = 'Output statistics'
-  Constraints.MinWidth = 625
+  Constraints.MinWidth = 660
   Position = poDefaultPosOnly
   PixelsPerInch = 96
   TextHeight = 13
   inherited pnlControls: TPanel
-    Width = 617
+    Width = 652
     inherited pnlProdTypes: TPanel
-      Width = 315
+      Width = 318
       inherited cboProdTypes: TComboBox
         Width = 177
       end
@@ -24,9 +24,9 @@ inherited FormOutputStats: TFormOutputStats
   object pgcOutputs: TPBPageControl [1]
     Left = 0
     Top = 33
-    Width = 617
+    Width = 652
     Height = 816
-    ActivePage = tabEpiOutputs
+    ActivePage = tabPTZoneOutputs
     Align = alClient
     TabOrder = 1
     Visible = False
@@ -36,72 +36,44 @@ inherited FormOutputStats: TFormOutputStats
       inline fraStatsEpi: TFrameOutputStats
         Left = 0
         Top = 0
-        Width = 609
+        Width = 644
         Height = 788
         Align = alClient
         Constraints.MinWidth = 400
         TabOrder = 0
         inherited pnlWholeSection: TPanel
-          Width = 609
+          Width = 644
           Height = 788
-          inherited Splitter2: TSplitter
-            Width = 609
-          end
           inherited pnlTopSection: TPanel
-            Width = 609
+            Width = 644
             inherited Splitter1: TSplitter
-              Width = 609
+              Width = 644
             end
             inherited pnlTable: TPanel
-              Width = 609
+              Width = 644
               inherited pnlTableHeader: TPanel
-                Width = 607
+                Width = 642
               end
               inherited fraTable: TFrameOutputStatsTable
-                Width = 607
+                Width = 642
                 inherited stgGrid: TARSyncGrid
-                  Width = 597
+                  Width = 632
                 end
                 inherited pnlSpacer: TPanel
-                  Left = 597
+                  Left = 632
                 end
               end
             end
             inherited pnlHistogram: TPanel
-              Width = 609
+              Width = 644
               inherited pnlHistogramHeader: TPanel
                 Width = 607
               end
               inherited fraHistogram: TFrameArrayHistogram
                 Width = 607
-                inherited pnlControls: TPanel
-                  Width = 607
-                end
                 inherited chtHistogram: TChart
                   Width = 607
                 end
-              end
-            end
-          end
-          inherited pnlConvergence: TPanel
-            Width = 609
-            Height = 313
-            inherited pnlConvergenceHeader: TPanel
-              Width = 607
-            end
-            inherited fraConvergence: TFrameArrayConvergence
-              Width = 607
-              Height = 286
-              inherited pnlControls: TPanel
-                Top = 243
-                Width = 607
-                inherited rdgConvergenceParam: TRadioGroup
-                  Width = 605
-                end
-              end
-              inherited chtConvergence: TChart
-                Width = 607
-                Height = 243
               end
             end
           end
@@ -114,72 +86,106 @@ inherited FormOutputStats: TFormOutputStats
       inline fraStatsCost: TFrameOutputStats
         Left = 0
         Top = 0
-        Width = 609
+        Width = 644
         Height = 788
         Align = alClient
         Constraints.MinWidth = 400
         TabOrder = 0
         inherited pnlWholeSection: TPanel
-          Width = 609
+          Width = 644
           Height = 788
-          inherited Splitter2: TSplitter
-            Width = 609
-          end
           inherited pnlTopSection: TPanel
-            Width = 609
+            Width = 644
             inherited Splitter1: TSplitter
-              Width = 609
+              Width = 644
             end
             inherited pnlTable: TPanel
-              Width = 609
+              Width = 644
               inherited pnlTableHeader: TPanel
-                Width = 607
+                Width = 642
               end
               inherited fraTable: TFrameOutputStatsTable
-                Width = 607
+                Width = 642
                 inherited stgGrid: TARSyncGrid
-                  Width = 597
+                  Width = 632
                 end
                 inherited pnlSpacer: TPanel
-                  Left = 597
+                  Left = 632
                 end
               end
             end
             inherited pnlHistogram: TPanel
-              Width = 609
+              Width = 644
               inherited pnlHistogramHeader: TPanel
-                Width = 607
+                Width = 642
               end
               inherited fraHistogram: TFrameArrayHistogram
-                Width = 607
-                inherited pnlControls: TPanel
-                  Width = 607
-                end
+                Width = 642
                 inherited chtHistogram: TChart
-                  Width = 607
+                  Width = 642
+                end
+                inherited gbxBreaks: TGroupBox
+                  Width = 642
+                end
+                inherited Panel1: TPanel
+                  Width = 642
                 end
               end
             end
           end
-          inherited pnlConvergence: TPanel
-            Width = 609
-            Height = 313
-            inherited pnlConvergenceHeader: TPanel
-              Width = 607
+        end
+      end
+    end
+    object tabPTZoneOutputs: TTabSheet
+      Caption = 'Zones/production types'
+      ImageIndex = 2
+      inline fraStatsPTZones: TFrameOutputStats
+        Left = 0
+        Top = 0
+        Width = 644
+        Height = 788
+        Align = alClient
+        Constraints.MinWidth = 400
+        TabOrder = 0
+        inherited pnlWholeSection: TPanel
+          Width = 644
+          Height = 788
+          inherited pnlTopSection: TPanel
+            Width = 644
+            inherited Splitter1: TSplitter
+              Width = 644
             end
-            inherited fraConvergence: TFrameArrayConvergence
-              Width = 607
-              Height = 286
-              inherited pnlControls: TPanel
-                Top = 243
-                Width = 607
-                inherited rdgConvergenceParam: TRadioGroup
-                  Width = 605
+            inherited pnlTable: TPanel
+              Width = 644
+              inherited pnlTableHeader: TPanel
+                Width = 642
+              end
+              inherited fraTable: TFrameOutputStatsTable
+                Width = 642
+                inherited stgGrid: TARSyncGrid
+                  Width = 632
+                end
+                inherited pnlSpacer: TPanel
+                  Left = 632
                 end
               end
-              inherited chtConvergence: TChart
-                Width = 607
-                Height = 243
+            end
+            inherited pnlHistogram: TPanel
+              Width = 644
+              inherited pnlHistogramHeader: TPanel
+                Width = 642
+              end
+              inherited fraHistogram: TFrameArrayHistogram
+                Width = 642
+                inherited chtHistogram: TChart
+                  Width = 642
+                end
+                inherited gbxBreaks: TGroupBox
+                  Width = 642
+                end
+                inherited Panel1: TPanel
+                  Width = 642
+                end
               end
             end
           end
@@ -187,77 +193,55 @@ inherited FormOutputStats: TFormOutputStats
       end
     end
     object tabZoneOutputs: TTabSheet
-      Caption = '   Zones'
-      ImageIndex = 2
+      Caption = 'Zones'
+      ImageIndex = 3
       inline fraStatsZones: TFrameOutputStats
         Left = 0
         Top = 0
-        Width = 609
+        Width = 644
         Height = 788
         Align = alClient
         Constraints.MinWidth = 400
         TabOrder = 0
         inherited pnlWholeSection: TPanel
-          Width = 609
+          Width = 644
           Height = 788
-          inherited Splitter2: TSplitter
-            Width = 609
-          end
           inherited pnlTopSection: TPanel
-            Width = 609
+            Width = 644
             inherited Splitter1: TSplitter
-              Width = 609
+              Width = 644
             end
             inherited pnlTable: TPanel
-              Width = 609
+              Width = 644
               inherited pnlTableHeader: TPanel
-                Width = 607
+                Width = 642
               end
               inherited fraTable: TFrameOutputStatsTable
-                Width = 607
+                Width = 642
                 inherited stgGrid: TARSyncGrid
-                  Width = 597
+                  Width = 632
                 end
                 inherited pnlSpacer: TPanel
-                  Left = 597
+                  Left = 632
                 end
               end
             end
             inherited pnlHistogram: TPanel
-              Width = 609
+              Width = 644
               inherited pnlHistogramHeader: TPanel
-                Width = 607
+                Width = 642
               end
               inherited fraHistogram: TFrameArrayHistogram
-                Width = 607
-                inherited pnlControls: TPanel
-                  Width = 607
-                end
+                Width = 642
                 inherited chtHistogram: TChart
-                  Width = 607
+                  Width = 642
                 end
-              end
-            end
-          end
-          inherited pnlConvergence: TPanel
-            Width = 609
-            Height = 313
-            inherited pnlConvergenceHeader: TPanel
-              Width = 607
-            end
-            inherited fraConvergence: TFrameArrayConvergence
-              Width = 607
-              Height = 286
-              inherited pnlControls: TPanel
-                Top = 243
-                Width = 607
-                inherited rdgConvergenceParam: TRadioGroup
-                  Width = 605
+                inherited gbxBreaks: TGroupBox
+                  Width = 642
                 end
-              end
-              inherited chtConvergence: TChart
-                Width = 607
-                Height = 243
+                inherited Panel1: TPanel
+                  Width = 642
+                end
               end
             end
           end

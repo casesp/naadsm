@@ -4,13 +4,13 @@ unit FormVaccGlobal;
 FormVaccGlobal.pas/dfm
 -----------------------
 Begin: 2005/06/10
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.27 $
+Last revision: $Date: 2010-09-09 14:34:02 $ $Author: rhupalo $
+Version: $Revision: 1.31.6.1 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -75,6 +75,7 @@ interface
       destructor destroy(); override;
 
       procedure updateMasterDisplay(); override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
 			property ctrlParams: TGlobalControlParams read getCtrlParams write setCtrlParams;
     end
@@ -90,7 +91,6 @@ implementation
 	uses
   	ControlUtils,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     I88n,
 
@@ -109,8 +109,8 @@ implementation
       inherited create( AOwner );
       translateUI();
 
-      fraParams.smrVaccCapacity.xUnits := UnitsDays;
-      fraParams.smrVaccCapacity.yUnits := UnitsHerdsPerDay;
+      fraParams.smrVaccCapacity.xUnits := UDays;
+      fraParams.smrVaccCapacity.yUnits := UHerdsPerDay;
     end
   ;
 
@@ -136,8 +136,10 @@ implementation
 
   destructor TFormVaccGlobal.destroy();
     begin
-      _ctrlList.Extract( _ctrlParams );
-      freeAndNil( _ctrlList );
+      // These two private members are nil when the user navigates through the
+      // input parameter form wizard and global detection is turned off (the else block of showModal function)
+      if assigned( _ctrlParams ) then _ctrlList.Extract( _ctrlParams );
+      if assigned(_ctrlList) then freeAndNil( _ctrlList );
 
     	inherited destroy();
     end
@@ -167,73 +169,6 @@ implementation
 //-----------------------------------------------------------------------------
 // reimplemented data handling functions
 //-----------------------------------------------------------------------------
-
-	// copied verbatim from FormDestrGlobal
-  {*
-  procedure TFormVaccGlobal.initializeFromDatabase();
-  	begin
-    	_ctrlParams := TGlobalControlParams.create( _smdb, _smScenario.simInput );
-      fraParams.ctrlParams := _ctrlParams;
-
-      _relList := TFunctionDictionary.Create( _smdb, _smScenario.simInput );
-      _ctrlList := TGlobalControlParamsList.create();
-      _ctrlList.append( _ctrlParams );
-
-      updateMasterDisplay();
-    end
-  ;
-
-
-  // copied verbatim from FormDestrGlobal
-  procedure TFormVaccGlobal.updateDatabase();
-  	var
-  		i: integer;
-  	begin
-    	// Deal with new or changed charts first...
-      //-----------------------------------------
-    	for i := 0 to _relList.Count-1 do
-      	begin
-        	if( _relList.GetItemByIndex(i).new ) then
-          	begin
-           		//dbcout( 'NEW CHART:', DBFORMVACCGLOBAL );
-              _relList.GetItemByIndex(i).fn.id := _relList.GetItemByIndex(i).fn.populateDatabase( _smdb );
-              //if( DBFORMVACCGLOBAL ) then _relList.GetItemByIndex(i).fn.debug();
-            end
-          ;
-          if( _relList.GetItemByIndex(i).modified ) then
-          	begin
-           		//dbcout( 'MODIFIED CHART:', DBFORMVACCGLOBAL );
-              _relList.GetItemByIndex(i).fn.populateDatabase( _smdb, true );
-              //if( DBFORMVACCGLOBAL ) then _relList.GetItemByIndex(i).fn.debug();
-            end
-          ;
-
-        end
-      ;
-
-      // Then update the model entities...
-      //-----------------------------------
-			if( _ctrlParams.updated ) then _ctrlParams.populateDatabase( _smdb, true );
-
-
-      // Finally, remove any  deleted charts from the database.
-      // (Attempts to delete charts without first updating
-      // entities will cause referential integrity errors.)
-      //--------------------------------------------------------
-    	for i := 0 to _relList.Count-1 do
-      	begin
-          if( _relList.GetItemByIndex(i).removed ) then
-          	begin
-           		dbcout( 'REMOVED CHART: ' + intToStr( _relList.GetItemByIndex(i).fn.id ), DBFORMVACCGLOBAL );
-              _smdb.removeChartFunction( _relList.GetItemByIndex(i).fn.id );
-            end
-          ;
-        end
-      ;
-    end
-  ;
-*}
-
   // copied verbatim from FormDestrGlobal
   function TFormVaccGlobal.dataIsValid(): boolean;
   	begin
@@ -297,11 +232,9 @@ implementation
           begin
             if ( not it.value().removed ) then
               begin
-                if ( it.value().fn.dbField = word(TSMChart(VaccCapacityGlobal)) ) then
-                  begin
-                    fraParams.smrVaccCapacity.appendFunction( it.value().fn );
-                    it.value().RefCounter:= 0;
-                  end;
+                if ( integer( VaccCapacityGlobal ) = it.value().fn.dbField ) then
+                  fraParams.smrVaccCapacity.appendFunction( it.value().fn )
+                ;
               end;
           end
         ;
@@ -310,10 +243,6 @@ implementation
       until ( nil = it.value() );
 
       it.Free();
-
-     if( _relList.contains( ctrlParams.vaccCapacityName ) ) then
-      	_relList.value( ctrlParams.vaccCapacityName ).incrRefCounter()
-     ;
 
       giveListsToEditors();
 
@@ -328,6 +257,22 @@ implementation
       fraParams.smrVaccCapacity.setModelList( _ctrlList );
     end
   ;
+
+  function TFormVaccGlobal.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
+  	begin
+      // need detection of disease in order to conduct vaccination campaign
+    	if( _smScenarioCopy.simInput.includeDetectionGlobal ) then
+    		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
+      else
+      	begin
+          formDisplayed := false;
+      		nextForm := nextFormToShow;
+          result := 0;
+        end
+      ;
+    end
+  ;
+
 //-----------------------------------------------------------------------------
 
 

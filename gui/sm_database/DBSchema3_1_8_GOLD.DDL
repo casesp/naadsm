@@ -9,9 +9,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : C:\DOCUMENTS AND SETTINGS\APREEVES\My Documents\NAADSM\DatabaseSchemas\naadsm3_1_x.mdb
 
-
-
--- Update existing table `inZoneProductionTypePair`.
 create table `inZoneProductionTypePair_IM0` ( 
 	`zoneID` INTEGER,
 	`productionTypeID` INTEGER,
@@ -49,16 +46,6 @@ alter table `inZoneProductionTypePair`
 drop table `inZoneProductionTypePair`; 
 
 
--- `inZoneProductionTypePair` : Table of inZoneProductionTypePair
--- 	`zoneID` : zoneID identifies inZoneProductionTypePair
--- 	`productionTypeID` : productionTypeID partly identifies inZoneProductionTypePair
--- 	`useDirectMovementControl` : useDirectMovementControl is of inZoneProductionTypePair
--- 	`zoneDirectMovementRelID` : zoneDirectMovementRelID is of inZoneProductionTypePair
--- 	`useIndirectMovementControl` : useIndirectMovementControl is of inZoneProductionTypePair
--- 	`zoneIndirectMovementRelID` : zoneIndirectMovementRelID is of inZoneProductionTypePair
--- 	`useDetectionMultiplier` : useDetectionMultiplier is of inZoneProductionTypePair
--- 	`zoneDetectionMultiplier` : zoneDetectionMultiplier is of inZoneProductionTypePair
--- 	`costSurvPerAnimalDay` : costSurvPerAnimalDay is of inZoneProductionTypePair  
 create table `inZoneProductionTypePair` ( 
 	`zoneID` INTEGER,
 	`productionTypeID` INTEGER,
@@ -69,14 +56,6 @@ create table `inZoneProductionTypePair` (
 	`useDetectionMultiplier` BIT,
 	`zoneDetectionMultiplier` DOUBLE,
 	`costSurvPerAnimalDay` DOUBLE); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inZoneProductionTypePair`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inZoneProductionTypePair' :
--- 	`zoneID`
--- 	`productionTypeID`
-
 
 insert into `inZoneProductionTypePair` (`zoneID`, `productionTypeID`, `useDirectMovementControl`, `zoneDirectMovementRelID`, `useIndirectMovementControl`, `zoneIndirectMovementRelID`, `useDetectionMultiplier`, `zoneDetectionMultiplier`) 
     select `inZoneProductionTypePair_IM0`.`zoneID`, 
@@ -96,8 +75,6 @@ drop table `inZoneProductionTypePair_IM0`;
 alter table `inZoneProductionTypePair`
 	add constraint `inZoneProductionTypePair_PK` primary key (`zoneID`, `productionTypeID`) ; 
 
-
--- Update existing table `outEpidemicCurves`.
 create table `outEpidemicCurves_IM0` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -124,17 +101,6 @@ alter table `outEpidemicCurves`
 
 drop table `outEpidemicCurves`; 
 
-
--- `outEpidemicCurves` : Table of outEpidemicCurves
--- 	`iteration` : The iteration during which the outputs in this record were generated.  The first iteration is iteration number 1.
--- 	`day` : The day within the iteration on which these outputs were generated.  The first day of an iteration is day number 1.
--- 	`productionTypeID` : The ID number of the production type to which the outputs in this record apply.  This field references inProductionType.productionTypeID.
--- 	`infectedUnits` : The number of units of the specified production type infected by any mechanism on the specified day in the specified iteration.  Used to generate an actual epidemic curve.
--- 	`infectedAnimals` : Total number of animals in units described immediately above.
--- 	`detectedUnits` : The number of clinically ill units of the specified production type detected by any mechanism on the specified day in the specified iteration.  Used to generate an apparent epidemic curve.
--- 	`detectedAnimals` : Total number of animals in units described immediately above.
--- 	`infectiousUnits` : infectiousUnits is of outEpidemicCurves
--- 	`apparentInfectiousUnits` : apparentInfectiousUnits is of outEpidemicCurves  
 create table `outEpidemicCurves` ( 
 	`iteration` INTEGER,
 	`day` INTEGER,
@@ -145,15 +111,6 @@ create table `outEpidemicCurves` (
 	`detectedAnimals` INTEGER,
 	`infectiousUnits` INTEGER,
 	`apparentInfectiousUnits` INTEGER); 
-
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`outEpidemicCurves`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'outEpidemicCurves' :
--- 	`iteration`
--- 	`day`
--- 	`productionTypeID`
-
 
 insert into `outEpidemicCurves` (`iteration`, `day`, `productionTypeID`, `infectedUnits`, `infectedAnimals`, `detectedUnits`, `detectedAnimals`) 
     select `outEpidemicCurves_IM0`.`iteration`, 
@@ -172,8 +129,6 @@ drop table `outEpidemicCurves_IM0`;
 alter table `outEpidemicCurves`
 	add constraint `outEpidemicCurves_PK` primary key (`iteration`, `day`, `productionTypeID`) ; 
 
-
--- Update existing table `inChart`.
 create table `inChart_IM0` ( 
 	`chartID` COUNTER,
 	`fieldName` VARCHAR(50),
@@ -273,28 +228,7 @@ alter table `inProductionType`
 
 
 drop table `inChart`; 
-
-
--- `inChart` : Table of inChart
--- 	`chartID` : A unique ID for each function (pdf or relational function) defined for the scenario.
--- 	`fieldName` : Indicates the parameter (e.g. "disease latent period" or "movement effects over time") to which the function corresponds
--- 	`chartName` : Unique name assigned to each function.
--- 	`isPdf` : True if the function is a probability density function, false if a relational function.
--- 	`chartType` : For pdfs, identifies the type of function: see Appendix D.
--- 	`mean` : The mean for pdf types Gaussian, Lognormal, and Exponential.
--- 	`stddev` : The standard deviation for pdf types Gaussian and Lognormal. 
--- 	`min` : The minimum value for pdf types Uniform, Triangular, Beta, and BetaPERT. 
--- 	`mode` : The mode for pdf types Point, Triangular and BetaPERT. 
--- 	`max` : The maximum value for pdf types Uniform, Triangular, Beta and BetaPERT.
--- 	`alpha` : The alpha parameter for pdf types Gamma, Weibull, and Pearson 5, or the or alpha1 parameter for Beta pdfs.
--- 	`alpha2` : The alpha2 parameter for Beta pdfs.
--- 	`beta` : The beta parameter for pdf types Gamma, Weibull, and Pearson 5. 
--- 	`location` : The location parameter for pdf types Logistic and Loglogistic. 
--- 	`scale` : The scale parameter for pdf types Logistic and Loglogistic.
--- 	`shape` : The shape parameter for Loglogistic pdfs.
--- 	`xAxisUnits` : Specifies the units of the x axis for pdfs and rels.
--- 	`yAxisUnits` : Specifies the units of the y axis for rel functions.
--- 	`notes` : notes is of inChart  
+  
 create table `inChart` ( 
 	`chartID` COUNTER,
 	`fieldName` VARCHAR(50),
@@ -348,16 +282,10 @@ alter table `inChart`
 create unique index `chartNameIndex` on `inChart` (
 	`chartName`); 
 
-
--- Update existing table `dynHerd`.
 alter table `dynHerd` add column `cumDetected` long;
 
-
--- Update existing table `outDailyByProductionType`.
 alter table `outDailyByProductionType` add column `appUInfectious` long;
 
-
--- Restore foreign key constraints for existing tables
 alter table `inZoneProductionTypePair`
 	add constraint `inChart_inZoneProductionTypePair_FK1` foreign key (
 		`zoneDirectMovementRelID`)
@@ -471,13 +399,9 @@ alter table `inProductionType`
 		`disPrevalenceRelID`)
 	 references `inChart` (
 		`chartID`); 
-	
--- Provide some useful (or at least not error-prone) default values for the new fields.
 
 update `inChart` set `notes` = "";
 update `inZoneProductionTypePair` set `costSurvPerAnimalDay` = 0;
 update `dynHerd` set `cumDetected` = 0;
 update `outEpidemicCurves` set `infectiousUnits` = 0, `apparentInfectiousUnits` = 0;
 update  `outDailyByProductionType` set `appUInfectious` = 0;
-
--- This is the end the SQL DDL script.

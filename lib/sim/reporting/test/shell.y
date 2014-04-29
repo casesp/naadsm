@@ -24,15 +24,11 @@ extern char *RPT_type_name[];
  * The commands are:
  * <ul>
  *   <li>
- *     <code>variable (name,frequency,cumulative)</code>
+ *     <code>variable (name,frequency)</code>
  *
  *     Creates a new output variable.  The first argument may be any string,
  *     e.g., <code>"x"</code>, <code>"variable_1"</code>.  The frequency must
- *     be one of <code>never</code>, <code>once</code>, <code>daily</code>,
- *     <code>weekly</code>, <code>monthly</code>, or <code>yearly</code>.
- *     Cumulative must be either <code>t</code>, meaning that the variable
- *     retains its value when read, or <code>f</code>, meaning that the
- *     variable is cleared each time it is read.
+ *     be one of <code>never</code>, <code>once</code>, or <code>daily</code>.
  *   <li>
  *     <code>set (value,category,sub-category,...)</code>
  *
@@ -85,7 +81,6 @@ char errmsg[BUFFERSIZE];
 RPT_reporting_t *current_variable = NULL;
 char *tentative_name = NULL;
 RPT_frequency_t tentative_freq = RPT_never;
-gboolean tentative_cumul = FALSE;
 
 
 
@@ -105,10 +100,11 @@ void g_free_as_GFunc (gpointer data, gpointer user_data);
 %token VARIABLE SET ADD SUBTRACT GET
 %token DAILY WEEKLY MONTHLY YEARLY
 %token LPAREN RPAREN COMMA
-%token <ival> INT
-%token <fval> REAL
-%token <sval> STRING
-%token <bval> BOOL
+%token INT REAL STRING BOOL
+%type <ival> INT
+%type <fval> REAL
+%type <sval> STRING
+%type <bval> BOOL
 %type <fval> real
 %type <frval> frequency
 %type <lval> string_list
@@ -131,15 +127,14 @@ command :
 new_command :
     VARIABLE LPAREN STRING COMMA frequency COMMA BOOL RPAREN
     {
-      RPT_free_reporting (current_variable, TRUE);
+      RPT_free_reporting (current_variable);
       current_variable = NULL;
 
       /* The variable will be created when it is first assigned to and we can
-       * see its type.  Until then, just record the name, reporting frequency
-       * and whether or not it is cumulative. */
+       * see its type.  Until then, just record the name and reporting
+       * frequency. */
       tentative_name = $3;
       tentative_freq = $5;
-      tentative_cumul = $7;
 
       printf ("%s", PROMPT);
       fflush (stdout);
@@ -151,18 +146,6 @@ frequency:
     {
       $$ = RPT_daily;
     }
-  | WEEKLY
-    {
-      $$ = RPT_weekly;
-    }
-  | MONTHLY
-    {
-      $$ = RPT_monthly;
-    }
-  | YEARLY
-    {
-      $$ = RPT_yearly;
-    }
   ;
 
 set_command:
@@ -171,9 +154,8 @@ set_command:
       /* Integer, no subcategories. */
       char *s;
 
-      RPT_free_reporting (current_variable, TRUE);
-      current_variable = RPT_new_reporting (tentative_name, NULL, RPT_integer,
-					    tentative_freq, tentative_cumul);
+      RPT_free_reporting (current_variable);
+      current_variable = RPT_new_reporting (tentative_name, RPT_integer, tentative_freq);
       RPT_reporting_set_integer (current_variable, $3, NULL);
       s = RPT_reporting_value_to_string (current_variable, NULL);
       printf ("%s\n%s", s, PROMPT);
@@ -184,7 +166,8 @@ set_command:
     {
       /* Integer, with subcategories. */
       int ncategories;
-      char **drill_down_list, **p, *s;
+      const char **drill_down_list, **p;
+      char *s;
       GSList *iter;
 #if DEBUG
       int i;
@@ -196,13 +179,12 @@ set_command:
 	{
 	  printf ("creating new group var\n");
 	  fflush (stdout);
-	  current_variable = RPT_new_reporting (tentative_name, NULL, RPT_group,
-						tentative_freq, tentative_cumul);
+	  current_variable = RPT_new_reporting (tentative_name, RPT_group, tentative_freq);
 	}
 
       /* Copy the subcategories into an array. */
       ncategories = g_slist_length ($5);
-      drill_down_list = g_new (char *, ncategories + 1);
+      drill_down_list = g_new (const char *, ncategories + 1);
       for (iter = $5, p = drill_down_list; iter != NULL; iter = g_slist_next (iter))
 	{
 	  *p++ = (char *)(iter->data);
@@ -233,9 +215,8 @@ set_command:
       /* Text, no subcategories. */
       char *s;
 
-      RPT_free_reporting (current_variable, TRUE);
-      current_variable = RPT_new_reporting (tentative_name, NULL, RPT_text,
-					    tentative_freq, tentative_cumul);
+      RPT_free_reporting (current_variable);
+      current_variable = RPT_new_reporting (tentative_name, RPT_text, tentative_freq);
       RPT_reporting_set_text (current_variable, $3, NULL);
       free ($3);
       s = RPT_reporting_value_to_string (current_variable, NULL);
@@ -246,13 +227,14 @@ set_command:
   | SET LPAREN STRING COMMA string_list RPAREN
     {
       /* Text, with subcategories. */
-      char **drill_down_list, **p, *s;
+      const char **drill_down_list, **p;
+      char *s;
       GSList *iter;
 
-      RPT_free_reporting (current_variable, TRUE);
+      RPT_free_reporting (current_variable);
 
       /* Copy the subcategories into an array. */
-      drill_down_list = g_new (char *, g_slist_length ($5) + 1);
+      drill_down_list = g_new (const char *, g_slist_length ($5) + 1);
       for (iter = $5, p = drill_down_list; iter != NULL; iter = g_slist_next (iter))
 	{
 	  *p++ = (char *)(iter->data);
@@ -261,8 +243,7 @@ set_command:
       *p = NULL;
 
       /* Create and set the variable, then free the argument list. */
-      current_variable = RPT_new_reporting (tentative_name, NULL, RPT_group,
-					    tentative_freq, tentative_cumul);
+      current_variable = RPT_new_reporting (tentative_name, RPT_group, tentative_freq);
       RPT_reporting_set_text (current_variable, $3, drill_down_list);
       g_slist_foreach ($5, g_free_as_GFunc, NULL);
       g_slist_free ($5);
@@ -282,8 +263,7 @@ add_command:
       char *s;
 
       if (current_variable == NULL)
-	current_variable = RPT_new_reporting (tentative_name, NULL, RPT_integer,
-					      tentative_freq, tentative_cumul);
+	current_variable = RPT_new_reporting (tentative_name, RPT_integer, tentative_freq);
       RPT_reporting_add_integer (current_variable, $3, NULL);
       s = RPT_reporting_value_to_string (current_variable, NULL);
       printf ("%s\n%s", s, PROMPT);
@@ -293,15 +273,15 @@ add_command:
   | ADD LPAREN INT COMMA string_list RPAREN
     {
       /* Integer, with subcategories. */
-      char **drill_down_list, **p, *s;
+      const char **drill_down_list, **p;
+      char *s;
       GSList *iter;
 
       if (current_variable == NULL)
-	current_variable = RPT_new_reporting (tentative_name, NULL, RPT_group,
-					      tentative_freq, tentative_cumul);
+	current_variable = RPT_new_reporting (tentative_name, RPT_group, tentative_freq);
 
       /* Copy the subcategories into an array. */
-      drill_down_list = g_new (char *, g_slist_length ($5) + 1);
+      drill_down_list = g_new (const char *, g_slist_length ($5) + 1);
       for (iter = $5, p = drill_down_list; iter != NULL; iter = g_slist_next (iter))
 	{
 	  *p++ = (char *)(iter->data);
@@ -326,8 +306,7 @@ add_command:
       char *s;
 
       if (current_variable == NULL)
-	current_variable = RPT_new_reporting (tentative_name, NULL, RPT_integer,
-					      tentative_freq, tentative_cumul);
+	current_variable = RPT_new_reporting (tentative_name, RPT_integer, tentative_freq);
       RPT_reporting_append_text (current_variable, $3, NULL);
       free ($3);
       s = RPT_reporting_value_to_string (current_variable, NULL);
@@ -344,8 +323,7 @@ subtract_command:
 
       /* Integer, no subcategories. */
       if (current_variable == NULL)
-	current_variable = RPT_new_reporting (tentative_name, NULL, RPT_integer,
-					      tentative_freq, tentative_cumul);
+	current_variable = RPT_new_reporting (tentative_name, RPT_integer, tentative_freq);
       RPT_reporting_sub_integer (current_variable, $3, NULL);
       s = RPT_reporting_value_to_string (current_variable, NULL);
       printf ("%s\n%s", s, PROMPT);
@@ -355,15 +333,15 @@ subtract_command:
   | SUBTRACT LPAREN INT COMMA string_list RPAREN
     {
       /* Integer, with subcategories. */
-      char **drill_down_list, **p, *s;
+      const char **drill_down_list, **p;
+      char *s;
       GSList *iter;
 
       if (current_variable == NULL)
-	current_variable = RPT_new_reporting (tentative_name, NULL, RPT_group,
-					      tentative_freq, tentative_cumul);
+	current_variable = RPT_new_reporting (tentative_name, RPT_group, tentative_freq);
 
       /* Copy the subcategories into an array. */
-      drill_down_list = g_new (char *, g_slist_length ($5) + 1);
+      drill_down_list = g_new (const char *, g_slist_length ($5) + 1);
       for (iter = $5, p = drill_down_list; iter != NULL; iter = g_slist_next (iter))
 	{
 	  *p++ = (char *)(iter->data);
@@ -396,12 +374,12 @@ get_command :
     }
   | GET LPAREN string_list RPAREN
     {
-      char **drill_down_list, **p;
+      const char **drill_down_list, **p;
       GSList *iter;
 
       /* Copy the subcategories into an array, then free the linked list
        * structure. */
-      drill_down_list = g_new (char *, g_slist_length ($3) + 1);
+      drill_down_list = g_new (const char *, g_slist_length ($3) + 1);
       for (iter = $3, p = drill_down_list; iter != NULL; iter = g_slist_next (iter))
 	{
 	  *p++ = (char *)(iter->data);
@@ -458,7 +436,11 @@ extern char linebuf[];
 
 /* Simple yyerror from _lex & yacc_ by Levine, Mason & Brown. */
 int
+#ifdef USE_PLAIN_YACC
+yyerror (char *s)
+#else
 yyerror (char *s, int fatal)
+#endif
 {
   g_error ("%s\n%s\n%*s", s, linebuf, 1+tokenpos, "^");
   return 0;

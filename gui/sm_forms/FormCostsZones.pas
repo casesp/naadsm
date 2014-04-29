@@ -4,11 +4,11 @@ unit FormCostsZones;
 FormCostsZones.pas/dfm
 ----------------------
 Begin: 2007/04/18
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version number: $Revision: 1.5 $
+Last revision: $Date: 2010-09-09 14:34:00 $ $Author: rhupalo $
+Version number: $Revision: 1.7.10.1 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
 
@@ -56,20 +56,20 @@ interface
 
       function getZoneList(): TZoneList;
 
-  		procedure updateDisplay(); override;
+      procedure updateDisplay(); override;
 
       function dataIsValid(): boolean; override;
 
-  		procedure giveListsToEditors(); override;
+      procedure giveListsToEditors(); override;
       procedure prepFunctionDicts(); override;
 
       procedure copyParameters( const src: TProductionType; dest: TProductionType ); override;
       
     public
-    	constructor create( Aowner: TComponent ); override;
+      constructor create( Aowner: TComponent ); override;
       destructor destroy(); override;
 
-			function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
+      function showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer; override;
 
       property zoneList: TZoneList read getZoneList;
     end
@@ -85,7 +85,7 @@ implementation
     
     FunctionEnums,
     FunctionDictionary,
-    ZoneParams,
+    ProdTypeZoneParams,
     I88n,
     
     FrameZoneProdTypeParams
@@ -131,8 +131,8 @@ implementation
 
 
   destructor TFormCostsZones.destroy();
-  	begin
-   		inherited destroy();
+    begin
+      inherited destroy();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -143,13 +143,14 @@ implementation
 // Display functions
 //-----------------------------------------------------------------------------
   function TFormCostsZones.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
-  	begin
-    	if( _smScenarioCopy.simInput.costTrackZoneSurveillance ) then
+    begin
+      // need detection of disease in order to trigger Surveillance and incurr cost
+      if ( _smScenarioCopy.simInput.includeDetectionGlobal and _smScenarioCopy.simInput.includeZonesGlobal and _smScenarioCopy.simInput.costTrackZoneSurveillance ) then
         result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
-      	begin
+        begin
           formDisplayed := false;
-      		nextForm := nextFormToShow;
+          nextForm := nextFormToShow;
           result := 0;
         end
       ;
@@ -158,16 +159,16 @@ implementation
 
 
   procedure TFormCostsZones.updateDisplay();
-  	begin
-    	if( nil <> _selectedPT ) then
-      	begin
+    begin
+      if( nil <> _selectedPT ) then
+        begin
           lblProdType.Caption := _selectedPT.productionTypeDescr;
           fraParams.Visible := true;
-					fraParams.prodType := _selectedPT;
+          fraParams.prodType := _selectedPT;
         end
       else
         begin
-      	  fraParams.visible := false;
+          fraParams.visible := false;
           lblProdType.Caption := '';
         end
       ;
@@ -202,8 +203,8 @@ implementation
 // Data and database functions
 //-----------------------------------------------------------------------------
   function TFormCostsZones.dataIsValid(): boolean;
-		begin
-   		result := fraParams.isValid();
+    begin
+      result := fraParams.isValid();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -232,14 +233,14 @@ implementation
   procedure TFormCostsZones.copyParameters( const src: TProductionType; dest: TProductionType );
     var
       it: TZPTListIterator;
-      zptDest, zptSrc: TZoneProdTypeParams;
+      zptDest, zptSrc: TZoneProdTypeComboParams;
     begin
       it := TZPTListIterator.create( src.zoneParams.zonePtParamsList );
 
       while( nil <> it.value() ) do
         begin
-          zptSrc := it.value() as TZoneProdTypeParams;
-          zptDest := dest.zoneParams.zonePtParamsList[ it.key()] as TZoneProdTypeParams;
+          zptSrc := it.value();
+          zptDest := dest.zoneParams.zonePtParamsList[ it.key()];
 
           zptDest.costSurvPerAnimalDay := zptSrc.costSurvPerAnimalDay;
 

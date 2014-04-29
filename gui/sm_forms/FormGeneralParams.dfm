@@ -1,6 +1,6 @@
 inherited FormGeneralParams: TFormGeneralParams
-  Left = 912
-  Top = 16
+  Left = 392
+  Top = 125
   Hint = 'General description of the simulation session'
   Caption = 'Scenario parameters: Start setup'
   ClientHeight = 452
@@ -51,7 +51,7 @@ inherited FormGeneralParams: TFormGeneralParams
     BevelOuter = bvNone
     TabOrder = 1
     object lblDescr: TLabel
-      Left = 24
+      Left = 30
       Top = 15
       Width = 99
       Height = 13
@@ -65,63 +65,24 @@ inherited FormGeneralParams: TFormGeneralParams
       Caption = '(Time to run)'
       Visible = False
     end
-    object lblInstructions1: TLabel
-      Left = 24
-      Top = 263
-      Width = 104
-      Height = 13
-      Caption = 'A simulation runs until:'
-    end
     object lblIterations: TLabel
-      Left = 24
-      Top = 111
+      Left = 32
+      Top = 207
       Width = 94
       Height = 13
       Caption = 'Number of iterations'
     end
-    object lblInstructions2: TLabel
-      Left = 44
-      Top = 279
-      Width = 311
-      Height = 13
-      Caption = 
-        '1) there are no more incubating or contagious units in the repli' +
-        'cate'
-    end
-    object lblInstructions3: TLabel
-      Left = 56
-      Top = 295
-      Width = 328
-      Height = 13
-      Caption = 
-        'AND all vacination and/or destruction activities have been compl' +
-        'eted'
-    end
-    object lblInstructions5: TLabel
-      Left = 36
-      Top = 327
-      Width = 16
-      Height = 13
-      Caption = 'OR'
-    end
-    object lblInstructions4: TLabel
-      Left = 56
-      Top = 311
-      Width = 254
-      Height = 13
-      Caption = 'AND the stipulated number of iterations are completed'
-    end
     object lblIterationNumber: TLabel
-      Left = 276
-      Top = 111
+      Left = 284
+      Top = 207
       Width = 134
       Height = 13
       Caption = 'Currently on iteration number'
       Visible = False
     end
     object lblRepNo: TLabel
-      Left = 428
-      Top = 111
+      Left = 436
+      Top = 207
       Width = 65
       Height = 13
       Alignment = taRightJustify
@@ -144,18 +105,9 @@ inherited FormGeneralParams: TFormGeneralParams
       Caption = 'Time to run this set of iterations:'
       Visible = False
     end
-    object lblInstructions6: TLabel
-      Left = 44
-      Top = 343
-      Width = 363
-      Height = 13
-      Caption = 
-        '2) the stop button is pressed (the current simluation day will s' +
-        'till be completed)'
-    end
     object rleIterations: TREEdit
-      Left = 152
-      Top = 104
+      Left = 160
+      Top = 200
       Width = 73
       Height = 21
       InputExpression = '^\d*$'
@@ -164,19 +116,20 @@ inherited FormGeneralParams: TFormGeneralParams
       OnChange = dataChanged
     end
     object mmoDescr: TMemo
-      Left = 24
+      Left = 30
       Top = 32
-      Width = 553
-      Height = 65
+      Width = 545
+      Height = 153
       Lines.Strings = (
         'mmoDescr')
+      ScrollBars = ssVertical
       TabOrder = 1
       OnChange = dataChanged
     end
     object gbxRandomSeed: TGroupBox
-      Left = 24
-      Top = 136
-      Width = 249
+      Left = 32
+      Top = 232
+      Width = 265
       Height = 103
       Caption = 'Random number generator seed '
       TabOrder = 2
@@ -210,19 +163,12 @@ inherited FormGeneralParams: TFormGeneralParams
       object rleSeedValue: TREEdit
         Left = 160
         Top = 72
-        Width = 65
+        Width = 89
         Height = 21
         EditAlign = eaLeft
         TabOrder = 2
         OnChange = dataChanged
       end
-    end
-    object pnlSeparator: TPanel
-      Left = 24
-      Top = 248
-      Width = 537
-      Height = 2
-      TabOrder = 3
     end
   end
 end

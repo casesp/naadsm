@@ -20,8 +20,8 @@
 #ifndef ECONOMIC_MODEL_H
 #define ECONOMIC_MODEL_H
 
-char *economic_model_interface_version (void);
-ergadm_model_t *economic_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                    ZON_zone_list_t * zones);
+naadsm_model_t *economic_model_new (scew_element * params, HRD_herd_list_t *,
+                                    projPJ, ZON_zone_list_t *);
+gboolean economic_model_is_singleton (void);
 
 #endif

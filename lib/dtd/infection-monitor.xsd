@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema targetNamespace="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM"
-        xmlns="http://www.w3.org/2001/XMLSchema"
-        xmlns:ergadm="http://hebb.cis.uoguelph.ca/dastacey/Grid/ERG_ADM">
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+  xmlns="http://www.w3.org/2001/XMLSchema"
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+  xmlns:xml="http://www.w3.org/XML/1998/namespace"
+>
 
   <include schemaLocation="base_types.xsd" />
 
@@ -17,7 +20,7 @@
     </annotation>    
     <sequence>
       <!-- Model parameters. -->
-      <element name="ratio-period" type="ergadm:time">
+      <element name="ratio-period" type="naadsm:time">
         <annotation>
           <documentation xml:lang="en">
             <![CDATA[
@@ -29,7 +32,6 @@
           </documentation>
         </annotation>
       </element>
-
       <element name="output" minOccurs="0" maxOccurs="unbounded">
         <complexType>
           <sequence>
@@ -71,91 +73,27 @@
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-units-infected">
+                  <enumeration value="infnU">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The number of units newly infected.  The count is
-                          reset to zero each time it is reported, so this
-                          variable gives a total for each reporting interval
-                          (e.g., day, week).
+                          The number of units newly infected.  The count starts
+                          at zero each new day.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-units-infected-by-cause">
+                  <enumeration value="infnA">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The number of units newly infected, broken down by
-                          cause of infection.
+                          The number of animals in newly infected units.  The
+                          count starts at zero each new day.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="num-units-infected-by-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of units newly infected, broken down by
-                          production type.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="num-units-infected-by-cause-and-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of units newly infected, broken down by
-                          production type and cause of infection.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="num-animals-infected">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of animals newly infected.  The count is
-                          reset to zero each time it is reported, so this
-                          variable gives a total for each reporting interval
-                          (e.g., day, week).
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="num-animals-infected-by-cause">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of animals newly infected, broken down by
-                          cause of infection.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="num-animals-infected-by-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of animals newly infected, broken down by
-                          production type.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="num-animals-infected-by-cause-and-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The number of animals newly infected, broken down by
-                          production type and cause of infection.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="cumulative-num-units-infected">
+                  <enumeration value="infcU">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
@@ -169,81 +107,59 @@
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="cumulative-num-units-infected-by-cause">
+                  <enumeration value="infcA">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The cumulative number of units infected since the
-                          beginning of the simulation, broken down by cause of
-                          infection.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="cumulative-num-units-infected-by-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The cumulative number of units infected since the
-                          beginning of the simulation, broken down by
-                          production type.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="cumulative-num-units-infected-by-cause-and-production-type">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The cumulative number of units infected since the
-                          beginning of the simulation, broken down by
-                          production type and cause of infection.
-                        ]]>
-                      </documentation>
-                    </annotation>
-                  </enumeration>
-                  <enumeration value="cumulative-num-animals-infected">
-                    <annotation>
-                      <documentation xml:lang="en">
-                        <![CDATA[
-                          The cumulative number of animals infected since the
-                          beginning of the simulation.  Note that this may be
-                          greater than the total number of animals, since a
-                          unit may become infected, recover, and become
+                          The cumulative number of animals in units infected
+                          since the beginning of the simulation.  Note that
+                          this may be greater than the total number of animals,
+                          since a unit may become infected, recover, and become
                           infected again.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="cumulative-num-animals-infected-by-cause">
+                  <enumeration value="adqnU">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The cumulative number of animals infected since the
-                          beginning of the simulation, broken down by cause of
-                          infection.
+                          The number of units having a new adaquate contact. 
+                          The count starts at zero each new day.
+                          rbh: The enum is new to schema, this definition needs review.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="cumulative-num-animals-infected-by-production-type">
+                  <enumeration value="adqnA">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The cumulative number of animals infected since the
-                          beginning of the simulation, broken down by
-                          production type.
+                          The number of animals in units having a new adaquate contact. 
+                          The count starts at zero each new day.
+                          rbh: The enum is new to schema, this definition needs review.
                         ]]>
                       </documentation>
                     </annotation>
                   </enumeration>
-                  <enumeration value="cumulative-num-animals-infected-by-cause-and-production-type">
+                  <enumeration value="adqcU">
                     <annotation>
                       <documentation xml:lang="en">
                         <![CDATA[
-                          The cumulative number of animals infected since the
-                          beginning of the simulation, broken down by
-                          production type and cause of infection.
+                          The cumulative number of units having an adaquate  
+                          contact since the beginning of the simulation.
+                          rbh: The enum is new to schema, this definition needs review.
+                        ]]>
+                      </documentation>
+                    </annotation>
+                  </enumeration>
+                  <enumeration value="adqcA">
+                    <annotation>
+                      <documentation xml:lang="en">
+                        <![CDATA[
+                          The cumulative number of animals in units having an 
+                          adaquate contact since the beginning of the simulation. 
+                          rbh: The enum is new to schema, this definition needs review.                          
                         ]]>
                       </documentation>
                     </annotation>
@@ -251,10 +167,12 @@
                 </restriction>
               </simpleType>                   
             </element>
-            <element name="frequency" type="ergadm:output-variable-frequency" />
+            <element name="broken-down" type="naadsm:yes-no" minOccurs="0" />
+            <element name="frequency" type="naadsm:output-variable-frequency" />
           </sequence>
         </complexType>
       </element>
+    
     </sequence>
 
     <attribute name="version" type="string" fixed="0.1" />

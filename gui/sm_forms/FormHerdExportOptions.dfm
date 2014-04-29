@@ -1,6 +1,6 @@
 object FormHerdExportOptions: TFormHerdExportOptions
-  Left = 962
-  Top = 23
+  Left = 0
+  Top = 32
   BorderStyle = bsDialog
   Caption = 'Unit list export options'
   ClientHeight = 391

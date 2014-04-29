@@ -3,7 +3,7 @@ unit Loc;
 Loc.pas
 -------
 Begin: 2006/09/01
-Last revision: $Date: 2007/02/06 04:39:14 $ $Author: areeves $
+Last revision: $Date: 2007-02-06 04:39:14 $ $Author: areeves $
 Version number: $Revision: 1.6 $
 Project: APHI General Purpose Delphi Library, XML datafile functions
 Website: http://www.naadsm.org/opensource/delphi

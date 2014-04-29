@@ -15,10 +15,11 @@ all.exp: $(nodist_all_exp_SOURCES)
 
 # Do include the test scenario parameter files in the distribution file.
 
-EXTRA_DIST = radius_0.xml radius_0.5.xml radius_1.xml radius_2.5.xml \
- radius_1_delay_1.xml radius_1_delay_2.xml spread.xml spread_radius_1.xml \
- spread_radius_2.5.xml spread_radius_10.xml 2species_same_params.xml \
- 2species_diff_params.xml revaccinate_0.xml revaccinate_1.xml \
+EXTRA_DIST = radius_0.xml radius_0_w_vars.xml radius_0.5.xml radius_1.xml \
+ radius_2.5.xml radius_1_delay_1.xml radius_1_delay_2.xml \
+ spread.xml spread_radius_1.xml spread_radius_2.5.xml spread_radius_10.xml \
+ 2species_same_params.xml 2species_diff_params.xml \
+ revaccinate_0.xml revaccinate_1.xml \
  none_trigger_none_vacc.xml cattle_trigger_cattle_vacc.xml \
  cattle_trigger_pigs_vacc.xml cattle_trigger_both_vacc.xml \
  pigs_trigger_cattle_vacc.xml pigs_trigger_pigs_vacc.xml \
@@ -35,4 +36,30 @@ EXTRA_DIST = radius_0.xml radius_0.5.xml radius_1.xml radius_2.5.xml \
  destroyed_while_waiting_1.xml destroyed_while_waiting_1_w_vars.xml \
  destroyed_while_waiting_2.xml destroyed_while_waiting_2_w_vars.xml \
  destroyed_while_waiting_3.xml destroyed_while_waiting_3_w_vars.xml \
- lat_and_rtree.xml spread_radius_10_w_vars.xml
+ destroyed_while_waiting_4_w_vars.xml \
+ destroyed_while_waiting_4_w_vars2.xml \
+ destroyed_while_waiting_4_w_vars3.xml \
+ lat_and_rtree.xml spread_radius_10_w_vars.xml \
+ destroyed_before_ring.xml destroyed_sameday_ring.xml \
+ revaccinate_2_prodtypes.xml revaccinate_2_prodtypes_w_vars.xml \
+ radius_0_vacc_detected_w_vars.xml \
+ detected_before_ring_default.xml \
+ detected_before_ring_vacc_detected.xml \
+ detected_before_ring_no_vacc_detected.xml \
+ detected_sameday_ring_default.xml \
+ detected_sameday_ring_vacc_detected.xml \
+ detected_sameday_ring_no_vacc_detected.xml \
+ detected_sameday_ring_no_vacc_detected2.xml \
+ detected_sameday_rings_no_vacc_detected.xml \
+ detected_after_ring_no_vacc_detected.xml \
+ detected_after_ring_no_vacc_detected2.xml \
+ detected_dead_before_ring_vacc_detected.xml \
+ detected_dead_sameday_ring_vacc_detected.xml \
+ detected_dead_after_ring_vacc_detected.xml \
+ avg_wait_time.xml \
+ initially_vimmune.xml \
+ initially_vimmune_avg_wait.xml \
+ in_queue_twice.xml in_queue_twice_1_canceled.xml in_queue_twice_both_canceled.xml \
+ cancel_max_wait_0.xml cancel_max_wait_1.xml \
+ same_unit_detected_twice_check_vacc_threshold.xml \
+ dead_not_detected.xml dead_not_detected_resource_count.xml

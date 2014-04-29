@@ -1,6 +1,7 @@
-# libtool's .m4 files are in /usr/share/aclocal.
+# Various packages' .m4 files are in /usr/share/aclocal.
 aclocal -I /usr/share/aclocal/ -I .
-libtoolize --ltdl --force --copy
+# On Mac OS X with DarwinPorts:
+# aclocal -I /opt/local/share/aclocal/ -I .
 autoheader
 automake --add-missing --copy
 autoconf

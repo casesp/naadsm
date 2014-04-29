@@ -8,9 +8,6 @@
 --    Connected server      : ACCESS
 --    Connected database    : E:\NAADSM\DatabaseSchemas\naadsm3_0_x.mdb
 
-
-
--- Update existing table `inDiseaseSpread`.
 create table `inDiseaseSpread_IM0` ( 
 	`spreadID` COUNTER,
 	`spreadMethodCode` CHAR(1),
@@ -54,46 +51,23 @@ alter table `inProductionTypePair`
 alter table `inProductionTypePair`
 	drop constraint `inDiseaseSpread_inProductionTypePairs_FK2`;
 
-
 alter table `inProductionTypePair`
 	drop constraint `inDiseaseSpread_inProductionTypePairs_FK3`;
-
 
 alter table `inDiseaseSpread`
 	drop constraint `inChart_inDiseaseSpread_FK3`;
 
-
 alter table `inDiseaseSpread`
 	drop constraint `inChart_inProductionTypePair_FK1`;
-
 
 alter table `inDiseaseSpread`
 	drop constraint `inChart_inProductionTypePair_FK3`;
 
-
 alter table `inDiseaseSpread`
 	drop constraint `readSpreadMethodCodes_inDiseaseSpread_FK1`;
 
-
 drop table `inDiseaseSpread`; 
 
-
--- `inDiseaseSpread` : Table of inDiseaseSpread
--- 	`spreadID` : A unique identifier for each disease spread "model".
--- 	`spreadMethodCode` : Indicates the disease spread mechanism being modeled: A = airborne spread, D = direct contact, I = indirect contact.  This field references readSpreadMethodCodes.spreadMethodCode.
--- 	`latentCanInfect` : Indicates whether latent units of the source type can spread disease by direct contact.  Not applicable to airborne spread or indirect contact.
--- 	`subclinicalCanInfect` : Indicates whether subclinical units of the source type can spread disease by direct or indirect contact.
--- 	`meanContactRate` : The mean contact rate (in recipient herds per source herd per day) for direct or indirect contact models.  See Section 8.6.3.2.
--- 	`useFixedContactRate` : Indicates whether a fixed contact rate will be used instead of the mean contact rate.
--- 	`fixedContactRate` : The fixed contact rate (in recipient herds per source herd per day)  for direct or indirect contact models.  See Section 8.6.3.2.
--- 	`infectionProbability` : The probability that a contact will result in disease transmission.  Specified for direct and indirect contact models.
--- 	`distancePdfID` : ID number of the probability density function used to define the shipment distances for direct and indirect contact models.  This field references inChart.chartID.
--- 	`movementControlRelID` : ID number of the relational function used to define movement control effects for the indicated production type combination.  This field references inChart.chartID.
--- 	`transportDelayPdfID` : ID number of the probability density function used to define the shipment delays for direct and indirect contact models or airborne transport delay for airborne spread.  This field references inChart.chartID.  See Sections 8.6.3.3.1 and 8.6.4.
--- 	`probAirborneSpread1km` : For airborne spread, the probability that disease will be spread to units 1 km away from the source unit.  See Section 8.6.4.
--- 	`maxDistAirborneSpread` : The maximum distance, in kilometers, of airborne spread.
--- 	`windDirectionStart` : The start angle, in degrees, of the predominant wind direction for airborne spread.  See Section 8.6.4.
--- 	`windDirectionEnd` : The end angle, in degrees, of the predominant wind direction for airborne spread.  
 create table `inDiseaseSpread` ( 
 	`spreadID` COUNTER,
 	`spreadMethodCode` CHAR(1),
@@ -111,19 +85,6 @@ create table `inDiseaseSpread` (
 	`windDirectionStart` INTEGER,
 	`windDirectionEnd` INTEGER); 
 
--- Note: Access does not support the mandatory (not null) constraint in SQL DDL.
--- The mandatory constraints for table '`inDiseaseSpread`' will be created in the database using DAO
--- only if there is a connection to the Access MDB file during DDL generation.
--- Not nullable columns for table 'inDiseaseSpread' :
--- 	`spreadMethodCode`
-
-
---    Data is not migrated because the DBMS does not support the data conversion function
---    necessary to convert the data, OR
---    column(s) are of LARGE/AUTOINC datatype, OR
---    newly added not nullable column(s) are involved in the primary key or unique index(constraint).
---    The temporary table '`inDiseaseSpread_IM0`' has the old values.  You must manually move the data and
---    drop the temporary table.  
 insert into `inDiseaseSpread` ( `spreadID`, `spreadMethodCode`, `latentCanInfect`, `subclinicalCanInfect`, `meanContactRate`, `useFixedContactRate`, `fixedContactRate`, `infectionProbability`, `distancePdfID`, `movementControlRelID`, `transportDelayPdfID`, `probAirborneSpread1km`, `maxDistAirborneSpread`, `windDirectionStart`, `windDirectionEnd`) 
     select `inDiseaseSpread_IM0`.`spreadID`,
            `inDiseaseSpread_IM0`.`spreadMethodCode`, 
@@ -148,8 +109,6 @@ drop table `inDiseaseSpread_IM0`;
 alter table `inDiseaseSpread`
 	add constraint `inProductionTypePair_PK` primary key (`spreadID`) ; 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inDiseaseSpread`
 	add constraint `inChart_inDiseaseSpread_FK3` foreign key (
 		`transportDelayPdfID`)
@@ -192,5 +151,3 @@ alter table `inProductionTypePair`
 	 references `inDiseaseSpread` (
 		`spreadID`); 
 
-
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

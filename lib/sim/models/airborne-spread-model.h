@@ -20,9 +20,8 @@
 #ifndef AIRBORNE_SPREAD_MODEL_H
 #define AIRBORNE_SPREAD_MODEL_H
 
-char *airborne_spread_model_interface_version (void);
-ergadm_model_t *airborne_spread_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                           ZON_zone_list_t * zones);
+naadsm_model_t *airborne_spread_model_new (scew_element * params, HRD_herd_list_t *,
+                                           projPJ, ZON_zone_list_t *);
 gboolean airborne_spread_model_is_singleton (void);
 
 #endif

@@ -10,7 +10,6 @@
 
 --    Modifications made by hand to preserve existing values of inChart.chartID
 
--- Update existing table `inChart`.
 create table `inChart_IM0` ( 
 	`chartID` COUNTER,
 	`fieldName` VARCHAR(50),
@@ -108,9 +107,7 @@ alter table `inProductionType`
 
 
 drop table `inChart`; 
-
-
--- `inChart` : Table of inChart  
+ 
 create table `inChart` ( 
 	`chartID` COUNTER,
 	`fieldName` VARCHAR(50),
@@ -151,19 +148,14 @@ insert into `inChart` (`chartID`, `fieldName`, `chartName`, `isPdf`, `chartType`
            `inChart_IM0`.`yAxisUnits`  
     from `inChart_IM0`;
 
-
 drop table `inChart_IM0`; 
-
 
 alter table `inChart`
 	add constraint `inChart_PK` primary key (`chartID`) ; 
 
-
 create unique index `chartNameIndex` on `inChart` (
 	`chartName`); 
 
-
--- Restore foreign key constraints for existing tables
 alter table `inChartDetail`
 	add constraint `inChart_inChartDetail_FK1` foreign key (
 		`chartID`)
@@ -243,4 +235,3 @@ alter table `inProductionType`
 		`chartID`); 
 
 
--- This is the end of the Microsoft Visual Studio generated SQL DDL script.

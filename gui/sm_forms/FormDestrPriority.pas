@@ -4,13 +4,13 @@ unit FormDestrPriority;
 FormDestrPriority.pas/dfm
 --------------------------
 Begin: 2005/06/08
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version: $Revision: 1.20 $
+Last revision: $Date: 2011-08-23 21:40:53 $ $Author: areeves $
+Version: $Revision: 1.27.10.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -67,10 +67,10 @@ implementation
     SqlClasses,
     CStringList,
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     QStringMaps,
     QIntegerMaps,
+    QLists,
     I88n
   ;
 
@@ -81,8 +81,6 @@ implementation
       translateUI();
 
       ReasonForActivity := tr( 'Reason for destruction' );
-      //sortOrder := OrderDestrPriority;
-      //prodTypePriorityColumn := 'destrPriority';
     end
   ;
   
@@ -99,6 +97,8 @@ implementation
         begin
           Caption := tr( 'Scenario parameters: Destruction priorities' );
           pnlCaption.Caption := tr( 'Destruction priorities' );
+          lblNoProdTypes.Caption := tr( '(Destruction is not used with any production type)' );
+          lblNoReasons.Caption := tr( '(Destruction is never used)' );
         end
       ;
 
@@ -121,10 +121,11 @@ implementation
       destrReasonOrder := _smScenarioCopy.simInput.controlParams.destrReasonOrder;
       destrPriorityOrder :=_smScenarioCopy.simInput.controlParams.destrPriorityOrder;
 
-
-      if( length( 'basic,direct,indirect,ring' ) <> length( destrReasonOrder ) ) then
-      	destrReasonOrder := 'basic,direct,indirect,ring'
+      //AR:deadDV
+      if( length( 'basic,direct-forward,indirect-forward,ring,direct-back,indirect-back,dead-from-disease' ) <> length( destrReasonOrder ) ) then
+      	destrReasonOrder := 'basic,direct-forward,indirect-forward,ring,direct-back,indirect-back,dead-from-disease'
       ;
+
 
       _destrOrderList := TQStringLongIntMap.Create();
 
@@ -132,28 +133,29 @@ implementation
 
       i := 1;
 
-       if( pos( 'production type', destrPriorityOrder ) < pos( 'reason', destrPriorityOrder ) ) then
+      if( pos( 'production type', destrPriorityOrder ) < pos( 'reason', destrPriorityOrder ) ) then
       	begin
         	// Production type is higher priority than destruction reason
           // So production type is the outer loop
 
-           for j := 0 to lbxProdType.Items.Count-1 do
-             begin
-               pt := _ptList.findProdType( lbxProdType.Items.Strings[j] );
-               if ( nil <> pt ) then
-               	begin
-                	reason := reasonList.first();
+          for j := 0 to lbxProdType.Items.Count-1 do
+            begin
+              pt := _ptList.findProdType( lbxProdType.Items.Strings[j] );
+              if ( nil <> pt ) then
+                begin
+                  reason := reasonList.first();
                   while( nil <> reason ) do
-                  	begin
-    									_destrOrderList[ pt.productionTypeDescr + '+' + reason ] := i;
-                    	inc( i );
-                  		reason := reasonList.next();
+                    begin
+                      _destrOrderList[ pt.productionTypeDescr + '+' + reason ] := i;
+                      inc( i );
+                      reason := reasonList.next();
                     end
                   ;
-                 pt.destructionParams.destrPriority := j + 1;
+                  pt.destructionParams.destrPriority := j + 1;
                 end
-             ;
-          end;  // End For loop
+              ;
+            end
+          ;  // End For loop
         end
       else
       	begin
@@ -190,6 +192,9 @@ implementation
     var
       list: TCStringList;
       str: pchar;
+      it: TProductionTypeListIterator;
+      nDetected, nDirectFwd, nIndirectFwd, nRing, nDirectBack, nIndirectBack: integer;
+      nMortalityPossible: integer; //AR:deadDV
     begin
       if( length( _smScenarioCopy.simInput.controlParams.destrPriorityOrder ) > 0 ) then
       	begin
@@ -199,10 +204,14 @@ implementation
           str := list.first();
           while( nil <> str ) do
           	begin
-              if( 'production type' = str ) then lbxPrimary.AddItem( tr( 'Production type' ), nil )
-              else if( 'reason' = str ) then lbxPrimary.AddItem( tr( 'Reason for destruction' ), nil )
-              else if( 'time waiting' = str ) then lbxPrimary.AddItem( tr( 'Days holding' ), nil )
-              else raise exception.Create( 'FormDestrPriority: unrecognized primary reason ''' +  str + ''' in fillReasons().');
+              if( 'production type' = str ) then
+                lbxPrimary.AddItem( tr( 'Production type' ), nil )
+              else if( 'reason' = str ) then
+                lbxPrimary.AddItem( tr( 'Reason for destruction' ), nil )
+              else if( 'time waiting' = str ) then
+                lbxPrimary.AddItem( tr( 'Days holding' ), nil )
+              else
+                raise exception.Create( 'FormDestrPriority: unrecognized primary reason ''' +  str + ''' in fillReasons().')
               ;
             	str := list.next();
             end
@@ -218,6 +227,55 @@ implementation
         end
       ;
 
+
+      // Before filling in the reasons list box, determine which reasons are actually used.
+      // Show only these reasons in use.
+      nDetected := 0;
+      nDirectFwd := 0;
+      nIndirectFwd := 0;
+      nRing := 0;
+      nDirectBack := 0;
+      nIndirectBack := 0;
+      nMortalityPossible := 0; //AR:deadDV
+
+      it := TProductionTypeListIterator.create( _ptList );
+
+      it.toFirst();
+      while( nil <> it.current() ) do
+        begin
+          if( nil = it.current().destructionParams ) then
+            raise exception.Create( 'pt.destructionParams is nil in TFormDestrPriority.fillReasons()' )
+          ;
+
+          if( it.current().destructionParams.destroyDetectedUnits ) then
+            inc( nDetected )
+          ;
+          if( it.current().destructionParams.destroyDirectForwardTraces ) then
+            inc( nDirectFwd )
+          ;
+          if( it.current().destructionParams.destroyIndirectForwardTraces ) then
+            inc( nIndirectFwd )
+          ;
+          if( it.current().destructionParams.isRingTarget ) then
+            inc( nRing )
+          ;
+          if( it.current().destructionParams.destroyDirectBackTraces ) then
+            inc( nDirectBack )
+          ;
+          if( it.current().destructionParams.destroyIndirectBackTraces ) then
+            inc( nIndirectBack )
+          ;
+          if( 0 < it.current().diseaseParams.probMortality ) then
+            inc( nMortalityPossible )
+          ;  //AR:deadDV
+
+          it.incr();
+        end
+      ;
+
+      it.Free();
+
+      // Now fill in the reasons list box.
       if( length( _smScenarioCopy.simInput.controlParams.destrReasonOrder ) > 0 ) then
       	begin
       		// figure out the previously specified order
@@ -226,11 +284,27 @@ implementation
           str := list.first();
           while( nil <> str ) do
           	begin
-              if( 'basic' = str ) then lbxReason.AddItem( tr( 'Detected' ), nil )
-              else if( 'direct' = str ) then lbxReason.AddItem( tr( 'Direct contact' ), nil )
-              else if( 'indirect' = str ) then lbxReason.AddItem( tr( 'Indirect contact' ), nil )
-              else if( 'ring' = str ) then lbxReason.AddItem( tr( 'Ring' ), nil )
+              if( ( 0 < nDetected ) and ( 'basic' = str ) ) then
+                lbxReason.AddItem( tr( 'Detected' ), nil )
               ;
+              if( ( 0 < nDirectFwd ) and ( 'direct-forward' = str ) ) then
+                lbxReason.AddItem( tr( 'Trace forward of direct contact' ), nil )
+              ;
+              if( ( 0 < nIndirectFwd ) and ( 'indirect-forward' = str ) ) then
+                lbxReason.AddItem( tr( 'Trace forward of indirect contact' ), nil )
+              ;
+              if( ( 0 < nRing ) and ( 'ring' = str ) ) then
+                lbxReason.AddItem( tr( 'Ring' ), nil )
+              ;
+              if( ( 0 < nDirectBack ) and ( 'direct-back' = str ) ) then
+                lbxReason.AddItem( tr( 'Trace back of direct contact' ), nil )
+              ;
+              if( ( 0 < nIndirectBack ) and ( 'indirect-back' = str ) ) then
+                lbxReason.AddItem( tr( 'Trace back of indirect contact' ), nil )
+              ;
+              if( ( 0 < nMortalityPossible ) and ( 'dead-from-disease' = str ) ) then
+                lbxReason.AddItem( tr( 'Cleanup after death from disease' ), nil )
+              ; //AR:deadDV
             	str := list.next();
             end
           ;
@@ -239,98 +313,114 @@ implementation
       else
       	begin
         	// use default order
-        	lbxReason.AddItem( tr( 'Detected' ), nil );
-          lbxReason.AddItem( tr( 'Direct contact' ), nil );
-          lbxReason.AddItem( tr( 'Indirect contact' ), nil );
-          lbxReason.AddItem( tr( 'Ring' ), nil );
+        	if( 0 < nDetected ) then
+            lbxReason.AddItem( tr( 'Detected' ), nil )
+          ;
+          if( 0 < nDirectFwd ) then
+            lbxReason.AddItem( tr( 'Trace forward of direct contact' ), nil )
+          ;
+          if( 0 < nIndirectFwd ) then
+            lbxReason.AddItem( tr( 'Trace forward of indirect contact' ), nil )
+          ;
+          if( 0 < nRing ) then
+            lbxReason.AddItem( tr( 'Ring' ), nil )
+          ;
+          if( 0 < nDirectBack ) then
+            lbxReason.AddItem( tr( 'Trace back of direct contact' ), nil )
+          ;
+          if( 0 < nIndirectBack ) then
+            lbxReason.AddItem( tr( 'Trace back of indirect contact' ), nil )
+          ;
+          if( 0 < nMortalityPossible ) then
+            lbxReason.AddItem( tr( 'Cleanup after death from disease' ), nil )
+          ; //AR:deadDV
+        end
+      ;
+
+      if( 0 = lbxReason.Count ) then
+        begin
+          lbxReason.Hide();
+          lblNoReasons.show();
         end
       ;
     end
   ;
 
+
   procedure TFormDestrPriority.fillProdTypes();
   	var
-    	it: TProductionTypeListIterator;
-      orderDict: TQIntegerStringMap;
-      list: TCStringList;
-      destrReason: string;
-      index: integer;
-      maxIdx: integer;
+      dm: TProductionType;
+      it: TProductionTypeListIterator;
+      map: TQIntegerObjectMap;
+      i: integer;
     begin
-      dbcout2( endl + '================= TFormDestrPriority.fillProdTypes()' );
+      _ptList := _smScenarioCopy.simInput.ptList;
 
-      // This list lasts just long enough to grab the first reason for destruction
-      // (i.e. basic, ring, direct trace, indirect trace).
-      dbcout2( 'Expected destruction reason order:' );
-      dbcout2( _smScenarioCopy.simInput.controlParams.destrReasonOrder );
-      list := TCStringList.create( _smScenarioCopy.simInput.controlParams.destrReasonOrder, ',' );
-      destrReason := list.first();
-      freeAndNil( list );
-
-      orderDict := TQIntegerStringMap.create();
-
-			_ptList := _smScenarioCopy.simInput.ptList;
-
-      maxIdx := -1;
-
+      map := TQIntegerObjectMap.create();
       it := TProductionTypeListIterator.create( _ptList );
+
+      // Loop over all production types to determine which ones already have a valid priority value.
+      // Store those that do have a valid value in the map.
       it.toFirst();
-
-      while ( nil <> it.current() ) do
+      while( nil <> it.current() ) do
         begin
-          index := (_smScenarioCopy.simInput.controlParams.ssDestrPriorities.Item[ it.current().productionTypeDescr + '+' + destrReason ] - 1);
+          dm := it.current();
 
-          // Each production type can appear in the destruction priority list more than once,
-          // because there is more than one reason for destruction that can be applied to a production type.
-          // Within each reason, however, production types will always be given in the same order.
-          // This mechanism should assure that all production types are listed in the correct relative order,
-          // regardless of the destruction reason.
-          dbcout2( 'Original index: ' + intToStr( index ) );
-          index := index mod _ptList.Count;
+          // All production types should have destructionParams, whether units are destroyed or not.
+          if( nil = dm.destructionParams ) then
+            raise exception.Create( 'dm.destructionParams is nil in TFormDestrPriority.fillProdTypes()' )
+          ;
 
-          if( index > maxIdx ) then maxIdx := index;
-
-          // If there's already a production type with that index, put it at the end of the list.
-          // Likewise, make sure newly added production types are tacked on to the end of the list.
-          // (New types won't be surprising.  Duplicate indices may not even be possible, but if they
-          // do occur, it probably means that someone was screwing around with the database.)
-          if
-            ( orderDict.contains( index ) )
-          or
-            ( -1 = index )
-          then
+          if( dm.isDestrTarget ) then
             begin
-              dbcout2( '---- New or duplicate index found!!' );
-              inc( maxIdx );
-              index := maxIdx;
-              _smScenarioCopy.simInput.controlParams.ssDestrPriorities[it.current().productionTypeDescr + '+' + destrReason] := index;
-              it.current().destructionParams.updated := true;
+              // If the priority value is a zero or a negative number, it is invalid: don't save it in the map.
+              if( 0 >= dm.destructionParams.destrPriority ) then
+                begin
+                  // Do nothing
+                end
+              // If the map already contains the priority value, then it is a duplicate that must be fixed: don't save it in the map.
+              else if( map.contains( dm.destructionParams.destrPriority ) ) then
+                dm.destructionParams.destrPriority := -1
+              // If neither of these conditions are met, then add an item to the map.
+              else
+                map.insert( dm.destructionParams.destrPriority, dm )
+              ;
             end
           ;
 
-          // Insert the indexed production type name into the dictionary
-          dbcout2( 'Index: ' + intToStr( index ) + ', type: ' + it.current().productionTypeDescr );
-          orderDict.insert( index, it.current().productionTypeDescr );
+          it.incr();
+        end
+      ;                                           
 
+      // Once we have the map, we can use it to fill in the production type selection box.
+      // Production types that have valid priority values should be listed first, in priority order,
+      // followed by any other production types that are targets of destruction.
+
+      // Recall that items stored in a QMap are sorted by key. It won't matter if priority
+      // values aren't sequential, production types will still be listed in the right order.
+      for i := 0 to map.count - 1 do
+        begin
+          dm := map.itemAtIndex( i ) as TProductionType;
+          lbxProdType.AddItem( dm.productionTypeDescr, nil );
+        end
+      ;
+
+      map.Free();
+
+      // Now we can append the remaining production types that are destruction targets but don't (yet) have
+      // a valid priority value.
+      it.toFirst();
+      while( nil <> it.current() ) do
+        begin
+          dm := it.current();
+          if( ( dm.isDestrTarget ) and ( 0 >= dm.destructionParams.destrPriority ) ) then
+            lbxProdType.AddItem( dm.productionTypeDescr, nil )
+          ;
           it.incr();
         end
       ;
 
-      dbcout2( endl );
-
-      // Now that all of the production types are in the list,
-      // put their descriptions in the list box.
-      // Take advantage of the fact that items in a QMap are always sorted by key.
-      for index := 0 to orderDict.count - 1 do
-      	begin
-          lbxProdType.AddItem( orderDict.itemAtIndex( index ), nil );
-        end
-      ;
-
       it.Free();
-      orderDict.Free();
-
-      dbcout2( '================= Done.' + endl );
     end
   ;
 
@@ -339,16 +429,24 @@ implementation
     var
       str: string;
       i: integer;
+      basicFound, directFwdFound, indirectFwdFound, ringFound, directBackFound, indirectBackFound: boolean;
+      strList: TQStringList;
+      processDeadFromDiseaseFound: boolean; //AR:deadDV
 		begin
-      // primary destruction priorities
+      // Primary destruction priorities
+      //-------------------------------
       str := '';
 
       for i := 0 to lbxPrimary.Count-1 do
         begin
-          if( tr( 'Reason for destruction' ) = lbxPrimary.Items[i] ) then str := str + 'reason'
-          else if( tr( 'Production type' ) = lbxPrimary.Items[i] ) then str := str + 'production type'
-          else if( tr( 'Days holding' ) = lbxPrimary.Items[i] ) then str := str + 'time waiting'
-          else raise exception.create( 'FormDestrPriority: unrecognized primary reason ''' + lbxPrimary.Items[i] + ''' in updateReasons().' )
+          if( tr( 'Reason for destruction' ) = lbxPrimary.Items[i] ) then
+            str := str + 'reason'
+          else if( tr( 'Production type' ) = lbxPrimary.Items[i] ) then
+            str := str + 'production type'
+          else if( tr( 'Days holding' ) = lbxPrimary.Items[i] ) then
+            str := str + 'time waiting'
+          else
+            raise exception.create( 'FormDestrPriority: unrecognized primary reason ''' + lbxPrimary.Items[i] + ''' in updateReasons().' )
           ;
 
           if( lbxPrimary.Count-1 <> i ) then str := str + ',';
@@ -357,29 +455,104 @@ implementation
 
       _smScenarioCopy.simInput.controlParams.destrPriorityOrder := str;
 
-      // destruction reasons
-      str := '';
+      // Destruction reasons
+      //--------------------
+      // Note that one or more destruction reasons may be missing from the list box
+      // (if a reason is never used, it won't be listed).
+      // Eventually, though, all six reasons must be given in the string that will
+      // be stored in the database.
+      basicFound := false;
+      directFwdFound := false;
+      indirectFwdFound := false;
+      ringFound := false;
+      directBackFound := false;
+      indirectBackFound := false;
+      processDeadFromDiseaseFound := false; //rbhdeadDV
+
+      strList := TQStringList.create();
 
       for i := 0 to lbxReason.Count-1 do
       	begin
-       		if( tr( 'Detected' ) = lbxReason.Items[i] ) then str := str + 'basic'
-          else if( tr( 'Direct contact' ) = lbxReason.Items[i] ) then str := str + 'direct'
-          else if( tr( 'Indirect contact' ) = lbxReason.Items[i] ) then str := str + 'indirect'
-          else if( tr( 'Ring' ) = lbxReason.Items[i] ) then str := str + 'ring'
-          else raise exception.create( 'FormDestrPriority: unrecognized reason ''' + lbxReason.Items[i] + ''' in updateReasons().' )
+       		if( tr( 'Detected' ) = lbxReason.Items[i] ) then
+            begin
+              basicFound := true;
+              strList.append( 'basic' );
+            end
+          else if( tr( 'Trace forward of direct contact' ) = lbxReason.Items[i] ) then
+            begin
+              directFwdFound := true;
+              strList.append( 'direct-forward' );
+            end
+          else if( tr( 'Trace forward of indirect contact' ) = lbxReason.Items[i] ) then
+            begin
+              indirectFwdFound := true;
+              strList.append( 'indirect-forward' );
+            end
+          else if( tr( 'Ring' ) = lbxReason.Items[i] ) then
+            begin
+              ringFound := true;
+              strList.append( 'ring' );
+            end
+          else if( tr( 'Trace back of direct contact' ) = lbxReason.Items[i] ) then
+            begin
+              directBackFound := true;
+              strList.append( 'direct-back' );
+            end
+          else if( tr( 'Trace back of indirect contact' ) = lbxReason.Items[i] ) then
+            begin
+              indirectBackFound := true;
+              strList.append( 'indirect-back' );
+            end
+          //AR:deadDV
+          else if( tr( 'Cleanup after death from disease' ) = lbxReason.Items[i] ) then
+            begin
+              processDeadFromDiseaseFound := true;
+              strList.append( 'dead-from-disease' );
+            end
+          else
+            raise exception.create( 'FormDestrPriority: unrecognized reason ''' + lbxReason.Items[i] + ''' in updateReasons().' )
         	;
-
-         if( lbxReason.Count-1 <> i ) then str := str + ',';
         end
       ;
-      _smScenarioCopy.simInput.controlParams.destrReasonOrder := str;
+
+      if( not basicFound ) then
+        strList.append( 'basic' )
+      ;
+      if( not directFwdFound ) then
+        strList.append( 'direct-forward' )
+      ;
+      if( not indirectFwdFound ) then
+        strList.append( 'indirect-forward' )
+      ;
+      if( not ringFound ) then
+        strList.append( 'ring' )
+      ;
+      if( not directBackFound ) then
+        strList.append( 'direct-back' )
+      ;
+      if( not indirectBackFound ) then
+        strList.append( 'indirect-back' )
+      ;
+      if( not processDeadFromDiseaseFound ) then
+        strList.append( 'dead-from-disease' )
+      ; //AR:deadDV
+
+      if( 7 <> strList.count ) then
+      //AR:deadDV - original:  if( 6 <> strList.count ) then
+        raise exception.Create( 'Missing reason for destruction in TFormDestrPriority.updateReasons()')
+      ;
+
+      _smScenarioCopy.simInput.controlParams.destrReasonOrder := strList.join( ',' );
+
+      strList.Free();
     end
   ;
 
 
 	function TFormDestrPriority.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.includeDestructionGlobal ) then
+    	// need detection of disease in order to conduct destruction campaign
+    	if (( _smScenarioCopy.simInput.includeDestructionGlobal ) and ( _smScenarioCopy.simInput.includeDetectionGlobal )) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin

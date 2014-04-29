@@ -20,8 +20,7 @@
 #ifndef VACCINE_MODEL_H
 #define VACCINE_MODEL_H
 
-char *vaccine_model_interface_version (void);
-ergadm_model_t *vaccine_model_new (scew_element * params, HRD_herd_list_t * herds,
-                                   ZON_zone_list_t * zones);
+naadsm_model_t *vaccine_model_new (scew_element * params, HRD_herd_list_t *,
+                                   projPJ, ZON_zone_list_t *);
 
 #endif

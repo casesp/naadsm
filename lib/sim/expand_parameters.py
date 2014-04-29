@@ -231,7 +231,7 @@ def expandToFromProductionType (node, production_types):
 	# Create copies of the model parameters, one per pairing of production
 	# types.
 	modelName = node.localName
-	if modelName in ("airborne-spread-model", "trace-back-destruction-model", "ring-destruction-model", "ring-vaccination-model"):
+	if modelName in ("airborne-spread-model", "local-spread-model", "trace-back-destruction-model", "ring-destruction-model", "ring-vaccination-model"):
 		if len (from_prodtypes) < len (production_types):
 			node.setAttribute ("from-production-type", join (from_prodtypes, ","))
 		else:

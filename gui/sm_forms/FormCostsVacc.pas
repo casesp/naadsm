@@ -4,11 +4,11 @@ unit FormCostsVacc;
 FormCostsVacc.pas/dfm
 ---------------------
 Begin: 2007/04/17
-Last revision: $Date: 2008/11/25 22:00:29 $ $Author: areeves $
-Version number: $Revision: 1.6 $
+Last revision: $Date: 2010-09-09 14:34:00 $ $Author: rhupalo $
+Version number: $Revision: 1.6.18.1 $
 Project: (various)
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
 Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
 
@@ -135,7 +135,8 @@ implementation
 //-----------------------------------------------------------------------------
   function TFormCostsVacc.showModal( const nextFormToShow: integer; var formDisplayed: boolean; const currentFormIndex: integer ): integer;
   	begin
-    	if( _smScenarioCopy.simInput.costTrackVaccination ) then
+    	// need detection of disease in order to conduct vaccination campaign and incurr costs
+    	if ( _smScenarioCopy.simInput.includeDetectionGlobal and _smScenarioCopy.simInput.includeVaccinationGlobal and _smScenarioCopy.simInput.costTrackVaccination ) then
     		result := inherited showModal( nextFormToShow, formDisplayed, currentFormIndex )
       else
       	begin

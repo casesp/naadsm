@@ -4,14 +4,14 @@ unit ZonePerimeter;
 ZonePerimeter.pas
 -----------------
 Begin: 2007/01/11
-Last revision: $Date: 2008/03/12 22:10:39 $ $Author: areeves $
-Version: $Revision: 1.8 $
+Last revision: $Date: 2010-06-03 20:13:32 $ $Author: areeves $
+Version: $Revision: 1.14.10.2 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2007 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2007 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -64,12 +64,12 @@ interface
     level: integer;
     radius: double;
     radius_sq: double;
-    radius_as_degrees: double;
-    use_rtree_index: double;
-    foci: g_foci_list;  // (GArray *)  /**< Unordered array of foci.  Each focus is a gpc_vertex structure. */
-    poly: gpc_polygon_ptr; // /**< the (possibly multi-contour) polygon */
-    fragments: Pointer; // (GQueue *)
-    area: double;  //SPC:  2/14/08 - Added this from an Update from the latest zone.h file in the sssim library....
+    epsilon_sq: double;
+    foci: g_foci_list;  // (GArray*)  /**< Unordered array of foci.  Each focus is a gpc_vertex structure. */
+    poly: gpc_polygon_ptr; // (gpc_polygon*) /**< the (possibly multi-contour) polygon */
+    fragments: Pointer; // (GQueue*)
+    area: double;
+    perimeter: double;
     nholes_filled: integer;  //Unsigned
   end;
 
@@ -83,7 +83,7 @@ interface
 
   function get_zone_list_zone( z:Pointer; idx:Integer ): ZON_zone_t_ptr;
 
-  procedure ZonePerimeterDebug( p: THRD_PerimeterList );
+  procedure ZonePerimeterDebug( p: THRD_PerimeterList; const showDebuggingMessage: boolean );
 
 
   // Delphi types for dealing with zone perimeters (used only when necessary)
@@ -109,6 +109,8 @@ interface
 
       procedure clear();
 
+      procedure debug();
+
       procedure readData( reader: TReader ); dynamic;
       procedure writeData( writer: TWriter ); dynamic;
 
@@ -118,6 +120,7 @@ interface
       property zoneLevel: integer read _zoneLevel write _zoneLevel;
     end
   ;
+
 
   // Some code adapted from http://www.mindspring.com/~cityzoo/tips/tstream2.txt
   type TZonePerimeterList = class( TObjectList )
@@ -130,6 +133,8 @@ interface
       procedure loadFromStream( stream: TStream );
       procedure saveToFile( const filename: string );
       procedure loadFromFile( const filename: string );
+
+      procedure debug();
     end
   ;
 
@@ -140,10 +145,9 @@ implementation
     SysUtils,
 
     MyStrUtils,
-    USStrUtils,
     DebugWindow,
 
-    ModelImplementation
+    NAADSMLibrary
   ;
 
 
@@ -161,85 +165,87 @@ implementation
   ;
 
 
-  function get_zone_list_zone( z:Pointer; idx:Integer ):ZON_zone_t_ptr;
+  function get_zone_list_zone( z:Pointer; idx:Integer ): ZON_zone_t_ptr;
     var
       ret_val: ZON_zone_t_ptr;
     begin
       ret_val := nil;
 
       if ( assigned( @get_zone_from_list ) AND ( z <> nil ) AND ( idx >=0 )) then
-        ret_val := get_zone_from_list( z, idx );
+        ret_val := get_zone_from_list( z, idx )
+      ;
 
       result := ret_val;
     end
   ;
 
-  procedure ZonePerimeterDebug( p: THRD_PerimeterList  );
-    {$IFDEF DEBUG}
+  procedure ZonePerimeterDebug( p: THRD_PerimeterList; const showDebuggingMessage: boolean );
     var
       I, J, K: integer;
       MyVertices: ^gpc_vertex_list;
       ZoneSize: Integer;
       Zone: ZON_zone_t_ptr;
-    {$ENDIF}
     begin
-      {$IFDEF DEBUG}
-        dbcout( endl, true );
-        dbcout('=================================================', true );
-        dbcout('        Perimeter Callback function data'         , true);
-        dbcout('=================================================', true );
-        dbcout('Data set by the gui lib via the set perimeters callback function.', true );
+      if( showDebuggingMessage ) then
+        begin
+          dbcout( endl, true );
+          dbcout('=================================================', true );
+          dbcout('        Perimeter Callback function data'         , true);
+          dbcout('=================================================', true );
+          dbcout('Data set by the gui lib via the set perimeters callback function.', true );
 
-        ZoneSize := Get_zone_list_size( p );
-        if ( ZoneSize > 0 ) then
-          begin
-            dbcout( 'We have (' + IntToStr( ZoneSize ) + ') Zones defined by the simulation library', true );
+          ZoneSize := Get_zone_list_size( p );
+          if ( ZoneSize > 0 ) then
+            begin
+              dbcout( 'We have (' + IntToStr( ZoneSize ) + ') Zones defined by the simulation library', true );
 
-            for j:= 0 to (ZoneSize - 1) do
-              begin
-                Zone := Get_zone_list_zone( p, j );
+              for j:= 0 to (ZoneSize - 1) do
+                begin
+                  Zone := Get_zone_list_zone( p, j );
 
-                dbcout( 'Zone number ' + IntToStr(j) + ' is named: ' + Zone^.name, true );
-                dbcout( '  Level: ' + IntToStr( Zone^.level ), true );
-                dbcout( '  Holes filled: ' + IntToStr( Zone^.nholes_filled ), true );
-                dbcout( '  Radius: ' + usFloatToStr( Zone^.radius ), true );
-                dbcout( '  Radius SQ: ' + usFloatToStr( Zone^.radius_sq ), true );
-                dbcout( '  Radius as degrees: ' + usFloatToStr( Zone^.radius_as_degrees ), true );
-                dbcout( '  Area: ' + FloatToStr( Zone^.area ), true );
-                dbcout( '  ' +  IntToStr( Zone^.poly^.num_contours ) + ' contours in its structure', true );
+                  dbcout( 'Zone number ' + IntToStr(j) + ' is named: ' + Zone^.name, true );
+                  dbcout( '  Level: ' + IntToStr( Zone^.level ), true );
+                  dbcout( '  Holes filled: ' + IntToStr( Zone^.nholes_filled ), true );
+                  dbcout( '  Radius: ' + usFloatToStr( Zone^.radius ), true );
+                  dbcout( '  Radius SQ: ' + usFloatToStr( Zone^.radius_sq ), true );
+                  //dbcout( '  Radius as degrees: ' + usFloatToStr( Zone^.radius_as_degrees ), true );
+                  dbcout( '  Area: ' + usFloatToStr( Zone^.area ), true );
+                  dbcout( '  Perimeter: ' + usFloatToStr( Zone^.perimeter ), true );
+                  dbcout( '  ' +  IntToStr( Zone^.poly^.num_contours ) + ' contours in its structure', true );
 
-                if ( Zone^.poly^.num_contours > 0 ) then
-                  begin
-                    for k := 1 to Zone^.poly^.num_contours do
-                      begin
-                        MyVertices := @Zone^.poly^.contour[k-1];
+                  if ( Zone^.poly^.num_contours > 0 ) then
+                    begin
+                      for k := 1 to Zone^.poly^.num_contours do
+                        begin
+                          MyVertices := @Zone^.poly^.contour[k-1];
 
-                        dbcout( 'Contour: ' + IntToStr(k) + ' has ' + IntToStr( MyVertices.num_vertices ) + ' vertices.', true );
+                          dbcout( 'Contour: ' + IntToStr(k) + ' has ' + IntToStr( MyVertices.num_vertices ) + ' vertices.', true );
 
-                        for i := 0 to MyVertices^.num_vertices - 1 do
-                          begin
-                            dbcout( '     Vertex number ' + IntToStr( i + 1 )+ ':', true );
-                            dbcout( '          x: ' + usFloatToStr( MyVertices^.vertex[i].x), true );
-                            dbcout( '          y: ' + usFloatToStr( MyVertices^.vertex[i].y), true );
-                          end
-                        ;
+                          for i := 0 to MyVertices^.num_vertices - 1 do
+                            begin
+                              dbcout( '     Vertex number ' + IntToStr( i + 1 )+ ':', true );
+                              dbcout( '          x: ' + usFloatToStr( MyVertices^.vertex[i].x), true );
+                              dbcout( '          y: ' + usFloatToStr( MyVertices^.vertex[i].y), true );
+                            end
+                          ;
 
-                        dbcout('    -----------------------------', true );
-                      end
-                    ;
-                  end
-                ;
-                dbcout( endl, true );
+                          dbcout('    -----------------------------', true );
+                        end
+                      ;
+                    end
+                  ;
+                  dbcout( endl, true );
 
-              end
-            ;
-          end
-        ;
-        dbcout('=================================================', true );
-        dbcout('       END Perimeter Callback function data'      , true);
-        dbcout('=================================================', true );
-        dbcout( endl, true );
-      {$ENDIF}
+                end
+              ;
+            end
+          ;
+          dbcout('=================================================', true );
+          dbcout('       END Perimeter Callback function data'      , true);
+          dbcout('=================================================', true );
+          dbcout( endl, true );
+        end
+      ;
     end
   ;
 
@@ -270,6 +276,19 @@ implementation
       System.setLength( _array, 0 );
     end
   ;
+
+
+  procedure TZonePerimeter.debug();
+    var
+      i: integer;
+    begin
+      dbcout( '  Perimeter:', true );
+      for i := 0 to system.length( _array ) - 1 do
+        dbcout( '    ' + usFloatToStr( _array[i].x ) + ', ' + usFloatToStr( _array[i].y ), true )
+      ;
+    end
+  ;
+
 
   procedure TZonePerimeter.readData( reader: TReader );
     var
@@ -521,6 +540,18 @@ implementation
       finally
         stream.Free;
       end;
+    end
+  ;
+
+  procedure TZonePerimeterList.debug();
+    var
+      i: integer;
+    begin
+      dbcout( endl + '------------ TZonePerimeterList.debug()', true );
+      for i := 0 to self.count - 1 do
+        ( self[i] as TZonePerimeter ).debug()
+      ;
+      dbcout( '------------ TZonePerimeterList.debug done.', true );
     end
   ;
 

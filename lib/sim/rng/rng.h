@@ -33,6 +33,8 @@
 #include <glib.h>
 #include <gsl/gsl_rng.h>
 
+
+
 /** A random number generator object. */
 typedef struct
 {
@@ -60,7 +62,7 @@ void RAN_free_generator (RAN_gen_t *);
 /*------------------------*/
 typedef void (*TRngVoid_1_Int) (int);
 
-/* Used to determine when iterations should end */
+/* FIX ME: Someone should write this comment... */
 TRngVoid_1_Int rng_read_seed;
 
 DLL_API void set_rng_read_seed (TRngVoid_1_Int fn);

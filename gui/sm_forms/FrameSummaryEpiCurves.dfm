@@ -161,7 +161,7 @@ inherited FrameSummaryEpiCurves: TFrameSummaryEpiCurves
         Top = 8
         Width = 89
         Height = 25
-        Caption = '3-dimensional display'
+        Caption = '3-D View'
         TabOrder = 0
         WordWrap = True
       end

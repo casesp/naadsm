@@ -117,7 +117,7 @@
  *
  * time waiting > reason (basic > trace direct > ring > trace indirect) >
  * production type (cattle > pigs > sheep)
- * 
+ *
  * The order of the queues would still be:
  * -# basic destruction / cattle
  * -# basic destruction / pigs
@@ -142,7 +142,7 @@
  *
  * reason (basic > trace direct > ring > trace indirect) > time waiting >
  * production type (cattle > pigs > sheep)
- * 
+ *
  * The order of the queues would be exactly as above again:
  * -# | basic destruction / cattle
  * -# | basic destruction / pigs
@@ -195,7 +195,6 @@
  * awaiting destruction, the pointer is null.
  *
  * @image html priority_queues.png
- * @image latex priority_queues.eps "" width=4in
  *
  * The destruction_status array is useful for quickly finding out whether a
  * unit is awaiting destruction, so that when another request is made to
@@ -207,15 +206,14 @@
  * queues.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
- *   Department of Computing & Information Science, University of Guelph<br>
+ *   School of Computer Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
  * @version 0.1
  * @date June 2003
  *
- * Copyright &copy; University of Guelph, 2003-2006
- * 
+ * Copyright &copy; University of Guelph, 2003-2009
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -226,32 +224,29 @@
 #  include <config.h>
 #endif
 
-/* To avoid name clashes when dlpreopening multiple modules that have the same
- * global symbols (interface).  See sec. 18.4 of "GNU Autoconf, Automake, and
- * Libtool". */
-#define interface_version resources_and_implementation_of_controls_model_LTX_interface_version
-#define new resources_and_implementation_of_controls_model_LTX_new
-#define run resources_and_implementation_of_controls_model_LTX_run
-#define reset resources_and_implementation_of_controls_model_LTX_reset
-#define events_listened_for resources_and_implementation_of_controls_model_LTX_events_listened_for
-#define is_listening_for resources_and_implementation_of_controls_model_LTX_is_listening_for
-#define has_pending_actions resources_and_implementation_of_controls_model_LTX_has_pending_actions
-#define has_pending_infections resources_and_implementation_of_controls_model_LTX_has_pending_infections
-#define to_string resources_and_implementation_of_controls_model_LTX_to_string
-#define local_printf resources_and_implementation_of_controls_model_LTX_printf
-#define local_fprintf resources_and_implementation_of_controls_model_LTX_fprintf
-#define local_free resources_and_implementation_of_controls_model_LTX_free
-#define handle_new_day_event resources_and_implementation_of_controls_model_LTX_handle_new_day_event
-#define handle_declaration_of_destruction_reasons_event resources_and_implementation_of_controls_model_LTX_handle_declaration_of_destruction_reasons_event
-#define handle_declaration_of_vaccination_reasons_event resources_and_implementation_of_controls_model_LTX_handle_declaration_of_vaccination_reasons_event
-#define handle_detection_event resources_and_implementation_of_controls_model_LTX_handle_detection_event
-#define handle_request_for_destruction_event resources_and_implementation_of_controls_model_LTX_handle_request_for_destruction_event
-#define handle_request_for_vaccination_event resources_and_implementation_of_controls_model_LTX_handle_request_for_vaccination_event
-#define handle_request_for_zone_focus_event resources_and_implementation_of_controls_model_LTX_handle_request_for_zone_focus_event
-#define handle_vaccination_event resources_and_implementation_of_controls_model_LTX_handle_vaccination_event
-#define events_created resources_and_implementation_of_controls_LTX_events_created
+/* To avoid name clashes when multiple modules have the same interface. */
+#define new resources_and_implementation_of_controls_model_new
+#define run resources_and_implementation_of_controls_model_run
+#define reset resources_and_implementation_of_controls_model_reset
+#define events_listened_for resources_and_implementation_of_controls_model_events_listened_for
+#define is_listening_for resources_and_implementation_of_controls_model_is_listening_for
+#define has_pending_actions resources_and_implementation_of_controls_model_has_pending_actions
+#define to_string resources_and_implementation_of_controls_model_to_string
+#define local_printf resources_and_implementation_of_controls_model_printf
+#define local_fprintf resources_and_implementation_of_controls_model_fprintf
+#define local_free resources_and_implementation_of_controls_model_free
+#define handle_before_any_simulations_event resources_and_implementation_of_controls_model_handle_before_any_simulations_event
+#define handle_new_day_event resources_and_implementation_of_controls_model_handle_new_day_event
+#define handle_declaration_of_destruction_reasons_event resources_and_implementation_of_controls_model_handle_declaration_of_destruction_reasons_event
+#define handle_declaration_of_vaccination_reasons_event resources_and_implementation_of_controls_model_handle_declaration_of_vaccination_reasons_event
+#define handle_detection_event resources_and_implementation_of_controls_model_handle_detection_event
+#define handle_request_for_destruction_event resources_and_implementation_of_controls_model_handle_request_for_destruction_event
+#define handle_request_for_vaccination_event resources_and_implementation_of_controls_model_handle_request_for_vaccination_event
+#define handle_request_for_zone_focus_event resources_and_implementation_of_controls_model_handle_request_for_zone_focus_event
+#define handle_vaccination_event resources_and_implementation_of_controls_model_handle_vaccination_event
 
 #include "model.h"
+#include "model_util.h"
 #include <limits.h>
 
 #if STDC_HEADERS
@@ -266,7 +261,7 @@
 #  include <math.h>
 #endif
 
-#include "guilib.h"
+#include "naadsm.h"
 
 #include "resources-and-implementation-of-controls-model.h"
 
@@ -281,27 +276,12 @@ double round (double x);
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "resources-and-implementation-of-controls-model"
 
-#define MODEL_DESCRIPTION "\
-A module to simulate the government's actions in an outbreak.\n\
-\n\
-Neil Harvey <neilharvey@gmail.com>\n\
-v0.1 June 2003\
-"
-
-#define MODEL_INTERFACE_VERSION "0.93"
 
 
-
-#define NEVENTS_CREATED 7
-EVT_event_type_t events_created[] = { EVT_PublicAnnouncement, EVT_RequestForDestructionReasons,
-  EVT_CommitmentToDestroy, EVT_AttemptToDestroy,
-  EVT_RequestForVaccinationReasons, EVT_CommitmentToVaccinate,
-  EVT_Vaccination
-};
-
-#define NEVENTS_LISTENED_FOR 8
+#define NEVENTS_LISTENED_FOR 9
 EVT_event_type_t events_listened_for[] =
-  { EVT_NewDay, EVT_Detection, EVT_DeclarationOfDestructionReasons,
+  { EVT_BeforeAnySimulations,
+  EVT_NewDay, EVT_Detection, EVT_DeclarationOfDestructionReasons,
   EVT_RequestForDestruction, EVT_DeclarationOfVaccinationReasons,
   EVT_RequestForVaccination, EVT_Vaccination, EVT_RequestForZoneFocus
 };
@@ -324,6 +304,8 @@ typedef struct
 
   gboolean outbreak_known; /**< TRUE once the authorities are aware of the
     outbreak; FALSE otherwise. */
+  int first_detection_day; /** The day of the first detection.  Only defined if
+    outbreak_known is TRUE. */
 
   /* Parameters concerning destruction. */
   unsigned int ndestruction_reasons; /**< Number of distinct reasons for
@@ -331,9 +313,9 @@ typedef struct
   GPtrArray *destruction_reasons; /**< A temporary array used when counting the
     number of distinct reasons for destruction.  It stores the reasons declared
     so far, so that they will not be double-counted. */
-  unsigned short int destruction_program_delay; /**< The number of days between
+  int destruction_program_delay; /**< The number of days between
     recognizing and outbreak and beginning a destruction program. */
-  unsigned short int destruction_program_begin_day; /**< The day of the
+  int destruction_program_begin_day; /**< The day of the
     simulation on which the destruction program begins. */
   REL_chart_t *destruction_capacity; /**< The maximum number of herds the
     authorities can destroy in a day. */
@@ -345,12 +327,12 @@ typedef struct
   gboolean no_more_destructions; /**< A flag indicating that on this day and
     forward, there is no capacity to do destructions.  Useful for deciding
     whether a simulation can exit early even if there destructions queued up. */
-  GList **destruction_status; /**< A pointer for each unit.  If the unit is not
-    awaiting destruction, the pointer will be NULL.  If the unit is awaiting
-    destruction, the pointer is to a node in pending_destructions.  Note that
-    the pointer is to a GList structure in a GQueue; the actual
-    RequestForDestruction event can be found by following the GList structure's
-    "data" pointer. */
+  float destruction_capacity_rollover; /**< Used to handle fractional
+    destruction capacity. */
+  GHashTable *destruction_status; /**< A hash table keyed by pointers to units.
+    If a unit is not awaiting destruction, it will not be present in the table.
+    If a unit is awaiting destruction, its associated data item will be a
+    pointer to a node in pending_destructions. */
   unsigned int nherds_destroyed_today; /**< The number of herds the authorities
     have destroyed on a given day. */
   GPtrArray *pending_destructions; /**< Prioritized lists of herds to be
@@ -359,6 +341,9 @@ typedef struct
   int destruction_prod_type_priority;
   int destruction_time_waiting_priority;
   int destruction_reason_priority;
+  GHashTable *destroyed_today; /**< Records the units destroyed today.  Useful
+    for ignoring new requests for destruction or vaccination coming in from
+    other modules that don't know which units are being destroyed today. */
 
   /* Parameters concerning vaccination. */
   unsigned int nvaccination_reasons; /**< Number of distinct reasons for
@@ -368,6 +353,7 @@ typedef struct
     so far, so that they will not be double-counted. */
   unsigned int vaccination_program_threshold; /**< The number of diseased herds
     that must be detected before vaccination will begin. */
+  GHashTable *detected_herds; /**< The diseased herds detected so far. */
   unsigned int ndetected_herds; /**< The number of diseased herds detected so
     far. */
   REL_chart_t *vaccination_capacity; /**< The maximum number of herds the
@@ -380,12 +366,12 @@ typedef struct
   gboolean no_more_vaccinations; /**< A flag indicating that on this day and
     forward, there is no capacity to do vaccinations.  Useful for deciding
     whether a simulation can exit early even if there vaccinations queued up. */
-  GList **vaccination_status; /**< A pointer for each unit.  If the unit is not
-    awaiting vaccination, the pointer will be NULL.  If the unit is awaiting
-    vaccination, the pointer is to a node in pending_vaccinations.  Note
-    that the pointer is to a GList structure in a GQueue; the actual
-    RequestForVaccination event can be found by following the GList structure's
-    "data" pointer. */
+  float vaccination_capacity_rollover; /**< Used to handle fractional
+    vaccination capacity. */
+  GHashTable *vaccination_status; /**< A hash table keyed by pointers to units.
+    If a unit is not awaiting vaccination, it will not be present in the table.
+    If a unit is awaiting vaccination, its associated data item will be a
+    pointer to a node in pending_vaccinations. */
   unsigned int nherds_vaccinated_today; /**< The number of herds the
     authorities have vaccinated on a given day. */
   GPtrArray *pending_vaccinations; /**< Prioritized lists of herds to be
@@ -399,128 +385,300 @@ typedef struct
     vaccination will happen for herds affected by the detection that passed the
     threshold *and* for herds affected by previous detections on the same day
     the threshold was reached. */
-  unsigned short int *day_last_vaccinated; /**< Records the day when each herd
+  int *day_last_vaccinated; /**< Records the day when each herd
    was last vaccinated.  Also prevents double-counting units against the
    vaccination capacity. */
-  unsigned short int *min_next_vaccination_day;
   int vaccination_prod_type_priority;
   int vaccination_time_waiting_priority;
   int vaccination_reason_priority;
+  GHashTable *detected_today; /**< Records the states of units detected today.
+    Useful for cancelling vaccination of detected units. */
 }
 local_data_t;
 
 
 
+/**
+ * Before any simulations, this module declares all the means by which it may
+ * create a detection.
+ *
+ * This module also declares a reason for destruction, namely detection of
+ * death by disease by a destruction team.  Declaration of reasons for
+ * destruction is normally done by modules that request destruction, which this
+ * module never does.  But "detection of death by disease by a destruction
+ * team" is a unique situation that changes the reason for a control event on-
+ * the-fly: the control event changes from a destruction (for whatever reason
+ * the destruction was originally requested) to a disposal, cleaning, and
+ * disinfection only event.
+ *
+ * @param queue for any new events the module creates.
+ */
 void
-destroy (struct ergadm_model_t_ *self, HRD_herd_t * herd,
-         unsigned short int day, char *reason, EVT_event_queue_t * queue)
+handle_before_any_simulations_event (EVT_event_queue_t * queue)
 {
-  local_data_t *local_data;
+  GPtrArray *means;
+  GPtrArray *reasons;
+
+#if DEBUG
+  g_debug ("----- ENTER handle_before_any_simulations_event (%s)", MODEL_NAME);
+#endif
+
+  means = g_ptr_array_sized_new (2);
+  g_ptr_array_add (means, (gpointer) NAADSM_detection_reason_abbrev[NAADSM_DetectionDeadFromDiseaseByVaccinationTeam]);
+  g_ptr_array_add (means, (gpointer) NAADSM_detection_reason_abbrev[NAADSM_DetectionDeadFromDiseaseByDestructionTeam]);
+  EVT_event_enqueue (queue, EVT_new_declaration_of_detection_means_event (means));
+
+  reasons = g_ptr_array_sized_new (1);
+  g_ptr_array_add (reasons,
+                   (gpointer) NAADSM_control_reason_abbrev[NAADSM_ControlDetectionDeadFromDisease]);
+  EVT_event_enqueue (queue, EVT_new_declaration_of_destruction_reasons_event (reasons));
+
+  /* Note that we don't clean up the GPtrArrays.  They will be freed along with
+   * the declaration events after all interested modules have processed the
+   * events. */
+
+#if DEBUG
+  g_debug ("----- EXIT handle_before_any_simulations_event (%s)", MODEL_NAME);
+#endif
+  return;
+}
+
+
+
+/**
+ * Cancels a vaccination.
+ *
+ * @param herd a herd.
+ * @param day the current simulation day.
+ * @param vaccination_status from local_data.
+ * @param pending_vaccinations from local_data.
+ * @param queue for any new events the function creates.
+ */
+void
+cancel_vaccination (HRD_herd_t * herd, int day,
+                    GHashTable * vaccination_status, GPtrArray * pending_vaccinations,
+                    EVT_event_queue_t * queue)
+{
   GList *link;
   EVT_event_t *request;
   EVT_request_for_vaccination_event_t *details;
   GQueue *q;
+  EVT_event_t *cancellation_event;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER destroy (%s)", MODEL_NAME);
+  g_debug ("----- ENTER cancel_vaccination (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER destroy %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
-  local_data = (local_data_t *) (self->model_data);
 
-  /* If the unit is already Destroyed, we can ignore the request. */
-  if (herd->status == Destroyed)
-    {
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "unit \"%s\" was already destroyed, will not destroy", herd->official_id);
-#endif
-      goto end;
-    }
-
-  /* Destroy the unit. */
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "destroying unit \"%s\"", herd->official_id);
-#endif
-  EVT_event_enqueue (queue, EVT_new_attempt_to_destroy_event (herd, day, reason));
-  local_data->nherds_destroyed_today++;
-
-  /* Take the unit off the vaccination waiting list, if needed. */
-  link = local_data->vaccination_status[herd->index];
+  /* If the unit is on the vaccination waiting list, remove it. */
+  link = (GList *) g_hash_table_lookup (vaccination_status, herd);
   if (link != NULL)
     {
       /* Delete both the RequestForVaccination structure and the GQueue link
        * that holds it. */
-
       request = (EVT_event_t *) (link->data);
       details = &(request->u.request_for_vaccination);
+      cancellation_event = EVT_new_vaccination_canceled_event (herd, day, details->day_commitment_made);
 
-      q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, details->priority - 1);
+      q = (GQueue *) g_ptr_array_index (pending_vaccinations, details->priority - 1);
       EVT_free_event (request);
       g_queue_delete_link (q, link);
 
-      local_data->vaccination_status[herd->index] = NULL;
+      EVT_event_enqueue (queue, cancellation_event);
+      g_hash_table_remove (vaccination_status, herd);
     }
 
-end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT destroy (%s)", MODEL_NAME);
+  g_debug ("----- EXIT cancel_vaccination (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT destroy %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+  return;
+}
+
+
+
+/**
+ * Cancels a destruction.
+ *
+ * @param herd a herd.
+ * @param day the current simulation day.
+ * @param destruction_status from local_data.
+ * @param pending_destructions from local_data.
+ * @param queue for any new events the function creates.
+ */
+void
+cancel_destruction (HRD_herd_t * herd, int day,
+                    GHashTable * destruction_status, GPtrArray * pending_destructions,
+                    EVT_event_queue_t * queue)
+{
+  GList *link;
+  EVT_event_t *request;
+  EVT_request_for_destruction_event_t *details;
+  GQueue *q;
+  EVT_event_t *cancellation_event;
+
+#if DEBUG
+  g_debug ("----- ENTER cancel_destruction (%s)", MODEL_NAME);
+#endif
+
+  /* If the unit is on the destruction waiting list, remove it. */
+  link = (GList *) g_hash_table_lookup (destruction_status, herd);
+  if (link != NULL)
+    {
+      /* Delete both the RequestForDestruction structure and the GQueue link
+       * that holds it. */
+      request = (EVT_event_t *) (link->data);
+      details = &(request->u.request_for_destruction);
+      cancellation_event = EVT_new_destruction_canceled_event (herd, day, details->day_commitment_made);
+
+      q = (GQueue *) g_ptr_array_index (pending_destructions, details->priority - 1);
+      EVT_free_event (request);
+      g_queue_delete_link (q, link);
+
+      EVT_event_enqueue (queue, cancellation_event);
+      g_hash_table_remove (destruction_status, herd);
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT cancel_destruction (%s)", MODEL_NAME);
+#endif
   return;
 }
 
 
 
 void
-destroy_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
+destroy (struct naadsm_model_t_ *self, HRD_herd_t * herd,
+         int day, char *reason, int day_commitment_made,
+         EVT_event_queue_t * queue)
+{
+  local_data_t *local_data;
+
+#if DEBUG
+  g_debug ("----- ENTER destroy (%s)", MODEL_NAME);
+#endif
+
+  local_data = (local_data_t *) (self->model_data);
+
+  /* Destroy the unit. */
+
+  /* If the unit is already Destroyed, it should not be destroyed again. */
+  g_assert ( herd->status != Destroyed );
+
+#if DEBUG
+  g_debug ("going out to destroy unit \"%s\"", herd->official_id);
+#endif
+
+  /* The unit may be Dead from Disease.  There are 2 cases in which this
+   * situation can come up:
+   * 1) The unit was detected as Dead from Disease by farmer self-reporting or
+   *    by a vaccination team, and a request was made for a destruction team to
+   *    do disposal, cleaning & disinfection.
+   * 2) The unit is Dead from Disease but not yet detected.  In this case we
+   *    create a detection and the team stays to do disposal, cleaning &
+   *    disinfection. 
+   */
+  if ( herd->status == DeadFromDisease)
+    {
+      HSC_scorecard_t *scorecard;
+      if (strcmp (reason, NAADSM_control_reason_abbrev[NAADSM_ControlDetectionDeadFromDisease]) == 0)
+        {
+          #if DEBUG
+            g_debug( "this is a disposal-cleaning-disinfection only request" );
+          #endif
+          /* No special action needed here.  The destruction event will be
+           * queued below. */
+          ;
+        }
+      else
+        {
+          #if DEBUG
+            g_debug( "unit we're trying to destroy is Dead from Disease, undetected until now" );
+          #endif
+          scorecard = naadsm_get_scorecard (herd);
+          g_assert( scorecard == NULL
+                    || scorecard->is_detected_as_dead == FALSE
+                    || scorecard->day_detected_as_dead == day );
+          /* Create a detection. */
+          EVT_event_enqueue (queue,
+                             EVT_new_detection_event (herd, day,
+                                                      NAADSM_DetectionDeadFromDiseaseByDestructionTeam,
+                                                      NAADSM_detection_reason_abbrev[NAADSM_DetectionDeadFromDiseaseByDestructionTeam],
+                                                      NAADSM_TestUnspecified));
+          /* Change the reason recorded for the destruction event.  Whatever reason
+           * was included in the original request for destruction is gone, and the
+           * new reason indicates that only disposal, cleaning & disinfection was
+           * done by the destruction team because the unit was already Dead from
+           * Disease. */
+          reason = (char*)NAADSM_control_reason_abbrev[NAADSM_ControlDetectionDeadFromDisease];
+        }
+    }
+  /* AR: Herds are being detected/destroyed multiple times
+  else
+    HRD_destroy (herd);
+  */
+  HRD_destroy (herd);
+  EVT_event_enqueue (queue, EVT_new_destruction_event (herd, day, reason, day_commitment_made));
+  g_hash_table_insert (local_data->destroyed_today, herd, herd);
+  local_data->nherds_destroyed_today++;
+
+  /* Take the unit off the vaccination waiting list, if needed. */
+  cancel_vaccination (herd, day, local_data->vaccination_status,
+                      local_data->pending_vaccinations, queue);
+
+#if DEBUG
+  g_debug ("----- EXIT destroy (%s)", MODEL_NAME);
+#endif
+  return;
+}
+
+
+
+void
+destroy_by_priority (struct naadsm_model_t_ *self, int day,
                      EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
+  float destruction_capacity_fractional;
   unsigned int destruction_capacity;
   EVT_event_t *pending_destruction;
   EVT_request_for_destruction_event_t *details;
   unsigned int npriorities;
   unsigned int priority;
-  unsigned short int request_day, oldest_request_day;
+  int request_day, oldest_request_day;
   int oldest_request_index;
   GQueue *q;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER destroy_by_priority (%s)", MODEL_NAME);
+  g_debug ("----- ENTER destroy_by_priority (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER destroy_by_priority %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+  oldest_request_day = -1; /* This value does nothing but avoid a compiler warning on Windows */
+
   local_data = (local_data_t *) (self->model_data);
 
-  /* Look up the destruction capacity (which may increase as the outbreak
+  /* Look up the destruction capacity (which may change as the outbreak
    * progresses). */
-  destruction_capacity =
-    (unsigned int)
-    round (REL_chart_lookup
-           (day - local_data->destruction_program_begin_day, local_data->destruction_capacity));
+  destruction_capacity_fractional = local_data->destruction_capacity_rollover +
+    REL_chart_lookup (day - local_data->first_detection_day - 1, local_data->destruction_capacity);
+  #if DEBUG
+    g_debug ("day %i: capacity = %g (rollover) + %g (today) = %g",
+             day, local_data->destruction_capacity_rollover,
+             REL_chart_lookup (day - local_data->first_detection_day - 1, local_data->destruction_capacity),
+             destruction_capacity_fractional);
+  #endif
+  destruction_capacity = (unsigned int) destruction_capacity_fractional;
+  local_data->destruction_capacity_rollover = destruction_capacity_fractional - destruction_capacity;
+  #if DEBUG
+    g_debug ("today's capacity = %u, rollover = %g",
+             destruction_capacity, local_data->destruction_capacity_rollover);
+  #endif
 
   /* Check whether the destruction capacity has dropped to 0 for good. */
   if (local_data->destruction_capacity_goes_to_0
-      && (day - local_data->destruction_program_begin_day) >=
+      && (day - local_data->first_detection_day - 1) >=
       local_data->destruction_capacity_0_day)
     {
       local_data->no_more_destructions = TRUE;
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "no more destructions after this day");
+      g_debug ("no more destructions after this day");
 #endif
     }
 
@@ -562,9 +720,9 @@ destroy_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
           q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, oldest_request_index);
           pending_destruction = (EVT_event_t *) g_queue_pop_head (q);
           details = &(pending_destruction->u.request_for_destruction);
-          local_data->destruction_status[details->herd->index] = NULL;
+          g_hash_table_remove (local_data->destruction_status, details->herd);
 
-          destroy (self, details->herd, day, details->reason, queue);
+          destroy (self, details->herd, day, details->reason, details->day_commitment_made, queue);
           EVT_free_event (pending_destruction);
         }
     }                           /* end case where time waiting has 1st priority. */
@@ -617,9 +775,9 @@ destroy_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
           q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, oldest_request_index);
           pending_destruction = (EVT_event_t *) g_queue_pop_head (q);
           details = &(pending_destruction->u.request_for_destruction);
-          local_data->destruction_status[details->herd->index] = NULL;
+          g_hash_table_remove (local_data->destruction_status, details->herd);
 
-          destroy (self, details->herd, day, details->reason, queue);
+          destroy (self, details->herd, day, details->reason, details->day_commitment_made, queue);
           EVT_free_event (pending_destruction);
         }
     }                           /* end case where time waiting has 2nd priority. */
@@ -632,140 +790,144 @@ destroy_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
            priority++)
         {
           q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, priority);
-#if INFO
+#if DEBUG
           if (!g_queue_is_empty (q))
-            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "destroying priority %i units", priority + 1);
+            g_debug ("destroying priority %i units", priority + 1);
 #endif
           while (!g_queue_is_empty (q) && local_data->nherds_destroyed_today < destruction_capacity)
             {
               pending_destruction = (EVT_event_t *) g_queue_pop_head (q);
               details = &(pending_destruction->u.request_for_destruction);
-              local_data->destruction_status[details->herd->index] = NULL;
+              g_hash_table_remove (local_data->destruction_status, details->herd);
 
-              destroy (self, details->herd, day, details->reason, queue);
+              destroy (self, details->herd, day, details->reason, details->day_commitment_made, queue);
               EVT_free_event (pending_destruction);
             }
         }
     }                           /* end case where time waiting has 3rd priority. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT destroy_by_priority (%s)", MODEL_NAME);
+  g_debug ("----- EXIT destroy_by_priority (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT destroy_by_priority %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
 
 void
-vaccinate (struct ergadm_model_t_ *self, HRD_herd_t * herd,
-           unsigned short int day, char *reason,
-           unsigned short int min_days_before_next, EVT_event_queue_t * queue)
+vaccinate (struct naadsm_model_t_ *self, HRD_herd_t * herd,
+           int day, char *reason, int day_commitment_made,
+           int min_days_before_next, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
-  unsigned int last_vaccination, days_since_last_vaccination;
+  HSC_scorecard_t *scorecard;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER vaccinate (%s)", MODEL_NAME);
+  g_debug ("----- ENTER vaccinate (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER vaccinate %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
+  scorecard = naadsm_get_or_create_scorecard (herd);
 
-  /* If the unit is Destroyed, we can ignore the request. */
-  if (herd->status == Destroyed)
+  /* If the unit is already Destroyed, it should not be vaccinated. */
+  g_assert ( herd->status != Destroyed );
+
+  /*  If the herd is not due to be vaccinated again yet, it should not be vaccinated. */
+  g_assert ( scorecard->min_next_vaccination_day <= day );
+
+  /* If the unit is Dead from Disease but not yet detected, cancel the
+   * vaccination and create a detection. */
+  if ( herd->status == DeadFromDisease)
     {
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "unit \"%s\" was destroyed, will not vaccinate", herd->official_id);
+#if DEBUG
+      g_debug( "unit we're trying to vaccinate is Dead from Disease" );
 #endif
+      g_assert( scorecard == NULL
+                || scorecard->is_detected_as_dead == FALSE
+                || scorecard->day_detected_as_dead == day );
+      EVT_event_enqueue (queue, EVT_new_vaccination_canceled_event (herd, day, day_commitment_made));
+      EVT_event_enqueue (queue,
+                         EVT_new_detection_event (herd, day,
+                                                  NAADSM_DetectionDeadFromDiseaseByVaccinationTeam,
+                                                  NAADSM_detection_reason_abbrev[NAADSM_DetectionDeadFromDiseaseByVaccinationTeam],
+                                                  NAADSM_TestUnspecified));
+      /* Vaccinators had to go to the unit, so this used up part of today's
+       * capacity. */
+      local_data->nherds_vaccinated_today++;
       goto end;
     }
 
-  /* If the unit has already been vaccinated recently, we can ignore the
-   * request. */
-  if (day < local_data->min_next_vaccination_day[herd->index])
-    {
-      last_vaccination = local_data->day_last_vaccinated[herd->index];
-      days_since_last_vaccination = day - last_vaccination;
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "unit \"%s\" was vaccinated %u days ago, will not re-vaccinate",
-             herd->official_id, days_since_last_vaccination);
-#endif
-      goto end;
-    }
 
   /* Vaccinate the unit. */
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "vaccinating unit \"%s\"", herd->official_id);
+#if DEBUG
+  g_debug ("vaccinating unit \"%s\"", herd->official_id);
 #endif
-  EVT_event_enqueue (queue, EVT_new_attempt_to_vaccinate_event (herd, day, reason));
+  EVT_event_enqueue (queue, EVT_new_vaccination_event (herd, day, reason, day_commitment_made));
   local_data->nherds_vaccinated_today++;
-  local_data->min_next_vaccination_day[herd->index] = day + min_days_before_next;
+  HSC_record_next_vaccination_day( scorecard, day + min_days_before_next );
+  /* AR This block can probably be removed the next time anyone reads this function...
+  char s[1024];
+  sprintf( s, "Herd %d vaccinated on day %d, will be revaccinated no later than %d",
+    herd->index, day, day + min_days_before_next );
+  naadsm_printf( s ); 
+  */  
 
 end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT vaccinate (%s)", MODEL_NAME);
+  g_debug ("----- EXIT vaccinate (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT vaccinate %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-
   return;
 }
 
 
 
 void
-vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
+vaccinate_by_priority (struct naadsm_model_t_ *self, int day,
                        EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
+  float vaccination_capacity_fractional;
   unsigned int vaccination_capacity;
   EVT_event_t *pending_vaccination;
   EVT_request_for_vaccination_event_t *details;
   unsigned int npriorities;
   unsigned int priority;
-  unsigned short int request_day, oldest_request_day;
+  int request_day, oldest_request_day;
   int oldest_request_index;
   GQueue *q;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER vaccinate_by_priority (%s)", MODEL_NAME);
+  g_debug ("----- ENTER vaccinate_by_priority (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER vaccinate_by_priority %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+  oldest_request_day = -1; /* This value does nothing but avoid a compiler warning on Windows */
+
+
   local_data = (local_data_t *) (self->model_data);
 
-  /* Look up the vaccination capacity (which may increase as the outbreak
+  /* Look up the vaccination capacity (which may change as the outbreak
    * progresses). */
-  vaccination_capacity =
-    (unsigned int)
-    round (REL_chart_lookup
-           (day - local_data->destruction_program_begin_day, local_data->vaccination_capacity));
+  vaccination_capacity_fractional = local_data->vaccination_capacity_rollover +
+    REL_chart_lookup (day - local_data->first_detection_day - 1, local_data->vaccination_capacity);
+  #if DEBUG
+    g_debug ("day %i: capacity = %g (rollover) + %g (today) = %g",
+             day, local_data->vaccination_capacity_rollover,
+             REL_chart_lookup (day - local_data->first_detection_day - 1, local_data->vaccination_capacity),
+             vaccination_capacity_fractional);
+  #endif
+  vaccination_capacity = (unsigned int) vaccination_capacity_fractional;
+  local_data->vaccination_capacity_rollover = vaccination_capacity_fractional - vaccination_capacity;
+  #if DEBUG
+    g_debug ("today's capacity = %u, rollover = %g",
+             vaccination_capacity, local_data->vaccination_capacity_rollover);
+  #endif
 
   /* Check whether the vaccination capacity has dropped to 0 for good. */
   if (local_data->vaccination_capacity_goes_to_0
-      && (day - local_data->destruction_program_begin_day) >=
+      && (day - local_data->first_detection_day) >=
       local_data->vaccination_capacity_0_day)
     {
       local_data->no_more_vaccinations = TRUE;
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "no more vaccinations after this day");
+      g_debug ("no more vaccinations after this day");
 #endif
     }
 
@@ -807,9 +969,9 @@ vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
           q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, oldest_request_index);
           pending_vaccination = (EVT_event_t *) g_queue_pop_head (q);
           details = &(pending_vaccination->u.request_for_vaccination);
-          local_data->vaccination_status[details->herd->index] = NULL;
+          g_hash_table_remove (local_data->vaccination_status, details->herd);
 
-          vaccinate (self, details->herd, day, details->reason,
+          vaccinate (self, details->herd, day, details->reason, details->day_commitment_made,
                      details->min_days_before_next, queue);
           EVT_free_event (pending_vaccination);
         }
@@ -863,9 +1025,9 @@ vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
           q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, oldest_request_index);
           pending_vaccination = (EVT_event_t *) g_queue_pop_head (q);
           details = &(pending_vaccination->u.request_for_vaccination);
-          local_data->vaccination_status[details->herd->index] = NULL;
+          g_hash_table_remove (local_data->vaccination_status, details->herd);
 
-          vaccinate (self, details->herd, day, details->reason,
+          vaccinate (self, details->herd, day, details->reason, details->day_commitment_made,
                      details->min_days_before_next, queue);
           EVT_free_event (pending_vaccination);
         }
@@ -879,18 +1041,18 @@ vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
            priority++)
         {
           q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, priority);
-#if INFO
+#if DEBUG
           if (!g_queue_is_empty (q))
-            g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "vaccinating priority %i units", priority + 1);
+            g_debug ("vaccinating priority %i units", priority + 1);
 #endif
           while (!g_queue_is_empty (q)
                  && local_data->nherds_vaccinated_today < vaccination_capacity)
             {
               pending_vaccination = (EVT_event_t *) g_queue_pop_head (q);
               details = &(pending_vaccination->u.request_for_vaccination);
-              local_data->vaccination_status[details->herd->index] = NULL;
+              g_hash_table_remove (local_data->vaccination_status, details->herd);
 
-              vaccinate (self, details->herd, day, details->reason,
+              vaccinate (self, details->herd, day, details->reason, details->day_commitment_made,
                          details->min_days_before_next, queue);
               EVT_free_event (pending_vaccination);
             }
@@ -898,13 +1060,8 @@ vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
     }                           /* end case where time waiting has 3rd priority. */
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT vaccinate_by_priority (%s)", MODEL_NAME);
+  g_debug ("----- EXIT vaccinate_by_priority (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT vaccinate_by_priority %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -918,38 +1075,20 @@ vaccinate_by_priority (struct ergadm_model_t_ *self, unsigned short int day,
  * @param queue for any new events the model creates.
  */
 void
-handle_new_day_event (struct ergadm_model_t_ *self,
+handle_new_day_event (struct naadsm_model_t_ *self,
                       EVT_new_day_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   GQueue *q;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_new_day_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_new_day_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 
   local_data = (local_data_t *) (self->model_data);
 
-  /* If this is the first day of the first simulation, request that all models
-   * capable of requesting destructions or vaccinations declare the reasons
-   * they will give for doing so.  This model needs to know both the number of
-   * production types and the number of reasons to prioritize actions
-   * properly. */
-  if (local_data->ndestruction_reasons == -1)
-    {
-      local_data->ndestruction_reasons = 0;
-      EVT_event_enqueue (queue, EVT_new_request_for_destruction_reasons_event ());
-    }
-  if (local_data->nvaccination_reasons == -1)
-    {
-      local_data->nvaccination_reasons = 0;
-      EVT_event_enqueue (queue, EVT_new_request_for_vaccination_reasons_event ());
-    }
+  g_hash_table_remove_all (local_data->detected_today);
+  g_hash_table_remove_all (local_data->destroyed_today);
 
   /* Destroy any waiting herds, as many as possible before destruction capacity
    * runs out. */
@@ -975,13 +1114,8 @@ handle_new_day_event (struct ergadm_model_t_ *self,
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_new_day_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_new_day_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_new_day_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -994,7 +1128,7 @@ handle_new_day_event (struct ergadm_model_t_ *self,
  * @param event a declaration of destruction reasons event.
  */
 void
-handle_declaration_of_destruction_reasons_event (struct ergadm_model_t_ *self,
+handle_declaration_of_destruction_reasons_event (struct naadsm_model_t_ *self,
                                                  EVT_declaration_of_destruction_reasons_event_t *
                                                  event)
 {
@@ -1006,15 +1140,9 @@ handle_declaration_of_destruction_reasons_event (struct ergadm_model_t_ *self,
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_declaration_of_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_declaration_of_destruction_reasons_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_declaration_of_destruction_reasons_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
 
   /* Copy the list of potential reasons for destruction.  (Note that we just
@@ -1039,7 +1167,7 @@ handle_declaration_of_destruction_reasons_event (struct ergadm_model_t_ *self,
           g_ptr_array_add (local_data->destruction_reasons, reason);
           local_data->ndestruction_reasons++;
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  adding new reason \"%s\"", reason);
+          g_debug ("  adding new reason \"%s\"", reason);
 #endif
         }
     }
@@ -1050,19 +1178,13 @@ handle_declaration_of_destruction_reasons_event (struct ergadm_model_t_ *self,
     g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
                             (char *) g_ptr_array_index (local_data->destruction_reasons, i));
   g_string_append_c (s, '}');
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
+  g_debug ("%s", s->str);
   g_string_free (s, TRUE);
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_declaration_of_destruction_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_declaration_of_destruction_reasons_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_declaration_of_destruction_reasons_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -1075,7 +1197,7 @@ handle_declaration_of_destruction_reasons_event (struct ergadm_model_t_ *self,
  * @param event a declaration of vaccination reasons event.
  */
 void
-handle_declaration_of_vaccination_reasons_event (struct ergadm_model_t_ *self,
+handle_declaration_of_vaccination_reasons_event (struct naadsm_model_t_ *self,
                                                  EVT_declaration_of_vaccination_reasons_event_t *
                                                  event)
 {
@@ -1087,15 +1209,9 @@ handle_declaration_of_vaccination_reasons_event (struct ergadm_model_t_ *self,
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_declaration_of_vaccination_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_declaration_of_vaccination_reasons_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_declaration_of_vaccination_reasons_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
 
   /* Copy the list of potential reasons for vaccination.  (Note that we just
@@ -1120,7 +1236,7 @@ handle_declaration_of_vaccination_reasons_event (struct ergadm_model_t_ *self,
           g_ptr_array_add (local_data->vaccination_reasons, reason);
           local_data->nvaccination_reasons++;
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "  adding new reason \"%s\"", reason);
+          g_debug ("  adding new reason \"%s\"", reason);
 #endif
         }
     }
@@ -1131,81 +1247,126 @@ handle_declaration_of_vaccination_reasons_event (struct ergadm_model_t_ *self,
     g_string_append_printf (s, i == 0 ? "\"%s\"" : ",\"%s\"",
                             (char *) g_ptr_array_index (local_data->vaccination_reasons, i));
   g_string_append_c (s, '}');
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, s->str);
+  g_debug ("%s", s->str);
   g_string_free (s, TRUE);
 #endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_declaration_of_vaccination_reasons_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_declaration_of_vaccination_reasons_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_declaration_of_vaccination_reasons_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
 
 /**
  * Responds to the first detection event by announcing an outbreak and
- * initiating a destruction program.
+ * initiating a destruction program.  Cancels pending vaccinations and/or
+ * destructions when a unit is detected as Dead from Disease.  May cancel
+ * pending vaccinations when a unit is detected as diseased.
  *
  * @param self the model.
  * @param event a detection event.
  * @param queue for any new events the model creates.
  */
 void
-handle_detection_event (struct ergadm_model_t_ *self,
+handle_detection_event (struct naadsm_model_t_ *self,
                         EVT_detection_event_t * event, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
+  HRD_herd_t *herd;
+  GList *link;
+  EVT_event_t *request;
+  EVT_request_for_vaccination_event_t *details;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_detection_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_detection_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
 
-  local_data->ndetected_herds++;
+  g_hash_table_insert (local_data->detected_herds, event->herd, GINT_TO_POINTER(1));
+  local_data->ndetected_herds = g_hash_table_size (local_data->detected_herds);
   if (!local_data->outbreak_known)
     {
       local_data->outbreak_known = TRUE;
+      local_data->first_detection_day = event->day;
 
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "announcing outbreak");
+#if DEBUG
+      g_debug ("announcing outbreak");
 #endif
       EVT_event_enqueue (queue, EVT_new_public_announcement_event (event->day));
 
       local_data->destruction_program_begin_day =
         event->day + local_data->destruction_program_delay + 1;
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "destruction program delayed %hu days (will begin on day %hu)",
-             local_data->destruction_program_delay, local_data->destruction_program_begin_day);
+#if DEBUG
+      g_debug ("destruction program delayed %hu days (will begin on day %hu)",
+               local_data->destruction_program_delay, local_data->destruction_program_begin_day);
 #endif
     }
 
-#if INFO
-  if (local_data->ndetected_herds >= local_data->vaccination_program_threshold)
-    g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-           "%u detections, vaccination program begins", local_data->ndetected_herds);
+  if (local_data->ndetected_herds == local_data->vaccination_program_threshold)
+    {
+      GQueue *q;
+#if DEBUG
+      g_debug ("%u detections, vaccination program begins", local_data->ndetected_herds);
 #endif
+      /* Any requests for vaccination that happened earlier today go back into
+       * the queue. */
+      q = local_data->pre_threshold_requests;
+      while (!g_queue_is_empty (q))
+        EVT_event_enqueue (queue, (EVT_event_t *) g_queue_pop_head (q));
+    }
+
+  /* If the unit is awaiting vaccination, and the request(s) can be canceled by
+   * detection, remove the unit from the waiting list. */
+  herd = event->herd;
+#if DEBUG
+  g_debug ("detected unit is %s", HRD_status_name[herd->status]);
+#endif
+  link = (GList *) g_hash_table_lookup (local_data->vaccination_status, herd);
+  if (link != NULL)
+    {
+      /* If the unit was detected as Dead from Disease, we cancel the
+       * vaccination. */
+      if (herd->status == DeadFromDisease)
+        {
+          cancel_vaccination (herd, event->day,
+                              local_data->vaccination_status,
+                              local_data->pending_vaccinations,
+                              queue);
+        }
+      else
+        {
+          /* If the unit was detected as Infectious Clinical, we need to check
+           * if the pending vaccination should be canceled. */
+          request = (EVT_event_t *) (link->data);
+          details = &(request->u.request_for_vaccination);
+          if (details->cancel_on_detection)
+            {
+              cancel_vaccination (herd, event->day,
+                                  local_data->vaccination_status,
+                                  local_data->pending_vaccinations,
+                                  queue);
+            }
+        }
+    }
+
+  /* If the unit is awaiting destruction, and it was detected as Dead from
+   * Disease, remove the unit from the waiting list. */
+  if (herd->status == DeadFromDisease
+      && g_hash_table_lookup (local_data->destruction_status, herd) != NULL)
+    cancel_destruction (herd, event->day,
+                        local_data->destruction_status,
+                        local_data->pending_destructions,
+                        queue);
+
+  /* Store today's detections, because some vaccinations and/or destructions
+   * may be canceled by detections. */
+  g_hash_table_insert (local_data->detected_today, herd, GINT_TO_POINTER(herd->status));
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_detection_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_detection_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_detection_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -1220,53 +1381,40 @@ handle_detection_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_destruction_event (struct ergadm_model_t_ *self,
+handle_request_for_destruction_event (struct naadsm_model_t_ *self,
                                       EVT_event_t * e, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   EVT_request_for_destruction_event_t *event, *old_request;
   HRD_herd_t *herd;
-  unsigned int i;
   GQueue *q;
+  EVT_event_t *event_copy;
   gboolean replace;
+  guint i, newpos;
+  EVT_event_t* ee;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_destruction_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_request_for_destruction_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_request_for_destruction_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
   event = &(e->u.request_for_destruction);
 
-  /* If another model has already claimed the request, there is nothing to
-   * do. */
-  if (event->accepted)
-    goto end;
-
-  event->accepted = TRUE;
-
+  /* If this herd is being destroyed today, then ignore the request. */
   herd = event->herd;
-  EVT_event_enqueue (queue, EVT_new_commitment_to_destroy_event (herd, event->day));
-#if INFO
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-         "Authorities commit to destroy unit \"%s\"", herd->official_id);
-#endif
+  if (g_hash_table_lookup (local_data->destroyed_today, herd) != NULL)
+    goto end;
 
   /* There may be more than one request to destroy the same unit.  If this is
    * the first request for this unit, just put it onto the appropriate waiting
    * list. */
-  i = herd->index;
-  if (local_data->destruction_status[i] == NULL)
+  if (g_hash_table_lookup (local_data->destruction_status, herd) == NULL)
     {
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "no existing request to (potentially) replace");
+        g_debug ("no existing request to (potentially) replace");
+        g_debug ("authorities commit to destroy unit \"%s\"", herd->official_id);
 #endif
-
+      EVT_event_enqueue (queue, EVT_new_commitment_to_destroy_event (herd, event->day));
       /* If the list of pending destruction queues is not long enough (that is,
        * this event has a lower priority than any we've seen before), extend
        * the list of pending destruction queues. */
@@ -1274,9 +1422,29 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
         g_ptr_array_add (local_data->pending_destructions, g_queue_new ());
 
       q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, event->priority - 1);
-      g_queue_push_tail (q, EVT_clone_event (e));
+      event_copy = EVT_clone_event (e);
+      event_copy->u.request_for_destruction.day_commitment_made = event->day;
+
+      /* We can't just tack the replacement event on to the tail of the queue:
+        this might disrupt the order of "time waiting".  Instead, figure out where in the queue
+        the event belongs, and stick it in the appropriate place.
+      */
+
+      /* The last position is the default, unless a search turns up something else that should happen later. */
+      newpos = g_queue_get_length( q );
+
+      for( i = 0; i < g_queue_get_length( q ); i++ ) {
+        ee = (EVT_event_t *) g_queue_peek_nth (q, i);
+
+        if( ee->u.request_for_destruction.day > event_copy->u.request_for_destruction.day ) {
+          newpos = i;
+          break;
+        }
+      }
+
+      g_queue_push_nth (q, event_copy, newpos);
       /* Store a pointer to the GQueue link that contains this request. */
-      local_data->destruction_status[i] = g_queue_peek_tail_link (q);
+      g_hash_table_insert (local_data->destruction_status, herd, g_queue_peek_nth_link (q, newpos));
     }
   else
     {
@@ -1286,7 +1454,7 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
        * system. */
 
       old_request =
-        &(((EVT_event_t *) (local_data->destruction_status[i]->data))->u.request_for_destruction);
+        &(((EVT_event_t *) ((GList *) g_hash_table_lookup (local_data->destruction_status, herd))->data)->u.request_for_destruction);
 
       if (local_data->destruction_time_waiting_priority == 1)
         {
@@ -1327,19 +1495,18 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
             || ((event->day == old_request->day) && (event->priority < old_request->priority));
         }
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "current request %s old one", replace ? "replaces" : "does not replace");
+      g_debug ("current request %s old one", replace ? "replaces" : "does not replace");
       if (replace)
         {
           char *s;
 
-          s = EVT_event_to_string ((EVT_event_t *) (local_data->destruction_status[i]->data));
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "old request = %s", s);
-          free (s);
+          s = EVT_event_to_string ((EVT_event_t *) ((GList *) g_hash_table_lookup (local_data->destruction_status, herd))->data);
+          g_debug ("old request = %s", s);
+          g_free (s);
 
           s = EVT_event_to_string (e);
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "new request = %s", s);
-          free (s);
+          g_debug ("new request = %s", s);
+          g_free (s);
         }
 #endif
 
@@ -1352,29 +1519,43 @@ handle_request_for_destruction_event (struct ergadm_model_t_ *self,
           q =
             (GQueue *) g_ptr_array_index (local_data->pending_destructions,
                                           old_request->priority - 1);
-          old_link = local_data->destruction_status[i];
+          old_link = (GList *) g_hash_table_lookup (local_data->destruction_status, herd);
           EVT_free_event ((EVT_event_t *) (old_link->data));
           old_request = NULL;
           g_queue_delete_link (q, old_link);
 
           /* Add the new request to the appropriate GQueue. */
           q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, event->priority - 1);
-          g_queue_push_tail (q, EVT_clone_event (e));
-          local_data->destruction_status[i] = g_queue_peek_tail_link (q);
+          event_copy = EVT_clone_event (e);
+          event_copy->u.request_for_destruction.day_commitment_made = event->day;
+
+          /* We can't just tack the replacement event on to the tail of the queue:
+            this might disrupt the order of "time waiting".  Instead, figure out where in the queue
+            the event belongs, and stick it in the appropriate place.
+          */
+
+          /* The last position is the default, unless a search turns up something else that should happen later. */
+          newpos = g_queue_get_length( q );
+
+          for( i = 0; i < g_queue_get_length( q ); i++ ) {
+            ee = (EVT_event_t *) g_queue_peek_nth (q, i);
+
+            if( ee->u.request_for_destruction.day > event_copy->u.request_for_destruction.day ) {
+              newpos = i;
+              break;
+            }
+          }
+
+          g_queue_push_nth (q, event_copy, newpos);
+          /* Store a pointer to the GQueue link that contains this request. */
+          g_hash_table_insert (local_data->destruction_status, herd, g_queue_peek_nth_link (q, newpos));
         }
     }
 
 end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_destruction_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_request_for_destruction_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_request_for_destruction_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-
   return;
 }
 
@@ -1390,177 +1571,165 @@ end:
  * @param queue for any new events the model creates.
  */
 void
-handle_request_for_vaccination_event (struct ergadm_model_t_ *self,
+handle_request_for_vaccination_event (struct naadsm_model_t_ *self,
                                       EVT_event_t * e, EVT_event_queue_t * queue)
 {
   local_data_t *local_data;
   EVT_request_for_vaccination_event_t *event, *old_request;
   HRD_herd_t *herd;
-  unsigned int i;
+  gpointer p;
+  HRD_status_t state;
   GQueue *q;
+  EVT_event_t *event_copy;
   gboolean replace;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_vaccination_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_request_for_vaccination_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_request_for_vaccination_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 
   local_data = (local_data_t *) (self->model_data);
   event = &(e->u.request_for_vaccination);
 
-  /* If another model has already claimed the request, there is nothing to
-   * do. */
-  if (event->accepted)
+  /* If this herd has been destroyed today, or this herd has been detected as
+   * Dead from Disease, or this herd has been detected as diseased and we do
+   * not want to vaccinate diseased herds, then ignore the request. */
+  herd = event->herd;
+  if (g_hash_table_lookup (local_data->destroyed_today, herd) != NULL)
     goto end;
-
-  event->accepted = TRUE;
+  p = g_hash_table_lookup (local_data->detected_today, herd);
+  if (p != NULL)
+    {
+      state = GPOINTER_TO_INT(p);
+      if (state == DeadFromDisease || event->cancel_on_detection == TRUE)
+        goto end;
+    }
 
   if (local_data->ndetected_herds < local_data->vaccination_program_threshold)
     {
       /* If we haven't passed the threshold for starting the vaccination
        * program yet, hold onto this request until the end of the day. */
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "# detections so far (%u) < vaccination threshold (%u), holding request until end of day",
-             local_data->ndetected_herds, local_data->vaccination_program_threshold);
+      g_debug ("# detections so far (%u) < vaccination threshold (%u), holding request until end of day",
+               local_data->ndetected_herds, local_data->vaccination_program_threshold);
 #endif
       g_queue_push_tail (local_data->pre_threshold_requests, EVT_clone_event (e));
+      goto end;
+    }
+
+  /* There may be more than one request to vaccinate the same unit.  If this is
+   * the first request for this unit, just put it onto the appropriate waiting
+   * list. */
+  if (g_hash_table_lookup (local_data->vaccination_status, herd) == NULL)
+    {
+#if DEBUG
+      g_debug ("no existing request to (potentially) replace");
+      g_debug ("authorities commit to vaccinate unit \"%s\"", herd->official_id);
+#endif
+      EVT_event_enqueue (queue, EVT_new_commitment_to_vaccinate_event (herd, event->day));
+      /* If the list of pending vaccination queues is not long enough (that is,
+       * this event has a lower priority than any we've seen before), extend
+       * the list of pending vaccination queues. */
+      while (local_data->pending_vaccinations->len < event->priority)
+        g_ptr_array_add (local_data->pending_vaccinations, g_queue_new ());
+
+      q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, event->priority - 1);
+      event_copy = EVT_clone_event (e);
+      event_copy->u.request_for_vaccination.day_commitment_made = event->day;
+      g_queue_push_tail (q, event_copy);
+      /* Store a pointer to the GQueue link that contains this request. */
+      g_hash_table_insert (local_data->vaccination_status, herd, g_queue_peek_tail_link (q));
     }
   else
     {
-      herd = event->herd;
-      EVT_event_enqueue (queue, EVT_new_commitment_to_vaccinate_event (herd, event->day));
-#if INFO
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,
-             "Authorities commit to vaccinate unit \"%s\"", herd->official_id);
-#endif
+      /* If this is not the first request to vaccinate this unit, we must decide
+       * decide whether or not to replace the existing request.  We replace the
+       * existing request if the new request is higher in the priority
+       * system. */
 
-      /* There may be more than one request to vaccinate the same unit.  If
-       * this is the first request for this unit, just put it onto the
-       * appropriate waiting list. */
-      i = herd->index;
-      if (local_data->vaccination_status[i] == NULL)
+      old_request =
+        &(((EVT_event_t *) ((GList *) g_hash_table_lookup (local_data->vaccination_status, herd))->data)->u.request_for_vaccination);
+
+      if (local_data->vaccination_time_waiting_priority == 1)
         {
-#if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "no existing request to (potentially) replace");
-#endif
-          /* If the list of pending vaccination queues is not long enough (that
-           * is, this event has a lower priority than any we've seen before),
-           * extend the list of pending vaccination queues. */
-          while (local_data->pending_vaccinations->len < event->priority)
-            g_ptr_array_add (local_data->pending_vaccinations, g_queue_new ());
+          /* Replace the old request if this new request has the same time
+           * waiting and a higher priority number.  (The less-than sign in
+           * comparing the priority numbers is intentional -- 1 is "higher"
+           * than 2.) */
 
-          q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, event->priority - 1);
-          g_queue_push_tail (q, EVT_clone_event (e));
-          /* Store a pointer to the GQueue link that contains this request. */
-          local_data->vaccination_status[i] = g_queue_peek_tail_link (q);
+          replace = (event->day == old_request->day) && (event->priority < old_request->priority);
+        }
+      else if (local_data->vaccination_time_waiting_priority == 3)
+        {
+          /* Replace the old request if this new request has a higher priority
+           * number.  (The less-than sign in comparing the priority numbers is
+           * intentional -- 1 is "higher" than 2.) */
+
+          replace = (event->priority < old_request->priority);
         }
       else
         {
-          /* If this is not the first request to vaccinate this unit, we must
-           * decide whether or not to replace the existing request.  We replace
-           * the existing request if the new request is higher in the priority
-           * system. */
+          /* Replace the old request if this new request is in a higher "block"
+           * of priority numbers, or if the new request has the same time
+           * waiting and a higher priority number. */
 
-          old_request =
-            &(((EVT_event_t *) (local_data->vaccination_status[i]->data))->u.
-              request_for_vaccination);
+          int step;
+          int old_request_block, event_block;
 
-          if (local_data->vaccination_time_waiting_priority == 1)
-            {
-              /* Replace the old request if this new request has the same time
-               * waiting and a higher priority number.  (The less-than sign in
-               * comparing the priority numbers is intentional -- 1 is "higher"
-               * than 2.) */
-
-              replace = (event->day == old_request->day)
-                && (event->priority < old_request->priority);
-            }
-          else if (local_data->vaccination_time_waiting_priority == 3)
-            {
-              /* Replace the old request if this new request has a higher
-               * priority number.  (The less-than sign in comparing the
-               * priority numbers is intentional -- 1 is "higher" than 2.) */
-
-              replace = (event->priority < old_request->priority);
-            }
+          if (local_data->vaccination_prod_type_priority == 1)
+            step = local_data->nvaccination_reasons;
           else
-            {
-              /* Replace the old request if this new request is in a higher
-               * "block" of priority numbers, or if the new request has the
-               * same time waiting and a higher priority number. */
+            step = local_data->nprod_types;
 
-              int step;
-              int old_request_block, event_block;
+          /* Integer division... */
+          old_request_block = (old_request->priority - 1) / step;
+          event_block = (event->priority - 1) / step;
 
-              if (local_data->vaccination_prod_type_priority == 1)
-                step = local_data->nvaccination_reasons;
-              else
-                step = local_data->nprod_types;
-
-              /* Integer division... */
-              old_request_block = (old_request->priority - 1) / step;
-              event_block = (event->priority - 1) / step;
-
-              replace = (event_block < old_request_block)
-                || ((event->day == old_request->day) && (event->priority < old_request->priority));
-            }
+          replace = (event_block < old_request_block)
+            || ((event->day == old_request->day) && (event->priority < old_request->priority));
+        }
 #if DEBUG
-          g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-                 "current request %s old one", replace ? "replaces" : "does not replace");
-          if (replace)
-            {
-              char *s;
+      g_debug ("current request %s old one", replace ? "replaces" : "does not replace");
+      if (replace)
+        {
+          char *s;
 
-              s = EVT_event_to_string ((EVT_event_t *) (local_data->vaccination_status[i]->data));
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "old request = %s", s);
-              free (s);
+          s = EVT_event_to_string ((EVT_event_t *) ((GList *) g_hash_table_lookup (local_data->vaccination_status, herd))->data);
+          g_debug ("old request = %s", s);
+          g_free (s);
 
-              s = EVT_event_to_string (e);
-              g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "new request = %s", s);
-              free (s);
-            }
+          s = EVT_event_to_string (e);
+          g_debug ("new request = %s", s);
+          g_free (s);
+        }
 #endif
 
-          if (replace)
-            {
-              GList *old_link;
+      if (replace)
+        {
+          GList *old_link;
 
-              /* Delete both the old RequestForVaccination structure and the
-               * GQueue link that holds it. */
-              q =
-                (GQueue *) g_ptr_array_index (local_data->pending_vaccinations,
-                                              old_request->priority - 1);
-              old_link = local_data->vaccination_status[i];
-              EVT_free_event ((EVT_event_t *) (old_link->data));
-              old_request = NULL;
-              g_queue_delete_link (q, old_link);
+          /* Delete both the old RequestForVaccination structure and the GQueue
+           * link that holds it. */
+          q =
+            (GQueue *) g_ptr_array_index (local_data->pending_vaccinations,
+                                          old_request->priority - 1);
+          old_link = (GList *) g_hash_table_lookup (local_data->vaccination_status, herd);
+          EVT_free_event ((EVT_event_t *) (old_link->data));
+          old_request = NULL;
+          g_queue_delete_link (q, old_link);
 
-              /* Add the new request to the appropriate GQueue. */
-              q =
-                (GQueue *) g_ptr_array_index (local_data->pending_vaccinations,
-                                              event->priority - 1);
-              g_queue_push_tail (q, EVT_clone_event (e));
-              local_data->vaccination_status[i] = g_queue_peek_tail_link (q);
-            }
+          /* Add the new request to the appropriate GQueue. */
+          q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, event->priority - 1);
+          event_copy = EVT_clone_event (e);
+          event_copy->u.request_for_vaccination.day_commitment_made = event->day;
+          g_queue_push_tail (q, event_copy);
+          g_hash_table_insert (local_data->vaccination_status, herd, g_queue_peek_tail_link (q));
         }
     }
 
 end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_vaccination_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_request_for_vaccination_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_request_for_vaccination_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 
   return;
 }
@@ -1575,31 +1744,21 @@ end:
  * @param event a vaccination event.
  */
 void
-handle_vaccination_event (struct ergadm_model_t_ *self, EVT_vaccination_event_t * event)
+handle_vaccination_event (struct naadsm_model_t_ *self, EVT_vaccination_event_t * event)
 {
   local_data_t *local_data;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER handle_vaccination_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_vaccination_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_vaccination_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
 
   local_data->day_last_vaccinated[event->herd->index] = event->day;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT handle_vaccination_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_vaccination_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_vaccination_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -1613,7 +1772,7 @@ handle_vaccination_event (struct ergadm_model_t_ *self, EVT_vaccination_event_t 
  * @param zones the zone list.
  */
 void
-handle_request_for_zone_focus_event (struct ergadm_model_t_ *self,
+handle_request_for_zone_focus_event (struct naadsm_model_t_ *self,
                                      EVT_request_for_zone_focus_event_t * event,
                                      ZON_zone_list_t * zones)
 {
@@ -1621,35 +1780,26 @@ handle_request_for_zone_focus_event (struct ergadm_model_t_ *self,
   HRD_herd_t *herd;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- ENTER handle_request_for_zone_focus_event (%s)", MODEL_NAME);
+  g_debug ("----- ENTER handle_request_for_zone_focus_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER handle_request_for_zone_focus_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
-  
+
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "adding pending zone focus at lat=%g, lon=%g", herd->lat, herd->lon);
+  g_debug ("adding pending zone focus at x=%g, y=%g", herd->x, herd->y);
 #endif
-  ZON_zone_list_add_focus (zones, herd->lon, herd->lat);
-  
-  if( NULL != guilib_make_zone_focus )
-    guilib_make_zone_focus (herd->index);
+  ZON_zone_list_add_focus (zones, herd->x, herd->y);
+
+#ifdef USE_SC_GUILIB
+  sc_make_zone_focus( event->day, herd );
+#else
+  if( NULL != naadsm_make_zone_focus )
+    naadsm_make_zone_focus (herd->index);
+#endif
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-         "----- EXIT handle_request_for_zone_focus_event (%s)", MODEL_NAME);
+  g_debug ("----- EXIT handle_request_for_zone_focus_event (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT handle_request_for_zone_focus_event %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -1665,20 +1815,18 @@ handle_request_for_zone_focus_event (struct ergadm_model_t_ *self,
  * @param queue for any new events the model creates.
  */
 void
-run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
+run (struct naadsm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zones,
      EVT_event_t * event, RAN_gen_t * rng, EVT_event_queue_t * queue)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER run (%s)", MODEL_NAME);
+  g_debug ("----- ENTER run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "ENTER run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 
   switch (event->type)
     {
+    case EVT_BeforeAnySimulations:
+      handle_before_any_simulations_event (queue);
+      break;
     case EVT_NewDay:
       handle_new_day_event (self, &(event->u.new_day), queue);
       break;
@@ -1714,13 +1862,8 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
     }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT run (%s)", MODEL_NAME);
+  g_debug ("----- EXIT run (%s)", MODEL_NAME);
 #endif
-  if( NULL != guilib_printf ) {
-    char guilog[1024];
-    sprintf( guilog, "EXIT run %s", MODEL_NAME); 
-    //guilib_printf( guilog );
-  }
 }
 
 
@@ -1731,7 +1874,7 @@ run (struct ergadm_model_t_ *self, HRD_herd_list_t * herds, ZON_zone_list_t * zo
  * @param self the model.
  */
 void
-reset (struct ergadm_model_t_ *self)
+reset (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int npriorities;
@@ -1740,17 +1883,17 @@ reset (struct ergadm_model_t_ *self)
 
   local_data = (local_data_t *) (self->model_data);
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER reset (%s)", MODEL_NAME);
+  g_debug ("----- ENTER reset (%s)", MODEL_NAME);
 #endif
 
   local_data = (local_data_t *) (self->model_data);
   local_data->outbreak_known = FALSE;
+  g_hash_table_remove_all (local_data->detected_herds);
   local_data->ndetected_herds = 0;
-  local_data->destruction_program_begin_day = 0;
+  local_data->destruction_program_begin_day = INT_MAX;
 
   npriorities = local_data->pending_destructions->len;
-  for (i = 0; i < local_data->nherds; i++)
-    local_data->destruction_status[i] = NULL;
+  g_hash_table_remove_all (local_data->destruction_status);
   local_data->nherds_destroyed_today = 0;
   for (i = 0; i < npriorities; i++)
     {
@@ -1759,6 +1902,8 @@ reset (struct ergadm_model_t_ *self)
         EVT_free_event (g_queue_pop_head (q));
     }
   local_data->no_more_destructions = FALSE;
+  g_hash_table_remove_all (local_data->destroyed_today);
+  local_data->destruction_capacity_rollover = 0;
 
   /* Empty the pre-threshold vaccination requests list. */
   q = local_data->pre_threshold_requests;
@@ -1766,8 +1911,7 @@ reset (struct ergadm_model_t_ *self)
     EVT_free_event ((EVT_event_t *) g_queue_pop_head (q));
   /* Empty the prioritized pending vaccinations lists. */
   npriorities = local_data->pending_vaccinations->len;
-  for (i = 0; i < local_data->nherds; i++)
-    local_data->vaccination_status[i] = NULL;
+  g_hash_table_remove_all (local_data->vaccination_status);
   local_data->nherds_vaccinated_today = 0;
   for (i = 0; i < npriorities; i++)
     {
@@ -1779,12 +1923,13 @@ reset (struct ergadm_model_t_ *self)
   for (i = 0; i < local_data->nherds; i++)
     {
       local_data->day_last_vaccinated[i] = 0;
-      local_data->min_next_vaccination_day[i] = 0;
     }
   local_data->no_more_vaccinations = FALSE;
+  local_data->vaccination_capacity_rollover = 0;
+  g_hash_table_remove_all (local_data->detected_today);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT reset (%s)", MODEL_NAME);
+  g_debug ("----- EXIT reset (%s)", MODEL_NAME);
 #endif
 }
 
@@ -1798,7 +1943,7 @@ reset (struct ergadm_model_t_ *self)
  * @return TRUE if the model is listening for the event type.
  */
 gboolean
-is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
+is_listening_for (struct naadsm_model_t_ *self, EVT_event_type_t event_type)
 {
   int i;
 
@@ -1817,13 +1962,12 @@ is_listening_for (struct ergadm_model_t_ *self, EVT_event_type_t event_type)
  * @return TRUE if the model has pending actions.
  */
 gboolean
-has_pending_actions (struct ergadm_model_t_ * self)
+has_pending_actions (struct naadsm_model_t_ * self)
 {
   local_data_t *local_data;
   unsigned int npriorities;
   GQueue *q;
   int i;
-  char guistr[1024];
 
   local_data = (local_data_t *) (self->model_data);
 
@@ -1839,11 +1983,6 @@ has_pending_actions (struct ergadm_model_t_ * self)
           q = (GQueue *) g_ptr_array_index (local_data->pending_vaccinations, i);
           if (!g_queue_is_empty (q))
             {
-              if (NULL != guilib_printf)
-                {
-                  sprintf (guistr, "%d vaccinations are pending", g_queue_get_length (q));
-                  guilib_printf (guistr);
-                }
               return TRUE;
             }
         }
@@ -1857,30 +1996,11 @@ has_pending_actions (struct ergadm_model_t_ * self)
           q = (GQueue *) g_ptr_array_index (local_data->pending_destructions, i);
           if (!g_queue_is_empty (q))
             {
-              if (NULL != guilib_printf)
-                {
-                  sprintf (guistr, "%d destructions are pending", g_queue_get_length (q));
-                  guilib_printf (guistr);
-                }
               return TRUE;
             }
         }
     }
 
-  return FALSE;
-}
-
-
-
-/**
- * Reports whether this model has any pending infections to cause.
- *
- * @param self the model.
- * @return TRUE if the model has pending infections.
- */
-gboolean
-has_pending_infections (struct ergadm_model_t_ * self)
-{
   return FALSE;
 }
 
@@ -1893,7 +2013,7 @@ has_pending_infections (struct ergadm_model_t_ * self)
  * @return a string.
  */
 char *
-to_string (struct ergadm_model_t_ *self)
+to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   char *substring, *chararray;
@@ -1907,14 +2027,14 @@ to_string (struct ergadm_model_t_ *self)
 
   substring = REL_chart_to_string (local_data->destruction_capacity);
   g_string_sprintfa (s, "  destruction-capacity=%s\n", substring);
-  free (substring);
+  g_free (substring);
 
   g_string_sprintfa (s, "  vaccination-program-threshold=%u\n",
                      local_data->vaccination_program_threshold);
 
   substring = REL_chart_to_string (local_data->vaccination_capacity);
   g_string_sprintfa (s, "  vaccination-capacity=%s>", substring);
-  free (substring);
+  g_free (substring);
 
   /* don't return the wrapper object */
   chararray = s->str;
@@ -1932,7 +2052,7 @@ to_string (struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
+local_fprintf (FILE * stream, struct naadsm_model_t_ *self)
 {
   char *s;
   int nchars_written;
@@ -1952,7 +2072,7 @@ local_fprintf (FILE * stream, struct ergadm_model_t_ *self)
  * @return the number of characters printed (not including the trailing '\\0').
  */
 int
-local_printf (struct ergadm_model_t_ *self)
+local_printf (struct naadsm_model_t_ *self)
 {
   return local_fprintf (stdout, self);
 }
@@ -1965,7 +2085,7 @@ local_printf (struct ergadm_model_t_ *self)
  * @param self the model.
  */
 void
-local_free (struct ergadm_model_t_ *self)
+local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int npriorities;
@@ -1973,13 +2093,13 @@ local_free (struct ergadm_model_t_ *self)
   int i;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER free (%s)", MODEL_NAME);
+  g_debug ("----- ENTER free (%s)", MODEL_NAME);
 #endif
 
   /* Free the dynamically-allocated parts. */
   local_data = (local_data_t *) (self->model_data);
   REL_free_chart (local_data->destruction_capacity);
-  g_free (local_data->destruction_status);
+  g_hash_table_destroy (local_data->destruction_status);
   npriorities = local_data->pending_destructions->len;
   for (i = 0; i < npriorities; i++)
     {
@@ -1989,6 +2109,7 @@ local_free (struct ergadm_model_t_ *self)
       g_queue_free (q);
     }
   g_ptr_array_free (local_data->pending_destructions, TRUE);
+  g_hash_table_destroy (local_data->destroyed_today);
 
   /* We destroy the array of pointers but not the C strings they were pointing
    * to; those we assume are static strings. */
@@ -1996,7 +2117,7 @@ local_free (struct ergadm_model_t_ *self)
   g_ptr_array_free (local_data->vaccination_reasons, TRUE);
 
   REL_free_chart (local_data->vaccination_capacity);
-  g_free (local_data->vaccination_status);
+  g_hash_table_destroy (local_data->vaccination_status);
   q = local_data->pre_threshold_requests;
   while (!g_queue_is_empty (q))
     EVT_free_event ((EVT_event_t *) g_queue_pop_head (q));
@@ -2009,27 +2130,17 @@ local_free (struct ergadm_model_t_ *self)
         EVT_free_event (g_queue_pop_head (q));
       g_queue_free (q);
     }
-
+  g_ptr_array_free (local_data->pending_vaccinations, TRUE);
+  g_hash_table_destroy (local_data->detected_herds);
+  g_hash_table_destroy (local_data->detected_today);
   g_free (local_data->day_last_vaccinated);
-  g_free (local_data->min_next_vaccination_day);
   g_free (local_data);
   g_ptr_array_free (self->outputs, TRUE);
   g_free (self);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT free (%s)", MODEL_NAME);
+  g_debug ("----- EXIT free (%s)", MODEL_NAME);
 #endif
-}
-
-
-
-/**
- * Returns the version of the interface this model conforms to.
- */
-char *
-interface_version (void)
-{
-  return MODEL_INTERFACE_VERSION;
 }
 
 
@@ -2037,10 +2148,11 @@ interface_version (void)
 /**
  * Returns a new authorities model.
  */
-ergadm_model_t *
-new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
+naadsm_model_t *
+new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
+     ZON_zone_list_t * zones)
 {
-  ergadm_model_t *m;
+  naadsm_model_t *m;
   local_data_t *local_data;
   scew_element *e;
   gboolean success;
@@ -2048,16 +2160,13 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   double dummy;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER new (%s)", MODEL_NAME);
+  g_debug ("----- ENTER new (%s)", MODEL_NAME);
 #endif
 
-  m = g_new (ergadm_model_t, 1);
+  m = g_new (naadsm_model_t, 1);
   local_data = g_new (local_data_t, 1);
 
   m->name = MODEL_NAME;
-  m->description = MODEL_DESCRIPTION;
-  m->events_created = events_created;
-  m->nevents_created = NEVENTS_CREATED;
   m->events_listened_for = events_listened_for;
   m->nevents_listened_for = NEVENTS_LISTENED_FOR;
   m->outputs = g_ptr_array_new ();
@@ -2066,7 +2175,6 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   m->reset = reset;
   m->is_listening_for = is_listening_for;
   m->has_pending_actions = has_pending_actions;
-  m->has_pending_infections = has_pending_infections;
   m->to_string = to_string;
   m->printf = local_printf;
   m->fprintf = local_fprintf;
@@ -2078,7 +2186,7 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   e = scew_element_by_name (params, "destruction-program-delay");
   if (e != NULL)
     {
-      local_data->destruction_program_delay = (unsigned short int) (PAR_get_time (e, &success));
+      local_data->destruction_program_delay = (int) (PAR_get_time (e, &success));
       if (success == FALSE)
         {
           g_warning ("%s: setting destruction program delay to 0 days", MODEL_NAME);
@@ -2109,9 +2217,8 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
     {
       local_data->destruction_capacity_0_day = (int) ceil (dummy) - 1;
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "destruction capacity drops to 0 on and after day %i",
-             local_data->destruction_capacity_0_day);
+      g_debug ("destruction capacity drops to 0 on and after day %i",
+               local_data->destruction_capacity_0_day);
 #endif
     }
 
@@ -2164,6 +2271,7 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
           local_data->destruction_prod_type_priority = 2;
           local_data->destruction_time_waiting_priority = 3;
         }
+      g_free (tmp);
     }
   else
     {
@@ -2209,11 +2317,10 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
     REL_chart_zero_at_right (local_data->vaccination_capacity, &dummy);
   if (local_data->vaccination_capacity_goes_to_0)
     {
-      local_data->vaccination_capacity_0_day = (int) ceil (dummy) - 1;
+      local_data->vaccination_capacity_0_day = (int) ceil (dummy);
 #if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-             "vaccination capacity drops to 0 on and after day %i",
-             local_data->vaccination_capacity_0_day);
+      g_debug ("vaccination capacity drops to 0 on and after the %ith day since 1st detection",
+               local_data->vaccination_capacity_0_day + 1);
 #endif
     }
 
@@ -2266,6 +2373,7 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
           local_data->vaccination_prod_type_priority = 2;
           local_data->vaccination_time_waiting_priority = 3;
         }
+      g_free (tmp);
     }
   else
     {
@@ -2285,45 +2393,34 @@ new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
   local_data->ndetected_herds = 0;
 
   /* No herds have been destroyed or slated for destruction yet. */
-  local_data->destruction_status = g_new0 (GList *, local_data->nherds);
+  local_data->destruction_status = g_hash_table_new (g_direct_hash, g_direct_equal);
   local_data->nherds_destroyed_today = 0;
   local_data->pending_destructions = g_ptr_array_new ();
   local_data->no_more_destructions = FALSE;
+  local_data->destroyed_today = g_hash_table_new (g_direct_hash, g_direct_equal);
 
   /* No herds have been vaccinated or slated for vaccination yet. */
-  local_data->vaccination_status = g_new0 (GList *, local_data->nherds);
+  local_data->vaccination_status = g_hash_table_new (g_direct_hash, g_direct_equal);
   local_data->nherds_vaccinated_today = 0;
   local_data->pre_threshold_requests = g_queue_new ();
   local_data->pending_vaccinations = g_ptr_array_new ();
-  local_data->day_last_vaccinated = g_new0 (unsigned short int, local_data->nherds);
-  local_data->min_next_vaccination_day = g_new0 (unsigned short int, local_data->nherds);
+  local_data->day_last_vaccinated = g_new0 (int, local_data->nherds);
   local_data->no_more_vaccinations = FALSE;
+  local_data->detected_herds = g_hash_table_new (g_direct_hash, g_direct_equal);
+  local_data->detected_today = g_hash_table_new (g_direct_hash, g_direct_equal);
 
   /* We don't yet know how many distinct reasons for destruction or vaccination
-   * requests there may be.  On the first day of the first simulation we will
-   * ask other sub-models to tell us. */
-  local_data->ndestruction_reasons = -1;
+   * requests there may be.  We will rely on other sub-models to tell us. */
+  local_data->ndestruction_reasons = 0;
   local_data->destruction_reasons = g_ptr_array_new ();
-  local_data->nvaccination_reasons = -1;
+  local_data->nvaccination_reasons = 0;
   local_data->vaccination_reasons = g_ptr_array_new ();
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT new (%s)", MODEL_NAME);
+  g_debug ("----- EXIT new (%s)", MODEL_NAME);
 #endif
 
   return m;
-}
-
-char *
-resources_and_implementation_of_controls_model_interface_version (void)
-{
-  return interface_version ();
-}
-
-ergadm_model_t *
-resources_and_implementation_of_controls_model_new (scew_element * params, HRD_herd_list_t * herds, ZON_zone_list_t * zones)
-{
-  return new (params, herds, zones);
 }
 
 /* end of file resources-and-implementation-of-controls-model.c */

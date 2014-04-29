@@ -36,70 +36,88 @@ inherited FormContactSpread: TFormContactSpread
         Align = alClient
         TabOrder = 0
         inherited pnlDirectContact: TPanel
-          Width = 529
+          Width = 545
           inherited pnlDirect: TPanel
-            Width = 527
+            Width = 543
             inherited pnlDirectParams: TPanel
-              Width = 527
+              Width = 543
               inherited fraDirect: TFrameContactSpread
-                Width = 511
+                Width = 527
                 VertScrollBar.Visible = False
                 inherited pnlSimpleParams: TPanel
-                  Width = 511
+                  Width = 527
                   inherited pnlSimpleParamsTop: TPanel
-                    Width = 509
+                    Width = 525
                   end
                   inherited pnlSimpleParamsBottom: TPanel
-                    Width = 509
+                    Width = 525
                   end
                 end
                 inherited pnlCharts: TPanel
-                  Width = 511
+                  Width = 527
+                  inherited pnlDistanceDistr: TPanel
+                    Width = 525
+                  end
+                  inherited pnlProportionInShipment: TPanel
+                    Width = 525
+                  end
+                  inherited pnlMovementControl: TPanel
+                    Width = 525
+                  end
                 end
               end
             end
           end
           inherited pnlUseDirectContact: TPanel
-            Width = 527
+            Width = 543
             inherited cbxIncludeDirect: TCheckBox
               OnClick = fraParamscbxIncludeDirectClick
             end
           end
         end
         inherited pnlIndirectContact: TPanel
-          Width = 529
-          Height = 0
+          Width = 545
+          Height = 22
           inherited pnlUseIndirectContact: TPanel
-            Width = 527
+            Width = 543
             inherited cbxIncludeIndirect: TCheckBox
               OnClick = fraParamscbxIncludeIndirectClick
             end
           end
           inherited pnlIndirect: TPanel
-            Width = 527
+            Width = 543
             Height = 21
             inherited pnlIndirectParams: TPanel
-              Width = 527
+              Width = 543
               Height = 21
               inherited pnlSpacerIndirect: TPanel
                 Height = 21
               end
               inherited fraIndirect: TFrameContactSpread
-                Width = 511
+                Width = 527
                 Height = 21
                 VertScrollBar.Visible = False
                 inherited pnlSimpleParams: TPanel
-                  Width = 511
+                  Width = 527
                   inherited pnlSimpleParamsTop: TPanel
-                    Width = 509
+                    Width = 525
                   end
                   inherited pnlSimpleParamsBottom: TPanel
-                    Width = 509
+                    Width = 525
                   end
                 end
                 inherited pnlCharts: TPanel
-                  Width = 511
+                  Width = 527
                   Height = 0
+                  inherited pnlDistanceDistr: TPanel
+                    Width = 525
+                  end
+                  inherited pnlProportionInShipment: TPanel
+                    Width = 525
+                  end
+                  inherited pnlMovementControl: TPanel
+                    Width = 525
+                  end
                 end
               end
             end

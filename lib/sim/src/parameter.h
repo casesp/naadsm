@@ -46,5 +46,6 @@ REL_chart_t *PAR_get_relationship_chart (PAR_parameter_t *);
 gboolean PAR_get_boolean (PAR_parameter_t *, gboolean * success);
 double PAR_get_unitless (PAR_parameter_t *, gboolean * success);
 char *PAR_get_text (PAR_parameter_t *);
+unsigned long PAR_get_non_negative_integer (PAR_parameter_t *, gboolean * success);
 
 #endif /* !PARAMETER_H */

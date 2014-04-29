@@ -4,13 +4,13 @@ unit FormImport;
 FormImport.pas/dfm
 ------------------
 Begin: 2006/06/17
-Last revision: $Date: 2008/04/18 20:35:16 $ $Author: areeves $
-Version number: $Revision: 1.21 $
+Last revision: $Date: 2011-03-14 15:23:17 $ $Author: rhupalo $
+Version number: $Revision: 1.26.6.4 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2009 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -32,10 +32,8 @@ uses
   StdCtrls,
   IniHandler,
   SMDatabase,
-  ReadXMLInput,
   SMScenario,
-  FormMain,
-  SQLClasses
+  FormMain
 ;
 
 type TFormImport = class(TForm)
@@ -71,25 +69,23 @@ type TFormImport = class(TForm)
     procedure leKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 
   protected
-  	ini: TIniHandler;
-    db: TSMDatabase;
+  	_ini: TIniHandler;
+    _db: TSMDatabase;
+    _scenario: TSMScenario;
 
-    _Convertor:TXMLConvert;
     _smDB:TSMDatabase;
 
     procedure updateUI();
     
-    procedure import( dbfn, pfn, hfn: string );
+    procedure import( const databaseFileName, scenarioXmlFileName, herdXmlFileName: string );
 
     procedure translateUI();
-
-    // properties
-    function getDB(): TSMDatabase;
 
   public
     constructor create( AOwner: TComponent; iniSettings: TIniHandler ); reintroduce;
 
-    property database: TSMDatabase read getDB;
+    property database: TSMDatabase read _db;
+    property scenario: TSMScenario read _scenario;
 
   end
 ;
@@ -104,10 +100,16 @@ implementation
 
     DebugWindow,
     MyStrUtils,
-    GuiStrUtils,
     MyDialogs,
     DialogLongMessage,
-    I88n
+    I88n,
+    SqlClasses,
+    FunctionPointers,
+    
+    FormProgress,
+
+    SMSimulationInput,
+    Herd
   ;
   
 
@@ -123,8 +125,9 @@ constructor TFormImport.create( AOwner: TComponent; iniSettings: TIniHandler );
 		self.PixelsPerInch := 96;
 		// FormCreate() will handle the rest. 		
  		
-    ini := iniSettings;
-    db := nil;
+    _ini := iniSettings;
+    _db := nil;
+    _scenario := nil;
 
     updateUI();
   end
@@ -177,109 +180,190 @@ procedure TFormImport.FormCreate(Sender: TObject);
 
 
 
-procedure TFormImport.import( dbfn, pfn, hfn: string );
-	var
-    dlg: TDialogLongMessage;
-  	err: string;
-    _Scenario:TSMScenarioPTR;
-	begin
-    err := '';
-    _smDB := frmMain.smDB;
-
-    if ( ( length(dbfn ) >  0 ) and ( ( length(hfn) > 0 ) or (length(pfn) > 0) ) ) then
-      begin
-      if ( _smDB <> nil ) then
+  procedure TFormImport.import( const databaseFileName, scenarioXmlFileName, herdXmlFileName: string );
+    var
+      dlg: TDialogLongMessage;
+      err: string;
+      sim: TSMSimulationInput;
+      hList: THerdList;
+      frm: TFormProgress;
+      fnPrimaryProgress: TObjFnBool1Int;
+      fnSecondaryProgress: TObjFnBool1Int;
+      fnProgressMessage: TObjFnVoid1String;
+    begin
+      // This should never happen: the menu items should be disabled if a scenario is open.
+      // This block only acts as a double-check.
+      if( nil <> frmMain.smdb ) then
         begin
           msgOK(
-              tr( 'An existing scenario file is currently open. This file will now be closed and a new one created.' ),
-              tr( 'Closing current scenario' ),
+              tr( 'An existing scenario file is currently open. Please close this file before importing a new scenario.' ),
+              tr( 'A scenario is already open' ),
               IMGInformation,
               self
           );
-          frmMain.setDB( nil );
-        end;
+          exit;
+        end
+      ;
 
-      try try
-      	Screen.Cursor:=crHourGlass;
+      // File names should have all been checked before getting this far.
+      // We assume that the necessary files exist when we start the XML import.
+      freeAndNil( _db );
+      freeAndNil( _scenario );
+      sim := nil;
+      hList := nil;
 
-        _smdb := TSMDatabase.create( dbfn, DBCreate, PChar( err ), frmMain );
-        _smdb.simStopReason := ssStartAndStopAtEndOfOutBreak;
-        
-        frmMain.setDB( _smDB );
+      try
+        Screen.Cursor := crHourGlass;
+        err := '';
 
-        if( not frmMain.createSimObjects() ) then
+        // Set up the progress form
+        //-------------------------
+        frm := TFormProgress.create( self, PRDoubleBar, true, tr( 'Import XML' ) );
+        fnPrimaryProgress := frm.setPrimary;
+        fnSecondaryProgress := frm.setSecondary;
+        fnProgressMessage := frm.setMessage;
+        frm.Show();
+
+        // Create an empty database
+        //-------------------------
+        frm.setMessage( tr( 'Creating scenario database...' ) );
+        _db := TSMDatabase.create( databaseFileName, DBCreate, PChar( err ) );
+        _db.simStopReason := ssStopAtEndOfOutBreak;
+        frm.setPrimary( 100 );
+        frm.setSecondary( 25 );
+
+        // Create the simulation object
+        //-----------------------------
+        frm.setPrimary( 0 );
+        frm.setMessage( tr( 'Importing scenario parameters...' ) );
+
+        // Create the sim object using values from the XML scenario import file
+        sim := TSMSimulationInput.create( scenarioXmlFileName, _db, @err, fnPrimaryProgress, fnProgressMessage  );
+        // Check if there were errors on importing the scenario file
+        if ( 0 < length(err) ) then
           begin
-            Screen.Cursor := crDefault;
-            msgOK(
-              tr( 'An scenario database could not be created: there may be a problem with your parameter file.' )
-                + '  ' + tr( 'Please check with the developers for more assistance.' ),
-              tr( 'Import failed' ),
-              IMGCritical,
-              self )
+            freeAndNil( sim );
+
+            if( nil <> _db ) then
+              begin
+                _db.close();
+                freeAndNil( _db );
+              end
+            ;
+            frm.setMessage( tr( 'An error occurred during file import.' ) );
+          end
+        ;
+
+        // If there were no errors importing scenario parameters then try importing the herds
+        if not ( 0 < length(err) ) then
+          begin
+            frm.setSecondary( 50 );
+            frm.setPrimary( 100 );
+
+            // Create the herd list
+            //---------------------
+            frm.setPrimary( 0 );
+            if( strIsEmpty( herdXmlFileName ) ) then
+              begin
+                // Create empty herd list
+                hList := THerdList.create( _db, sim );
+              end
+            else
+              hList := THerdList.create( herdXmlFileName, _db, sim, @err, fnPrimaryProgress, fnProgressMessage )
+            ;
+
+            // Check if there was errors importing the herd file
+            if ( 0 < length(err) ) then
+              begin
+                // Destruction order is important because hList has references to sim structures
+                freeAndNil( hList );
+                freeAndNil( sim );
+
+                if( nil <> _db ) then
+                  begin
+                    _db.close();
+                    freeAndNil( _db );
+                  end
+                ;
+                frm.setMessage( tr( 'An error occurred during file import.' ) );
+              end
             ;
           end
+        ;
+
+        // If there were no errors importing either files then save the new data
+        if not ( 0 < length(err) ) then
+          begin
+            frm.setSecondary( 75 );
+            frm.setPrimary( 100 );
+
+            // Create the scenario object
+            //---------------------------
+            frm.setPrimary( 0 );
+            frm.setMessage( tr( 'Completing XML import...' ) );
+            _scenario := TSMScenario.create( sim, hList );
+
+            // Finalize the database settings
+            //-------------------------------
+            _db.permanentDBFileName := databaseFileName;
+            _db.save();
+
+            frm.setPrimary( 100 );
+            frm.setSecondary( 100 );
+            frm.setMessage( tr( 'Done!' ) );
+          end
+        ;
+
+        frm.Release();
+        screen.Cursor := crDefault;
+        self.close();
+
+        // If any errors occurred above then alert the user
+        if( 0 = length( err ) ) then
+          msgOK(
+            tr( 'The parameter file was successfully imported.  The resulting scenario database is now open.' ),
+            tr( 'Import successful' ),
+            IMGSuccess,
+            self
+          )
         else
           begin
-            _Scenario := frmMain.Scenario;
-            Screen.Cursor:=crHourGlass;            
-            _Convertor := TXMLConvert.create( hfn, pfn, _Scenario );
-            _Convertor.ConvertXMLToDatabase( @err );
-            _smdb.permanentDBFileName := dbfn;
-            _smdb.save();
-            db := _smDB;
+            dlg := TDialogLongMessage.create(
+              self,
+              tr( 'Potential problems during import' ),
+              tr( 'The parameter file was imported, with the following errors and/or warnings:' ),
+              err
+            );
+            dlg.showModal();
+            dlg.Release();
+          end
+        ;
+      except
+        on e: exception do
+          begin
+            Screen.Cursor := crDefault;
 
-            self.close();
+            freeAndNil( sim );
+            freeAndNil( hList );
+            freeAndNil( _scenario );
 
-            if( 0 = length( err ) ) then
-              msgOK(
-                tr( 'The parameter file was successfully imported.  The resulting scenario database is now open.' ),
-                tr( 'Import successful' ),
-                IMGSuccess,
-                self
-              )
-            else
+            if( nil <> _db ) then
               begin
-                dlg := TDialogLongMessage.create(
-                  self,
-                  tr( 'Potential problems during import' ),
-                  tr( 'The parameter file was imported, with the following errors and/or warnings:' ),
-                  err
-                );
-                dlg.showModal();
-                dlg.free();
+                _db.close();
+                freeAndNil( _db );
               end
             ;
 
-            frmMain.showMap();
-          end;
-        ;
-
-      except
-        on e: exception do
-        	begin
-      			freeAndNil( _smdb );
-
             msgExceptionOK(
-              tr( 'NAADSM is unable to create a new scenario file. You may need to check your available hard disk space or your parameter file.' )
-                + endl + endl,
-            	e, self )
-            ;
+              tr( 'NAADSM is unable to create a new scenario file. You may need to check your available hard disk space or your parameter file.' ) + endl + endl,
+              e,
+              self
+            );
           end
         ;
       end;
-      finally
-        Screen.Cursor:=crDefault;
-      end;
-      end
-    else
-      begin
-        if ( length(dbfn) <= 0 ) then
-          msgOk( tr( 'Please select a database name to use.' ), '', IMGCritical )
-        else
-          msgOk( tr( 'Please select an XML file to import.' ), '', IMGCritical );
-      end;
-  end
-;
+    end
+  ;
 
 
 // FIX ME: do some major error checking in here!
@@ -295,7 +379,7 @@ procedure TFormImport.btnImportClick(Sender: TObject);
       begin
         msgOK(
             tr( 'Please select a file name for the new scenario.' ),
-            tr( 'Scenario filename is missing' ),
+              tr( 'Database filename is missing' ),
             IMGWarning,
             self
         );
@@ -303,12 +387,72 @@ procedure TFormImport.btnImportClick(Sender: TObject);
       end
     ;
 
-    if ( LowerCase( RightStr( dbfn, 4 ) ) <> '.mdb' ) then
-      dbfn := dbfn + '.mdb';
+    if( cbxScenario.checked ) then
+      begin
+        if( strIsEmpty( pfn ) ) then
+          begin
+            msgOK(
+                tr( 'Please select a scenario parameter file to import.' ),
+                tr( 'Parameter XML filename is missing' ),
+                IMGWarning,
+                self
+            );
+            exit;
+          end
+        ;
+
+        if( not( fileExists( pfn ) ) ) then
+          begin
+            msgOK(
+                tr( 'The selected scenario parameter file does not exist.' ),
+                tr( 'Parameter XML file is missing' ),
+                IMGWarning,
+                self
+            );
+            exit;
+          end
+        ;
+      end
+    ;
+
+    if( cbxHerds.checked ) then
+      begin
+        if( strIsEmpty( hfn ) ) then
+          begin
+            msgOK(
+                tr( 'Please select a unit file to import.' ),
+                tr( 'Unit XML filename is missing' ),
+                IMGWarning,
+                self
+            );
+            exit;
+          end
+        ;
+
+        if( not( fileExists( hfn ) ) ) then
+          begin
+            msgOK(
+                tr( 'The selected unit file does not exist.' ),
+                tr( 'Unit XML file is missing' ),
+                IMGWarning,
+                self
+            );
+            exit;
+          end
+        ;
+      end
+    ;
+
+    if( '.mdb' <> ansiLowerCase( RightStr( dbfn, 4 ) ) ) then
+      dbfn := dbfn + '.mdb'
+    ;
       
     screen.Cursor := crHourglass;
-    import( dbfn, pfn, hfn );
-    screen.Cursor := crDefault;
+    try
+      import( dbfn, pfn, hfn );
+    finally
+      screen.Cursor := crDefault;
+    end;
   end
 ;
 
@@ -319,14 +463,14 @@ procedure TFormImport.btnScenarioClick(Sender: TObject);
 
     if( length( trim(leScenario.text) ) > 0 ) then
       openDialog1.fileName := trim( leScenario.text )
-    else if( ini.hasKey( 'LastImportDirectory' ) ) then
-      OpenDialog1.initialDir := ini.val( 'LastImportDirectory' )
+    else if( _ini.hasKey( 'LastImportDirectory' ) ) then
+      OpenDialog1.initialDir := _ini.val( 'LastImportDirectory' )
     ;
 
     if OpenDialog1.Execute() then
       begin
         leScenario.text := OpenDialog1.FileName;
-        ini.update( 'LastImportDirectory', directory( OpenDialog1.FileName ) );
+        _ini.update( 'LastImportDirectory', directory( OpenDialog1.FileName ) );
       end
     ;
 
@@ -341,14 +485,14 @@ procedure TFormImport.btnHerdsClick(Sender: TObject);
 
     if( length( trim(leHerds.text) ) > 0 ) then
       openDialog1.fileName := trim( leScenario.text )
-    else if( ini.hasKey( 'LastImportDirectory' ) ) then
-      OpenDialog1.initialDir := ini.val( 'LastImportDirectory' )
+    else if( _ini.hasKey( 'LastImportDirectory' ) ) then
+      OpenDialog1.initialDir := _ini.val( 'LastImportDirectory' )
     ;
 
     if OpenDialog1.Execute() then
       begin
         leHerds.text := OpenDialog1.FileName;
-        ini.update( 'LastImportDirectory', directory( OpenDialog1.FileName ) );
+        _ini.update( 'LastImportDirectory', directory( OpenDialog1.FileName ) );
       end
     ;
 
@@ -363,14 +507,14 @@ procedure TFormImport.btnDBClick(Sender: TObject);
 
     if( length( trim(leDB.text) ) > 0 ) then
       saveDialog1.fileName := trim( leScenario.text )
-    else if( ini.hasKey( 'LastSaveDirectory' ) ) then
-      saveDialog1.initialDir := ini.val( 'LastSaveDirectory' )
+    else if( _ini.hasKey( 'LastSaveDirectory' ) ) then
+      saveDialog1.initialDir := _ini.val( 'LastSaveDirectory' )
     ;
 
     if saveDialog1.Execute() then
       begin
         leDB.text := saveDialog1.FileName;
-        ini.update( 'LastSaveDirectory', directory( saveDialog1.FileName ) );
+        _ini.update( 'LastSaveDirectory', directory( saveDialog1.FileName ) );
       end
     ;
 
@@ -398,15 +542,6 @@ procedure TFormImport.updateUI();
     ;
     
     dbReady := ( 0 < length( leDB.Text ) );
-
-    dbcout2( endl );
-    dbcout2( length( leScenario.Text ) );
-    dbcout2( scenarioReady );
-    dbcout2( length( leHerds.Text ) );
-    dbcout2( herdsReady );
-    dbcout2( length( leDB.Text ) );
-    dbcout2(  dbReady );
-    dbcout2( endl );
     
     btnImport.Enabled :=( scenarioReady and herdsReady and dbReady );
   end
@@ -422,15 +557,10 @@ procedure TFormImport.leKeyDown(Sender: TObject; var Key: Word; Shift: TShiftSta
 
 procedure TFormImport.btnCancelClick(Sender: TObject);
   begin
-		freeAndNil( db );
+		freeAndNil( _db );
     close();
   end
 ;
-
-
-// Properties
-function TFormImport.getDB(): TSMDatabase; begin result := db; end;
-
 
 
 procedure TFormImport.cbxScenarioClick(Sender: TObject);

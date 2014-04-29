@@ -1,6 +1,6 @@
 inherited FormSummaryEpiCurves: TFormSummaryEpiCurves
-  Left = 1174
-  Top = 38
+  Left = 371
+  Top = 182
   Width = 726
   Height = 520
   Caption = 'Summary epidemic curves'
@@ -13,7 +13,13 @@ inherited FormSummaryEpiCurves: TFormSummaryEpiCurves
     Width = 718
     TabOrder = 2
     inherited pnlProdTypes: TPanel
-      Width = 416
+      Width = 384
+      inherited cboProdTypes: TComboBox
+        Width = 193
+      end
+      inherited cboZones: TComboBox
+        Left = 216
+      end
     end
   end
   object pnlGlobalOptions: TPanel [1]
@@ -122,7 +128,7 @@ inherited FormSummaryEpiCurves: TFormSummaryEpiCurves
         inherited pnlSummaryEpiCurveOptions: TPanel
           Height = 383
           inherited pnl3D: TPanel
-            Height = 139
+            Height = 124
             inherited cbx3D: TCheckBox
               OnClick = updateCurves
             end

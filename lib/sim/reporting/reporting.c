@@ -3,14 +3,11 @@
  * variables.
  *
  * @author Neil Harvey <neilharvey@gmail.com><br>
- *   Grid Computing Research Group<br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @version 0.1
- * @date February 2004
  *
- * Copyright &copy; University of Guelph, 2004-2007
+ * Copyright &copy; University of Guelph, 2004-2010
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -53,9 +50,7 @@ const char *RPT_type_name[] = {
  *
  * @sa RPT_frequency_t
  */
-const char *RPT_frequency_name[] = {
-  "never", "once", "daily", "weekly", "monthly", "yearly", NULL
-};
+const char *RPT_frequency_name[] = { "never", "once", "daily", NULL };
 
 
 
@@ -65,9 +60,7 @@ const char *RPT_frequency_name[] = {
  *
  * @sa RPT_frequency_t
  */
-const int RPT_frequency_day[] = {
-  0, 0, 1, 7, 30, 365
-};
+const int RPT_frequency_day[] = { 0, 0, 1 };
 
 
 
@@ -77,17 +70,12 @@ const int RPT_frequency_day[] = {
  * @param name the variable's name.  Should not contain commas, single quotes
  *   ('), double quotes ("), newlines, or carriage returns.  The text is copied
  *   so the original string can be freed after calling this function.
- * @param data an existing variable to wrap.  If NULL, a new variable of the
- *   appropriate type will be allocated.
  * @param type the variable's data type.
  * @param frequency how often the variable is reported.
- * @param cumulative FALSE if the variable should be reset to 0 whenever it is
- *   reported, TRUE otherwise.
  * @return a pointer to a newly-created, initialized RPT_reporting_t structure.
  */
 RPT_reporting_t *
-RPT_new_reporting (char *name, void *data, RPT_type_t type,
-                   RPT_frequency_t frequency, gboolean cumulative)
+RPT_new_reporting (const char *name, RPT_type_t type, RPT_frequency_t frequency)
 {
   RPT_reporting_t *reporting;
 
@@ -103,29 +91,26 @@ RPT_new_reporting (char *name, void *data, RPT_type_t type,
        name);
   reporting->name = g_strdup (name);
   reporting->type = type;
-  if (data != NULL)
-    reporting->data = data;
-  else
-    switch (type)
-      {
-      case RPT_integer:
-        reporting->data = g_new0 (long, 1);
-        break;
-      case RPT_real:
-        reporting->data = g_new0 (double, 1);
-        break;
-      case RPT_text:
-        reporting->data = g_string_new ("");
-        break;
-      case RPT_group:
-        g_datalist_init ((GData **) (&reporting->data));
-        break;
-      default:
-        g_assert_not_reached ();
-      }
+  switch (type)
+    {
+    case RPT_integer:
+      reporting->data = g_new0 (long, 1);
+      break;
+    case RPT_real:
+      reporting->data = g_new0 (double, 1);
+      break;
+    case RPT_text:
+      reporting->data = g_string_new ("");
+      break;
+    case RPT_group:
+      g_datalist_init ((GData **) (&reporting->data));
+      break;
+    default:
+      g_assert_not_reached ();
+    }
   reporting->frequency = frequency;
   reporting->days = RPT_frequency_day[frequency];
-  reporting->cumulative = cumulative;
+  reporting->is_null = FALSE;
 
   return reporting;
 }
@@ -133,61 +118,333 @@ RPT_new_reporting (char *name, void *data, RPT_type_t type,
 
 
 /**
- * A structure for use with the function stitch, below.
+ * A structure for use with the function stitch_names, below.
  */
 typedef struct
 {
-  GPtrArray *strings;
-  char *format;
+  GString *name_so_far;
+  GPtrArray *names;
 }
-RPT_stitch_t;
+RPT_stitch_names_t;
 
 
 
 /**
- * This function is meant to be used with the foreach function of a GLib Keyed
- * Data List, specifically, the Keyed Data List used in "group" output
- * variables.  It adds strings of the form "'variable-name':value" to a Pointer
- * Array.
+ * Returns all the names in an output variable.  This function is mostly useful
+ * for output variables with sub-categories (and maybe sub-sub-categories,
+ * etc.).  The function is typed as a GDataForeachFunc so that it can easily be
+ * called recursively on the sub-categories.
  *
- * @param key_id the key.  Resolved to a string, the name of an output
- *   variable.
+ * @param key_id use 0.
  * @param data an output variable, cast to a gpointer.
- * @param user_data a pointer to an RPT_stitch_t structure, cast to a gpointer.
+ * @param user_data a RPT_stitch_names_t structure, containing the output
+ *   variable's name as seen so far (a GString, which should be NULL for the
+ *   top-level call), and the GPtrArray into which the complete variable names
+ *   (in char * format) should be copied.
  */
 void
-stitch (GQuark key_id, gpointer data, gpointer user_data)
+stitch_names (GQuark key_id, gpointer data, gpointer user_data)
 {
-  RPT_stitch_t *to_pass;
   RPT_reporting_t *reporting;
-  GString *s;
-  char *substring, *chararray;
+  RPT_stitch_names_t *passed_to_me, *to_pass;
+  GString *name_so_far;
+  GPtrArray *names;
+  GString *name;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER stitch");
+  g_debug ("----- ENTER stitch_names");
 #endif
 
   reporting = (RPT_reporting_t *) data;
-  to_pass = (RPT_stitch_t *) user_data;
+  passed_to_me = (RPT_stitch_names_t *) user_data;
+  name_so_far = passed_to_me->name_so_far;
+  names = passed_to_me->names;
 
-  /* Append the variable name, in single quotes, to the string we're
-   * building. */
-  s = g_string_new (NULL);
-  g_string_printf (s, "'%s'", g_quark_to_string (key_id));
+  if (reporting != NULL)
+    {
+      if (name_so_far == NULL)
+        name = g_string_new (reporting->name);
+      else
+        {
+          name = g_string_new (name_so_far->str);
+          g_string_append_printf (name, " %s", reporting->name);
+        }
 
-  /* Append a colon and the value to the string we're building. */
-  substring = RPT_reporting_value_to_string (reporting, to_pass->format);
-  g_string_sprintfa (s, ":%s", substring);
-  free (substring);
-
-  /* Append the completed string, but not the wrapper object, to the list. */
-  chararray = s->str;
-  g_string_free (s, FALSE);
-  g_ptr_array_add (to_pass->strings, chararray);
+      if (reporting->type != RPT_group)
+        {
+          /* We've reached the end of a chain of recursive calls -- this
+           * variable has no sub-categories.  Add its completed name to the
+           * list. */
+          g_ptr_array_add (names, name->str);
+#if DEBUG
+          g_debug ("adding completed name \"%s\"", name->str);
+#endif
+          g_string_free (name, FALSE);
+        }
+      else
+        {
+#if DEBUG
+          g_debug ("going into sub-categories for \"%s\"", name->str);
+#endif
+          to_pass = g_new (RPT_stitch_names_t, 1);
+          to_pass->names = names;
+          to_pass->name_so_far = name;
+          g_datalist_foreach ((GData **) (&reporting->data), stitch_names, to_pass);
+          g_string_free (name, TRUE);
+          g_free (to_pass);
+        }
+    }
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT stitch");
+  g_debug ("----- EXIT stitch_names");
 #endif
+  return;
+}
+
+
+
+/**
+ * Returns all the names in an output variable.  This function is mostly useful
+ * for output variables with sub-categories (and maybe sub-sub-categories,
+ * etc.).
+ *
+ * @param reporting an output variable.
+ * @return a list of names, in (char *) format.  These names have been copied
+ *   so they may be freed with g_free once you are finished with them.
+ */
+GPtrArray *
+RPT_reporting_names (RPT_reporting_t *reporting)
+{
+  GPtrArray *names;
+  RPT_stitch_names_t *to_pass;
+
+#if DEBUG
+  g_debug ("----- ENTER RPT_reporting_names");
+#endif
+
+  names = g_ptr_array_new();
+  to_pass = g_new (RPT_stitch_names_t, 1);
+  to_pass->names = names;
+  to_pass->name_so_far = NULL;
+  stitch_names (0, (gpointer) reporting, (gpointer) to_pass);
+  g_free (to_pass);
+
+#if DEBUG
+  g_debug ("----- EXIT RPT_reporting_names");
+#endif
+
+  return names;
+}
+
+
+
+/**
+ * Returns all the values in an output variable, in (char *) string format.  
+ * This function is mostly useful for output variables with sub-categories
+ * (and maybe sub-sub-categories, etc.).  The function is typed as a
+ * GDataForeachFunc so that it can easily be called recursively on the
+ * sub-categories.
+ *
+ * @param key_id use 0.
+ * @param data an output variable, cast to a gpointer.
+ * @param user_data a GPtrArray (cast to a gpointer) into which the values (in
+ *   char * format) should be copied.
+ */
+void
+stitch_values (GQuark key_id, gpointer data, gpointer user_data)
+{
+  RPT_reporting_t *reporting;
+  GPtrArray *values;
+
+#if DEBUG
+  g_debug ("----- ENTER stitch_values");
+#endif
+
+  reporting = (RPT_reporting_t *) data;
+  values = (GPtrArray *) user_data;
+
+  /* It's important that this function traverses in the same order as
+   * stitch_names. */
+  if (reporting != NULL)
+    {
+#if DEBUG
+      g_debug ("variable or subcategory name = \"%s\"", reporting->name);
+#endif
+      if (reporting->type != RPT_group)
+        {
+          /* We've reached the end of a chain of recursive calls -- this
+           * variable has no sub-categories.  Add its value to the list. */
+          g_ptr_array_add (values, RPT_reporting_value_to_string (reporting, NULL));
+        }
+      else
+        {
+          g_datalist_foreach ((GData **) (&reporting->data), stitch_values, values);
+        }
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT stitch_values");
+#endif
+  return;
+}
+
+
+
+/**
+ * Returns all the values in an output variable, in (char *) string format.
+ * This function is mostly useful for output variables with sub-categories (and
+ * maybe sub-sub-categories, etc.).
+ *
+ * @param reporting an output variable.
+ * @return a list of values, in (char *) format.  These names have been copied
+ *   so they may be freed with g_free once you are finished with them.
+ */
+GPtrArray *
+RPT_reporting_values_as_strings (RPT_reporting_t *reporting)
+{
+  GPtrArray *values;
+
+#if DEBUG
+  g_debug ("----- ENTER RPT_reporting_values_as_strings");
+#endif
+
+  values = g_ptr_array_new();
+  stitch_values (0, (gpointer) reporting, (gpointer) values);
+
+#if DEBUG
+  g_debug ("----- EXIT RPT_reporting_values_as_strings");
+#endif
+
+  return values;
+}
+
+
+
+/**
+ * Sums the number of values in an output variable.  This function is mostly
+ * useful for output variables with sub-categories (and maybe
+ * sub-sub-categories, etc.).  The function is typed as a GDataForeachFunc so
+ * that it can easily be called recursively on the sub-categories.
+ *
+ * @param key_id use 0.
+ * @param data an output variable, cast to a gpointer.
+ * @param user_data a pointer to an integer (cast to a gpointer) which holds
+ *   the running sum.
+ */
+void
+stitch_counts (GQuark key_id, gpointer data, gpointer user_data)
+{
+  RPT_reporting_t *reporting;
+  unsigned int *sum;
+
+#if DEBUG
+  g_debug ("----- ENTER stitch_counts");
+#endif
+
+  reporting = (RPT_reporting_t *) data;
+  sum = (unsigned int *) user_data;
+
+  if (reporting != NULL)
+    {
+      if (reporting->type != RPT_group)
+        {
+          /* We've reached the end of a chain of recursive calls -- this
+           * variable has no sub-categories.  Add 1. */
+          *sum = *sum + 1;
+        }
+      else
+        {
+          g_datalist_foreach ((GData **) (&reporting->data), stitch_counts, sum);
+        }
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT stitch_counts");
+#endif
+  return;
+}
+
+
+
+/**
+ * Sums the number of values in an output variable.  This function is mostly
+ * useful for output variables with sub-categories (and maybe
+ * sub-sub-categories, etc.).
+ *
+ * @param reporting an output variable.
+ * @return a list of values, in (char *) format.  These names have been copied
+ *   so they may be freed with g_free once you are finished with them.
+ */
+unsigned int
+RPT_reporting_var_count (RPT_reporting_t *reporting)
+{
+  unsigned int sum;
+
+#if DEBUG
+  g_debug ("----- ENTER RPT_reporting_var_count");
+#endif
+
+  sum = 0;
+  stitch_counts (0, (gpointer) reporting, (gpointer) (&sum));
+
+#if DEBUG
+  g_debug ("----- EXIT RPT_reporting_var_count");
+#endif
+
+  return sum;
+}
+
+
+
+/**
+ * A callback function for use with the function g_datalist_size, below.  It
+ * increments a counter.
+ *
+ * @param key_id a key.
+ * @param data the data element associated with the key.
+ * @param user_data pointer to a count of elements (type guint).
+ */
+void
+count_as_GDataForeachFunc (GQuark key_id, gpointer data, gpointer user_data)
+{
+  guint *size;
+  
+  size = (guint *) user_data;
+  *size += 1;
+  return;
+}
+
+
+
+/**
+ * Returns the number of elements contained in a GLib Keyed Data List.
+ * Strangely, there's no function for this in GLib.
+ *
+ * @param datalist a Keyed Data List.
+ * @return the number of elements in the list.
+ */
+guint
+g_datalist_size (GData **datalist)
+{
+   guint size;
+   
+   size = 0;
+   g_datalist_foreach (datalist, count_as_GDataForeachFunc, &size);
+   return size;
+}
+
+
+
+/**
+ * Returns whether a GLib Keyed Data List is empty.
+ *
+ * @param datalist a Keyed Data List.
+ * @return TRUE if the list contains no elements, FALSE otherwise.
+ */
+gboolean
+g_datalist_is_empty (GData **datalist)
+{
+  return (g_datalist_size (datalist) == 0);
 }
 
 
@@ -205,63 +462,48 @@ char *
 RPT_reporting_value_to_string (RPT_reporting_t * reporting, char *format)
 {
   GString *s;
-  char *substring, *chararray;
-  RPT_stitch_t to_pass;
-  unsigned int i;
+  char *chararray;
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER RPT_reporting_value_to_string");
+  g_debug ("----- ENTER RPT_reporting_value_to_string");
 #endif
 
-  s = g_string_new (NULL);
-  switch (reporting->type)
-    {
-    case RPT_integer:
-      if (format == NULL)
-        format = "%i";
-      g_string_printf (s, format, *((long *) reporting->data));
-      break;
-    case RPT_real:
-      if (format == NULL)
-        format = "%g";
-      g_string_printf (s, format, *((double *) reporting->data));
-      break;
-    case RPT_text:
-      if (format == NULL)
-        format = "'%s'";
-      /* A kludge so that zone polygons are not in single quotes and therefore
-       * don't count as strings when the output filters are parsing the output.
-       * lex has a fixed-size buffer for a single token so unlimited-size
-       * strings aren't good. */
-      if (strncmp (((GString *) reporting->data)->str, "POLYGON", 7) == 0)
-        format = "%s";
-      g_string_printf (s, format, ((GString *) reporting->data)->str);
-      break;
-    case RPT_group:
-      g_string_append_c (s, '{');
-      to_pass.strings = g_ptr_array_new ();
-      to_pass.format = format;
-      g_datalist_foreach ((GData **) (&reporting->data), stitch, &to_pass);
-      /* Append the string for each variable in the group, separated by commas,
-       * to the string we're building.  Free the substrings as we go. */
-      for (i = 0; i < to_pass.strings->len; i++)
-        {
-          substring = (char *) g_ptr_array_index (to_pass.strings, i);
-          g_string_append_printf (s, i > 0 ? ",%s" : "%s", substring);
-          free (substring);
-        }
-      g_ptr_array_free (to_pass.strings, TRUE);
-      g_string_append_c (s, '}');
-      break;
-    default:
-      g_assert_not_reached ();
-    }
+  s = g_string_new ("");
+  if (!reporting->is_null)
+    switch (reporting->type)
+      {
+      case RPT_integer:
+        if (format == NULL)
+          format = "%i";
+        g_string_printf (s, format, *((long *) reporting->data));
+        break;
+      case RPT_real:
+        if (format == NULL)
+          format = "%g";
+        g_string_printf (s, format, *((double *) reporting->data));
+        break;
+      case RPT_text:
+        if (format == NULL)
+          format = "'%s'";
+        /* A kludge so that zone polygons are not in single quotes and therefore
+         * don't count as strings when the output filters are parsing the output.
+         * lex has a fixed-size buffer for a single token so unlimited-size
+         * strings aren't good. */
+        if (strncmp (((GString *) reporting->data)->str, "POLYGON", 7) == 0)
+          format = "%s";
+        g_string_printf (s, format, ((GString *) reporting->data)->str);
+        break;
+      case RPT_group:
+        g_assert_not_reached ();
+      default:
+        g_assert_not_reached ();
+      }
   /* don't return the wrapper object */
   chararray = s->str;
   g_string_free (s, FALSE);
 
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT RPT_reporting_value_to_string");
+  g_debug ("----- EXIT RPT_reporting_value_to_string");
 #endif
 
   return chararray;
@@ -322,20 +564,15 @@ RPT_fprintf_reporting (FILE * stream, RPT_reporting_t * reporting)
  * Deletes an output variable structure from memory.
  *
  * @param reporting an output variable.  If NULL, nothing is deleted.
- * @param free_segment if TRUE, also frees the dynamically-allocated parts of
- *   the output variable structure.
  */
 void
-RPT_free_reporting (RPT_reporting_t * reporting, gboolean free_segment)
+RPT_free_reporting (RPT_reporting_t * reporting)
 {
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER RPT_free_reporting");
+  g_debug ("----- ENTER RPT_free_reporting");
 #endif
 
-  if (reporting == NULL)
-    goto end;
-
-  if (free_segment == TRUE)
+  if (reporting != NULL)
     {
       g_free (reporting->name);
       switch (reporting->type)
@@ -353,12 +590,11 @@ RPT_free_reporting (RPT_reporting_t * reporting, gboolean free_segment)
         default:
           g_assert_not_reached ();
         }
+      g_free (reporting);
     }
-  g_free (reporting);
 
-end:
 #if DEBUG
-  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT RPT_free_reporting");
+  g_debug ("----- EXIT RPT_free_reporting");
 #endif
   return;
 }
@@ -372,7 +608,7 @@ end:
 void
 RPT_free_reporting_as_GDestroyNotify (gpointer data)
 {
-  RPT_free_reporting ((RPT_reporting_t *) data, TRUE);
+  RPT_free_reporting ((RPT_reporting_t *) data);
 }
 
 
@@ -402,7 +638,7 @@ RPT_reporting_set_frequency (RPT_reporting_t * reporting, RPT_frequency_t freque
  *   assumed to be an integer output variable.
  */
 void
-RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subelement_name)
+RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -414,7 +650,10 @@ RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subel
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -423,19 +662,21 @@ RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subel
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be an integer variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_integer,
-                                            reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_integer,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_integer (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null=FALSE;
+  return;
 }
 
 
@@ -451,7 +692,7 @@ RPT_reporting_set_integer (RPT_reporting_t * reporting, long value, char **subel
  *   output variable.
  */
 void
-RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subelement_name)
+RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -463,19 +704,25 @@ RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subel
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_integer, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_integer,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_integer (subelement, value, NULL);
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -490,7 +737,7 @@ RPT_reporting_set_integer1 (RPT_reporting_t * reporting, long value, char *subel
  *   assumed to be an integer output variable.
  */
 void
-RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subelement_name)
+RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -502,7 +749,10 @@ RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subel
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -511,19 +761,21 @@ RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subel
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be an integer variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_integer,
-                                            reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_integer,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_add_integer (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -539,7 +791,7 @@ RPT_reporting_add_integer (RPT_reporting_t * reporting, long value, char **subel
  *   output variable.
  */
 void
-RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subelement_name)
+RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -551,19 +803,25 @@ RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subel
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_integer, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_integer,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_add_integer (subelement, value, NULL);
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -578,7 +836,7 @@ RPT_reporting_add_integer1 (RPT_reporting_t * reporting, long value, char *subel
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 long
-RPT_reporting_get_integer (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_integer (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -591,7 +849,10 @@ RPT_reporting_get_integer (RPT_reporting_t * reporting, char **subelement_name)
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       if (subelement != NULL)
@@ -614,7 +875,7 @@ RPT_reporting_get_integer (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 long
-RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_integer1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -627,7 +888,10 @@ RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       if (subelement != NULL)
@@ -649,7 +913,7 @@ RPT_reporting_get_integer1 (RPT_reporting_t * reporting, char *subelement_name)
  *   assumed to be a real output variable.
  */
 void
-RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subelement_name)
+RPT_reporting_set_real (RPT_reporting_t * reporting, double value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -661,7 +925,10 @@ RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subele
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -670,18 +937,21 @@ RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subele
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be an real variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_real, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_real,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_real (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -697,7 +967,7 @@ RPT_reporting_set_real (RPT_reporting_t * reporting, double value, char **subele
  *   variable.
  */
 void
-RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subelement_name)
+RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -709,19 +979,25 @@ RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subele
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_real, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_real,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_real (subelement, value, NULL);
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -736,7 +1012,7 @@ RPT_reporting_set_real1 (RPT_reporting_t * reporting, double value, char *subele
  *   assumed to be a real output variable.
  */
 void
-RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subelement_name)
+RPT_reporting_add_real (RPT_reporting_t * reporting, double value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -748,7 +1024,10 @@ RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subele
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -757,18 +1036,21 @@ RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subele
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be an integer variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_real, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_real,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_add_real (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -784,7 +1066,7 @@ RPT_reporting_add_real (RPT_reporting_t * reporting, double value, char **subele
  *   variable.
  */
 void
-RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subelement_name)
+RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -796,19 +1078,25 @@ RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subele
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_real, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_real,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_add_real (subelement, value, NULL);
     }
+
+  reporting->is_null = FALSE;
+  return;
 }
 
 
@@ -823,7 +1111,7 @@ RPT_reporting_add_real1 (RPT_reporting_t * reporting, double value, char *subele
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 double
-RPT_reporting_get_real (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_real (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -832,11 +1120,14 @@ RPT_reporting_get_real (RPT_reporting_t * reporting, char **subelement_name)
   if (subelement_name == NULL || subelement_name[0] == NULL)
     {
       g_assert (reporting->type == RPT_real);
-      value = *((long *) reporting->data);
+      value = *((double *) reporting->data);
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       if (subelement != NULL)
@@ -859,7 +1150,7 @@ RPT_reporting_get_real (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or 0 if a non-existent subelement was specified.
  */
 double
-RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_real1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -872,7 +1163,10 @@ RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       if (subelement != NULL)
@@ -895,7 +1189,7 @@ RPT_reporting_get_real1 (RPT_reporting_t * reporting, char *subelement_name)
  *   assumed to be a text output variable.
  */
 void
-RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelement_name)
+RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -907,7 +1201,10 @@ RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelem
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -916,18 +1213,21 @@ RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelem
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be a text variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_text, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_text,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_text (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null=FALSE;
+  return;
 }
 
 
@@ -944,7 +1244,7 @@ RPT_reporting_set_text (RPT_reporting_t * reporting, char *value, char **subelem
  *   variable.
  */
 void
-RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelement_name)
+RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -956,19 +1256,25 @@ RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelem
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_text, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_text,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_set_text (subelement, value, NULL);
     }
+
+  reporting->is_null=FALSE;
+  return;
 }
 
 
@@ -983,7 +1289,7 @@ RPT_reporting_set_text1 (RPT_reporting_t * reporting, char *value, char *subelem
  *   assumed to be a text output variable.
  */
 void
-RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **subelement_name)
+RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -995,7 +1301,10 @@ RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **sube
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       /* If there isn't already a subelement by this name, create one. */
@@ -1004,18 +1313,21 @@ RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **sube
           if (subelement_name[1] == NULL)
             /* The current subelement name is the last one in the list; the
              * next output variable down will be a text variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_text, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_text,
+                                            reporting->frequency);
           else
             /* There are more subelement names in the list; the next output
              * variable down will be another group variable. */
-            subelement = RPT_new_reporting (subelement_name[0], NULL,
-                                            RPT_group, reporting->frequency, reporting->cumulative);
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
           g_datalist_set_data_full (group, subelement_name[0], subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_append_text (subelement, value, &(subelement_name[1]));
     }
+
+  reporting->is_null=FALSE;
+  return;
 }
 
 
@@ -1031,7 +1343,7 @@ RPT_reporting_append_text (RPT_reporting_t * reporting, char *value, char **sube
  *   variable.
  */
 void
-RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *subelement_name)
+RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1043,19 +1355,25 @@ RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *sube
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       /* If there isn't already a subelement by this name, create one. */
       if (subelement == NULL)
         {
-          subelement = RPT_new_reporting (subelement_name, NULL,
-                                          RPT_text, reporting->frequency, reporting->cumulative);
+          subelement = RPT_new_reporting (subelement_name, RPT_text,
+                                          reporting->frequency);
           g_datalist_set_data_full (group, subelement_name, subelement,
                                     RPT_free_reporting_as_GDestroyNotify);
         }
       RPT_reporting_append_text (subelement, value, NULL);
     }
+
+  reporting->is_null=FALSE;
+  return;
 }
 
 
@@ -1070,7 +1388,7 @@ RPT_reporting_append_text1 (RPT_reporting_t * reporting, char *value, char *sube
  * @returns the value, or NULL if a non-existent subelement was specified.
  */
 char *
-RPT_reporting_get_text (RPT_reporting_t * reporting, char **subelement_name)
+RPT_reporting_get_text (RPT_reporting_t * reporting, const char **subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1083,7 +1401,10 @@ RPT_reporting_get_text (RPT_reporting_t * reporting, char **subelement_name)
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
       if (subelement != NULL)
@@ -1106,7 +1427,7 @@ RPT_reporting_get_text (RPT_reporting_t * reporting, char **subelement_name)
  * @returns the value, or NULL if a non-existent subelement was specified.
  */
 char *
-RPT_reporting_get_text1 (RPT_reporting_t * reporting, char *subelement_name)
+RPT_reporting_get_text1 (RPT_reporting_t * reporting, const char *subelement_name)
 {
   GData **group;
   RPT_reporting_t *subelement;
@@ -1119,7 +1440,10 @@ RPT_reporting_get_text1 (RPT_reporting_t * reporting, char *subelement_name)
     }
   else
     {
-      g_assert (reporting->type == RPT_group);
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
       group = (GData **) (&reporting->data);
       subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
       if (subelement != NULL)
@@ -1127,6 +1451,207 @@ RPT_reporting_get_text1 (RPT_reporting_t * reporting, char *subelement_name)
     }
 
   return value;
+}
+
+
+
+/**
+ * Wraps RPT_reporting_set_null so that it can be used with the foreach
+ * function of a GLib Keyed Data List, specifically, the Keyed Data List used
+ * in "group" output variables.
+ *
+ * @param key_id the key.  Resolved to a string, the name of an output
+ *   variable.
+ * @param data an output variable, cast to a gpointer.
+ * @param user_data not used, pass NULL.
+ */
+void
+RPT_reporting_set_null_as_GDataForeachFunc (GQuark key_id, gpointer data, gpointer user_data)
+{
+#if DEBUG
+  g_debug ("----- ENTER RPT_reporting_set_null_as_GDataForeachFunc");
+#endif
+
+  RPT_reporting_set_null ((RPT_reporting_t *) data, NULL);
+
+#if DEBUG
+  g_debug ("----- EXIT RPT_reporting_set_null_as_GDataForeachFunc");
+#endif
+}
+
+
+
+/**
+ * Sets the value of an output variable to "null".
+ *
+ * @param reporting an output variable.
+ * @param subelement_name a null-terminated array of strings used to "drill
+ *   down" through group output variables.  Use NULL if the output variable is
+ *   not a group variable, or if you want all sub-categories set to NULL.
+ */
+void
+RPT_reporting_set_null (RPT_reporting_t * reporting, const char **subelement_name)
+{
+  GData **group;
+  RPT_reporting_t *subelement;
+
+  if (subelement_name == NULL || subelement_name[0] == NULL)
+    {
+      if (reporting->type == RPT_group)
+        g_datalist_foreach ((GData **) (&reporting->data),
+                            RPT_reporting_set_null_as_GDataForeachFunc, NULL);
+      else
+        RPT_reporting_reset (reporting);
+      reporting->is_null = TRUE;
+    }
+  else
+    {
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
+      group = (GData **) (&reporting->data);
+      subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
+      /* If there isn't already a subelement by this name, create one. */
+      if (subelement == NULL)
+        {
+          if (subelement_name[1] == NULL)
+            /* The current subelement name is the last one in the list; the
+             * next output variable down will be a text variable. */
+            subelement = RPT_new_reporting (subelement_name[0], RPT_text,
+                                            reporting->frequency);
+          else
+            /* There are more subelement names in the list; the next output
+             * variable down will be another group variable. */
+            subelement = RPT_new_reporting (subelement_name[0], RPT_group,
+                                            reporting->frequency);
+          g_datalist_set_data_full (group, subelement_name[0], subelement,
+                                    RPT_free_reporting_as_GDestroyNotify);
+        }
+      RPT_reporting_set_null (subelement, &(subelement_name[1]));
+    }
+}
+
+
+
+/**
+ * Sets the value of an output variable to "null" (alternate version for group
+ * variables only 1 level deep).
+ *
+ * @param reporting an output variable.
+ * @param subelement_name a string used to choose one element from a group
+ *   output variable.  Use NULL if the output variable is not a group variable,
+ *   or if you want all sub-categories set to NULL.
+ */
+void
+RPT_reporting_set_null1 (RPT_reporting_t * reporting, const char *subelement_name)
+{
+  GData **group;
+  RPT_reporting_t *subelement;
+
+  if (subelement_name == NULL)
+    {
+      if (reporting->type == RPT_group)
+        g_datalist_foreach ((GData **) (&reporting->data),
+                            RPT_reporting_set_null_as_GDataForeachFunc, NULL);
+      else
+        RPT_reporting_reset (reporting);
+      reporting->is_null = TRUE;
+    }
+  else
+    {
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
+      group = (GData **) (&reporting->data);
+      subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
+      /* If there isn't already a subelement by this name, create one. */
+      if (subelement == NULL)
+        {
+          subelement = RPT_new_reporting (subelement_name, RPT_text,
+                                          reporting->frequency);
+          g_datalist_set_data_full (group, subelement_name, subelement,
+                                    RPT_free_reporting_as_GDestroyNotify);
+        }
+      RPT_reporting_set_null (subelement, NULL);
+    }
+}
+
+
+
+/**
+ * Checks whether an output variable is null.
+ *
+ * @param reporting an output variable.
+ * @param subelement_name a null-terminated array of strings used to "drill
+ *   down" through group output variables.  Use NULL if the output variable is
+ *   not a group variable, or if you want to know if all sub-categories are
+ *   null.
+ * @returns TRUE if the variable is null, FALSE otherwise.
+ */
+gboolean
+RPT_reporting_is_null (RPT_reporting_t * reporting, const char **subelement_name)
+{
+  GData **group;
+  RPT_reporting_t *subelement;
+  gboolean answer = TRUE;
+
+  if (subelement_name == NULL || subelement_name[0] == NULL)
+    {
+      answer = (reporting->is_null);
+    }
+  else
+    {
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name[0], reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
+      group = (GData **) (&reporting->data);
+      subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name[0]));
+      if (subelement != NULL)
+        answer = RPT_reporting_is_null (subelement, &(subelement_name[1]));
+    }
+
+  return answer;
+}
+
+
+
+/**
+ * Checks whether an output variable is null (alternate version for group
+ * variables only 1 level deep).
+ *
+ * @param reporting an output variable.
+ * @param subelement_name a string used to choose one element from a group
+ *   output variable.  Use NULL if you want to know if all sub-categories are
+ *   null.
+ * @returns TRUE if the variable is null, FALSE otherwise.
+ */
+gboolean
+RPT_reporting_is_null1 (RPT_reporting_t * reporting, const char *subelement_name)
+{
+  GData **group;
+  RPT_reporting_t *subelement;
+  gboolean answer = TRUE;
+
+  if (subelement_name == NULL)
+    {
+      answer = (reporting->is_null);
+    }
+  else
+    {
+      if (reporting->type != RPT_group)
+        g_error ("Attempting to drill down to subelement \"%s\" of variable \"%s\", but \"%s\" is type %s, not group",
+                 subelement_name, reporting->name, reporting->name,
+                 RPT_type_name[reporting->type]);
+      group = (GData **) (&reporting->data);
+      subelement = (RPT_reporting_t *) (g_datalist_get_data (group, subelement_name));
+      if (subelement != NULL)
+        answer = RPT_reporting_is_null (subelement, NULL);
+    }
+
+  return answer;
 }
 
 
@@ -1158,8 +1683,7 @@ RPT_reporting_splice (RPT_reporting_t * reporting, RPT_reporting_t * subvar)
   /* Check for an existing sub-variable with the same name.  If one exists,
    * destroy it. */
   tmp = (RPT_reporting_t *) (g_datalist_get_data (group, subvar->name));
-  if (tmp != NULL)
-    RPT_free_reporting (tmp, TRUE);
+  RPT_free_reporting (tmp);
 
   g_datalist_set_data_full (group, subvar->name, subvar, RPT_free_reporting_as_GDestroyNotify);
 
@@ -1202,6 +1726,7 @@ RPT_reporting_reset (RPT_reporting_t * reporting)
     default:
       g_assert_not_reached ();
     }
+  reporting->is_null = FALSE;
 
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT RPT_reporting_reset");
@@ -1288,7 +1813,7 @@ RPT_reporting_zero (RPT_reporting_t * reporting)
  *   RPT_never if s does not match any enumeration value.
  */
 RPT_frequency_t
-RPT_string_to_frequency (char *s)
+RPT_string_to_frequency (const char *s)
 {
   RPT_frequency_t type;
 
@@ -1361,6 +1886,7 @@ RPT_reporting_get_type (RPT_reporting_t * reporting)
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER RPT_reporting_get_type");
 #endif
+  type = RPT_unknown_type;
 
   if (reporting == NULL)
     goto end;
@@ -1383,6 +1909,95 @@ end:
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- EXIT RPT_reporting_get_type");
 #endif
   return type;
+}
+
+
+
+/**
+ * This function is meant to be used with the foreach function of a GLib Keyed
+ * Data List, specifically, the Keyed Data List used to store output variables
+ * with sub-variables.  The function receives an output variable.  It clones
+ * that output variable, and inserts the clone into the parent.
+ *
+ * @param key_id a numeric identifier, not used.
+ * @param data an output variable (RPT_reporting_t * cast to a gpointer).
+ * @param user_data the parent variable (RPT_reporting_t * cast to a gpointer).
+ */
+void
+deep_copy (GQuark key_id, gpointer data, gpointer user_data)
+{
+  RPT_reporting_t *reporting, *parent, *copy;
+
+  reporting = (RPT_reporting_t *) data;
+  parent = (RPT_reporting_t *) user_data;
+
+#if DEBUG
+  g_debug ("  copying item \"%s\"", reporting->name);
+#endif
+
+  copy = RPT_clone_reporting (reporting);
+
+#if DEBUG
+  g_debug ("  attaching to parent \"%s\"", parent->name);
+#endif
+
+  g_datalist_set_data_full ((GData **) (&parent->data),
+                            copy->name, copy,
+                            RPT_free_reporting_as_GDestroyNotify);
+
+  return;
+}
+
+
+
+/**
+ * Makes a deep copy of an output variable.
+ *
+ * @param original an output variable.
+ * @return a deep copy of the variable.
+ */
+RPT_reporting_t *
+RPT_clone_reporting (RPT_reporting_t * original)
+{
+  RPT_reporting_t *copy;
+
+#if DEBUG
+  g_debug ("----- ENTER RPT_clone_reporting");
+#endif
+
+  copy = NULL;
+
+  if (original != NULL)
+    {
+      copy = RPT_new_reporting (original->name, original->type, original->frequency);
+      copy->is_null = original->is_null;
+      switch (original->type)
+        {
+        case RPT_integer:
+          RPT_reporting_set_integer (copy, RPT_reporting_get_integer (original, NULL), NULL);
+          break;
+        case RPT_real:
+          RPT_reporting_set_real (copy, RPT_reporting_get_real (original, NULL), NULL);
+          break;
+        case RPT_text:
+          RPT_reporting_set_text (copy, RPT_reporting_get_text (original, NULL), NULL);
+          /* This is safe to do since RPT_reporting_set_text makes a new copy
+           * of the text it is passed. */
+          break;
+        case RPT_group:
+          g_datalist_foreach ((GData **) (&original->data), deep_copy, copy);
+          break;
+        default:
+          g_assert_not_reached ();
+        }
+      copy->is_null = original->is_null;
+    }
+
+#if DEBUG
+  g_debug ("----- EXIT RPT_clone_reporting");
+#endif
+
+  return copy;
 }
 
 /* end of file reporting.c */

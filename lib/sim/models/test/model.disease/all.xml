@@ -109,45 +109,61 @@
   </output>
 </deterministic-test>
 
-<deterministic-test>
+<stochastic-test>
   <category>disease</category>
   <short-name>negative days in state</short-name>
 
   <description>
     Test a scenario where a negative number is chosen for the time spent in a
     state.  This is a possibility when distributions with infinite lower tails
-    are used.  The unit should simply spend 0 days in that state, that is, skip
-    directly to the next state.
+    are used.
   </description>
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
-  <creation-date>24 January 2005</creation-date>
-  <model-version>3.0</model-version>
+  <creation-date>9 November 2009</creation-date>
+  <model-version>4.0</model-version>
 
   <herd-file>1herd</herd-file>
 
   <parameter-file>disease_neg_days</parameter-file>
 
   <parameter-description>
-    The latent period lasts 1 day.  Infectiousness without clinical signs is
-    given as a symmetric triangular distribution with mode -1, so with the
-    random number generator "fixed" to always produce 0.5, the number sampled
-    will always be -1.  Infectiousness with clinical signs lasts 2 days, and
-    immunity lasts 1 day.
+    The latent period lasts 1 day.  The infectious clinical period is given as
+    a symmetric triangular distribution with mode -1.  Immunity lasts 1 day.
+
+    The diagram below shows the infectious clinical period distribution in red.
+    The corresponding discrete distribution (created when samples drawn from
+    the triangular distribution are rounded) is shown in green.  Because
+    negative numbers will be rejected for the infectious clinical period, the
+    actual distribution we end up with is shown in blue.
 
     There is no spread, detection, vaccination, or destruction.
   </parameter-description>
 
-  <output>
-    <tr><td>Latent</td></tr>
-    <tr><td>InfectiousClinical</td></tr>
-    <tr><td>InfectiousClinical</td></tr>
-    <tr><td>NaturallyImmune</td></tr>
-<!--
-    No infectious units, simulation stops.
--->
+  <diagram>disease_neg_days</diagram>
+  <diagram>1herd</diagram>
+
+  <!-- 0-day infectious clinical period -->
+  <output probability="0.64">
+    <tr><td>L</td></tr>
+    <tr><td>N</td></tr>
   </output>
-</deterministic-test>
+
+  <!-- 1-day infectious clinical period -->
+  <output probability="0.32">
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+
+  <!-- 2-day infectious clinical period -->
+  <output probability="0.04">
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</stochastic-test>
 
 <deterministic-test>
   <category>disease</category>
@@ -290,6 +306,91 @@
   </output>
 </deterministic-test>
 
+<variable-test>
+  <category>disease</category>
+  <short-name>override initial state, destroyed, check reporting variables</short-name>
+
+  <description>
+    Test a scenario where the starting disease state of a herd is given as
+    Destroyed in the herd file.  This test also includes one infected herd so
+    that the simulation doesn't early-exit right away.  The count of initially
+    destroyed units should be 1.  The count of units awaiting destruction
+    should be at 0 the whole time (initially destroyed units are never
+    waiting).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 June 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_1_start_destroyed</herd-file>
+
+  <parameter-file>disease_2species_same_params_w_vars</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "override initial state, destroyed" above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>desnUAll</td>
+      <td>desnUIni</td>
+      <td>desnUBeefCattle</td>
+      <td>desnUPigs</td>
+      <td>desnUIniBeefCattle</td>
+      <td>desnUIniPigs</td>
+      <td>descUAll</td>
+      <td>descUIni</td>
+      <td>descUBeefCattle</td>
+      <td>descUPigs</td>
+      <td>descUIniBeefCattle</td>
+      <td>descUIniPigs</td>
+      <td>deswUAll</td>
+    </tr>
+    <!-- Day-by-day                                     Initially/  Initially/ | Cumulative                                      Initially/  Initially/ |             -->
+    <!--  Total     Initially     Cattle       Pigs       Cattle       Pigs    |   Total     Initially     Cattle       Pigs       Cattle       Pigs    |  Waiting    -->
+    <tr><td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>override initial state, dead from disease</short-name>
+
+  <description>
+    Test a scenario where the starting disease state of a unit is given as Dead
+    from Disease in the input file.  This test also includes one infected unit
+    so that the simulation doesn't early-exit right away.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>24 September 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>2herds_1_start_dead</herd-file>
+
+  <parameter-file>disease_2species_same_params</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>DeadFromDisease</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>DeadFromDisease</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>DeadFromDisease</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>DeadFromDisease</td></tr>
+  </output>
+</deterministic-test>
+
 <deterministic-test>
   <category>disease</category>
   <short-name>override initial state, naturally immune</short-name>
@@ -325,6 +426,56 @@
 -->
   </output>
 </deterministic-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>override initial state, naturally immune, check reporting variables</short-name>
+
+  <description>
+    Test a scenario where the starting disease state of a herd is given as
+    Naturally Immune in the herd file.  This test also includes one infected
+    herd so that the simulation doesn't early-exit right away.  The count of
+    initially vaccinated units should be 0 (unlike if the initial state was
+    vaccine immune).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 June 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_1_start_nimmune</herd-file>
+
+  <parameter-file>disease_2species_same_params_w_vars2</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "override initial state, naturally immune"
+    above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
+      <td>vacnUIni</td>
+      <td>vacnUBeefCattle</td>
+      <td>vacnUPigs</td>
+      <td>vacnUIniBeefCattle</td>
+      <td>vacnUIniPigs</td>
+      <td>vaccUAll</td>
+      <td>vaccUIni</td>
+      <td>vaccUBeefCattle</td>
+      <td>vaccUPigs</td>
+      <td>vaccUIniBeefCattle</td>
+      <td>vaccUIniPigs</td>
+      <td>vacwUAll</td>
+    </tr>
+    <!-- Day-by-day                                     Initially/  Initially/ | Cumulative                                      Initially/  Initially/ |             -->
+    <!--  Total     Initially     Cattle       Pigs       Cattle       Pigs    |   Total     Initially     Cattle       Pigs       Cattle       Pigs    |  Waiting    -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td></tr>
+  </output>
+</variable-test>
 
 <deterministic-test>
   <category>disease</category>
@@ -362,6 +513,59 @@
 -->
   </output>
 </deterministic-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>override initial state, vaccine immune, check reporting variables</short-name>
+
+  <description>
+    Test a scenario where the starting disease state of a herd is given as
+    Vaccine Immune in the herd file.  This test also includes one infected herd
+    so that the simulation doesn't early-exit right away.  The count of
+    initially vaccinated units should be 1 (unlike if the initial state was
+    naturally immune).  The count of units awaiting vaccination should be at 0
+    the whole time (initially vaccinated units are never waiting).
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>29 June 2009</creation-date>
+  <model-version>3.0</model-version>
+
+  <herd-file>2herds_1_start_vimmune</herd-file>
+
+  <parameter-file>disease_2species_same_params_w_vars2</parameter-file>
+
+  <parameter-description>
+    The parameters are identical to "override initial state, vaccine immune"
+    above.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacnUAll</td>
+      <td>vacnUIni</td>
+      <td>vacnUBeefCattle</td>
+      <td>vacnUPigs</td>
+      <td>vacnUIniBeefCattle</td>
+      <td>vacnUIniPigs</td>
+      <td>vaccUAll</td>
+      <td>vaccUIni</td>
+      <td>vaccUBeefCattle</td>
+      <td>vaccUPigs</td>
+      <td>vaccUIniBeefCattle</td>
+      <td>vaccUIniPigs</td>
+      <td>vacwUAll</td>
+    </tr>
+    <!-- Day-by-day                                     Initially/  Initially/ | Cumulative                                      Initially/  Initially/ |             -->
+    <!--  Total     Initially     Cattle       Pigs       Cattle       Pigs    |   Total     Initially     Cattle       Pigs       Cattle       Pigs    |  Waiting    -->
+    <tr><td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <!-- Note that the "Ini" counts are separate, and most of the output
+      variables are reserved for infections that happen during the simulation. -->
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+    <tr><td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td>   <td>0</td>  <td>1</td>  <td>0</td>  <td>0</td>  <td>0</td>  <td>1</td>   <td>0</td></tr>
+  </output>
+</variable-test>
 
 <deterministic-test>
   <category>disease</category>
@@ -407,7 +611,7 @@
   <description>
     Test a scenario where the number of days left before a state transition is
     explicitly given in the herd file.  This scenario is like "override days
-    days left in state" above, but with a different number of days.
+    left in state" above, but with a different number of days.
   </description>
 
   <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
@@ -959,7 +1163,309 @@
   </output>
 </deterministic-test>
 
+<deterministic-test>
+  <category>disease</category>
+  <short-name>no early exit 1</short-name>
+
+  <description>
+    Test that the simulation's early-exit rules are followed.
+    
+    In the tests "no early exit" 1-3, there are two units.  Unit 0 is infected.
+    On day 1 unit 0 is detected and unit 1 is marked for vaccination.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <creation-date>24 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>no_early_exit_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and natural immunity lasts 3 days.
+
+    There is no spread.
+    
+    The probability of detecting a diseased unit vs. the number of days the
+    animals have been showing clinical signs is fixed at 1. The probability of
+    detecting a diseased unit vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  The authorities will
+    vaccinate units within 10 km of a detected unit.  The authorities can
+    vaccinate an unlimited/very large number of units each day.  The vaccine
+    produces immunity immediately, and the immunity lasts 5 days.
+
+    There is no destruction.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for vaccination because it is within 10 km of a
+       detected unit.
+     - On day 3 unit 1 will be vaccinated.
+     - On day 4 unit 1's state will show as Immune.
+     - On day 5 unit 0 will no longer be infectious.  Because there are no
+       infectious units left and nothing left to do, the simulation can end.
+
+    num-days is 6, so the simulation stops after day 5 (when it has run its course).
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>VaccineImmune</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>VaccineImmune</td></tr>
+    <!-- No infectious units, simulation stops. -->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>early exit 1</short-name>
+
+  <description>
+    Test that the simulation's early-exit rules are followed.
+    
+    In the tests "early exit" 1-4, there are two units.  Unit 0 is infected.
+    On day 1 unit 0 is detected and unit 1 is marked for vaccination.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <creation-date>24 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>early_exit_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and natural immunity lasts 3 days.
+
+    There is no spread.
+    
+    The probability of detecting a diseased unit vs. the number of days the
+    animals have been showing clinical signs is fixed at 1. The probability of
+    detecting a diseased unit vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  The authorities will
+    vaccinate units within 10 km of a detected unit.  The authorities can
+    vaccinate an unlimited/very large number of units each day.  The vaccine
+    produces immunity immediately, and the immunity lasts 5 days.
+
+    There is no destruction.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for vaccination because it is within 10 km of a
+       detected unit.
+     - On day 3 unit 1 will be vaccinated.
+     - On day 4 unit 1's state will show as Immune.
+     - On day 5 unit 0 will no longer be infectious.  Because there are no
+       infectious units left and nothing left to do, the simulation can end.
+
+    num-days is 3, so the simulation stops after day 3.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <!-- Day 3, simulation stops. -->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>early exit 2</short-name>
+
+  <description>
+    Test that the simulation's early-exit rules are followed.
+    
+    In the tests "early exit" 1-4, there are two units.  Unit 0 is infected.
+    On day 1 unit 0 is detected and unit 1 is marked for vaccination.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <creation-date>24 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>early_exit_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and natural immunity lasts 3 days.
+
+    There is no spread.
+    
+    The probability of detecting a diseased unit vs. the number of days the
+    animals have been showing clinical signs is fixed at 1. The probability of
+    detecting a diseased unit vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  The authorities will
+    vaccinate units within 10 km of a detected unit.  The authorities have no
+    resources to vaccinate any units each day.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days.
+
+    There is no destruction.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for vaccination because it is within 10 km of a
+       detected unit.
+     - On day 3 nothing changes.
+     - On day 4 unit 1's state will show as Immune.
+     - On day 5 unit 0 will no longer be infectious.  Because there are no
+       infectious units left and nothing left to do, the simulation can end.
+
+    exit-condition is disease-end, so the simulation stops after day 5,
+    despite the fact that herd 2 is on the vaccination list.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <tr><td>NaturallyImmune</td>     <td>Susceptible</td></tr>
+    <!-- No infectious units, simulation stops. -->
+  </output>
+</deterministic-test>
+
 <variable-test>
+  <category>disease</category>
+  <short-name>early exit 3</short-name>
+
+  <description>
+    Test that the simulation's early-exit rules are followed.
+    
+    In the tests "early exit" 1-4, there are two units.  Unit 0 is infected.
+    On day 1 unit 0 is detected and units 1-4 are marked for vaccination.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <creation-date>24 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>5herds_very_close</herd-file>
+
+  <parameter-file>early_exit_3</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and natural immunity lasts 3 days.
+
+    There is no spread.
+    
+    The probability of detecting a diseased unit vs. the number of days the
+    animals have been showing clinical signs is fixed at 1. The probability of
+    detecting a diseased unit vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  The authorities will
+    vaccinate units within 10 km of a detected unit.  The authorities have
+    resources to vaccinate one units each day.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days.
+
+    There is no destruction.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for vaccination because it is within 10 km of a
+       detected unit.
+     - On day 3 a unit is vaccinated.
+     - On day 4 a unit is vaccinated and the one from day 3 becomes immune.
+     - On day 5 a unit is vaccinated and the one from day 4 becomes immune.  Unit 0 will no longer be infectious.
+     - On day 6 a unit is vaccinated and the one from day 5 becomes immune.
+     - On day 7 the unit from day 6 becomes immune.
+
+    exit-condition is not set to disease-end and num-days is set to 5 so the
+    simulation stops after day 5, despite the fact that there is still a herd
+    on the vaccination list.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>vacwUAll</td>
+    </tr>
+    <tr><td>0</td></tr>
+    <tr><td>4</td></tr>
+    <tr><td>3</td></tr>
+    <tr><td>2</td></tr>
+    <tr><td>1</td></tr>
+    <!-- Day 5, simulation stops. -->
+  </output>
+</variable-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>early exit 4</short-name>
+
+  <description>
+    Test that the simulation's early-exit rules are followed.
+    
+    In the tests "early exit" 1-4, there are two units.  Unit 0 is infected.
+    On day 1 unit 0 is detected and unit 1 is marked for vaccination.
+  </description>
+
+  <author>Anthony &quot;Drew&quot; Schwickerath &lt;Drew.Schwickerath@ColoState.edu&gt;</author>
+  <creation-date>24 June 2009</creation-date>
+  <model-version>3.2</model-version>
+
+  <herd-file>2herds</herd-file>
+
+  <parameter-file>early_exit_4</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and natural immunity lasts 3 days.
+
+    There is no spread.
+    
+    The probability of detecting a diseased unit vs. the number of days the
+    animals have been showing clinical signs is fixed at 1. The probability of
+    detecting a diseased unit vs. the number of days since a public
+    announcement of an outbreak is also fixed at 1.
+
+    A vaccination program begins at the first detection.  The authorities will
+    vaccinate units within 10 km of a detected unit.  The authorities have no
+    resources to vaccinate any units each day.  The vaccine produces immunity
+    immediately, and the immunity lasts 5 days.
+
+    There is no destruction.
+
+    Recapping what should happen as a result of all this:
+     - On day 1 unit 0 will be latent.
+     - On day 2 unit 0 will be Infectious Clinical.  It will be detected, and
+       unit 1 will be marked for vaccination because it is within 10 km of a
+       detected unit.
+     - On day 3 nothing changes.
+     - On day 4 unit 1's state will show as Immune.
+     - On day 5 unit 0 will no longer be infectious.  Because there are no
+       infectious units left and nothing left to do, the simulation can end.
+
+    exit-condition is first-detection, so the simulation stops after day 2.
+  </parameter-description>
+
+  <output>
+    <tr><td>Latent</td>              <td>Susceptible</td></tr>
+    <tr><td>InfectiousClinical</td>  <td>Susceptible</td></tr>
+    <!-- First detection, simulation stops. -->
+  </output>
+</deterministic-test>
+
+<deterministic-test>
   <category>disease</category>
   <short-name>prevalence default</short-name>
   
@@ -985,23 +1491,13 @@
   </parameter-description>
 
   <output>
-    <tr>
-      <td>num-units-in-each-state:Susceptible</td>
-      <td>num-units-in-each-state:Latent</td>
-      <td>num-units-in-each-state:Infectious Subclinical</td>
-      <td>num-units-in-each-state:Infectious Clinical</td>
-      <td>num-units-in-each-state:Naturally Immune</td>
-      <td>num-units-in-each-state:Vaccine Immune</td>
-      <td>num-units-in-each-state:Destroyed</td>
-      <td>average-prevalence</td>
-    </tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1.0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>1.0</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0.0</td></tr>
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>N</td></tr>
   </output>
-</variable-test>
+</deterministic-test>
 
-<variable-test>
+<deterministic-test>
   <category>disease</category>
   <short-name>prevalence over 2 days</short-name>
   
@@ -1034,23 +1530,13 @@
   <diagram>1herd</diagram>
 
   <output>
-    <tr>
-      <td>num-units-in-each-state:Susceptible</td>
-      <td>num-units-in-each-state:Latent</td>
-      <td>num-units-in-each-state:Infectious Subclinical</td>
-      <td>num-units-in-each-state:Infectious Clinical</td>
-      <td>num-units-in-each-state:Naturally Immune</td>
-      <td>num-units-in-each-state:Vaccine Immune</td>
-      <td>num-units-in-each-state:Destroyed</td>
-      <td>average-prevalence</td>
-    </tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0.5</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0.5</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0.0</td></tr>
+    <tr><td>S12L13</td></tr>
+    <tr><td>S12C13</td></tr>
+    <tr><td>N</td></tr>
   </output>
-</variable-test>
+</deterministic-test>
 
-<variable-test>
+<deterministic-test>
   <category>disease</category>
   <short-name>prevalence over 4 days</short-name>
   
@@ -1075,7 +1561,8 @@
     The prevalence curve is a simple triangle: (0,0), (1,1), (2,0).  Because
     the curve spans 2 days and the disease lasts 4 days, the prevalence values
     found by interpolating at the middle of each day should be 0.25, 0.75,
-    0.75, and 0.25.
+    0.75, and 0.25.  The counts of animals are based on 25 animals in the unit
+    (e.g., round(0.25*25)=6, giving 6 Latent animals on day 1).
 
     There is no spread, detection, vaccination, or destruction.
   </parameter-description>
@@ -1084,20 +1571,586 @@
   <diagram>1herd</diagram>
 
   <output>
+    <tr><td>S19L6</td></tr>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S19C6</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>prevalence over 4 days, override initial state</short-name>
+  
+  <description>
+    Test that prevalence is calculated correctly.  This scenario is like
+    "prevalence over 4 days" above, but it starts with the herd infectious
+    clinical.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>8 December 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>1herd_start_infectious</herd-file>
+
+  <parameter-file>prevalence_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The prevalence curve is a simple triangle: (0,0), (1,1), (2,0).  Because
+    the curve spans 2 days and the disease lasts 4 days, the prevalence values
+    found by interpolating at the middle of each day should be 0.25, 0.75,
+    0.75, and 0.25.  However, because the unit starts out Infectious Clinical,
+    we know that it must be starting on the 2nd day of its disease progression.
+    The counts of animals are based on 25 animals in the unit (e.g.,
+    round(0.75*25)=19, giving 19 Infectious Clinical animals on day 1).
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <diagram>prevalence_2</diagram>
+  <diagram>1herd_start_infectious</diagram>
+
+  <output>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S19C6</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>prevalence over 4 days, override initial state + days left in state</short-name>
+  
+  <description>
+    Test that prevalence is calculated correctly.  This scenario is like
+    "prevalence over 4 days" above, but it starts with the herd infectious
+    clinical with 2 days left in that state.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>8 December 2008</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>1herd_start_infectious_2daysleft</herd-file>
+
+  <parameter-file>prevalence_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The prevalence curve is a simple triangle: (0,0), (1,1), (2,0).  Because
+    the curve spans 2 days and the disease lasts 4 days, the prevalence values
+    found by interpolating at the middle of each day should be 0.25, 0.75,
+    0.75, and 0.25.  Because the number of days remaining in the Infectious
+    Clinical state has been explicitly given, we know that the unit must be
+    starting on the 3rd day of its disease progression.  The counts of animals
+    are based on 25 animals in the unit (e.g., round(0.75*25)=19, giving 19
+    Infectious Clinical animals on day 1).
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <diagram>prevalence_2</diagram>
+  <diagram>1herd_start_infectious</diagram>
+
+  <output>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S19C6</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>prevalence over 4 days, override initial state + days in state</short-name>
+  
+  <description>
+    Test that prevalence is calculated correctly.  This scenario is like
+    "prevalence over 4 days" above, but it starts with the herd infectious
+    clinical with 1 day of the clinical period already elapsed.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 January 2009</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>1herd_start_infectious_1dayin</herd-file>
+
+  <parameter-file>prevalence_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The prevalence curve is a simple triangle: (0,0), (1,1), (2,0).  Because
+    the curve spans 2 days and the disease lasts 4 days, the prevalence values
+    found by interpolating at the middle of each day should be 0.25, 0.75,
+    0.75, and 0.25.  Because the number of days already spent in the Infectious
+    Clinical state has been explicitly given, we know that the unit must be
+    starting on the 3rd day of its disease progression.  The counts of animals
+    are based on 25 animals in the unit (e.g., round(0.75*25)=19, giving 19
+    Infectious Clinical animals on day 1).
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <diagram>prevalence_2</diagram>
+  <diagram>1herd_start_infectious</diagram>
+
+  <output>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S19C6</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>prevalence over 4 days, override initial state + days in state + days left in state</short-name>
+  
+  <description>
+    Test that prevalence is calculated correctly.  This scenario is like
+    "prevalence over 4 days" above, but it starts with the herd infectious
+    clinical with 1 day of the clinical period already elapsed and 4 days left.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>5 January 2009</creation-date>
+  <model-version>3.1</model-version>
+
+  <herd-file>1herd_start_infectious_1dayin_4daysleft</herd-file>
+
+  <parameter-file>prevalence_2</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 3 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+    
+    The prevalence curve is a simple triangle: (0,0), (1,1), (2,0).  The disease
+    would normally last 4 days (1 day latent + 3 days infectious), but because
+    we have overridden both the days elapsed and the days remaining in the
+    infectious period, the disease will last 6 days (1 day latent + 5 days
+    infectious).  The prevalence values found by interpolating at the middle of
+    each day should be 1/6, 3/6, 5/6, 5/6, 3/6, and 1/6.  The counts of animals
+    are based on 25 animals in the unit (e.g., round(5/6*25)=21, giving 21
+    Infectious Clinical animals on day 1).
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <diagram>prevalence_triangle_6days</diagram>
+  <diagram>1herd_start_infectious</diagram>
+
+  <output>
+    <tr><td>S4C21</td></tr>
+    <tr><td>S4C21</td></tr>
+    <tr><td>S12C13</td></tr>
+    <tr><td>S21C4</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>2 prevalence curves over 4 days</short-name>
+  
+  <description>
+    Test that prevalence is calculated correctly.  This scenario is like
+    "prevalence over 4 days" above, but it has both "infected" and "infectious"
+    curves.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>28 October 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>prevalence_2curves</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious subclinical period lasts 1
+    day, the infectious clinical period last 2 days, and immunity lasts 1 day.
+
+    The prevalence curve is shown below.  The prevalence values are found by
+    interpolating at the middle of each day, and the counts of animals are
+    based on 25 animals in the unit.
+
+    There is no spread, detection, vaccination, or destruction.
+
+    What should happen:
+     - On day 1 the unit-level state is Latent, the infected prevalence is
+       0.25 and the infectious prevalence is 0, which makes round(0.25*25)=6
+       Latent animals.
+     - On day 2 the unit-level state is Infectious Subclinical, the infected
+       prevalence is 0.75 and the infectious prevalence is 0.5, which makes 13
+       Subclinical and 6 Latent animals.
+     - On day 3 the unit-level state is Infectious Clinical, the infected
+       prevalence is 0.75 and the infectious prevalence is the same, which
+       makes 19 Clinical animals.
+     - On day 3 the infected prevalence is 0.25 and the infectious prevalence
+       is the same, which makes 6 Clinical animals.
+  </parameter-description>
+
+  <diagram>prevalence_2curves_4days</diagram>
+  <diagram>1herd</diagram>
+
+  <output>
+    <tr><td>S19L6</td></tr>
+    <tr><td>S6L6B13</td></tr>
+    <tr><td>S6C19</td></tr>
+    <tr><td>S19C6</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>just &lt; threshold for mortality</short-name>
+
+  <description>
+    Test the choice between transitioning to Naturally Immune or Dead from
+    Disease.  In this scenario, the unit transitions to Naturally Immune.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>24 September 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>mortality_0</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and natural immunity lasts 3 days.  There is a 49.9% chance that a
+    unit will die rather than recover, so with "fixed" random numbers of 0.5,
+    the unit will always recover.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>N</td></tr>
+  </output>
+</deterministic-test>
+
+<deterministic-test>
+  <category>disease</category>
+  <short-name>just &gt; threshold for mortality</short-name>
+
+  <description>
+    Test the choice between transitioning to Naturally Immune or Dead from
+    Disease.  In this scenario, the unit transitions to Dead from Disease.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>14 October 2009</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>mortality_1</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness with clinical signs lasts 2
+    days, and natural immunity lasts 3 days.  There is a 50.1% chance that a
+    unit will die rather than recover, so with "fixed" random numbers of 0.5,
+    the unit will always die.
+  </parameter-description>
+
+  <output>
+    <tr><td>L</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>C</td></tr>
+    <tr><td>X</td></tr>
+  </output>
+</deterministic-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>count units &amp; animals in state, no prevalence</short-name>
+  <description>
+    This is one of a series of tests to check that the number of units and
+    number of animals in each state is counted correctly.
+    
+    In this test, no prevalence curves are defined.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 May 2010</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>count_state_no_prevalence</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious subclinical period lasts 1
+    day, the infectious clinical period lasts 2 days, and immunity lasts 1 day.
+
+    Because no prevalence curves have been defined, when the unit is Latent all
+    animals in it should count as Latent, when the unit is Clinical all animals
+    in it should count as Clinical, etc.
+  </parameter-description>
+
+  <output>
     <tr>
-      <td>num-units-in-each-state:Susceptible</td>
-      <td>num-units-in-each-state:Latent</td>
-      <td>num-units-in-each-state:Infectious Subclinical</td>
-      <td>num-units-in-each-state:Infectious Clinical</td>
-      <td>num-units-in-each-state:Naturally Immune</td>
-      <td>num-units-in-each-state:Vaccine Immune</td>
-      <td>num-units-in-each-state:Destroyed</td>
-      <td>average-prevalence</td>
+      <td>tsdUSusc</td>
+      <td>tsdULat</td>
+      <td>tsdUSubc</td>
+      <td>tsdUClin</td>
+      <td>tsdUNImm</td>
+      <td>tsdUVImm</td>
+      <td>tsdUDead</td>
+      <td>tsdUDest</td>
+      <td>tsdASusc</td>
+      <td>tsdALat</td>
+      <td>tsdASubc</td>
+      <td>tsdAClin</td>
+      <td>tsdANImm</td>
+      <td>tsdAVImm</td>
+      <td>tsdADead</td>
+      <td>tsdADest</td>
     </tr>
-    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0.25</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0.75</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0.75</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0.25</td></tr>
-    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0.0</td></tr>
+    <!-- Counts by unit                                                                         | Counts by animal                                                                         -->
+    <!--    S          L          B          C          N          V          X          D      |     S           L           B           C           N          V          X          D       -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td> <td>25</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td>  <td>0</td> <td>25</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td> <td>25</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td> <td>25</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td>   <td>0</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>25</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>count units &amp; animals in state, infected prevalence only</short-name>
+  <description>
+    This is one of a series of tests to check that the number of units and
+    number of animals in each state is counted correctly.
+    
+    In this test, the infected prevalence curve is defined but not the
+    infectious prevalence curve.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 May 2010</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>count_state_infected_prevalence_only</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious subclinical period lasts 1
+    day, the infectious clinical period lasts 2 days, and immunity lasts 1 day.
+
+    The infected prevalence curve is a simple triangle (0,0), (1,1), (2,0) as
+    used in the test “prevalence over 4 days” above.
+
+    Because only the infected prevalence curve has been defined, we don’t know
+    how many of the infected animals are Latent vs. Subclinical or Clinical.
+    So the model should count all infected animals as Latent while the
+    unit-level state is Latent, all infected animals as Clinical while the
+    unit-level state is Clinical, etc.
+  </parameter-description>
+
+  <diagram>prevalence_2.png</diagram>
+
+  <output>
+    <tr>
+      <td>tsdUSusc</td> <!-- Counts by unit -->
+      <td>tsdULat</td>
+      <td>tsdUSubc</td>
+      <td>tsdUClin</td>
+      <td>tsdUNImm</td>
+      <td>tsdUVImm</td>
+      <td>tsdUDead</td>
+      <td>tsdUDest</td>
+      <td>tsdASusc</td> <!-- Counts by animal -->
+      <td>tsdALat</td>
+      <td>tsdASubc</td>
+      <td>tsdAClin</td>
+      <td>tsdANImm</td>
+      <td>tsdAVImm</td>
+      <td>tsdADead</td>
+      <td>tsdADest</td>
+    </tr>
+    <!-- Counts by unit                                                                         | Counts by animal                                                                         -->
+    <!--    S          L          B          C          N          V          X          D      |      S          L           B           C           N          V          X          D       -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>19</td> <td>6</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>0</td> <td>19</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>0</td>  <td>0</td> <td>19</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>19</td> <td>0</td>  <td>0</td>  <td>6</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td>    <td>0</td> <td>0</td>  <td>0</td>  <td>0</td> <td>25</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>count units &amp; animals in state, infectious prevalence only</short-name>
+  <description>
+    This is one of a series of tests to check that the number of units and
+    number of animals in each state is counted correctly.
+    
+    In this test, the infectious prevalence curve is defined but not the
+    infected prevalence curve.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 May 2010</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>count_state_infectious_prevalence_only</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious subclinical period lasts 1
+    day, the infectious clinical period lasts 2 days, and immunity lasts 1 day.
+
+    The infectious prevalence curve is a simple triangle (0,0), (1,1), (2,0) as
+    used in the test “prevalence over 4 days” above.
+
+    Because only the infectious prevalence curve has been defined, we don’t
+    know how many animals are Latent when the unit-level state is Latent.  So
+    while the unit-level state is Latent, the model should count the infectious
+    animals as subclinical and show 1 animal as Latent.
+  </parameter-description>
+
+  <diagram>prevalence_2.png</diagram>
+
+  <output>
+    <tr>
+      <td>tsdUSusc</td> <!-- Counts by unit -->
+      <td>tsdULat</td>
+      <td>tsdUSubc</td>
+      <td>tsdUClin</td>
+      <td>tsdUNImm</td>
+      <td>tsdUVImm</td>
+      <td>tsdUDead</td>
+      <td>tsdUDest</td>
+      <td>tsdASusc</td> <!-- Counts by animal -->
+      <td>tsdALat</td>
+      <td>tsdASubc</td>
+      <td>tsdAClin</td>
+      <td>tsdANImm</td>
+      <td>tsdAVImm</td>
+      <td>tsdADead</td>
+      <td>tsdADest</td>
+    </tr>
+    <!-- Counts by unit                                                                         | Counts by animal                                                                         -->
+    <!--    S          L          B          C          N          V          X          D      |      S          L           B           C           N          V          X          D       -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>18</td> <td>1</td>  <td>6</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>0</td> <td>19</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>0</td>  <td>0</td> <td>19</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>19</td> <td>0</td>  <td>0</td>  <td>6</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td>    <td>0</td> <td>0</td>  <td>0</td>  <td>0</td> <td>25</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>count units &amp; animals in state, infected and infectious prevalence</short-name>
+  <description>
+    This is one of a series of tests to check that the number of units and
+    number of animals in each state is counted correctly.
+    
+    In this test, both the infected and infectious prevalence curves are
+    defined.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>27 May 2010</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>count_state_infected_and_infectious_prevalence</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, the infectious subclinical period lasts 1
+    day, the infectious clinical period lasts 2 days, and immunity lasts 1 day.
+
+    The prevalence curve is shown below, the same ones used in the test “2
+    prevalence curves over 4 days” above.  The prevalence values are found by
+    interpolating at the middle of each day, and the counts of animals are
+    based on 25 animals in the unit.
+  </parameter-description>
+
+  <diagram>prevalence_2curves_4days.png</diagram>
+
+  <output>
+    <tr>
+      <td>tsdUSusc</td> <!-- Counts by unit -->
+      <td>tsdULat</td>
+      <td>tsdUSubc</td>
+      <td>tsdUClin</td>
+      <td>tsdUNImm</td>
+      <td>tsdUVImm</td>
+      <td>tsdUDead</td>
+      <td>tsdUDest</td>
+      <td>tsdASusc</td> <!-- Counts by animal -->
+      <td>tsdALat</td>
+      <td>tsdASubc</td>
+      <td>tsdAClin</td>
+      <td>tsdANImm</td>
+      <td>tsdAVImm</td>
+      <td>tsdADead</td>
+      <td>tsdADest</td>
+    </tr>
+    <!-- Counts by unit                                                                         | Counts by animal                                                                         -->
+    <!--    S          L          B          C          N          V          X          D      |      S          L           B           C           N          V          X          D       -->
+    <tr><td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>19</td> <td>6</td>  <td>0</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>6</td> <td>13</td>  <td>0</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>    <td>6</td> <td>0</td>  <td>0</td> <td>19</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td> <td>0</td>   <td>19</td> <td>0</td>  <td>0</td>  <td>6</td>  <td>0</td> <td>0</td> <td>0</td> <td>0</td></tr>
+    <tr><td>0</td> <td>0</td> <td>0</td> <td>0</td> <td>1</td> <td>0</td> <td>0</td> <td>0</td>    <td>0</td> <td>0</td>  <td>0</td>  <td>0</td> <td>25</td> <td>0</td> <td>0</td> <td>0</td></tr>
+  </output>
+</variable-test>
+
+<variable-test>
+  <category>disease</category>
+  <short-name>simulator version</short-name>
+
+  <description>
+    Test that the simulator version can be included with the output.
+  </description>
+
+  <author>Neil Harvey &lt;neilharvey@gmail.com&gt;</author>
+  <creation-date>31 May 2010</creation-date>
+  <model-version>4.0</model-version>
+
+  <herd-file>1herd</herd-file>
+
+  <parameter-file>version</parameter-file>
+
+  <parameter-description>
+    The latent period lasts 1 day, infectiousness lasts 2 days, clinical signs
+    accompany infectiousness immediately, and immunity lasts 1 day.
+
+    There is no spread, detection, vaccination, or destruction.
+  </parameter-description>
+
+  <output>
+    <tr>
+      <td>versionMajor</td>
+      <td>versionMinor</td>
+      <td>versionRelease</td>
+    </tr>
+    <tr> <td></td>  <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td>  <td></td></tr>
+    <tr> <td></td>  <td></td>  <td></td></tr>
+    <tr><td>4</td> <td>0</td> <td>11</td></tr>
   </output>
 </variable-test>

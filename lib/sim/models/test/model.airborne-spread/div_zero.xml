@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
-  <num-days>10</num-days>
+  <num-days>4</num-days>
   <num-runs>1</num-runs>
 
   <models>
 
-    <disease-model production-type="Beef Cattle">
+    <disease-model production-type="Beef Cattle,Pigs">
       <latent-period>
         <point>1</point>
         <units><xdf:unit>day</xdf:unit></units>
@@ -18,7 +18,7 @@
         <units><xdf:unit>day</xdf:unit></units>
       </infectious-subclinical-period>
       <infectious-clinical-period>
-        <point>2</point>
+        <point>3</point>
         <units><xdf:unit>day</xdf:unit></units>
       </infectious-clinical-period>
       <immunity-period>
@@ -27,33 +27,48 @@
       </immunity-period>
     </disease-model>
 
-    <!-- Setting max-spread = 0 seems like a sensible way to turn off airborne
-      spread, but it creates a divide by zero in the formula. -->
-    <airborne-spread-model from-production-type="Beef Cattle" to-production-type="Beef Cattle">
-      <prob-spread-1km>0.1</prob-spread-1km>
+    <contact-spread-model from-production-type="Beef Cattle" to-production-type="Beef Cattle" contact-type="direct">
+      <fixed-movement-rate>
+        <value>1</value>
+        <units><xdf:unit power="-1">day</xdf:unit></units>
+      </fixed-movement-rate>
+      <distance>
+        <point>10</point>
+        <units><xdf:unit>km</xdf:unit></units>
+      </distance>
+      <!-- Contact always produces infection. -->
+      <prob-infect>1.0</prob-infect>
+      <!-- Movement is unaffected by public knowledge of an outbreak. -->
+      <movement-control>
+        <value>0</value> <value>1.0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </movement-control>
+      <latent-units-can-infect>true</latent-units-can-infect>
+    </contact-spread-model>
+
+    <airborne-spread-model from-production-type="Beef Cattle">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+        <value>10</value>
+        <units><xdf:unit>km</xdf:unit></units>
+      </herd-distance>
+      <prob>0.3</prob>
       <wind-direction-start>
-	<value>0</value>
-	<units><xdf:unit>degree</xdf:unit></units>
+        <value>0</value>
+        <units><xdf:unit>degree</xdf:unit></units>
       </wind-direction-start>
       <wind-direction-end>
-	<value>360</value>
-	<units><xdf:unit>degree</xdf:unit></units>
+        <value>360</value>
+        <units><xdf:unit>degree</xdf:unit></units>
       </wind-direction-end>
-      <max-spread>
-	<value>0</value>
-	<units>
-	  <xdf:unit>km</xdf:unit>
-	</units>
-      </max-spread>
     </airborne-spread-model>
 
-    <conflict-resolver></conflict-resolver>
+    <conflict-resolver />
+
+    <state-table-writer />
 
   </models>
 
-  <output>
-    <variable-name>all-units-states</variable-name>
-    <frequency>daily</frequency>
-  </output>
-
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

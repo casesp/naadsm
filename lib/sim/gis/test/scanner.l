@@ -23,7 +23,7 @@
  * @version 0.1
  * @date January 2004
  *
- * Copyright &copy; University of Guelph, 2004-2006
+ * Copyright &copy; University of Guelph, 2004-2008
  * 
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -37,7 +37,11 @@
 #define BUFFERSIZE 2048
 #define ADJUST (tokenpos = charpos, charpos += yyleng)
 
+#ifdef USE_PLAIN_YACC
+int yyerror (char *s);
+#else
 int yyerror (char *s, int fatal);
+#endif
 
 char linebuf[BUFFERSIZE];
 int charpos = 0, tokenpos = 0;
@@ -76,8 +80,9 @@ int charpos = 0, tokenpos = 0;
   dist(ance?)               { ADJUST; return DISTANCE; }
   "heading"                 { ADJUST; return HEADING; }
   "area"                    { ADJUST; return AREA; }
-  "local"                   { ADJUST; return LOCAL; }
-  "simple"                  { ADJUST; return SIMPLE; }
+  "perimeter"               { ADJUST; return PERIMETER; }
+  "great circle"            { ADJUST; return GREATCIRCLE; }
+  "point in polygon"        { ADJUST; return POINTINPOLYGON; }
   [+-]?[[:digit:]]+(\.[[:digit:]]+)?([eE][+-][[:digit:]]+)? {
     ADJUST;
     yylval.fval = (double)atof(yytext);
@@ -90,7 +95,11 @@ int charpos = 0, tokenpos = 0;
   [[:space:]] { /* Ignore whitespace */ }
   . {
     /* Report an unrecognized token. */
+#ifdef USE_PLAIN_YACC 
+    yyerror ("Unrecognized token");
+#else
     yyerror ("Unrecognized token", 1);
+#endif
   }
 }
 %%

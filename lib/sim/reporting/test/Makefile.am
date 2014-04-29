@@ -1,13 +1,12 @@
 ## Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = -I.. @GLIB_CFLAGS@
-AM_LDFLAGS = -L..
+INCLUDES = -I.. @GLIB_CFLAGS@ @GSL_CFLAGS@
 
 AM_YFLAGS = -d -v
 
 noinst_PROGRAMS = shell fcmp
-shell_SOURCES = shell.y scanner.l
-shell_LDADD = -lreporting $(top_builddir)/replace/libreplace.la
+shell_SOURCES = shell.y scanner.l ../reporting.c ../reporting.h
+shell_LDADD = @GLIB_LIBS@
 
 fcmp_SOURCES = fcmp.c
 fcmp_LDADD = @GLIB_LIBS@ @GSL_LIBS@

@@ -40,7 +40,6 @@
 #endif
 
 #include <stdio.h>
-#include <popt.h>
 #include <glib.h>
 #include <shapefil.h>
 #include <gd.h>
@@ -385,7 +384,9 @@ convert (const char *shape_file_name, const char *attribute_name,
             }
         }
       if (!numeric_field_found)
-        g_error ("could not find any numeric fields to colour the plot by");
+        {
+          g_error ("could not find any numeric fields to colour the plot by");
+        }
       g_warning ("will use numeric field \"%s\" to colour the plot", field_name);
     }
 
@@ -574,141 +575,109 @@ end:
 int
 main (int argc, char *argv[])
 {
-  poptContext option;
-  struct poptOption options[4];
   const char *arcview_file_name = NULL; /**< name of the ArcView shapefile */
-  const char *attribute_name = NULL; /**< name of the attribute in the ArcView
+  const char *attribute_name; /**< name of the attribute in the ArcView
     DBF file */
   double min_attribute_value = 0;
   double max_attribute_value = -1;
-  const char *min_colour = NULL; /**< hex RGB representation of the colour to
+  const char *min_colour; /**< hex RGB representation of the colour to
     assign to the minimum attribute value */
-  const char *max_colour = NULL; /**< hex RGB representation of the colour to
+  const char *max_colour; /**< hex RGB representation of the colour to
     assign to the maximum attribute value */
-  char *image_file_name = NULL; /**< name of the image file to write */
+  char *image_file_name; /**< name of the image file to write */
   char *arcview_base_name;
   int verbosity = 0;
+  GError *option_error = NULL;
+  GOptionContext *context;
+  GOptionEntry options[] = {
+    { "verbosity", 'V', 0, G_OPTION_ARG_INT, &verbosity, "Message verbosity level (0 = simulation output only, 1 = all debugging output)", NULL },
+    { "min-value", 0, 0, G_OPTION_ARG_DOUBLE, &min_attribute_value, "override minimum attribute value", NULL },
+    { "max-value", 0, 0, G_OPTION_ARG_DOUBLE, &max_attribute_value, "override maximum attribute value", NULL },
+    { NULL }
+  };
 
   /* Get the command-line options and arguments.  There should be at least four
    * command-line arguments, the name of the ArcView shapefile, the name of the
    * attribute to read, a colour for the minimum attribute value, a colour for
    * the maximum attribute value, and optionally a fifth argument giving the
    * name of the image file to write. */
-  options[0].longName = "verbosity";
-  options[0].shortName = 'V';
-  options[0].argInfo = POPT_ARG_INT;
-  options[0].arg = &verbosity;
-  options[0].val = 0;
-  options[0].descrip =
-    "Message verbosity level (0 = simulation output only, 1 = + informational messages, 2 = + all debugging output)";
-  options[0].argDescrip = "verbosity";
-
-  options[1].longName = "min-value";
-  options[1].shortName = '\0';
-  options[1].argInfo = POPT_ARG_DOUBLE;
-  options[1].arg = &min_attribute_value;
-  options[1].val = 0;
-  options[1].descrip = "override minimum attribute value";
-  options[1].argDescrip = "min-attribute-value";
-
-  options[2].longName = "max-value";
-  options[2].shortName = '\0';
-  options[2].argInfo = POPT_ARG_DOUBLE;
-  options[2].arg = &max_attribute_value;
-  options[2].val = 0;
-  options[2].descrip = "override maximum attribute value";
-  options[2].argDescrip = "max-attribute-value";
-
-  options[3].longName = NULL;
-  options[3].shortName = '\0';
-  options[3].argInfo = 0;
-  options[3].arg = NULL;
-  options[3].val = 0;
-  options[3].descrip = NULL;
-  options[3].argDescrip = NULL;
-
-  option = poptGetContext (NULL, argc, (const char **) argv, options, 0);
-  poptGetNextOpt (option);
+  context = g_option_context_new ("");
+  g_option_context_add_main_entries (context, options, /* translation = */ NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &option_error))
+    {
+      g_error ("option parsing failed: %s\n", option_error->message);
+    }
 
   /* Set the verbosity level. */
-  if (verbosity < 2)
-    {
-      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
-    }
   if (verbosity < 1)
     {
-      g_log_set_handler (NULL, G_LOG_LEVEL_INFO, silent_log_handler, NULL);
+      g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
 #if DEBUG
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "verbosity = %i", verbosity);
 #endif
 
-  arcview_file_name = poptGetArg (option);
-  if (arcview_file_name == NULL)
-    g_error ("Need the name of an ArcView shapefile.");
-
-  poptGetNextOpt (option);
-  attribute_name = poptGetArg (option);
-  if (attribute_name == NULL)
+  if (argc >= 2)
+    arcview_file_name = argv[1];
+  else
     {
+      g_error ("Need the name of an ArcView shapefile.");
+    }
+
+  if (argc >= 3)
+    {
+      attribute_name = argv[2];
+      #if DEBUG
+        g_debug ("attribute name = \"%s\"", attribute_name);
+      #endif
+    }
+  else
+    {
+      attribute_name = NULL;
       g_warning
         ("No attribute name supplied, will use the first numeric attribute found in the ArcView DBF file.");
     }
-#if DEBUG
-  else
-    {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "attribute name = \"%s\"", attribute_name);
-    }
-#endif
 
-  poptGetNextOpt (option);
-  min_colour = poptGetArg (option);
-  if (min_colour == NULL)
+  if (argc >= 4)
+    min_colour = argv[3];
+  else
     {
       g_warning ("No minimum colour given, will use white.");
       min_colour = "FFFFFF";
     }
-#if DEBUG
-  else
-    {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "colour for minimum value = #%s", min_colour);
-    }
-#endif
+  #if DEBUG
+    g_debug ("colour for minimum value = #%s", min_colour);
+  #endif
 
-  poptGetNextOpt (option);
-  max_colour = poptGetArg (option);
-  if (max_colour == NULL)
+  if (argc >= 5)
+    max_colour = argv[4];
+  else
     {
       g_warning ("No maximum colour given, will use black.");
       max_colour = "000000";
     }
-#if DEBUG
-  else
-    {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "colour for maximum value = #%s", max_colour);
-    }
-#endif
+  #if DEBUG
+    g_debug ("colour for maximum value = #%s", max_colour);
+  #endif
 
-  poptGetNextOpt (option);
-  image_file_name = (char *) poptGetArg (option);
-  if (image_file_name == NULL)
+  if (argc >= 6)
+    {
+      image_file_name = argv[5];
+      #if DEBUG
+        g_debug ("output file name = \"%s\"", image_file_name);
+      #endif
+    }
+  else
     {
       arcview_base_name = g_strndup (arcview_file_name, strlen (arcview_file_name) - 4);
       image_file_name = g_strdup_printf ("%s_%s.png", arcview_base_name, attribute_name);
       g_free (arcview_base_name);
-#if DEBUG
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "No output file name given, will use \"%s\"",
-             image_file_name);
-#endif
+      #if DEBUG
+        g_debug ("No output file name given, will use \"%s\"", image_file_name);
+      #endif
     }
-#if DEBUG
-  else
-    {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "output file name = \"%s\"", image_file_name);
-    }
-#endif
 
-  poptFreeContext (option);
+  g_option_context_free (context);
 
   convert (arcview_file_name, attribute_name, min_attribute_value,
            max_attribute_value, min_colour, max_colour, image_file_name);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
   <num-days>4</num-days>
@@ -70,11 +70,8 @@
 
     <conflict-resolver></conflict-resolver>
 
+    <state-table-writer />
+
   </models>
 
-  <output>
-    <variable-name>all-units-states</variable-name>
-    <frequency>daily</frequency>
-  </output>
-
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

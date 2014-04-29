@@ -4,14 +4,14 @@ unit FormMap;
 FormMap.pas/dfm
 ---------------
 Begin: 2005/05/25
-Last revision: $Date: 2008/11/25 22:00:30 $ $Author: areeves $
-Version: $Revision: 1.45 $
+Last revision: $Date: 2011-09-30 19:21:41 $ $Author: areeves $
+Version: $Revision: 1.60.2.8 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 Author: Snehal Shetye <snehal@goku.engr.colostate.edu>
 ------------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2011 Animal Population Health Institute, Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -33,12 +33,19 @@ interface
     ExtCtrls,
     StdCtrls,
     Buttons,
+    ToolWin,
+    ActnMan,
+    ActnCtrls,
+    ActnMenus,
+    ActnList,
+    XPStyleActnCtrls,
 
     Points,
     SparseArrays,
-    
+
     Herd,
     StatusEnums,
+    NAADSMLibraryTypes,
     ZonePerimeter,
     SMSimulationInput,
     SMDatabase,
@@ -48,7 +55,17 @@ interface
   ;
 
 
+  type TMapDisplay = (
+    MAPUnspecified,
+    MAPDiseaseStatus,
+    MAPControlStatus,
+    MAPDetectionStatus
+  );
+
+
   type TFormMap = class( TForm )
+      pnlContainer: TPanel;
+
       pnlSize: TPanel;
       pnlSizeLegend: TPanel;
       pbxSizeLegend: TPaintBox;
@@ -62,13 +79,16 @@ interface
       Panel4: TPanel;
       pbxMap: TImage;
 
-    	pnlLegend: TPanel;
-    	pbxLegend: TPaintBox;
+      pnlLegend: TPanel;
+      pbxLegend: TPaintBox;
       pnlProdType: TPanel;
       sbxMap: TPanel;
       sbStatus: TSpeedButton;
       sbSize: TSpeedButton;
+
+      pnlScrollBarH: TPanel;
       ScrollBarH: TScrollBar;
+
       ScrollBarV: TScrollBar;
       pbxLeftBackground: TPaintBox;
       Panel5: TPanel;
@@ -76,15 +96,39 @@ interface
       Panel6: TPanel;
       pbxMapT: TPaintBox;
       pbxTopBackground: TPaintBox;
-      pnlButtons: TPanel;
-      sbZoomIn: TSpeedButton;
-      sbZoomOut: TSpeedButton;
-      sbFitToWindow: TSpeedButton;
       pnlMapInfo: TPanel;
       pbxMapInfo: TPaintBox;
       pbxInv: TImage;
-      cboProdTypes: TComboBox;
       pbxZoneLegend: TPaintBox;
+
+      pnlControls: TPanel;
+      pnlProdTypes: TPanel;
+      pnlDecorator3: TPanel;
+      pnlDecorator4: TPanel;
+      Panel7: TPanel;
+      btnSaveData: TBitBtn;
+      btnPrintData: TBitBtn;
+      btnCopyData: TBitBtn;
+      btnSaveCharts: TBitBtn;
+      btnCopyCharts: TBitBtn;
+      btnPrintCharts: TBitBtn;
+      pnlDecorator1: TPanel;
+      pnlDecorator2: TPanel;
+      pnlMenu: TPanel;
+      mainMenuBar: TActionMainMenuBar;
+      cboProdTypes: TComboBox;
+      sbZoomIn: TSpeedButton;
+      sbZoomOut: TSpeedButton;
+      sbFitToWindow: TSpeedButton;
+      ActionManager1: TActionManager;
+
+      mnuFile: TAction;
+      actKMZExport: TAction;
+
+      mnuEdit: TAction;
+      mnuView: TAction;
+
+      SaveDialog1: TSaveDialog;
 
       procedure FormClose(Sender: TObject; var Action: TCloseAction);
 
@@ -115,10 +159,11 @@ interface
       procedure FormCreate(Sender: TObject);
       procedure pbxMapMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
       procedure pbxMapMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+      procedure actKMZExportExecute(Sender: TObject);
 
     protected
       _mouseIsDown: boolean;
-      _displayApparent: boolean;
+      _displayType: TMapDisplay;
       _sizeDisplaySmall: boolean;
 
       _smdb: TSMDatabase;
@@ -126,7 +171,7 @@ interface
       _herds: THerdList;
       _myMainForm: TForm;
 
-      _minLat, _minLon, _maxLat, _maxLon: double;
+      _minX, _maxX, _minY, _maxY: double;
 
       _zoomCount, _maxZoom: integer;
 
@@ -134,7 +179,6 @@ interface
 
       _perimeterListC: THRD_PerimeterList;
       _usingZonesCopy: boolean;
-      _perimeterColors: TColorArray;
       _perimeterList: TZonePerimeterList;
 
       _lastHintPos: TPoint;
@@ -150,29 +194,25 @@ interface
       procedure TextOutAngle(Canvas: TCanvas; x,y: integer; s: string; angle: integer);
 
       // Primitive drawing functions, used by drawScreen
+      //------------------------------------------------
       procedure DrawBasicRectangle();
-      procedure DrawYAxisLabel();
-			procedure DrawXAxisLabel();
-      procedure DrawXScale();
-      procedure DrawAxisLabels();
-
-      function getPtSize( hs: word ): integer;
-			function getPtColor( s: TTransitionState ): TColor; overload;
-      function getPtColor( s: TApparentStatus ): TColor; overload;
+      procedure DrawXScaleBar(); /// Draws the scale bar to illustrate approximate distances on the map.
+      procedure DrawAxisLabels(); /// Writes "Lat" and "Lon" on the appropriate axes.
+      procedure DrawYAxisScale(); /// Draws a scale down the left edge indicating approximate latitudes.
+      procedure DrawXAxisScale(); /// Draws a scale across the top edge indicating approximate longitudes.
 
       procedure MakeZoneLegend();
-			procedure MakeHerdLegend();
+      procedure MakeHerdLegend();
       procedure DrawLegendPoint( pbx: TPaintbox; sz: byte; x,y: integer );
+      procedure makeDiseaseStateLegend( newLeft, nTop, vSpace, halfVs: integer );
+      procedure makeControlStatusLegend( newLeft, nTop, vSpace, halfVs: integer );
+      procedure makeDetectionStatusLegend( newLeft, nTop, vSpace, halfVs: integer );
+
+      function getPtSize( hs: word ): integer;
 
       procedure setScrollProperties();
-      function ScrX( Lon: double ): integer;
-      function ScrY( Lat: double ): integer;
-      function ScrXInfo( Lon: double ): integer;
-      function ScrYLeft( Lat: double ): integer;
-      function ScrXTop( Lon: double ): integer;
-      function ScrXLeft( Lon: double ) : integer;
-      function ScrYTop( Lat: double ): integer;
-      //procedure DisplayTheHerdData( pb1, pb2 : TPaintBox; x, y : integer);
+      function ScrX( x: double ): integer; /// Transforms the map x coordinate into the screen coordinate system
+      function ScrY( y: double ): integer; /// Transforms the map y coordinate into the screen coordinate system
       procedure DrawScreen( const lockWindow: boolean = true );
       procedure clearMap();
       procedure clearInfoMap();
@@ -186,7 +226,7 @@ interface
       procedure drawZonesInternal();
 
       procedure displayHerdInfo();
-      
+
     public
       constructor create( AOwner: TComponent; db: TSMDatabase; smsim: TSMSimulationInput; smherds: THerdList ); reintroduce;
 
@@ -200,32 +240,26 @@ interface
       procedure clearZones();
       procedure drawZones( p: THRD_PerimeterList );
       procedure copyZones();
+      procedure updateCaption();
+
+      procedure updateSimComplete();
 
       property borderDisabled: boolean read _borderDisabled write _borderDisabled;
       property availableMapHeight: integer read getAvailableMapHeight;
       property availableMapWidth: integer read getAvailableMapWidth;
-
-      property zoneColors: TColorArray read _perimeterColors;
     end
   ;
 
-  // FIX ME: switch over to the C library version of this function??
-  // FIX ME: Why is this declaration suddenly causing a compile error? 
-  //function DistInKM( r1, r2: RLatLon ): double;
-
   var
     frmMap: TFormMap;
-
-
-  const
-  	DBFORMMAP: boolean = false; // set to true to enable debugging messages for this unit.
 
 implementation
   {$R *.DFM}
 
   uses
+    Math,
+
     MyStrUtils,
-    GuiStrUtils,
     DebugWindow,
     BasicGIS,
     I88n,
@@ -233,155 +267,31 @@ implementation
     FormMain,
     ProductionType,
     ProductionTypeList,
-    ModelImplementation
+    HerdKML
   ;
 
-  
-//-----------------------------------------------------------------------------
-// Global helper functions
-//-----------------------------------------------------------------------------
-  {
-  Calculates an estimated distance in km between two points specified by lat/lon.
-  AR 6/23/04
+  const
+    DBSHOWMSG: boolean = false; // set to true to enable debugging messages for this unit.
 
-  @param R1 RLatLon containing one of the two points
-  @param R2 RLatLon containing the other of the two points
-
-  @return A real value for the distance in km
-  }
-
-  function DistInKM( r1, r2: RLatLon ): double;
-    const
-      CONVERSIONLATITUDE = 111.07455;
+  // From http://www.experts-exchange.com/Programming/Programming_Languages/Delphi/Q_21488485.html
+  procedure TFormMap.TextOutAngle(Canvas: TCanvas; x,y: integer; s: string; angle: integer);
     var
-      x, y: real; // distance in km, east/west, and north/south
-      MeanLat, LonC: real;
-      tResult: real;
-      lon1, lon2: real;
+      Fnt, FntPrev: HFONT;
+      lMyLogFont : TLogFont;
+    begin
+      SetBkMode(Canvas.Handle, TRANSPARENT);
+      GetObject(Canvas.Font.Handle, SizeOf(TLogFont), @lMyLogFont);
+      lMyLogFont.lfEscapement:= Angle;
+      lMyLogFont.lfOutPrecision:= OUT_TT_ONLY_PRECIS;
 
-    {
-    Determines the latitude 1/2-way between two specified latitudes.
-    AR 6/23/04
-
-    @param lat1 real One of the two specified latitudes
-    @param lat2 real The other specified latitude
-
-    @return A real value indicating the "average" latitude in decimal degree units
-    }
-    function GetAverageLat( lat1, lat2: real): real;
-      var
-        diff, halfDiff, av: real;
-      begin
-        diff := lat1 - lat2;
-        halfDiff := diff/2;
-        av := lat1 - halfDiff;
-        Result := av;
-      end
-    ;
-
-
-    {
-    /**
-    Returns the number of kilometers per decimal degree of longitude at the specified latitude.
-
-    WARNING: This function was written for the northern hemisphere, and expects a positive value
-    for the latitude.  It is easy to deal with the southern hemisphere by passing the absolute value
-    of the latitude, but this is not currently enforced by the function.
-    AR 6/23/04
-
-    @param Lat real value indicating the latitude in question, in decimal degrees
-
-    @return real value indicating km per degree longitude at the specified latitude
-    */
-    }
-    function GetConversionLongitude(Lat : real) : real;
-      const
-        LonConvFactor : array[0..9] of single =
-          (116, 109.662, 104.196,
-          95.675, 83.671, 69.369,
-          51.856, 35, 19, 0); { km / dec degree at latitudes of 0, 10, 20, 30..90 }
-      var
-        lLat, uLat : integer;  // lower /upper latitude
-        r : real;
-
-      function Interpolate( x : real; x1, y1 : real; x2, y2  : real) : real; { return y }
-        var
-          b, gx, gy, m : real;
-        begin
-          gy := y2 - y1;
-          gx := x2 - x1;
-          { gy is rise }
-          { gx is run }
-          { m is slope }
-          if gy = 0 then
-            Result := y1
-          else
-          if gx = 0 then
-            Result := gy / 2 { undefined, use average }
-          else
-          begin
-            m := gy/gx;
-           { y = mx + b }
-            b := y1 - (m*x1);
-            Result := (x*m) + b;
-          end;
-        end
-      ;
-
-      begin // GetConversionLongitude
-        // get the next lowest latitude divisible by 10
-        lLat := (Trunc(Lat) div 10) * 10;
-        if lLat = 90 then // upper latitude not possible
-          r := 0.0000001
-        else
-        begin
-          uLat := lLat + 10;
-          r := Interpolate(Lat,
-            lLat, LonConvFactor[lLat div 10],
-            uLat, LonConvFactor[uLat div 10]);
-          if r = 0 then
-            r := 1; {must give a non-zero result to prevent / by 0}
-        end;
-        Result := r;
-      end
-    ;
-
-    begin  // DistInKM
-      y := ( r1.Lat - r2.Lat ) * CONVERSIONLATITUDE;
-      meanLat := GetAverageLat( r1.Lat, r2.Lat );
-      LonC := GetConversionLongitude( Abs( meanLat ) ); // AR: use Abs here b/c GetConversionLongitude expects a positive number!
-
-      lon1 := r1.Lon;
-      lon2 := r2.Lon;
-
-      if( lon1 > 180 ) then lon1 := lon1 - 360;
-      if( lon2 > 180 ) then lon2 := lon2 - 360;
-
-      x := ( lon1 - lon2 ) * LonC;
-      tResult := Sqrt( Sqr( x ) + Sqr( y ) );
-      Result := tResult;
+      Fnt:= CreateFontIndirect(lMyLogFont);
+      FntPrev := SelectObject(Canvas.Handle, Fnt);
+      Canvas.TextOut(x,y, s);
+      SelectObject(Canvas.Handle, FntPrev);
+      DeleteObject(Fnt);
+      SetBkMode(Canvas.Handle, OPAQUE);
     end
   ;
-//-----------------------------------------------------------------------------
-
-// From http://www.experts-exchange.com/Programming/Programming_Languages/Delphi/Q_21488485.html
-procedure TFormMap.TextOutAngle(Canvas: TCanvas; x,y: integer; s: string; angle: integer);
-var
-  Fnt, FntPrev: HFONT;
-  lMyLogFont : TLogFont;
-begin
-  SetBkMode(Canvas.Handle, TRANSPARENT);
-  GetObject(Canvas.Font.Handle, SizeOf(TLogFont), @lMyLogFont);
-  lMyLogFont.lfEscapement:= Angle;
-  lMyLogFont.lfOutPrecision:= OUT_TT_ONLY_PRECIS;
-
-  Fnt:= CreateFontIndirect(lMyLogFont);
-  FntPrev := SelectObject(Canvas.Handle, Fnt);
-  Canvas.TextOut(x,y, s);
-  SelectObject(Canvas.Handle, FntPrev);
-  DeleteObject(Fnt);
-  SetBkMode(Canvas.Handle, OPAQUE);
-end;
 
 
 //-----------------------------------------------------------------------------
@@ -390,19 +300,13 @@ end;
   constructor TFormMap.create( AOwner: TComponent; db: TSMDatabase; smSim: TSMSimulationInput; smherds: THerdList );
     var
       mStream: TMemoryStream;
-  	begin
+    begin
       inherited create( AOwner );
       translateUI();
 
       _borderDisabled := false;
 
       _smdb := db;
-
-      setLength( _perimeterColors, 4 );
-      _perimeterColors[0] := clMaroon;
-      _perimeterColors[1] := clTeal;
-      _perimeterColors[2] := clNavy;
-      _perimeterColors[3] := clOlive;
 
       _perimeterListC := nil;
 
@@ -439,7 +343,6 @@ end;
       pnlStatus.BevelOuter := bvNone;
       pnlStatusLegend.BevelOuter := bvNone;
       pnlProdType.BevelOuter := bvNone;
-      pnlButtons.BevelOuter := bvNone;
       pnlMapInfo.BevelOuter := bvNone;
 
       pbxMapT.Height := Panel6.ClientHeight;
@@ -473,13 +376,16 @@ end;
 
       // The FormCreate event draws the map.
       // That way, the map is scaled properly.
-      
-      _displayApparent := False;
+
+      _displayType := MAPDiseaseStatus;
+
       //LockWindowUpdate( 0 );
       self.Perform( WM_SETREDRAW, 1, 0 );
       RedrawWindow( self.Handle, nil, 0, RDW_ERASE or RDW_FRAME or RDW_INVALIDATE or RDW_ALLCHILDREN );
+
+      //updateCaption(); // Don't do this here.  It causes the caption to appear as a "ghost".
     end
-	;
+  ;
 
 
   procedure TFormMap.translateUI();
@@ -492,12 +398,13 @@ end;
       // Set Caption, Hint, Text, and Filter properties
       with self do
         begin
-          Caption := tr( 'Apparent map of units, current/final day' );
+          Caption := tr( 'Control status of units, current/final day' );
           sbSize.Caption := tr( 'Size' );
           sbStatus.Caption := tr( 'Status' );
           sbZoomIn.Hint := tr( 'Zoom in' );
           sbZoomOut.Hint := tr( 'Zoom out' );
           sbFitToWindow.Hint := tr( 'Fit to window' );
+          actKMZExport.Caption := tr( '&Export KMZ file...' );
         end
       ;
 
@@ -515,7 +422,7 @@ end;
       if Screen.PixelsPerInch <> 96 then
         begin
           ScaleBy( Screen.PixelsPerInch, 96 );
-          
+
           if( 0 < self.Constraints.MinWidth ) then
             self.Constraints.MinWidth := round( self.Constraints.MinWidth * screen.PixelsPerInch / 96 )
           ;
@@ -543,8 +450,8 @@ end;
   destructor TFormMap.destroy();
     begin
       freeAndNil( _perimeterList );
+      
       // Don't try to free _perimeterListC: it is owned by the DLL
-      setLength( _perimeterColors, 0 );
 
       freeAndNil( _herdLocations );
 
@@ -557,7 +464,7 @@ end;
   procedure TFormMap.resetSim( db: TSMDatabase; smsim: TSMSimulationInput; smherds: THerdList; const clearOutput: boolean );
     begin
       _smdb := db;
-    	_sim := smSim;
+      _sim := smSim;
       _herds := smHerds;
 
       if( clearOutput ) then
@@ -567,13 +474,41 @@ end;
         end
       ;
 
+      // New //
+      _maxZoom := 10;       //Sets the Maximum Zoom of the Map.
+      _zoomCount := 1;
+
+      fitMapToWindow();
+
+      _mouseIsDown := False;
+
+      _lastHintPos.x := -1;
+      _lastHintPos.y := -1;
+
+      updateProdTypeList();
+
+      self.Perform( WM_SETREDRAW, 0, 0 );
+
+      sbZoomOutClick( nil );
+
+      //LockWindowUpdate( 0 );
+      self.Perform( WM_SETREDRAW, 1, 0 );
+      RedrawWindow( self.Handle, nil, 0, RDW_ERASE or RDW_FRAME or RDW_INVALIDATE or RDW_ALLCHILDREN );
+
+      updateCaption();
+
+      // old //
+      (*
       updateProdTypeList();
       drawScreen();
+      updateCaption();
+      *)
+      // end //
     end
   ;
 
 
-	procedure TFormMap.updateProdTypeList();
+  procedure TFormMap.updateProdTypeList();
     var
       it: TProductionTypeListIterator;
     begin
@@ -607,7 +542,7 @@ end;
 
   //Clears the main paintbox where the actual Map is drawn
   procedure TFormMap.clearMap();
-  	begin
+    begin
       pbxMap.Canvas.Brush.Color := clBtnFace;
       pbxMap.Canvas.pen.Color := clWhite;
       pbxMap.Canvas.Pen.Width := 1;
@@ -623,10 +558,10 @@ end;
       pbxInv.Canvas.FillRect(Rect (0, 0, pbxInv.Width, pbxInv.Height));
     end
   ;
-  
+
   //Clears the Info Bar paintbox.
   procedure TFormMap.clearInfoMap();
-  	begin
+    begin
       pbxMapInfo.Canvas.Brush.Color := clBtnFace;
       pbxMapInfo.Canvas.pen.Color := clBlack;
       pbxMapInfo.Canvas.Pen.Width := 1;
@@ -638,8 +573,8 @@ end;
 
   procedure TFormMap.DrawScreen( const lockWindow: boolean = true );
     var
-      latBuffer, lonBuffer: double;
-      latDiff, lonDiff: double;
+      xBuffer, yBuffer: double;
+      xDiff, yDiff: double;
     begin
       if( lockWindow ) then
         //LockWindowUpdate( self.Handle )
@@ -647,33 +582,33 @@ end;
       ;
 
       // clear any existing display
-			clearMap();
+      clearMap();
 
       if( assigned( _herds ) ) then
-      	begin
+        begin
           if( 0 < _herds.Count ) then
             begin
               // These values ensure that the map is 2.5% larger in each direction
               // than is actually used by the units in the simulation.  The point
               // is to keep all points drawn on the map inside the map boundaries.
-              latDiff := ( _herds.maxLat - _herds.minLat );
-              lonDiff := ( _herds.maxLon - _herds.minLon );
+              xDiff := ( _herds.maxX - _herds.minX );
+              yDiff := ( _herds.maxY - _herds.minY );
 
-              if( 10.0 > latDiff ) then
-                latDiff := 10.0
+              if( 10.0 > xDiff ) then
+                xDiff := 10.0
               ;
 
-              if( 10.0 > lonDiff ) then
-                lonDiff := 10.0
+              if( 10.0 > yDiff ) then
+                yDiff := 10.0
               ;
 
-              latBuffer := abs( 0.025 * latDiff );
-              lonBuffer := abs( 0.025 * lonDiff );
+              xBuffer := abs( 0.025 * xDiff );
+              yBuffer := abs( 0.025 * yDiff );
 
-              _minLat := (_herds.minLat - latBuffer);
-              _maxLat := (_herds.maxLat + latBuffer);
-              _minLon := (_herds.minLon - lonBuffer);
-              _maxLon := (_herds.maxLon + lonBuffer);
+              _minX := ( _herds.minX - xBuffer );
+              _maxX := ( _herds.maxX + xBuffer );
+              _minY := ( _herds.minY - yBuffer );
+              _maxY := ( _herds.maxY + yBuffer );
 
               // Draw zones first, so that the zone boundaries don't obscure any herds.
               drawZonesInternal();
@@ -692,7 +627,7 @@ end;
         end
       ;
 
-      DrawXScale();
+      DrawXScaleBar();
     end
   ;
 //-----------------------------------------------------------------------------
@@ -716,55 +651,21 @@ end;
 
 
       if( _sizeDisplaySmall ) then
-      	Result := 1 * mult
+        Result := 1 * mult
       else
-      	begin
-      		case hs of
-      			0..1000 : result := 1 * mult;
-      			1001..10000 : result := 2 * mult;
-      		else
-      			result := 3 * mult;
-      		end;
-      	end
+        begin
+          case hs of
+            0..1000 : result := 1 * mult;
+            1001..10000 : result := 2 * mult;
+          else
+            result := 3 * mult;
+          end;
+        end
       ;
     end
   ;
 
 
-  function TFormMap.getPtColor( s: TTransitionState ): TColor;
-    begin
-      case s of
-        tsSusceptible: 		result := clBlack;
-        tsLatent: 				result := clYellow;
-        tsSubclinical:	  result := clFuchsia;
-        tsClinical: 			result := clRed;
-        tsNaturalImmune:  result := clLime;
-        tsVaccineImmune:  result := clBlue;
-        tsDestroyed: 			result := clWhite;
-        else
-        	raise exception.Create( 'Unrecognized transition state (' + intToStr(ord(s)) + ') in TFormMap.getPtColor' )
-        ;
-      end;
-    end
-  ;
-
-
-  function TFormMap.getPtColor( s: TApparentStatus ): TColor;
-  	begin
-   		case s of
-        asUnknown: result := clBlack;
-        asDetected: result := clGreen;
-        asTracedDirect: result := clNavy;
-        asTracedIndirect: result := clPurple;
-        asVaccinated: result := clAqua;
-        asDestroyed: result := clWhite;
-        else
-        	raise exception.Create( 'Unrecognized apparent status (' + intToStr(ord(s)) + ') in TFormMap.getPtColor' )
-        ;
-      end;
-    end
-  ;
-  
   procedure TFormMap.DrawBasicRectangle();
     begin
       pbxMap.Canvas.Pen.Color := clBlack;
@@ -774,10 +675,10 @@ end;
       pbxMap.Canvas.Brush.Color := clBtnFace;
 
       pbxMap.Canvas.Rectangle(
-      	ScrX( _minLon ),
-        ScrY( _minLat ),
-        ScrX( _maxLon ),
-        ScrY( _maxLat )
+        ScrX( _minX ),
+        ScrY( _minY ),
+        ScrX( _maxX ),
+        ScrY( _maxY )
       );
 
       pbxInv.Canvas.Pen.Color := clBlack;
@@ -787,114 +688,171 @@ end;
       pbxInv.Canvas.Brush.Color := clBtnFace;
 
       pbxInv.Canvas.Rectangle(
-      	ScrX( _minLon ),
-        ScrY( _minLat ),
-        ScrX( _maxLon ),
-        ScrY( _maxLat )
+        ScrX( _minX ),
+        ScrY( _minY ),
+        ScrX( _maxX ),
+        ScrY( _maxY )
       );
     end
   ;
 
 
-  procedure TFormMap.DrawYAxisLabel();
+  procedure TFormMap.DrawYAxisScale();
     var
-      n : integer;
-      s : string;
-      scale : integer;
-      w : integer;
-      xp, yp : integer;
+      s: string;
+      w: integer;
+      nTicks: integer;
+      i: integer;
+      yIncrement: double;
+      llr: RLatLon;
+      textHeight: integer;
+      nextTextY: integer;
+      y: double;
+      tickY, textY: integer;
+      llMin, llMax: RLatLon;
+      llDiff: double;
     begin
       pbxMapL.Canvas.Pen.Color := clBlack;
       pbxMapL.Canvas.Pen.Style := psSolid;
       pbxMapL.Canvas.Pen.Width := 1;
       pbxMapL.Canvas.Brush.Color := clWhite;
 
-      // Draw the vertical line at the right edge of the paintbox
-      pbxMapL.Canvas.MoveTo(pbxMapL.Left+pbxMapL.Width-1,0);
-      pbxMapL.Canvas.LineTo(pbxMapL.Left+pbxMapL.Width-1,pbxMapL.Height);
-
-      n := Trunc( _minLat * 10);
-      if( _zoomCount > 3 ) then
-        scale := 5
+      if( 3 >= _zoomCount ) then
+        nTicks := 6
       else
-        scale := 10
+        nTicks := 11
       ;
-      while n < ( _maxLat * 10) do
+
+      yIncrement := ( _maxY - _minY ) / nTicks;
+
+      textHeight := pbxMapL.Canvas.TextHeight( '0' ) + 2;
+      nextTextY := 0;
+
+      //rbh: Issue 2464
+      // If the area modeled is small, around a half degree latitude (~35 mi) or smaller,
+      // or if the zoom is increased such that the tick interval is less than 0.1 degrees
+      // then show the tick mark latitudes at two decimal precision (otherwise adjacent ticks can have the same value).
+      llMin := _herds.projection.pjInv( _minX, _minY );
+      llMax := _herds.projection.pjInv( _minX, _maxY );
+      llDiff := Abs(llMax.lat - llMin.lat) / nTicks;
+
+      for i := nTicks - 1 downto 1 do
         begin
-          if (n div scale) = (n/scale) then
+          y := _minY + ( i * yIncrement );
+          tickY := scrY( y );
+          textY := tickY - 5;
+
+          // Be a little careful to ensure that new text isn't being
+          // drawn on top of existing text.
+          if( textY > nextTextY ) then
             begin
-              Str( n/10 : 5 : 1, s);
-              s := Trim(s);
-              w := pbxMapL.canvas.TextWidth(s);
-              //xp := ScrXLeft( _minLon );
-              xp := pbxMapL.Width;
-              yp := ScrYLeft( n/10 );
-
               // Draw a tickmark
-              pbxMapL.canvas.MoveTo( xp, yp );
-              pbxMapL.canvas.LineTo( xp - 5, yp );
+              pbxMapL.canvas.MoveTo( pbxMapL.Width, tickY );
+              pbxMapL.canvas.LineTo( pbxMapL.Width - 5, tickY );
 
-              // Write the text
-              pbxMapL.canvas.TextOut( xp - (w + 5), yp - 5, s );
+              // Figure out what the latitude is at this projected y value
+              llr := _herds.projection.pjInv( _minX, y );
+
+              // If the tick interval is less than 0.1 degrees then want to show 2 decimals, else 1
+              if (0.1 >= llDiff) then
+                s := uiFloatToStrZeroPadded( llr.lat, 2 )
+              else
+                s := uiFloatToStrZeroPadded( llr.lat, 1 );
+
+              // Draw the text to the image.
+              w := pbxMapL.canvas.TextWidth(s);
+
+              pbxMapL.canvas.TextOut( pbxMapL.Width - (w + 6), textY, s );
+              nextTextY := textY + textHeight + 2;
             end
           ;
-          n := n + 1;
         end
       ;
     end
   ;
 
 
-  procedure TFormMap.DrawXAxisLabel();
+  procedure TFormMap.DrawXAxisScale();
     var
-      n: integer;
       s: string;
-      scale: integer;
-      xp, yp: integer;
       halfTextHeight: integer;
+      nTicks: integer;
+      xIncrement: double;
+      i: integer;
+      llr: RLatLon;
+      textHeight: integer;
+      nextTextX: integer;
+      x: double;
+      tickX, textX: integer;
+      llMin, llMax: RLatLon;
+      llDiff: double;
     begin
       pbxMapT.Canvas.Pen.Color := clBlack;
       pbxMapT.Canvas.Pen.Style := psSolid;
       pbxMapT.Canvas.Pen.Width := 1;
       pbxMapT.Canvas.Brush.Color := clWhite;
-      pbxMapT.Canvas.MoveTo(0,pbxMapT.Height-1);
-      pbxMapT.Canvas.LineTo(pbxMapT.Width,pbxMapT.Height-1);
 
-      halfTextHeight := pbxMapT.Canvas.TextHeight( 'A' ) div 2;
+      halfTextHeight := pbxMapT.Canvas.TextHeight( '0' ) div 2;
 
-      // counter
-      n := Trunc( _minLon * 10);
-      if( _zoomCount > 3 ) then
-        scale := 5
+      if( 3 >= _zoomCount ) then
+        nTicks := 6
       else
-        scale := 10
+        nTicks := 11
       ;
-      while n < ( _maxLon * 10) do
-        begin
-          if (n div scale) = (n/scale) then
-            begin
-              Str(n/10 : 5 : 1, s);
-              s := Trim(s);
-              xp := ScrXTop( n/10 );
-              //yp := ScrYTop( _minLat );
-              yp := pbxMapT.Height;
-              pbxMapT.Canvas.MoveTo(xp, yp);
-              pbxMapT.Canvas.LineTo(xp, yp - 5);
 
-              textOutAngle( pbxMapT.Canvas, xp - halfTextHeight, yp - 7, s, 900 );
+      xIncrement := ( _maxX - _minX ) / nTicks;
+
+      textHeight := pbxMapL.Canvas.TextHeight( '0' ) + 2;
+      nextTextX := 0;
+
+      //rbh: Issue 2464
+      // If the area modeled is small, around a half degree longitude (~35 mi) or smaller,
+      // or if the zoom is increased such that the tick interval is less than 0.1 degrees
+      // then show the tick mark longitudes at two decimal precision (otherwise adjacent ticks can have the same value).
+      // Fix Me! There is not enough room for longitudes of 7 characters (-nnn.nn), the trailing decimal is partially hidden.
+      llMin := _herds.projection.pjInv( _minX, _minY );
+      llMax := _herds.projection.pjInv( _maxX, _minY );
+      llDiff := Abs(llMax.lon - llMin.lon) / nTicks;
+
+      //dbcout2( scrX( _maxX ) );
+      for i := 1 to nTicks do
+        begin
+          x := _minX + ( i * xIncrement );
+          tickX := scrX( x );
+          textX := tickX - halfTextHeight;
+
+          // Be a little careful to ensure that new text isn't being
+          // drawn on top of existing text.
+          if( textX > nextTextX ) then
+            begin
+              // Draw a tickmark
+              //dbcout2( usFloatToStr( x ) + ': ' + intToStr( tickX ) );
+              pbxMapT.Canvas.MoveTo( tickX, pbxMapT.Height );
+              pbxMapT.Canvas.LineTo( tickX, pbxMapT.Height - 5 );
+
+              // Figure out what the longitude is at this projected x value
+              llr := _herds.projection.pjInv( x, ( _minY + _maxY ) / 2 );
+
+              // If the tick interval is less than 0.1 degrees then want to show 2 decimals, else 1
+              if (0.1 >= llDiff) then
+                s := uiFloatToStrZeroPadded( llr.lon, 2 )
+              else
+                s := uiFloatToStrZeroPadded( llr.lon, 1 );
+
+              // Draw the text to the image
+              textOutAngle( pbxMapT.Canvas, textX, pbxMapT.Height - 7, s, 900 );
+              nextTextX := textX + textHeight + 2;
             end
           ;
-          n := n + 1;
         end
       ;
     end
   ;
 
 
-  procedure TFormMap.DrawXScale();
+  procedure TFormMap.DrawXScaleBar();
     var
-      LRDist, Prop, MeanLat : real;
-      LL1, LL2 : RLatLon;
+      LRDist, Prop: double;
       t: integer;
 
       x, y: integer;
@@ -914,14 +872,7 @@ end;
       // Determine the distance between two lines of longitude at the mean latitude of the map.
       // (Remember that this unit makes adjustments for different distances between lines of longitude
       // at various latitudes.)
-      MeanLat := ( _minLat + _maxLat )/2;
-    	LL1.Lat := MeanLat;
-      LL1.Lon := _minLon;
-
-      LL2.Lat := MeanLat;
-      LL2.lon := _maxLon;
-
-      LRDist := DistInKM( LL1, LL2 );
+      LRDist := abs( _maxX - _minX );
 
       if LRDist = 0 then LRDist := 1;
 
@@ -938,14 +889,14 @@ end;
       except
         dbcout( 'Map exception!', true );
         dbcout( 'Prop := t / LRDist', true );
-        dbcout( 't = ' + uiFloatToStr( t ), true );
-        dbcout( 'LRDist = ' + uiFloatToStr( LRDist ), true );
+        dbcout( 't = ' + dbFloatToStr( t ), true );
+        dbcout( 'LRDist = ' + dbFloatToStr( LRDist ), true );
         Prop := 1.0;
       end;
 
 
       // Convert the 1/10 distance into screen coordinates.
-      distScreenCoords := Round( Prop * ( ScrXTop( _maxLon ) - ScrXTop( _minLon ) ) );
+      distScreenCoords := Round( Prop * ( ScrX( _maxX ) - ScrX( _minX ) ) );
 
       // Further divide distScreenCoords by the zoom number, to determine
       // how long the scale bar will actually be.
@@ -980,7 +931,6 @@ end;
   ;
 
 
-  //Draws the axes Labels at the top left corner.
   procedure TFormMap.DrawAxisLabels();
     var
       yPos, xPos: integer;
@@ -1045,10 +995,9 @@ end;
 
       maxWidth := maxWidth + round( 10 * _scaleFactor ) * 2;
 
-
       for i := 0 to zList.Count - 1  do
         begin
-          pbxZoneLegend.Canvas.Pen.Color := _perimeterColors[ (zList.at(i).level - 1) mod length( _perimeterColors ) ];
+          pbxZoneLegend.Canvas.Pen.Color := zoneColor( zList.at(i).level );
           pbxZoneLegend.Canvas.Brush.Color := pbxZoneLegend.Canvas.Pen.Color;
 
           DrawLegendPoint( pbxZoneLegend, 2,NewLeft + trunc(i/3)* maxWidth, NTop + ((i mod 3) * vspace) + HalfVS);
@@ -1061,6 +1010,278 @@ end;
         end;
     end
   ;
+
+
+  procedure TFormMap.makeDiseaseStateLegend( newLeft, nTop, vSpace, halfVs: integer );
+    begin
+      // First column
+      //-------------
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateSusceptible );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateSusceptible );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateLatent );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateLatent );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, Ntop + (1*vspace) + HalfVS );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateSubclinical );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateSubclinical );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + (2*vspace) + HalfVS );
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Susceptible' ) );
+      pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + vspace, tr( 'Latent' ) );
+      pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + (2*vspace), tr( 'Subclinical' ) );
+
+      // Second column
+      //--------------
+      Inc(NewLeft, pbxLegend.Canvas.TextWidth( tr( 'Susceptible' ) ) + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateClinical );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateClinical );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateNaturallyImmune );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateNaturallyImmune );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + vspace + HalfVS );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateDeadFromDisease );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateDeadFromDisease );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + (2 * vspace) + HalfVS );
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Clinical' ) );
+      pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2 + vspace,tr( 'Nat immune' ) );
+      pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + (2 * vspace), tr( 'Dead from disease' ) );
+
+      // Third column
+      //-------------
+      inc( NewLeft, pbxLegend.Canvas.TextWidth( tr( 'Dead from disease') ) + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateDestroyed );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateDestroyed );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS );
+
+      pbxLegend.Canvas.Pen.Color := naadsmDiseaseStateColor( NAADSMStateVaccineImmune );
+      pbxLegend.Canvas.Brush.Color := naadsmDiseaseStateColor( NAADSMStateVaccineImmune );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + vspace + HalfVS );
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+
+      Inc(NewLeft, round( 7 * _scaleFactor ) );
+      pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Destroyed' ) );
+      pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + vspace, tr( 'Vaccine immune' ) );
+    end
+  ;
+
+
+  procedure TFormMap.makeControlStatusLegend( newLeft, nTop, vSpace, halfVs: integer );
+    var
+      maxTextWidth: integer;
+    begin
+      // First column
+      //--------------
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asNoControl );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asNoControl );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asDetected );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asDetected );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asDestroyed );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asDestroyed );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft, round( 7 * _scaleFactor ) );
+      pbxLegend.Canvas.TextOut(NewLeft, Ntop + 2, tr( 'No control' ) );
+      pbxLegend.Canvas.TextOut(NewLeft, NTop + 2 + vspace, tr( 'Detected' ) );
+      pbxLegend.Canvas.TextOut(NewLeft, NTop + 2 + (2*vspace),tr( 'Destroyed' ) );
+
+      // Second column
+      //--------------
+      maxTextWidth := max(
+        pbxLegend.Canvas.TextWidth( tr( 'No control' ) ),
+        pbxLegend.Canvas.TextWidth( tr( 'Detected' ) )
+      );
+      maxTextWidth := max( maxTextWidth, pbxLegend.Canvas.TextWidth( tr( 'Destroyed' ) ) );
+
+      Inc(NewLeft, maxTextWidth + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asVaccinated );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asVaccinated );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asTracedDirectFwd );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asTracedDirectFwd );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asTracedIndirectFwd );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asTracedIndirectFwd );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut(NewLeft,Ntop + 2, tr( 'Vaccinated' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + vspace, tr( 'Traced fwd-Direct' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + (2*vspace), tr( 'Traced fwd-Indirect' ) );
+
+      // Third column
+      //-------------
+      maxTextWidth := max(
+        pbxLegend.Canvas.TextWidth( tr( 'Vaccinated' ) ),
+        pbxLegend.Canvas.TextWidth( tr( 'Traced fwd-Direct' ) )
+      );
+      maxTextWidth := max( maxTextWidth, pbxLegend.Canvas.TextWidth( tr( 'Traced fwd-Indirect' ) ) );
+
+      Inc(NewLeft, maxTextWidth + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asTracedDirectBack );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asTracedDirectBack );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asTracedIndirectBack );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asTracedIndirectBack );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := controlStatusColor( asInDestructionQueue );
+      pbxLegend.Canvas.Brush.Color := controlStatusColor( asInDestructionQueue );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut(NewLeft,Ntop + 2, tr( 'Traced back-Direct' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + vspace, tr( 'Traced back-Indirect' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + (2*vspace), tr( 'In destruction queue' ) );
+    end
+  ;
+
+
+  procedure TFormMap.makeDetectionStatusLegend( newLeft, nTop, vSpace, halfVs: integer );
+    var
+      maxTextWidth: integer;
+    begin
+      // First column
+      //--------------
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsNoStatus );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsNoStatus );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsInfectedUndetected );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsInfectedUndetected );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsExamined );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsExamined );
+      DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft, round( 7 * _scaleFactor ) );
+      pbxLegend.Canvas.TextOut(NewLeft, Ntop + 2, tr( 'No status' ) );
+      pbxLegend.Canvas.TextOut(NewLeft, NTop + 2 + vspace, tr( 'Infected undetected' ) );
+      pbxLegend.Canvas.TextOut(NewLeft, NTop + 2 + (2*vspace),tr( 'Examined' ) );
+
+      // Second column
+      //--------------
+      maxTextWidth := max(
+        pbxLegend.Canvas.TextWidth( tr( 'No status' ) ),
+        pbxLegend.Canvas.TextWidth( tr( 'Infected undetected' ) )
+      );
+      maxTextWidth := max( maxTextWidth, pbxLegend.Canvas.TextWidth( tr( 'Examined' ) ) );
+
+      Inc(NewLeft, maxTextWidth + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsTestTrueNeg );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsTestTrueNeg );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsTestFalseNeg );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsTestFalseNeg );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsTestFalsePos );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsTestFalsePos );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut(NewLeft,Ntop + 2, tr( 'Test true neg' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + vspace, tr( 'Test false neg' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + (2*vspace), tr( 'Test false pos' ) );
+
+      // Third column
+      //-------------
+      maxTextWidth := max(
+        pbxLegend.Canvas.TextWidth( tr( 'Test true neg' ) ),
+        pbxLegend.Canvas.TextWidth( tr( 'Test false neg' ) )
+      );
+      maxTextWidth := max( maxTextWidth, pbxLegend.Canvas.TextWidth( tr( 'Test false pos' ) ) );
+
+      Inc(NewLeft, maxTextWidth + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsTestTruePos );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsTestTruePos );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsDetectedClinical );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsDetectedClinical );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsDestroyed );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsDestroyed );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut(NewLeft,Ntop + 2, tr( 'Test true pos' ) );
+      pbxLegend.Canvas.TextOut(NewLeft,NTop + 2 + vspace, tr( 'Detected clinical' ) );
+      pbxLegend.Canvas.TextOut(NewLeft, NTop + 2 + (2*vspace),tr( 'Destroyed' ) );
+
+      // Fourth column
+      //-------------
+      maxTextWidth := max(
+        pbxLegend.Canvas.TextWidth( tr( 'Detected dead' ) ),
+        pbxLegend.Canvas.TextWidth( tr( 'Detected dead' ) )
+      );
+      maxTextWidth := max( maxTextWidth, pbxLegend.Canvas.TextWidth( tr( 'Detected dead' ) ) );
+
+      Inc(NewLeft, maxTextWidth + round( 10 * _scaleFactor ) );
+
+      pbxLegend.Canvas.Pen.Color := detectionStatusColor( dsDetectedDeadFromDisease );
+      pbxLegend.Canvas.Brush.Color := detectionStatusColor( dsDetectedDeadFromDisease );
+      DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
+
+      // corresponding text
+      pbxLegend.Canvas.Pen.Color := clBlack;
+      pbxLegend.Canvas.Brush.Color := clBtnFace;
+      Inc(NewLeft,7);
+      pbxLegend.Canvas.TextOut(NewLeft,Ntop + 2, tr( 'Detected dead' ) );
+
+    end
+  ;
+
 
   procedure TFormMap.MakeHerdLegend();
     var
@@ -1117,217 +1338,58 @@ end;
       pbxLegend.Canvas.Brush.Color := clBlack;
       NewLeft := 3;
 
-      if( _displayApparent ) then
-        begin
-          // First column
-          //--------------
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asUnknown );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asUnknown );
-          DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + HalfVS);
+      case _displayType of
+        MAPDiseaseStatus: makeDiseaseStateLegend( newLeft, nTop, vSpace, halfVs );
+        MAPControlStatus: makeControlStatusLegend( newLeft, nTop, vSpace, halfVs );
+        MAPDetectionStatus: makeDetectionStatusLegend( newLeft, nTop, vSpace, halfVs );
+      end;
 
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asDetected );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asDetected );
-          DrawLegendPoint( pbxLegend, 2, NewLeft, Ntop + (1*vspace) + HalfVS);
+      updateCaption();
+    end
+  ;
 
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asDestroyed );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asDestroyed );
-          DrawLegendPoint( pbxLegend, 2, NewLeft, NTop + (2*vspace) + HalfVS);
+  
+  procedure TFormMap.updateCaption();
+    begin
+      case _displayType of
+        MAPDiseaseStatus: Self.Caption := tr( 'Unit disease state map:' ) + ' ' + ( _myMainForm as TFormMain ).simStatusStr;
+        MAPControlStatus: Self.Caption := tr( 'Unit control status map:' ) + ' ' + ( _myMainForm as TFormMain ).simStatusStr;
+        MAPDetectionStatus: self.Caption := tr( 'Unit detection status map:' ) + ' ' + ( _myMainForm as TFormMain ).simStatusStr;
+      end;
+    end
+  ;
 
-          // corresponding text
-          pbxLegend.Canvas.Pen.Color := clBlack;
-          pbxLegend.Canvas.Brush.Color := clBtnFace;
-          Inc(NewLeft, round( 7 * _scaleFactor ) );
-          pbxLegend.Canvas.TextOut(NewLeft, Ntop, tr( 'Unknown' ) );
-          pbxLegend.Canvas.TextOut(NewLeft, NTop + vspace, tr( 'Detected' ) );
-          pbxLegend.Canvas.TextOut(NewLeft, NTop + (2*vspace),tr( 'Destroyed' ) );
 
-          // Second column
-          //--------------
-          Inc(NewLeft, pbxLegend.Canvas.TextWidth( tr( 'Destroyed' ) ) + round( 10 * _scaleFactor ) );
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asVaccinated );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asVaccinated );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asTracedDirect );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asTracedDirect );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( asTracedIndirect );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( asTracedIndirect );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
-
-          // corresponding text
-          pbxLegend.Canvas.Pen.Color := clBlack;
-          pbxLegend.Canvas.Brush.Color := clBtnFace;
-          Inc(NewLeft,7);
-          pbxLegend.Canvas.TextOut(NewLeft,Ntop, tr( 'Vaccinated' ) );
-          pbxLegend.Canvas.TextOut(NewLeft,NTop + vspace, tr( 'Traced - Direct' ) );
-          pbxLegend.Canvas.TextOut(NewLeft,NTop + (2*vspace), tr( 'Traced - Indirect' ) );
-        end
-      else
-        begin
-        	// First column
-          //-------------
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsSusceptible );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsSusceptible );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsLatent );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsLatent );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, Ntop + (1*vspace) + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsSubclinical );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsSubclinical );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + (2*vspace) + HalfVS);
-
-          // corresponding text
-          pbxLegend.Canvas.Pen.Color := clBlack;
-          pbxLegend.Canvas.Brush.Color := clBtnFace;
-          Inc(NewLeft,7);
-          pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Susceptible' ) );
-          pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + vspace, tr( 'Latent' ) );
-          pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + (2*vspace), tr( 'Subclinical' ) );
-
-          // Second column
-          //--------------
-          Inc(NewLeft, pbxLegend.Canvas.TextWidth( tr( 'Susceptible' ) ) + round( 10 * _scaleFactor ) );
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsClinical );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsClinical );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsNaturalImmune );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsNaturalImmune );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + vspace + HalfVS);
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsVaccineImmune );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsVaccineImmune );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + 2 * vspace + HalfVS);
-
-          // corresponding text
-          pbxLegend.Canvas.Pen.Color := clBlack;
-          pbxLegend.Canvas.Brush.Color := clBtnFace;
-
-          Inc(NewLeft,7);
-          pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Clinical' ) );
-          pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2 + vspace,tr( 'Natural immune' ) );
-          pbxLegend.Canvas.TextOut( NewLeft, NTop + 2 + (2*vspace), tr( 'Vaccine immune' ) );
-
-          // Third column
-          //-------------
-          inc( NewLeft, pbxLegend.Canvas.TextWidth( tr( 'Vaccine immune') ) + round( 10 * _scaleFactor ) );
-
-          pbxLegend.Canvas.Pen.Color := GetPtColor( tsDestroyed );
-          pbxLegend.Canvas.Brush.Color := GetPtColor( tsDestroyed );
-          DrawLegendPoint( pbxLegend, 2,NewLeft, NTop + HalfVS);
-
-          // corresponding text
-          pbxLegend.Canvas.Pen.Color := clBlack;
-          pbxLegend.Canvas.Brush.Color := clBtnFace;
-
-          Inc(NewLeft, round( 7 * _scaleFactor ) );
-          pbxLegend.Canvas.TextOut( NewLeft, Ntop + 2, tr( 'Destroyed' ) );
-        end
-      ;
-
-      if( _displayApparent ) then
-        Self.Caption := tr( 'Apparent map of units, current/final day' )
-      else
-        Self.Caption := tr( 'Map of units, current/final day' )
-      ;
+  procedure TFormMap.updateSimComplete();
+    begin
+      updateCaption();
     end
   ;
 //-----------------------------------------------------------------------------
 
 
-
-
-  //Used to draw the X Axis labels at the correct Lat and Lon for the Top PaintBox.
-  function TFormMap.ScrXTop( Lon: double ): integer;
+  function TFormMap.ScrY( y: double ): integer;
     var
-      LonRange : single;
-      ScrXRange : integer;
-    begin
-      LonRange := _maxLon - _minLon;
-      ScrXRange := pbxMapT.Width;
-      if LonRange = 0 then LonRange := 0.00001;
-      Result := Round( ( ( Lon - _minLon ) / LonRange) * ScrXRange );
-    end
-  ;
-
-  //Used to draw the Y Axis labels at the correct Lat and Lon for the Top PaintBox.
-  function TFormMap.ScrYTop( Lat: double ): integer;
-    var
-      LatRange : single;
+      yRange : single;
       ScrYRange : integer;
     begin
-      LatRange := _maxLat - _minLat;
-      ScrYRange := pbxMapT.Height;
-      if LatRange = 0 then LatRange := 0.00001;
-      Result := Round((1-((Lat - _minLat)/ LatRange))*ScrYRange);
-    end
-  ;
-
-  //Used to draw the X Axis labels at the correct Lat and Lon for the Left PaintBox.
-   function TFormMap.ScrXLeft( Lon: double ): integer;
-    var
-      LonRange : single;
-      ScrXRange : integer;
-    begin
-      LonRange := _maxLon - _minLon;
-      ScrXRange := pbxMapL.Width;
-      if LonRange = 0 then LonRange := 0.00001;
-      Result := 30 + Round( ( ( Lon - _minLon ) / LonRange) * ScrXRange );
-    end
-  ;
-  //Used to draw the Y Axis labels at the correct Lat and Lon for the Left PaintBox.
-  function TFormMap.ScrYLeft( Lat: double ): integer;
-    var
-      LatRange : single;
-      ScrYRange : integer;
-    begin
-      LatRange := _maxLat - _minLat;
-      ScrYRange := pbxMapL.Height;
-      if LatRange = 0 then LatRange := 0.00001;
-      Result := Round((1-((Lat - _minLat)/ LatRange))*ScrYRange);
-    end
-  ;
-
-  //Used to draw the X Axis labels at the correct Lat and Lon for the Info PaintBox.
-  function TFormMap.ScrXInfo( Lon: double ): integer;
-    var
-      LonRange : single;
-      ScrXRange : integer;
-    begin
-      LonRange := _maxLon - _minLon;
-      ScrXRange := pbxMapInfo.Width;
-      if LonRange = 0 then LonRange := 0.00001;
-      Result := Round( ( ( Lon - _minLon ) / LonRange) * ScrXRange );
-    end
-  ;
-
-  function TFormMap.ScrY( Lat: double ): integer;
-    var
-      LatRange : single;
-      ScrYRange : integer;
-    begin
-      LatRange := _maxLat - _minLat;
+      yRange := _maxY - _minY;
       ScrYRange := pbxMap.Height;
-      if LatRange = 0 then LatRange := 0.00001;
-      Result := Round((1-((Lat - _minLat)/ LatRange))*ScrYRange);
+      if yRange = 0 then yRange := 0.00001;
+      Result := Round((1-((y - _minY)/ yRange))*ScrYRange);
     end
   ;
 
-   function TFormMap.ScrX( Lon: double ): integer;
+
+   function TFormMap.ScrX( x: double ): integer;
     var
-      LonRange : single;
+      xRange : single;
       ScrXRange : integer;
     begin
-      LonRange := _maxLon - _minLon;
+      xRange := _maxX - _minX;
       ScrXRange := pbxMap.Width;
-      if LonRange = 0 then LonRange := 0.00001;
-      Result := Round( ( ( Lon - _minLon ) / LonRange) * ScrXRange );
+      if xRange = 0 then xRange := 0.00001;
+      Result := Round( ( ( x - _minX ) / xRange) * ScrXRange );
     end
   ;
 
@@ -1342,12 +1404,18 @@ end;
       pt: TProductionType;
       x, y: integer;
     begin
+      (*
+      if( NAADSMStateDeadFromDisease = h.diseaseStatus ) then
+        dbcout2( 'Break here' )
+      ;
+      *)
+
       // If cboProdTypes.ItemIndex is 0, draw herds of all production types.
       // Otherwise, check to see if this production type should be drawn before proceeding.
       if( 0 <> cboProdTypes.ItemIndex ) then
         begin
           pt := cboProdTypes.Items.Objects[cboProdTypes.ItemIndex] as TProductionType;
-          
+
           if( h.prodTypeID <> pt.productionTypeID ) then
             exit
           ;
@@ -1358,36 +1426,36 @@ end;
       pointSize := GetPtSize( h.initialSize );
 
       // Set point color
-      if( _displayApparent ) then
-        begin
-          //dbcout( 'Setting color based on apparent status' );
-      	  pointColor := getPtColor( h.apparentStatus );
-        end
+      case _displayType of
+        MAPDiseaseStatus: pointColor := naadsmDiseaseStateColor( h.diseaseStatus );
+        MAPControlStatus: pointColor := controlStatusColor( h.controlStatus );
+        MAPDetectionStatus: pointColor := detectionStatusColor( h.detectionStatus );
       else
         begin
-          //dbcout( 'Setting color based on simulated status ' + transitionStateCode( h.simulatedStatus ) );
-      	  pointColor := getPtColor( h.simulatedStatus );
+          raise exception.Create('Bad display type in TFormMain.drawThisUnit()');
+          pointColor := clLime;
         end
       ;
+      end;
 
       pbxMap.Canvas.Brush.Color := pointColor;
       pbxMap.Canvas.Pen.Color := pointColor;
 
       pbxMap.Canvas.Rectangle(
-        ScrX( h.Lon ) - pointSize,
-        ScrY( h.Lat ) - pointSize,
-        ScrX( h.Lon ) + pointSize,
-        ScrY( h.Lat ) + pointSize
+        ScrX( h.x ) - pointSize,
+        ScrY( h.y ) - pointSize,
+        ScrX( h.x ) + pointSize,
+        ScrY( h.y ) + pointSize
       );
 
       pbxInv.Canvas.Brush.Color := pointColor;
       pbxInv.Canvas.Pen.Color := pointColor;
 
       pbxInv.Canvas.Rectangle(
-        ScrX( h.Lon ) - pointSize,
-        ScrY( h.Lat ) - pointSize,
-        ScrX( h.Lon ) + pointSize,
-        ScrY( h.Lat ) + pointSize
+        ScrX( h.x ) - pointSize,
+        ScrY( h.y ) - pointSize,
+        ScrX( h.x ) + pointSize,
+        ScrY( h.y ) + pointSize
       );
 
       if( -1 = hIdx ) then
@@ -1399,9 +1467,9 @@ end;
       else
         begin
           // The herd array needs to be built.
-          for x := ( ScrX( h.Lon ) - pointSize ) to ( ScrX( h.Lon ) + pointSize ) do
+          for x := ( ScrX( h.x ) - pointSize ) to ( ScrX( h.x ) + pointSize ) do
             begin
-              for y := ( ScrY( h.Lat ) - pointSize ) to ( ScrY( h.Lat ) + pointSize ) do
+              for y := ( ScrY( h.y ) - pointSize ) to ( ScrY( h.y ) + pointSize ) do
                 _herdLocations.appendZValue( x, y, hIdx )
               ;
             end
@@ -1414,18 +1482,13 @@ end;
 
   procedure TFormMap.drawAllUnits();
     var
-      h: THerd;
       hIdx: integer;
     begin
       _herdLocations.deleteValues();
       _updateHint := false;
 
       for hIdx := 0 to _herds.Count - 1 do
-        begin
-          h := _herds.at( hIdx );
-          //h.debug();
-          drawThisUnit( h, hIdx );
-        end
+        drawThisUnit( _herds.at( hIdx ), hIdx )
       ;
 
       _updateHint := true;
@@ -1442,7 +1505,7 @@ end;
     end
   ;
 
-  
+
   procedure TFormMap.FormResize(Sender: TObject);
     begin
       setScrollProperties();
@@ -1460,10 +1523,18 @@ end;
 
   procedure TFormMap.sbStatusClick(Sender: TObject);
     begin
-      _displayApparent := not _displayApparent;
-      pbxLegend.Repaint();
+      case _displayType of
+        MAPDiseaseStatus: _displayType := MAPControlStatus;
+        MAPControlStatus: _displayType := MAPDetectionStatus;
+        MAPDetectionStatus: _displayType := MAPDiseaseStatus;
+      end;
 
+      Screen.Cursor := crHourglass;
+
+      pbxLegend.Repaint();
       DrawScreen(false);
+
+      Screen.Cursor := crDefault;
     end
   ;
 
@@ -1471,18 +1542,22 @@ end;
   procedure TFormMap.sbSizeClick(Sender: TObject);
     begin
       _sizeDisplaySmall := not _sizeDisplaySmall;
-      pbxSizeLegend.Repaint();
 
+      Screen.Cursor := crHourglass;
+
+      pbxSizeLegend.Repaint();
       DrawScreen(false);
+
+      Screen.Cursor := crDefault;
     end
   ;
 
 
   procedure TFormMap.cboProdTypes3Change( Sender: TObject );
     begin
-      dbcout( 'TFormMap.cboProdTypesChange', DBFORMMAP );
+      dbcout( 'TFormMap.cboProdTypesChange', DBSHOWMSG );
 
-    	drawScreen(false);
+      drawScreen(false);
     end
   ;
 
@@ -1748,17 +1823,17 @@ end;
 
   procedure TFormMap.pbxMapTPaint(Sender: TObject);
     begin
-      DrawXAxisLabel();
+      DrawXAxisScale();
     end
   ;
 
   procedure TFormMap.pbxMapLPaint(Sender: TObject);
     begin
-      DrawYAxisLabel();
+      DrawYAxisScale();
     end
   ;
 
-  
+
   procedure TFormMap.pbxTopBackgroundPaint(Sender: TObject);
     begin
       pbxTopBackground.Canvas.Pen.Color := clBlack;
@@ -1797,69 +1872,49 @@ end;
     end
   ;
 
+
   procedure TFormMap.fitMapToWindow();
     var
-      llRangeH, llRangeW: double;
-      latLon1, latLon2: RLatLon;
-      aspect: double;
+      rangeH, rangeW: double;
+      hRatio, wRatio: double;
+      adjRatio: double;
     begin
       // Get the latitude/vertical/height distance covered by the population
-      latLon1.Lat := _herds.minLat;
-      latLon1.Lon := _herds.maxLon;
-      latLon2.Lat := _herds.maxLat;
-      latLon2.Lon := _herds.maxLon;
-      llRangeH := DistInKM( latLon1, latLon2 );
+      if( _herds.maxY <> _herds.minY ) then
+        rangeH := abs( _herds.maxY - _herds.minY )
+      else
+        rangeH := 1.0
+      ;
 
       // Get the longitude/horizontal/width distance covered by the population
-      latLon1.Lat := _herds.maxLat;
-      latLon1.Lon := _herds.minLon;
-      latLon2.Lat := _herds.maxLat;
-      latLon2.Lon := _herds.maxLon;
-      llRangeW := DistInKM( latLon1, latLon2 );
-
-      // Calculate aspect ratio as h/w
-      // if aspect = 1, the map will be square
-      // if aspect > 1, the map will be taller than it is wide
-      // if aspect < 1, the map will be wider than it is tall
-
-      // These adjustments hopefully keep the map from getting ridiculously narrow
-      if( 1 > llRangeH ) then llRangeH := 1;
-      if( 1 > llRangeW ) then llRangeW := 1;
-      aspect := llRangeH / llRangeW;
-
-      if( aspect > 1 ) then
-        begin
-          // Set the height of the map image control to the maximum available space
-          pbxMap.Height := availableMapHeight;
-
-          // Set the width based on the aspect ratio
-          pbxMap.Width := round( availableMapHeight / aspect );
-
-          // See if width is a limiting factor, and adjust if necessary
-          if( pbxMap.Width > availableMapWidth ) then
-            begin
-              pbxMap.Width := availableMapWidth;
-              pbxMap.Height := round( availableMapWidth * aspect );
-            end
-          ;
-        end
+      if( _herds.maxX <> _herds.minX ) then
+        rangeW := abs( _herds.maxX - _herds.minX )
       else
-        begin
-          // Set the width of the map image control to the maximum available space
-          pbxMap.Width := availableMapWidth;
-
-          // Set the height based on the aspect ratio
-          pbxMap.Height := round( availableMapWidth * aspect );
-
-          // See if height is a limiting factor, and adjust if necessary
-          if( pbxMap.Height > availableMapHeight ) then
-            begin
-              pbxMap.Height := availableMapHeight;
-              pbxMap.Width := round( availableMapWidth * aspect );
-            end
-          ;
-        end
+        rangeW := 1.0
       ;
+
+      // If 1 >= hRatio, the available map is large enough to encompass the entire vertical space.
+      // If 1 < hRatio, the available map is too small in the vertical dimension.
+      hRatio := rangeH / availableMapHeight;
+
+      // If 1 >= wRatio, the available map is large enough to encompass the entire horizontal space.
+      // If 1 < wRatio, the available map is too small in the horizontal dimension.
+      wRatio := rangeW /availableMapWidth;
+
+      (*
+      dbcout2( rangeH );
+      dbcout2( availableMapHeight );
+      dbcout2( hRatio );
+      dbcout2( endl );
+      dbcout2( rangeW );
+      dbcout2( availableMapWidth );
+      dbcout2( wRatio );
+      *)
+
+      // Scale the area based on whichever dimension has the largest ratio.
+      adjRatio := max( hRatio, wRatio );
+      pbxMap.Height := round( rangeH / adjRatio );
+      pbxMap.Width := round( rangeW / adjRatio );
 
       // Reset the position of the map in the upper left corner
       pbxMap.Left := 0;
@@ -1869,8 +1924,8 @@ end;
       pbxInv.Width := pbxMap.Width;
 
       // Reset the paintboxes for the scales
-      pbxMapT.Width := pbxMap.Width;
-      pbxMapL.Height := pbxMap.Height;
+      pbxMapT.Width := pbxMap.Width + 5;
+      pbxMapL.Height := pbxMap.Height + 10;
       pbxMapT.Left := 0;
       pbxMapL.Top := 0;
 
@@ -1928,7 +1983,7 @@ end;
 
   procedure TFormMap.pbxMapInfoPaint(Sender: TObject);
     begin
-      drawXScale();
+      drawXScaleBar();
     end
   ;
 
@@ -1940,8 +1995,10 @@ end;
       if( nil <> _perimeterList ) then
         freeAndNil( _perimeterList )
       ;
-      
+
       _usingZonesCopy := false;
+
+      updateCaption();
     end
   ;
 
@@ -1951,6 +2008,7 @@ end;
       _usingZonesCopy := false;
 
       drawZonesInternal();
+      updateCaption();
     end
   ;
 
@@ -1976,8 +2034,10 @@ end;
       mStream.Free();
 
       _perimeterListC := nil;
-      
+
       _usingZonesCopy := true;
+
+      updateCaption();
     end
   ;
 
@@ -2004,7 +2064,7 @@ end;
               if( nil = _perimeterList ) then
                 exit
               ;
-              
+
               if( 0 = _perimeterList.count ) then
                 exit
               ;
@@ -2014,7 +2074,7 @@ end;
                 begin
                   perim := _perimeterList[j] as TZonePerimeter;
 
-                  pbxMap.Canvas.Pen.Color := _perimeterColors[ (perim.zoneLevel - 1) mod length( _perimeterColors ) ];
+                  pbxMap.Canvas.Pen.Color := zoneColor( perim.zoneLevel );
                   pbxMap.Canvas.Pen.Width := 1;
                   pbxMap.Canvas.Pen.Style := psSolid;
 
@@ -2027,13 +2087,13 @@ end;
                       penPoint.Y := ScrY( perim[0].y );
                       pbxMap.Canvas.PenPos := penPoint;
 
-                      //dbcout2( '  ' + uiFloatToStr( perim[0].x ) + tab + uiFloatToStr( perim[0].y ) );
+                      //dbcout2( '  ' + dbFloatToStr( perim[0].x ) + tab + dbFloatToStr( perim[0].y ) );
 
                       // Draw the line segments
                       for i := 1 to perim.count - 1 do
                         begin
                           pbxMap.Canvas.lineTo( scrX( perim[i].x ), scrY( perim[i].y ) );
-                          //dbcout2( '  ' + uiFloatToStr( perim[i].x ) + tab + uiFloatToStr( perim[i].y ) );
+                          //dbcout2( '  ' + dbFloatToStr( perim[i].x ) + tab + dbFloatToStr( perim[i].y ) );
                         end
                       ;
 
@@ -2062,52 +2122,53 @@ end;
           if ( assigned( _perimeterListC ) )  then
             ZoneSize := Get_zone_list_size( _perimeterListC )
           else
-            ZoneSize := 0;
-            
+            ZoneSize := 0
+          ;
+
           if ( 0 < ZoneSize ) then
             begin
-
-          // If so, draw all of the zones
-          for j := 0 to (ZoneSize - 1) do
-            begin
-              Zone := Get_zone_list_zone( _perimeterListC, j );
-
-              pbxMap.Canvas.Pen.Color := _perimeterColors[ ( Zone^.level - 1 ) mod length( _perimeterColors ) ];
-              pbxMap.Canvas.Pen.Width := 1;
-              pbxMap.Canvas.Pen.Style := psSolid;
-
-              if ( Zone^.poly^.num_contours > 0 ) then
+              // If so, draw all of the zones
+              for j := 0 to (ZoneSize - 1) do
                 begin
-                  for k := 0 to Zone^.poly^.num_contours - 1 do
+                  Zone := Get_zone_list_zone( _perimeterListC, j );
+
+                  pbxMap.Canvas.Pen.Color := zoneColor( Zone^.level );
+                  pbxMap.Canvas.Pen.Width := 1;
+                  pbxMap.Canvas.Pen.Style := psSolid;
+
+                  if ( Zone^.poly^.num_contours > 0 ) then
                     begin
-
-                      MyVertices := @Zone^.poly^.contour[k];
-                      if( 0 < MyVertices^.num_vertices ) then
+                      for k := 0 to Zone^.poly^.num_contours - 1 do
                         begin
-                          // FIX ME: consider using TCanvas.Polyline
 
-                          // Set the first vertex position
-                          penPoint.X := ScrX( MyVertices^.vertex[0].x );
-                          penPoint.Y := ScrY( MyVertices^.vertex[0].y );
-                          pbxMap.Canvas.PenPos := penPoint;
+                          MyVertices := @Zone^.poly^.contour[k];
+                          if( 0 < MyVertices^.num_vertices ) then
+                            begin
+                              // FIX ME: consider using TCanvas.Polyline
 
-                          // Draw the line segments
-                          for i := 1 to MyVertices.num_vertices - 1 do
-                            pbxMap.Canvas.lineTo( scrX( MyVertices^.vertex[i].x ), scrY( MyVertices^.vertex[i].y ) )
+                              //dbcout2( 'vertex 0: ' + usFloatToStr( MyVertices^.vertex[0].x ) + ', ' + usFloatToStr( MyVertices^.vertex[0].y ) );
+
+                              // Set the first vertex position
+                              penPoint.X := ScrX( MyVertices^.vertex[0].x );
+                              penPoint.Y := ScrY( MyVertices^.vertex[0].y );
+                              pbxMap.Canvas.PenPos := penPoint;
+
+                              // Draw the line segments
+                              for i := 1 to MyVertices.num_vertices - 1 do
+                                pbxMap.Canvas.lineTo( scrX( MyVertices^.vertex[i].x ), scrY( MyVertices^.vertex[i].y ) )
+                              ;
+
+                              // Connect the last vertex to the first one
+                              pbxMap.Canvas.lineTo( scrX( MyVertices^.vertex[0].x ), scrY( MyVertices^.vertex[0].y ) );
+                            end
                           ;
-
-                          // Connect the last vertex to the first one
-                          pbxMap.Canvas.lineTo( scrX( MyVertices^.vertex[0].x ), scrY( MyVertices^.vertex[0].y ) );
                         end
                       ;
-
                     end
                   ;
                 end
               ;
             end
-          ;
-          end
           ;
         end
       ;
@@ -2156,7 +2217,7 @@ end;
           self.hint := theHint;
 
           pt := pbxMap.ClientToScreen( _lastHintPos );
-          
+
           Application.ActivateHint(pt);
         end
       ;
@@ -2211,6 +2272,44 @@ end;
       if( not _borderDisabled ) then
         inherited
       ;
+    end
+  ;
+
+  procedure TFormMap.actKMZExportExecute(Sender: TObject);
+    var
+      KMLGen: TKMLFileGenerator;
+      currentPTID, i : integer;
+
+    begin
+      i := cboProdTypes.ItemIndex;
+
+      if (0 > i)
+      then currentPTID := (cboProdTypes.Items.Objects[i] as TProductionType).productionTypeID
+      else currentPTID := -1; //all production types has no assoc object
+
+      if Assigned( _herds ) then
+        begin
+          saveDialog1.Title := tr( 'Choose a filename for your KMZ map file' );
+          saveDialog1.InitialDir := GetCurrentDir;
+          saveDialog1.DefaultExt := 'kmz';
+          saveDialog1.Filter := tr( 'KMZ file (*.kmz)|*.kmz' );
+          saveDialog1.FilterIndex := 1;
+
+          if saveDialog1.Execute then
+            begin
+              try
+                if ( 0 > currentPTID )
+                then KMLGen := TKMLFileGenerator.create( _herds )  // all prod types
+                else KMLGen := TKMLFileGenerator.create( _herds, currentPTID ); // a particular prod type
+
+                KMLGen.generateHerdKMZFile(saveDialog1.FileName);
+              finally
+                FreeAndNil(KMLGen);
+              end;
+            end
+          ;  //execute
+        end
+      ; //assigned
     end
   ;
 

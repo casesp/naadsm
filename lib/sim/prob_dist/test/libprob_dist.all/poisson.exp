@@ -65,3 +65,18 @@ cdf_test $xvalues $answers "cdf" $answers
 #
 set true_answer {0 0.0498 0.1493 0.2241 0.2240 0.1681 0.1008 0.0504}
 random_number_test $true_answer -1
+
+
+
+#
+# Test statistics.
+#
+#set min
+#set max
+#set mean
+#set variance
+#statistics_test $min $max $mean $variance
+sample_statistics_test
+
+
+

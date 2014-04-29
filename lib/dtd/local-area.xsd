@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema elementFormDefault="qualified" 
+	targetNamespace="C:\NAADSM-XML-Validation\4Line\schema" 
+	xmlns:naadsm="C:\NAADSM-XML-Validation\4Line\schema"
+        xmlns="http://www.w3.org/2001/XMLSchema">
+
+  <include schemaLocation="base_types.xsd" />
+  
+  <complexType name="local-area-spread-model-type">
+    <annotation>
+      <documentation xml:lang="en">
+        <![CDATA[
+          These parameters describe local-area spread of disease.
+          This refers to the non-directional spread of disease in the area 
+          surrounding an infected premises. Probability of infection falls 
+          off exponentially with distance and is relative to the sizes of the 
+          infectious and susceptible herds.
+        ]]>
+      </documentation>
+    </annotation>
+    <sequence>
+      <!-- Model parameters. -->
+      <element name="herd-size-infectious" type="naadsm:unitless" >
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Size of the infectious herd used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="herd-size-susceptible" type="naadsm:unitless" >
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              Size of the susceptible herd used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="herd-distance" type="naadsm:length">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The distance as km between herd-size-susceptible
+              and herd-size-infectious.  Used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+      <element name="prob" type="naadsm:probability">
+        <annotation>
+          <documentation xml:lang="en">
+            <![CDATA[
+              The probability of infection from herd-size-infectious to
+              herd-size-susceptible at herd-distance.  Used to compute k.
+            ]]>
+          </documentation>
+        </annotation>
+      </element>
+    </sequence>
+    <attribute name="version" type="string" fixed="0.1" />
+    <attribute name="from-production-type" type="string" use="required" />
+    <attribute name="to-production-type" type="string" use="required" />
+  </complexType>
+
+</schema>

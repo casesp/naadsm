@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ergadm:disease-simulation
-  xmlns:ergadm="http://hebb.cis.uoguelph.ca/~dastacey/Grid/ERG_ADM"
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
   xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
   <description>Specs for a sample simulation run.</description>
-  <num-days>8</num-days>
+  <num-days>15</num-days>
   <num-runs>1</num-runs>
 
   <models>
@@ -52,6 +52,10 @@
         <point>0</point>
         <units><xdf:unit>day</xdf:unit></units>
       </delay>
+      <!-- Always move 0.04 of the herd, which is 1 when size is 25. -->
+      <movement-proportion>
+        <point>0.04</point>
+      </movement-proportion>
       <!-- Contact always produces infection. -->
       <prob-infect>1.0</prob-infect>
       <!-- Movement is unaffected by public knowledge of an outbreak. -->
@@ -66,11 +70,8 @@
 
     <conflict-resolver></conflict-resolver>
 
+    <state-table-writer />
+
   </models>
 
-  <output>
-    <variable-name>all-units-states</variable-name>
-    <frequency>daily</frequency>
-  </output>
-
-</ergadm:disease-simulation>
+</naadsm:disease-simulation>

@@ -4,13 +4,13 @@ unit FrameEpiIterationSummary;
 FrameEpiIterationSummary.pas/dfm
 --------------------------------
 Begin: 2005/12/07
-Last revision: $Date: 2008/11/25 22:00:31 $ $Author: areeves $
-Version: $Revision: 1.25 $
+Last revision: $Date: 2013-04-01 18:54:31 $ $Author: areeves $
+Version: $Revision: 1.34.2.12 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
 --------------------------------------------------
-Copyright (C) 2005 - 2008 Animal Population Health Institute, Colorado State University
+Copyright (C) 2005 - 2013 Colorado State University
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -45,6 +45,7 @@ interface
 
     // General purpose units
     SqlClasses,
+    PBPageControl,
 
     // Application-specific data structures
     SMDatabase,
@@ -57,7 +58,7 @@ interface
     // Application-specific widgets
     FrameChartBase,
     FrameSingleEpiCurve,
-    FrameStringGridBase, PBPageControl
+    FrameStringGridBase
 	;
 
 
@@ -121,7 +122,7 @@ interface
       _smdb: TSMDatabase;
       _selectedPT: TProductionType;
 
-      _data: TSMSimOutByProdType;
+      _data: TSMDailyOutput;
 
       _sqlRes: TSqlResult;
       
@@ -166,7 +167,7 @@ interface
       procedure resizeContents();
 
       procedure resetSim( db: TSMDatabase; sim: TSMSimulationInput; pt: TProductionType; newItr: Integer = -1 );
-      procedure setProdType( pt: TProductionType );
+      procedure setProdType( pt: TProductionType; const simIsRunning: boolean );
      	procedure updateFromDatabase( Itr: Integer );
 
       // Handles chart updates while a simulation is in progress
@@ -190,7 +191,7 @@ implementation
 		FormMain,
     MyDialogs,
     MyStrUtils,
-    GuiStrUtils,
+    RoundToXReplacement_3c,
     DebugWindow,
     I88n
 	;
@@ -208,7 +209,7 @@ implementation
       translateUI();
 
       _currentItr := -1;
-      _data := TSMSimOutByProdType.create();
+      _data := TSMDailyOutput.create();
 
       _selectedPT := nil;
       _sqlRes := nil;
@@ -229,21 +230,21 @@ implementation
       with self do
         begin
           tabGraphs.Caption := tr( 'Graphical view' );
-          cbxInapparent.Caption := tr( 'Actual Epidemic Curve -- includes all infections' );
-          cbxApparent.Caption := tr( 'Apparent Epidemic Curve -- includes only detected infections' );
+          cbxInapparent.Caption := tr( 'Actual epidemic curve -- includes all infections' );
+          cbxApparent.Caption := tr( 'Apparent epidemic curve -- includes only detected infections' );
           tabTables.Caption := tr( 'Tabular view' );
-          cbxInf.Caption := tr( 'Reasons for infection -- includes all infections' );
+          cbxInf.Caption := tr( 'Infection and exposure' );
           cbxVac.Caption := tr( 'Vaccination' );
           lblAsterisk.Caption := tr( '* In the course of a simulation run, these activities may occur more than once on a single unit' );
           cbxDestr.Caption := tr( 'Destruction' );
-          cbxSurv.Caption := tr( 'Detection and Tracing' );
+          cbxSurv.Caption := tr( 'Detection and tracing' );
         end
       ;
 
       // Set TChart properties
       with self do
         begin
-          fraInapparent.chtCurve.Title.Text.Strings[0] := tr( 'Actual Epidemic Curve' );
+          fraInapparent.chtCurve.Title.Text.Strings[0] := tr( 'Actual epidemic curve' );
         end
       ;
 
@@ -288,7 +289,8 @@ implementation
       _smdb := db;
 
       if ( newItr > 0 ) then
-        _currentItr := newItr;
+        _currentItr := newItr
+      ;
 
 			setupGrids();
 
@@ -297,7 +299,7 @@ implementation
       db2 := _smdb as TSqlDatabase;
       _sqlRes := TSqlResult.Create( db2 );
 
-      setProdType( pt );
+      setProdType( pt, false );
 
       setPanelSizes();
       resizeScrollBox();
@@ -305,10 +307,14 @@ implementation
   ;
 
 
-  procedure TFrameEpiIterationSummary.setProdType( pt: TProductionType );
+  procedure TFrameEpiIterationSummary.setProdType( pt: TProductionType; const simIsRunning: boolean );
     begin
       resizeContents();
-      
+
+      if( simIsRunning ) then
+        _currentItr := -1
+      ;
+
       _selectedPt := pt;
       setupFromDatabase( _currentItr );
     end
@@ -335,36 +341,69 @@ implementation
 //-----------------------------------------------------------------------------
 // Helper procedures called by initialize()
 //-----------------------------------------------------------------------------
+
+  /// Label the data rows for the Epidemiology Tabular View table, on the UI the sections follow a different order
   procedure TFrameEpiIterationSummary.SetupGrids();
     begin
       sgHeader.Cells[1,0] := tr( 'Cumulative number of units' );
       sgHeader.Cells[2,0] := tr( 'Cumulative number of animals' );
 
+      //Detection and Tracing
       clearGrid( fraSgSurv );
-      fraSgSurv.Cells[0,0] := tr( 'Clinical detections*' );
-      fraSgSurv.Cells[0,1] := tr( 'Direct traces (successfully traced)*' );
-      fraSgSurv.Cells[0,2] := tr( 'Indirect traces (successfully traced)*' );
+      fraSgSurv.Cells[0,0] := tr( 'Clinical detections' );
+      fraSgSurv.Cells[0,1] := tr( 'Diagnostic testing detections' );
+      fraSgSurv.Cells[0,2] := tr( 'Dead from disease detections' );
+      fraSgSurv.Cells[0,3] := tr( 'Total detected units' );
+      fraSgSurv.Cells[0,4] := tr( 'Direct forward traces (successfully traced)*' );
+      fraSgSurv.Cells[0,5] := tr( 'Indirect forward traces (successfully traced)*' );
+      fraSgSurv.Cells[0,6] := tr( 'Direct backward traces (successfully traced)*' );
+      fraSgSurv.Cells[0,7] := tr( 'Indirect backward traces (successfully traced)*' );
 
+      // Fix Me: 20091014 Which of these labels should end in " *" ? Arron said he will revisit this week, else remind him
+      // Herd Exams
+      fraSgSurv.Cells[0,8] := tr( 'Herd exams from direct forward traces' );
+      fraSgSurv.Cells[0,9] := tr( 'Herd exams from indirect forward traces' );
+      fraSgSurv.Cells[0,10] := tr( 'Herd exams from direct backward traces' );
+      fraSgSurv.Cells[0,11] := tr( 'Herd exams from indirect backward traces' );
+
+      // Fix Me: 20091014 Which of these labels should end in " *" ? Arron said he will revisit this week, else remind him
+      // Diagnostic Testing
+      fraSgSurv.Cells[0,12] := tr( 'Diagnostic testing from direct forward traces' );
+      fraSgSurv.Cells[0,13] := tr( 'Diagnostic testing from indirect forward traces' );
+      fraSgSurv.Cells[0,14] := tr( 'Diagnostic testing from direct backward traces' );
+      fraSgSurv.Cells[0,15] := tr( 'Diagnostic testing from indirect backward traces' );
+      fraSgSurv.Cells[0,16] := tr( 'True positive diagnostic test result' );
+      fraSgSurv.Cells[0,17] := tr( 'True negative diagnostic test result' );
+      fraSgSurv.Cells[0,18] := tr( 'False positive diagnostic test result' );
+      fraSgSurv.Cells[0,19] := tr( 'False negative diagnostic test result' );
+
+      // Destruction
       clearGrid( fraSgDestr );
       frasgDestr.Cells[0,0] := tr( 'Initially destroyed' );
       fraSgDestr.Cells[0,1] := tr( 'Detection' );
-      fraSgDestr.Cells[0,2] := tr( 'Direct traces' );
-      fraSgDestr.Cells[0,3] := tr( 'Indirect traces' );
-      fraSgDestr.Cells[0,4] := tr( 'Ring' ); // FIX ME: dynamically change radius, depending on production type? //'Circle (3 km)';
-      fraSgDestr.Cells[0,5] := tr( 'TOTAL' );
+      fraSgDestr.Cells[0,2] := tr( 'Direct forward traces' );
+      fraSgDestr.Cells[0,3] := tr( 'Indirect forward traces' );
+      fraSgDestr.Cells[0,4] := tr( 'Direct backward traces' );
+      fraSgDestr.Cells[0,5] := tr( 'Indirect backward traces' );
+      fraSgDestr.Cells[0,6] := tr( 'Ring' ); // FIX ME: dynamically change radius, depending on production type? //'Circle (3 km)';
+      fraSgDestr.Cells[0,7] := tr( 'Disposal, cleaning, and disinfection only' );
+      fraSgDestr.Cells[0,8] := tr( 'TOTAL' );
 
+      // Vaccination
       clearGrid( fraSgVac );
       fraSgVac.Cells[0,0] := tr( 'Initially vaccinated' );
       fraSgVac.Cells[0,1] :=  tr( 'Ring*' ); // FIX ME: dynamically change radius, depending on production type? //'Ring (5 km)*';
-      // Total is the same as the number of ring vaccinations, for now.
-      //fraSgVac.Cells[0,2] := 'TOTAL';
+      fraSgVac.Cells[0,2] := 'TOTAL';
 
+      // Infection
       clearGrid( fraSgInf );
       fraSgInf.Cells[0,0] := tr( 'Initially infected' );
-      fraSgInf.Cells[0,1] := tr( 'Airborne*' );
-      fraSgInf.Cells[0,2] := tr( 'Direct contact*' );
-      fraSgInf.Cells[0,3] := tr( 'Indirect contact*' );
-      fraSgInf.Cells[0,4] := tr( 'TOTAL' );
+      fraSgInf.Cells[0,1] := tr( 'Become infected' );
+      fraSgInf.Cells[0,2] := tr( 'Direct contact adequate exposures*' );
+      fraSgInf.Cells[0,3] := tr( 'Indirect contact adequate exposures*' );
+      fraSgInf.Cells[0,4] := tr( 'Local area adequate exposures*' );
+      fraSgInf.Cells[0,5] := tr( 'Airborne adequate exposures*' );
+      fraSgInf.Cells[0,6] := tr( 'TOTAL adequate exposures' );
 
       ClearStringGridSelection( fraSgSurv );
       ClearStringGridSelection( fraSgDestr );
@@ -441,9 +480,8 @@ implementation
           ;
         end
       else
-        begin
-          lastIteration := Itr;
-        end;
+        lastIteration := Itr
+      ;
 
 
       // Determine the last day of the last/current iteration
@@ -473,28 +511,88 @@ implementation
           // Detection
           + ' detcUClin,'  // Number of units detected by clinical signs over the course of an iteration
           + ' detcAClin,'  // Total number of animals in all units detected by clinical signs over the course of an iteration
+          + ' detcUTest,'  // Number of units detected by diagnostic testing over the course of an iteration
+          + ' detcATest,'  // Total number of animals in all units detected by diagnostic testing over the course of an iteration
 
-        	// Tracing
-          + ' trcUDir,'  // Number of units directly exposed and successfully traced over the course of an iteration
-          + ' trcADir,'  // Total number of animals in all units directly exposed and successfully traced over the course of an iteration
-          + ' trcUInd,'  // Number of units indirectly exposed and successfully traced over the course of an iteration
-          + ' trcAInd,'  // Total number of animals in all units indirectly exposed and successfully traced over the course of an iteration
-          + ' trcUDirp,'  // Number of units directly exposed that could possibly have been traced over the course of an iteration
-          + ' trcADirp,'  // Total number of animals in all units directly exposed that could possibly have been traced over the course of an iteration
-          + ' trcUIndp,'  // Number of units indirectly exposed that could possibly have been traced over the course of an iteration
-          + ' trcAIndp,'  // Total number of animals in units indirectly exposed that could possibly have been traced over the course of an iteration
+          + ' detcUDeadAll,'  // Number of units that were not detected until they entered the the "dead from disease" state over the course of the iteration
+          + ' detcADeadAll,'  // Total number of animals in units that were not detected until they entered the "dead from disease" state over the course of the iteration
+
+          + ' detcUAll,'   // Number of "unique" units detected from clinical signs, testing, and detected dead over the course of an iteration
+          + ' detcAAll,'   // Total number of animals in all "unique" units detected from clinical signs, testing, and detected dead over the course of an iteration
+
+        	// Tracing - Forward
+          + ' trcUDirFwd,'  // Number of units directly exposed and successfully traced forward over the course of an iteration
+          + ' trcADirFwd,'  // Total number of animals in all units directly exposed and successfully traced forward over the course of an iteration
+          + ' trcUIndFwd,'  // Number of units indirectly exposed and successfully traced forward over the course of an iteration
+          + ' trcAIndFwd,'  // Total number of animals in all units indirectly exposed and successfully traced forward over the course of an iteration
+          + ' trcUDirpFwd,'  // Number of units directly exposed that could possibly have been traced forward over the course of an iteration
+          + ' trcADirpFwd,'  // Total number of animals in all units directly exposed that could possibly have been traced forward over the course of an iteration
+          + ' trcUIndpFwd,'  // Number of units indirectly exposed that could possibly have been traced forward over the course of an iteration
+          + ' trcAIndpFwd,'  // Total number of animals in units indirectly exposed that could possibly have been traced forward over the course of an iteration
+
+          // Tracing - Backward
+          + ' trcUDirBack,'  // Number of units directly exposed and successfully traced back over the course of an iteration
+          + ' trcADirBack,'  // Total number of animals in all units directly exposed and successfully traced back over the course of an iteration
+          + ' trcUIndBack,'  // Number of units indirectly exposed and successfully traced back over the course of an iteration
+          + ' trcAIndBack,'  // Total number of animals in all units indirectly exposed and successfully traced back over the course of an iteration
+          + ' trcUDirpBack,' // Number of units directly exposed that could possibly have been traced back over the course of an iteration
+          + ' trcADirpBack,' // Total number of animals in all units directly exposed that could possibly have been traced back over the course of an iteration
+          + ' trcUIndpBack,' // Number of units indirectly exposed that could possibly have been traced back over the course of an iteration
+          + ' trcAIndpBack,' // Total number of animals in units indirectly exposed that could possibly have been traced back over the course of an iteration
+
+          // Tracing - Origins
+          + ' tocUDirFwd,'  // Number of trace-forwards of direct contact that originate at units of the designated type over the course of an iteration
+          + ' tocUIndFwd,'  // Number of trace-forwards of indirect contact that originate at units of the designated type over the course of an iteration
+          + ' tocUDirBack,'  // Number of trace-backs of direct contact that originate at units of the designated type over the course of an iteration
+          + ' tocUIndBack,'  // Number of trace-backs of indirect contact that originate at units of the designated type over the course of an iteration
+
+          // Herd Exams
+          + ' exmcUDirFwd,'  // Number of units subjected to a herd exam after a trace forward of direct contact over the course of an iteration
+          + ' exmcADirFwd,'  // Number of animals subjected to a herd exam after a trace forward of direct contact over the course of an iteration
+          + ' exmcUIndFwd,'  // Number of units subjected to a herd exam after a trace forward of indirect contact over the course of an iteration
+          + ' exmcAIndFwd,'  // Number of animals subjected to a herd exam after a trace forward of indirect contact over the course of an iteration
+          + ' exmcUDirBack,' // Number of units subjected to a herd exam after a trace back of direct contact over the course of an iteration
+          + ' exmcADirBack,' // Number of animals subjected to a herd exam after a trace back of direct contact over the course of an iteration
+          + ' exmcUIndBack,' // Number of units subjected to a herd exam after a trace back of indirect contact over the course of an iteration
+          + ' exmcAIndBack,' // Number of animals subjected to a herd exam after a trace back of indirect contact over the course of an iteration
+
+          // Diagnostic Testing
+          + ' tstcUDirFwd,'  // Number of units subjected to a diagnostic testing after a trace forward of direct contact over the course of an iteration
+          + ' tstcADirFwd,'  // Number of animals subjected to a diagnostic testing after a trace forward of direct contact over the course of an iteration
+          + ' tstcUIndFwd,'  // Number of units subjected to a diagnostic testing after a trace forward of indirect contact over the course of an iteration
+          + ' tstcAIndFwd,'  // Number of animals subjected to a diagnostic testing after a trace forward of indirect contact over the course of an iteration
+          + ' tstcUDirBack,' // Number of units subjected to a diagnostic testing after a trace back of direct contact over the course of an iteration
+          + ' tstcADirBack,' // Number of animals subjected to a diagnostic testing after a trace back of direct contact over the course of an iteration
+          + ' tstcUIndBack,' // Number of units subjected to a diagnostic testing after a trace back of indirect contact over the course of an iteration
+          + ' tstcAIndBack,' // Number of animals subjected to a diagnostic testing after a trace back of indirect contact over the course of an iteration
+          + ' tstcUTruePos,' // Number of tested units with a true positive diagnostic test result over the course of an iteration
+          + ' tstcATruePos,' // Number of animals in tested units with a true positive diagnostic test result over the course of an iteration
+          + ' tstcUTrueNeg,' // Number of tested units with a true negative diagnostic test result over the course of an iteration
+          + ' tstcATrueNeg,' // Number of animals in tested units with a true negative diagnostic test result over the course of an iteration
+          + ' tstcUFalsePos,' // Number of tested units with a false positive diagnostic test result over the course of an iteration
+          + ' tstcAFalsePos,' // Number of animals in tested units with a false positive diagnostic test result over the course of an iteration
+          + ' tstcUFalseNeg,' // Number of tested units with a false negative diagnostic test result over the course of an iteration
+          + ' tstcAFalseNeg,' // Number of animals in tested units with a false negative diagnostic test result over the course of an iteration
 
           // Destruction
           + ' descUIni,'  // Number of units destroyed prior to the start of the simulation
           + ' descAIni,'  // Total number of animals in units destroyed prior to the start of the simulation
           + ' descUDet,'  // Number of units destroyed because they were detected positive over the course of an iteration
           + ' descADet,'  // Total number of animals in all units destroyed because they were detected positive over the course of an iteration
-          + ' descUDir,'  // Number of units destroyed because they were direct traces over the course of an iteration
-          + ' descADir,'  // Total number of animals in units destroyed because they were direct traces over the course of an iteration
-          + ' descUInd,'  // Number of units destroyed because they were indirect traces over the course of an iteration
-          + ' descAInd,'  // Total number of animals in units destroyed because they were indirect traces over the course of an iteration
+          + ' descUDirFwd,'  // Number of units destroyed because they were direct traces forward over the course of an iteration
+          + ' descADirFwd,'  // Total number of animals in units destroyed because they were direct traces forward over the course of an iteration
+          + ' descUIndFwd,'  // Number of units destroyed because they were indirect traces forward over the course of an iteration
+          + ' descAIndFwd,'  // Total number of animals in units destroyed because they were indirect traces forward over the course of an iteration
+          + ' descUDirBack,'  // Number of units destroyed because they were direct traces backward over the course of an iteration
+          + ' descADirBack,'  // Total number of animals in units destroyed because they were direct traces backward over the course of an iteration
+          + ' descUIndBack,'  // Number of units destroyed because they were indirect traces backward over the course of an iteration
+          + ' descAIndBack,'  // Total number of animals in units destroyed because they were indirect traces backward over the course of an iteration
           + ' descURing,'  // Number of units destroyed because they were in a destruction ring over the course of an iteration
           + ' descARing,'  // Total number of animals in all units destroyed because they were in a destruction ring over the course of an iteration
+
+          //AR:deadDV
+          + ' descUDcd,' // Number of units that required only disposal, cleaning, and disinfection over the course of an iteration
+          + ' descADcd,' // Total number of animals in all units that required only disposal, cleaning, and disinfection over the course of an iteration
 
           // Vaccination
           + ' vaccUIni,' // Number of units that were vaccine immune prior to the start of the simulation
@@ -505,12 +603,18 @@ implementation
           // Infection
           + ' infcUIni,'  // Number of units that are initially infected at the beginning of an iteration
           + ' infcAIni,'  // Number of animals in units that are initially infected at the beginning of an iteration
-          + ' infcUAir,'  // Number of units that become infected by airborne spread over the course of an iteration
-          + ' infcAAir,'  // Number of animals in units that become infected by airborne spread over the course of an iteration
-          + ' infcUDir,'  // Number of units that become infected by direct contact over the course of an iteration
-          + ' infcADir,'  // Number of animals in units that become infected by direct contact over the course of an iteration
-          + ' infcUInd,'  // Number of units that become infected by indirect contact over the course of an iteration
-          + ' infcAInd,'  // Number of animals in units that become infected by indirect contact over the course of an iteration
+          + ' infcUAll,'  // Number of units that become infected over the course of an iteration
+          + ' infcAAll,'  // Number of animals in units that become infected over the course of an iteration
+
+          // Adequate exposure
+          + ' adqcUAir,'  // Number of units adequately exposed by airborne spread over the course of an iteration
+          + ' adqcAAir,'  // Number of animals in units adequately exposed by airborne spread over the course of an iteration
+          + ' adqcUDir,'  // Number of units adequately exposed by direct contact over the course of an iteration
+          + ' adqcADir,'  // Number of animals in units adequately exposed by direct contact over the course of an iteration
+          + ' adqcUInd,'  // Number of units adequately exposed by indirect contact over the course of an iteration
+          + ' adqcAInd,'  // Number of animals in units adequately exposed by indirect contact over the course of an iteration
+          + ' adqcULcl,'  // Number of units adequately exposed by local-area spread over the course of an iteration
+          + ' adqcALcl,'  // Number of animals in units adequately exposed by local-area spread over the course of an iteration
 
           + ' zoncFoci' // Number of new zone foci created around units of the indicated type over the course of an iteration
 
@@ -532,31 +636,102 @@ implementation
       row := _sqlRes.fetchArrayFirst();
       while( nil <> row ) do
       	begin
-          // Detection by clinical signs
+          // Detection
           if( null <> row.field('detcUClin') ) then inc( _data.detcUClin, longint( row.field('detcUClin') ) );
           if( null <> row.field('detcAClin') ) then inc( _data.detcAClin, longint( row.field('detcAClin') ) );
+          if( null <> row.field('detcUTest') ) then inc( _data.detcUTest, longint( row.field('detcUTest') ) );
+          if( null <> row.field('detcATest') ) then inc( _data.detcATest, longint( row.field('detcATest') ) );
+
+          (*
+          AR: See note above with query.
+
+          if( null <> row.field('detcUDead') ) then inc( _data.detcUDead, longint( row.field('detcUDead') ) );
+          if( null <> row.field('detcADead') ) then inc( _data.detcADead, longint( row.field('detcADead') ) );
+
+          //AR:deadDV
+          if( null <> row.field('detcUDeadD') ) then inc( _data.detcUDeadD, longint( row.field('detcUDeadD') ) );
+          if( null <> row.field('detcADeadD') ) then inc( _data.detcADeadD, longint( row.field('detcADeadD') ) );
+          if( null <> row.field('detcUDeadV') ) then inc( _data.detcUDeadV, longint( row.field('detcUDeadV') ) );
+          if( null <> row.field('detcADeadV') ) then inc( _data.detcADeadV, longint( row.field('detcADeadV') ) );
+          *)
+
+          if( null <> row.field('detcUAll') ) then inc( _data.detcUAll, longint( row.field('detcUAll') ) );
+          if( null <> row.field('detcAAll') ) then inc( _data.detcAAll, longint( row.field('detcAAll') ) );
+
+          if( null <> row.field('detcUDeadAll') ) then inc( _data.detcUDeadAll, longint( row.field('detcUDeadAll') ) );
+          if( null <> row.field('detcADeadAll') ) then inc( _data.detcADeadAll, longint( row.field('detcADeadAll') ) );
 
           // Tracing
-          if( null <> row.field('trcUDir') ) then  inc( _data.trcUDir,  longint( row.field('trcUDir') ) );
-          if( null <> row.field('trcADir') ) then  inc( _data.trcADir,  longint( row.field('trcADir') ) );
-          if( null <> row.field('trcUInd') ) then  inc( _data.trcUInd,  longint( row.field('trcUInd') ) );
-          if( null <> row.field('trcAInd') ) then  inc( _data.trcAInd,  longint( row.field('trcAInd') ) );
-          if( null <> row.field('trcUDirp') ) then inc( _data.trcUDirp, longint( row.field('trcUDirp') ) );
-          if( null <> row.field('trcADirp') ) then inc( _data.trcADirp, longint( row.field('trcADirp') ) );
-          if( null <> row.field('trcUIndp') ) then inc( _data.trcUIndp, longint( row.field('trcUIndp') ) );
-          if( null <> row.field('trcAIndp') ) then inc( _data.trcAIndp, longint( row.field('trcAIndp') ) );
+          if( null <> row.field('trcUDirFwd') ) then  inc( _data.trcUDirFwd,  longint( row.field('trcUDirFwd') ) );
+          if( null <> row.field('trcADirFwd') ) then  inc( _data.trcADirFwd,  longint( row.field('trcADirFwd') ) );
+          if( null <> row.field('trcUIndFwd') ) then  inc( _data.trcUIndFwd,  longint( row.field('trcUIndFwd') ) );
+          if( null <> row.field('trcAIndFwd') ) then  inc( _data.trcAIndFwd,  longint( row.field('trcAIndFwd') ) );
+          if( null <> row.field('trcUDirpFwd') ) then inc( _data.trcUDirpFwd, longint( row.field('trcUDirpFwd') ) );
+          if( null <> row.field('trcADirpFwd') ) then inc( _data.trcADirpFwd, longint( row.field('trcADirpFwd') ) );
+          if( null <> row.field('trcUIndpFwd') ) then inc( _data.trcUIndpFwd, longint( row.field('trcUIndpFwd') ) );
+          if( null <> row.field('trcAIndpFwd') ) then inc( _data.trcAIndpFwd, longint( row.field('trcAIndpFwd') ) );
+          if( null <> row.field('trcUDirBack') ) then  inc( _data.trcUDirBack,  longint( row.field('trcUDirBack') ) );
+          if( null <> row.field('trcADirBack') ) then  inc( _data.trcADirBack,  longint( row.field('trcADirBack') ) );
+          if( null <> row.field('trcUIndBack') ) then  inc( _data.trcUIndBack,  longint( row.field('trcUIndBack') ) );
+          if( null <> row.field('trcAIndBack') ) then  inc( _data.trcAIndBack,  longint( row.field('trcAIndBack') ) );
+          if( null <> row.field('trcUDirpBack') ) then inc( _data.trcUDirpBack, longint( row.field('trcUDirpBack') ) );
+          if( null <> row.field('trcADirpBack') ) then inc( _data.trcADirpBack, longint( row.field('trcADirpBack') ) );
+          if( null <> row.field('trcUIndpBack') ) then inc( _data.trcUIndpBack, longint( row.field('trcUIndpBack') ) );
+          if( null <> row.field('trcAIndpBack') ) then inc( _data.trcAIndpBack, longint( row.field('trcAIndpBack') ) );
+
+          // Tracing - Origins
+          if( null <> row.field('tocUDirFwd') ) then inc( _data.tocUDirFwd, longint( row.field('tocUDirFwd') ) );
+          if( null <> row.field('tocUIndFwd') ) then inc( _data.tocUIndFwd, longint( row.field('tocUIndFwd') ) );
+          if( null <> row.field('tocUDirBack') ) then inc( _data.tocUDirBack, longint( row.field('tocUDirBack') ) );
+          if( null <> row.field('tocUIndBack') ) then inc( _data.tocUIndBack, longint( row.field('tocUIndBack') ) );
+
+          //Herd Exams
+          if( null <> row.field('exmcUDirFwd') ) then inc( _data.exmcUDirFwd, longint( row.field('exmcUDirFwd') ) );
+          if( null <> row.field('exmcADirFwd') ) then inc( _data.exmcADirFwd, longint( row.field('exmcADirFwd') ) );
+          if( null <> row.field('exmcUIndFwd') ) then inc( _data.exmcUIndFwd, longint( row.field('exmcUIndFwd') ) );
+          if( null <> row.field('exmcAIndFwd') ) then inc( _data.exmcAIndFwd, longint( row.field('exmcAIndFwd') ) );
+          if( null <> row.field('exmcUDirBack') ) then inc( _data.exmcUDirBack, longint( row.field('exmcUDirBack') ) );
+          if( null <> row.field('exmcADirBack') ) then inc( _data.exmcADirBack, longint( row.field('exmcADirBack') ) );
+          if( null <> row.field('exmcUIndBack') ) then inc( _data.exmcUIndBack, longint( row.field('exmcUIndBack') ) );
+          if( null <> row.field('exmcAIndBack') ) then inc( _data.exmcAIndBack, longint( row.field('exmcAIndBack') ) );
+
+          // Diagnostic Testing
+          if( null <> row.field('tstcUDirFwd') ) then inc( _data.tstcUDirFwd, longint( row.field('tstcUDirFwd') ) );
+          if( null <> row.field('tstcADirFwd') ) then inc( _data.tstcADirFwd, longint( row.field('tstcADirFwd') ) );
+          if( null <> row.field('tstcUIndFwd') ) then inc( _data.tstcUIndFwd, longint( row.field('tstcUIndFwd') ) );
+          if( null <> row.field('tstcAIndFwd') ) then inc( _data.tstcAIndFwd, longint( row.field('tstcAIndFwd') ) );
+          if( null <> row.field('tstcUDirBack') ) then inc( _data.tstcUDirBack, longint( row.field('tstcUDirBack') ) );
+          if( null <> row.field('tstcADirBack') ) then inc( _data.tstcADirBack, longint( row.field('tstcADirBack') ) );
+          if( null <> row.field('tstcUIndBack') ) then inc( _data.tstcUIndBack, longint( row.field('tstcUIndBack') ) );
+          if( null <> row.field('tstcAIndBack') ) then inc( _data.tstcAIndBack, longint( row.field('tstcAIndBack') ) );
+          if( null <> row.field('tstcUTruePos') ) then inc( _data.tstcUTruePos, longint( row.field('tstcUTruePos') ) );
+          if( null <> row.field('tstcATruePos') ) then inc( _data.tstcATruePos, longint( row.field('tstcATruePos') ) );
+          if( null <> row.field('tstcUTrueNeg') ) then inc( _data.tstcUTrueNeg, longint( row.field('tstcUTrueNeg') ) );
+          if( null <> row.field('tstcATrueNeg') ) then inc( _data.tstcATrueNeg, longint( row.field('tstcATrueNeg') ) );
+          if( null <> row.field('tstcUFalsePos') ) then inc( _data.tstcUFalsePos, longint( row.field('tstcUFalsePos') ) );
+          if( null <> row.field('tstcAFalsePos') ) then inc( _data.tstcAFalsePos, longint( row.field('tstcAFalsePos') ) );
+          if( null <> row.field('tstcUFalseNeg') ) then inc( _data.tstcUFalseNeg, longint( row.field('tstcUFalseNeg') ) );
+          if( null <> row.field('tstcAFalseNeg') ) then inc( _data.tstcAFalseNeg, longint( row.field('tstcAFalseNeg') ) );
 
           // Destruction
           if( null <> row.field('descUIni') ) then inc( _data.descUIni, longint( row.field('descUini') ) );
           if( null <> row.field('descAIni') ) then inc( _data.descAIni, longint( row.field('descAIni') ) );
           if( null <> row.field('descUDet') ) then  inc( _data.descUDet,  longint( row.field('descUDet') ) );
           if( null <> row.field('descADet') ) then  inc( _data.descADet,  longint( row.field('descADet') ) );
-          if( null <> row.field('descUDir') ) then  inc( _data.descUDir,  longint( row.field('descUDir') ) );
-          if( null <> row.field('descADir') ) then  inc( _data.descADir,  longint( row.field('descADir') ) );
-          if( null <> row.field('descUInd') ) then  inc( _data.descUInd,  longint( row.field('descUInd') ) );
-          if( null <> row.field('descAInd') ) then  inc( _data.descAInd,  longint( row.field('descAInd') ) );
+          if( null <> row.field('descUDirFwd') ) then  inc( _data.descUDirFwd, longint( row.field('descUDirFwd') ) );
+          if( null <> row.field('descADirFwd') ) then  inc( _data.descADirFwd, longint( row.field('descADirFwd') ) );
+          if( null <> row.field('descUIndFwd') ) then  inc( _data.descUIndFwd, longint( row.field('descUIndFwd') ) );
+          if( null <> row.field('descAIndFwd') ) then  inc( _data.descAIndFwd, longint( row.field('descAIndFwd') ) );
+          if( null <> row.field('descUDirBack') ) then  inc( _data.descUDirBack, longint( row.field('descUDirBack') ) );
+          if( null <> row.field('descADirBack') ) then  inc( _data.descADirBack, longint( row.field('descADirBack') ) );
+          if( null <> row.field('descUIndBack') ) then  inc( _data.descUIndBack, longint( row.field('descUIndBack') ) );
+          if( null <> row.field('descAIndBack') ) then  inc( _data.descAIndBack, longint( row.field('descAIndBack') ) );
           if( null <> row.field('descURing') ) then inc( _data.descURing, longint( row.field('descURing') ) );
           if( null <> row.field('descARing') ) then inc( _data.descARing, longint( row.field('descARing') ) );
+
+          //AR:deadDV
+          if( null <> row.field('descUDcd') ) then inc( _data.descUDcd, longint( row.field('descUDcd') ) );
+          if( null <> row.field('descADcd') ) then inc( _data.descADcd, longint( row.field('descADcd') ) );
 
           // Vaccination
           if( null <> row.field('vaccUIni') ) then inc( _data.vaccUIni, longint( row.field('vaccUIni') ) );
@@ -567,12 +742,18 @@ implementation
           // Infection
           if( null <> row.field('infcUIni') ) then inc( _data.infcUIni, longint( row.field('infcUIni') ) );
           if( null <> row.field('infcAIni') ) then inc( _data.infcAIni, longint( row.field('infcAIni') ) );
-          if( null <> row.field('infcUAir') ) then inc( _data.infcUAir, longint( row.field('infcUAir') ) );
-          if( null <> row.field('infcAAir') ) then inc( _data.infcAAir, longint( row.field('infcAAir') ) );
-          if( null <> row.field('infcUDir') ) then inc( _data.infcUDir, longint( row.field('infcUDir') ) );
-          if( null <> row.field('infcADir') ) then inc( _data.infcADir, longint( row.field('infcADir') ) );
-          if( null <> row.field('infcUInd') ) then inc( _data.infcUInd, longint( row.field('infcUInd') ) );
-          if( null <> row.field('infcAInd') ) then inc( _data.infcAInd, longint( row.field('infcAInd') ) );
+          if( null <> row.field('infcUAll') ) then inc( _data.infcUAll, longint( row.field('infcUAll') ) );
+          if( null <> row.field('infcAAll') ) then inc( _data.infcAAll, longint( row.field('infcAAll') ) );
+
+          // Adequate exposure
+          if( null <> row.field('adqcUAir') ) then inc( _data.adqcUAir, longint( row.field('adqcUAir') ) );
+          if( null <> row.field('adqcAAir') ) then inc( _data.adqcAAir, longint( row.field('adqcAAir') ) );
+          if( null <> row.field('adqcUDir') ) then inc( _data.adqcUDir, longint( row.field('adqcUDir') ) );
+          if( null <> row.field('adqcADir') ) then inc( _data.adqcADir, longint( row.field('adqcADir') ) );
+          if( null <> row.field('adqcUInd') ) then inc( _data.adqcUInd, longint( row.field('adqcUInd') ) );
+          if( null <> row.field('adqcAInd') ) then inc( _data.adqcAInd, longint( row.field('adqcAInd') ) );
+          if( null <> row.field('adqcULcl') ) then inc( _data.adqcULcl, longint( row.field('adqcULcl') ) );
+          if( null <> row.field('adqcALcl') ) then inc( _data.adqcALcl, longint( row.field('adqcALcl') ) );
 
           // Zone foci
           if( null <> row.field('zoncFoci') ) then inc( _data.zoncFoci, longint( row.field('zoncFoci') ) );
@@ -588,13 +769,27 @@ implementation
 
       // Fetch data for and draw the charts
       //------------------------------------
+      // Day '0' is a special case: it includes all units/animals that were initially infected.
+      q := 'SELECT SUM( infcUIni ) AS allIniInfected FROM outDailyByProductionType'
+        + ' WHERE  iteration = ' + intToStr( lastIteration )
+        + selectedPTIDClause
+        + ' AND day = 1'
+      ;
+      _sqlRes.runQuery( q );
+      row := _sqlRes.fetchArrayFirst();
+
+      drawSeries( 0, 0, roundDbl( row.field( 'allIniInfected' ) ) );
+
+      // Draw all other days
       q := 'SELECT'
           + ' day,'
           + ' detnUClin,'  // Number of units detected by clinical signs on this day
+          + ' detnUTest,'  // Number of units detected by diagnostic testing on this day
+          + ' detnUDead,'  // Number of units detected dead from disease on this day
+          + ' detnUAll,'  // Number of unique units detected by clinical signs, testing, or detected dead on this day
           + ' infcUIni,'  // Total number of units initially infected
-          + ' infnUAir,'  // Number of new units infected on this day by airborne spread
-          + ' infnUDir,'  // Number of new units infected on this day by direct contact
-          + ' infnUInd'  // Number of new units infected on this day by indirect contact
+          + ' infnUAll'  // Number of new units infected on this day
+
         + ' FROM'
           + ' outDailyByProductionType'
         + ' WHERE'
@@ -610,11 +805,6 @@ implementation
 
       newDetOnDay := 0;
       newInfOnDay := 0;
-
-      // Day '0' is a special case: it includes all units/animals that were initially infected
-      if( nil <> row ) then
-        drawSeries( 0, 0, row.field( 'infcUIni' ) )
-      ;
 
       while( nil <> row ) do
       	begin
@@ -632,13 +822,9 @@ implementation
             end
 					;
 
-          newDetOnDay := newDetOnDay + row.field('detnUClin');
+          newDetOnDay := newDetOnDay + row.field('detnUAll');
 
-          newInfOnDay := newInfOnDay
-            + row.field('infnUAir')
-            + row.field('infnUDir')
-            + row.field('infnUInd')
-          ;
+          newInfOnDay := newInfOnDay + row.field('infnUAll');
 
           row := _sqlRes.fetchArrayNext();
         end
@@ -677,14 +863,11 @@ implementation
             begin
         		  _data.addCumulRecordsFrom( ptit.current().currentOutputs );
 
-              newDetUOnDay := newDetUOnDay + ptit.current().currentOutputs.detnUClin;
+              newDetUOnDay := newDetUOnDay + ptit.current().currentOutputs.detnUAll; // unique units, no double-counting of detection mechanisms
 
-              newInfUOnDay := newInfUOnDay
-                + ptit.current().currentOutputs.infnUAir
-                + ptit.current().currentOutputs.infnUDir
-                + ptit.current().currentOutputs.infnUInd
-              ;
+              newInfUOnDay := newInfUOnDay + ptit.current().currentOutputs.infnUAll;
 
+              // FIX ME: AR I don't like this "solution" to displaying initial infections.  Think about it some more.
               if( 1 = day ) then
                 newInfUOnDay := newInfUOnDay + ptit.current().currentOutputs.infcUIni
               ;
@@ -727,78 +910,124 @@ implementation
 
 	procedure TFrameEpiIterationSummary.fillGrids();
 		begin
+      // The cell array elements are formatted as column, row: [c,r]
+      (* !! Adjust the rowCount number of each FrameStringGridBase as new cells are added
+         in the hard-coded series below. If this is not done, then additional data rows
+         greater than rowCount are ignored and the grid will be truncated in length at runtime.
+         rowCount is not a setting for when to invoke a vertical scroll bar,
+         but rather the absolute number of rows of the grid. Unsure why exceeding rowCount
+         does not raise an exception, rather it silently truncates the grid length.
+      *)
+
       // Detection
       //-----------
+      fraSgSurv.rowCount := 20; // remember to update
 			fraSgSurv.Cells[1, 0] := intToStr( _data.detcUClin );
-			fraSgSurv.Cells[2, 0] := intToStr( _data.detcAClin  );
+			fraSgSurv.Cells[2, 0] := intToStr( _data.detcAClin );
+      fraSgSurv.Cells[1, 1] := intToStr( _data.detcUTest );
+			fraSgSurv.Cells[2, 1] := intToStr( _data.detcATest );
 
+      //AR:deadDV
+      fraSgSurv.Cells[1, 2] := intToStr( _data.detcUDeadAll );
+			fraSgSurv.Cells[2, 2] := intToStr( _data.detcADeadAll );
+
+      fraSgSurv.Cells[1, 3] := intToStr( _data.detcUAll );
+      fraSgSurv.Cells[2, 3] := intToStr( _data.detcAAll );
 
       // Tracing
       //--------
-			fraSgSurv.Cells[1, 1] :=
-				intToStr( _data.trcUDirp )
-				+ ' ('
-				+ intToStr( _data.trcUDir )
-				+ ')'
-			;
+			fraSgSurv.Cells[1, 4] := intToStr( _data.trcUDirpFwd ) + ' (' + intToStr( _data.trcUDirFwd ) + ')';
+			fraSgSurv.Cells[2, 4] := intToStr( _data.trcADirpFwd ) + ' (' + intToStr( _data.trcADirFwd ) + ')';
+			fraSgSurv.Cells[1, 5] := intToStr( _data.trcUIndpFwd ) + ' (' + intToStr( _data.trcUIndFwd ) + ')';
+			fraSgSurv.Cells[2, 5] := intToStr( _data.trcAIndpFwd ) + ' (' + intToStr( _data.trcAIndFwd ) + ')';
+      fraSgSurv.Cells[1, 6] := intToStr( _data.trcUDirpBack ) + ' (' + intToStr( _data.trcUDirBack ) + ')';
+			fraSgSurv.Cells[2, 6] := intToStr( _data.trcADirpBack ) + ' (' + intToStr( _data.trcADirBack ) + ')';
+			fraSgSurv.Cells[1, 7] := intToStr( _data.trcUIndpBack ) + ' (' + intToStr( _data.trcUIndBack ) + ')';
+			fraSgSurv.Cells[2, 7] := intToStr( _data.trcAIndpBack ) + ' (' + intToStr( _data.trcAIndBack ) + ')';
 
-			fraSgSurv.Cells[2, 1] :=
-				intToStr( _data.trcADirp )
-				+ ' ('
-				+ intToStr( _data.trcADir )
-				+ ')'
-			;
+      // Herd Exam
+      //-------------
+      fraSgSurv.Cells[1, 8] := intToStr( _data.exmcUDirFwd );
+			fraSgSurv.Cells[2, 8] := intToStr( _data.exmcADirFwd );
+      fraSgSurv.Cells[1, 9] := intToStr( _data.exmcUIndFwd );
+			fraSgSurv.Cells[2, 9] := intToStr( _data.exmcAIndFwd );
+      fraSgSurv.Cells[1, 10] := intToStr( _data.exmcUDirBack );
+			fraSgSurv.Cells[2, 10] := intToStr( _data.exmcADirBack );
+      fraSgSurv.Cells[1, 11] := intToStr( _data.exmcUIndBack );
+			fraSgSurv.Cells[2, 11] := intToStr( _data.exmcAIndBack );
 
-			fraSgSurv.Cells[1, 2] :=
-				intToStr( _data.trcUIndp )
-				+ ' ('
-				+ intToStr( _data.trcUInd )
-				+ ')'
-			;
-
-			fraSgSurv.Cells[2, 2] :=
-				intToStr( _data.trcAIndp )
-				+ ' ('
-				+ intToStr( _data.trcAInd )
-				+ ')'
-			;
+      // Diagnostic Testing
+      //-------------
+      fraSgSurv.Cells[1, 12] := intToStr( _data.tstcUDirFwd );
+			fraSgSurv.Cells[2, 12] := intToStr( _data.tstcADirFwd );
+      fraSgSurv.Cells[1, 13] := intToStr( _data.tstcUIndFwd );
+			fraSgSurv.Cells[2, 13] := intToStr( _data.tstcAIndFwd );
+      fraSgSurv.Cells[1, 14] := intToStr( _data.tstcUDirBack );
+			fraSgSurv.Cells[2, 14] := intToStr( _data.tstcADirBack );
+      fraSgSurv.Cells[1, 15] := intToStr( _data.tstcUIndBack );
+			fraSgSurv.Cells[2, 15] := intToStr( _data.tstcAIndBack );
+      fraSgSurv.Cells[1, 16] := intToStr( _data.tstcUTruePos );
+			fraSgSurv.Cells[2, 16] := intToStr( _data.tstcATruePos );
+      fraSgSurv.Cells[1, 17] := intToStr( _data.tstcUTrueNeg );
+			fraSgSurv.Cells[2, 17] := intToStr( _data.tstcATrueNeg );
+      fraSgSurv.Cells[1, 18] := intToStr( _data.tstcUFalsePos );
+			fraSgSurv.Cells[2, 18] := intToStr( _data.tstcAFalsePos );
+      fraSgSurv.Cells[1, 19] := intToStr( _data.tstcUFalseNeg );
+			fraSgSurv.Cells[2, 19] := intToStr( _data.tstcAFalseNeg );
 
       // Destruction
       //-------------
+      fraSgDestr.rowCount := 9; // remember to update
       fraSgDestr.Cells[1, 0] := intToStr( _data.descUIni );
       fraSgDestr.Cells[2, 0] := intToStr( _data.descAIni );
 			fraSgDestr.Cells[1, 1] := intToStr( _data.descUDet );
 			fraSgDestr.Cells[2, 1] := intToStr( _data.descADet );
-			fraSgDestr.Cells[1, 2] := intToStr( _data.descUDir );
-			fraSgDestr.Cells[2, 2] := intToStr( _data.descADir );
-			fraSgDestr.Cells[1, 3] := intToStr( _data.descUInd );
-			fraSgDestr.Cells[2, 3] := intToStr( _data.descAInd );
-			fraSgDestr.Cells[1, 4] := intToStr( _data.descURing );
-			fraSgDestr.Cells[2, 4] := intToStr( _data.descARing );
-			TotalColumns( fraSgDestr, 0, 4, 5 );
+			fraSgDestr.Cells[1, 2] := intToStr( _data.descUDirFwd );
+			fraSgDestr.Cells[2, 2] := intToStr( _data.descADirFwd );
+			fraSgDestr.Cells[1, 3] := intToStr( _data.descUIndFwd );
+			fraSgDestr.Cells[2, 3] := intToStr( _data.descAIndFwd );
+      fraSgDestr.Cells[1, 4] := intToStr( _data.descUDirBack );
+			fraSgDestr.Cells[2, 4] := intToStr( _data.descADirBack );
+			fraSgDestr.Cells[1, 5] := intToStr( _data.descUIndBack );
+			fraSgDestr.Cells[2, 5] := intToStr( _data.descAIndBack );
+			fraSgDestr.Cells[1, 6] := intToStr( _data.descURing );
+			fraSgDestr.Cells[2, 6] := intToStr( _data.descARing );
 
+      //AR:deadDV
+      fraSgDestr.Cells[1, 7] := intToStr( _data.descUDcd );
+      fraSgDestr.Cells[2, 7] := intToStr( _data.descADcd );
+
+			TotalColumns( fraSgDestr, 0, 7, 8 );
 
       // Vaccination
       //------------
+      fraSgVac.rowCount := 3; // remember to update
       fraSgVac.Cells[1, 0] := intToStr( _data.vaccUIni );
       fraSgVac.Cells[2, 0] := intToStr( _data.vaccAIni );
 			fraSgVac.Cells[1, 1] := intToStr( _data.vaccURing );
 			fraSgVac.Cells[2, 1] := intToStr( _data.vaccARing );
-
-			//TotalColumns( fraSgVac, 0, 1, 2 ); // There's nothing to total for vaccination at the moment
-
+			TotalColumns( fraSgVac, 0, 1, 2 );
 
       // Infection
       //-----------
+      fraSgInf.rowCount := 7; // remember to update
 			fraSgInf.Cells[1, 0] := intToStr( _data.infcUIni );
 			fraSgInf.Cells[2, 0] := intToStr( _data.infcAIni );
-			fraSgInf.Cells[1, 1] := intToStr( _data.infcUAir );
-			fraSgInf.Cells[2, 1] := intToStr( _data.infcAAir );
-			fraSgInf.Cells[1, 2] := intToStr( _data.infcUDir );
-			fraSgInf.Cells[2, 2] := intToStr( _data.infcADir );
-			fraSgInf.Cells[1, 3] := intToStr( _data.infcUInd );
-			fraSgInf.Cells[2, 3] := intToStr( _data.infcAInd );
-			TotalColumns( fraSgInf, 0, 3, 4 );
+			fraSgInf.Cells[1, 1] := intToStr( _data.infcUAll );
+			fraSgInf.Cells[2, 1] := intToStr( _data.infcAAll );
+
+      // Adequate exposure
+      //------------------
+			fraSgInf.Cells[1, 2] := intToStr( _data.adqcUDir );
+			fraSgInf.Cells[2, 2] := intToStr( _data.adqcADir );
+			fraSgInf.Cells[1, 3] := intToStr( _data.adqcUInd );
+			fraSgInf.Cells[2, 3] := intToStr( _data.adqcAInd );
+			fraSgInf.Cells[1, 4] := intToStr( _data.adqcULcl );
+			fraSgInf.Cells[2, 4] := intToStr( _data.adqcALcl );
+			fraSgInf.Cells[1, 5] := intToStr( _data.adqcUAir );
+			fraSgInf.Cells[2, 5] := intToStr( _data.adqcAAir );
+			TotalColumns( fraSgInf, 2, 5, 6 );
+      
 		end
 	;
 
@@ -894,7 +1123,12 @@ implementation
 
 	procedure TFrameEpiIterationSummary.SizeThePanel( sg: TFrameStringGridBase; P1, P2: TPanel );
 		begin
-			P1.Height := P2.Height + (sg.stgGrid.DefaultRowHeight) * sg.RowCount + 8;
+      // Show all the rows if the # of rows is small
+      if (sg.RowCount <= 5) then
+        P1.Height := P2.Height + (sg.stgGrid.DefaultRowHeight) * sg.RowCount + 8
+      else
+        // Resize panel to show 5 rows and rely on scroll bar to view additonal rows
+        P1.Height := P2.Height + (sg.stgGrid.DefaultRowHeight) * 5 + 8;
 		end
 	;
 
@@ -1007,7 +1241,7 @@ implementation
 		begin
       inherited resize();
 
-      baseWidth := round( 195 * screen.PixelsPerInch / 96 );
+      baseWidth := fraSgSurv.stgGrid.Canvas.TextWidth( tr( 'Diagnostic testing from indirect backward traces ' ) ) + 10;
 
 			fraSgSurv.ColWidths[0] := baseWidth;
 			fraSgSurv.ColWidths[1] := (fraSgSurv.ClientWidth - baseWidth + 5) div 2;

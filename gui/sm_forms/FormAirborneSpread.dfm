@@ -29,7 +29,7 @@ inherited FormAirborneSpread: TFormAirborneSpread
     inherited pnlHeader: TPanel
       Width = 581
     end
-    inline fraParams: TFrameAirborneSpread
+    inline fraParams: TFrameAirborneOrLocalAreaSpread
       Left = 1
       Top = 41
       Width = 581

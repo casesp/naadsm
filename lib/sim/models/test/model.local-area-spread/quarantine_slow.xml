@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<naadsm:disease-simulation
+  xmlns:naadsm="http://www.naadsm.org/schema"
+  xmlns:xdf="http://xml.gsfc.nasa.gov/XDF">
+  <description>Specs for a sample simulation run.</description>
+  <num-days>10</num-days>
+  <num-runs>1</num-runs>
+
+  <models>
+
+    <disease-model production-type="Beef Cattle">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>0</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <disease-model production-type="Pigs">
+      <latent-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </latent-period>
+      <infectious-subclinical-period>
+        <point>1</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-subclinical-period>
+      <infectious-clinical-period>
+        <point>6</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </infectious-clinical-period>
+      <immunity-period>
+        <point>2</point>
+        <units><xdf:unit>day</xdf:unit></units>
+      </immunity-period>
+    </disease-model>
+
+    <local-area-spread-model from-production-type="Pigs" to-production-type="Beef Cattle">
+      <herd-size-infectious>25</herd-size-infectious>
+      <herd-size-susceptible>25</herd-size-susceptible>
+      <herd-distance>
+	<value>10</value>
+	<units>
+	  <xdf:unit>km</xdf:unit>
+	</units>
+      </herd-distance>
+      <prob>0.505</prob>
+    </local-area-spread-model>
+
+    <!-- Note no parameters for spread from beef cattle to pigs. -->
+
+    <!-- With the probability of detection vs. days clinical below 0.5 until 2
+      days have passed, diseased pigs will be detected 2 days after they start
+      showing clinical signs. -->
+    <detection-model production-type="Pigs">
+      <prob-detect-vs-time-clinical>
+        <value>1</value> <value>0.4</value>
+        <value>2</value> <value>0.6</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prob-detect-vs-time-clinical>
+      <prob-report-clinical-signs-vs-time-since-outbreak>
+        <value>0</value> <value>1.0</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unitless /></units>
+      </prob-report-clinical-signs-vs-time-since-outbreak>
+    </detection-model>
+
+    <!-- Note no parameters for detection of cattle. -->
+
+    <resources-and-implementation-of-controls-model>
+      <!-- The authorities need 2 days to start up a destruction program. -->
+      <destruction-program-delay>
+        <value>2</value>
+        <units><xdf:unit>day</xdf:unit></units>	
+      </destruction-program-delay>
+      <!-- "Unlimited" destruction capacity. -->
+      <destruction-capacity>
+        <value>0</value> <value>1000</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>
+      </destruction-capacity>
+      <!-- Vaccination isn't used in this scenario. -->
+      <vaccination-capacity>
+        <value>0</value> <value>1000</value>
+        <units><xdf:unit>day</xdf:unit></units>
+        <units><xdf:unit>herd</xdf:unit><xdf:unit power="-1">day</xdf:unit></units>
+      </vaccination-capacity>
+    </resources-and-implementation-of-controls-model>
+
+    <!-- The unit will be quarantined when the infection is confirmed. -->
+    <quarantine-model>
+    </quarantine-model>
+
+    <!-- The unit will be destroyed when the infection is confirmed. -->
+    <basic-destruction-model production-type="Beef Cattle">
+      <priority>1</priority>
+    </basic-destruction-model>
+
+    <basic-destruction-model production-type="Pigs">
+      <priority>2</priority>
+    </basic-destruction-model>
+
+    <conflict-resolver></conflict-resolver>
+
+    <state-table-writer />
+
+  </models>
+
+</naadsm:disease-simulation>
