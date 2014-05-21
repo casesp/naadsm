@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file model_loader.c
  * Functions for instantiating sub-models.
  *
@@ -525,3 +530,9 @@ naadsm_unload_models (int nmodels, naadsm_model_t ** models)
 }
 
 /* end of file model_loader.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file airborne-spread-exponential-model.c
  * Module for airborne spread in which the probability of infection falls off
  * exponentially with distance.
@@ -124,14 +129,7 @@
 #  define round rint
 #endif
 
-#ifdef COGRID
-double round ( double x )
-{
-  return rint( x );
-}
-#else
 double round (double x);
-#endif
 
 /** This must match an element name in the DTD. */
 #define MODEL_NAME "airborne-spread-exponential-model"
@@ -497,7 +495,7 @@ handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
       /* Remove the event from this model's internal queue and place it in the
        * simulation's event queue. */
       pending_event = (EVT_event_t *) g_queue_pop_head (q);
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
       /* Double-check that the event is coming out on the correct day. */
       if (pending_event->type == EVT_Exposure)
         g_assert (pending_event->u.exposure.day == event->day);
@@ -1058,3 +1056,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file airborne-spread-exponential-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

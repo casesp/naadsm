@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file zone-monitor.c
  * Tracks the shape, area, and perimeter of zones, number of units in each zone,
  * and number of animal-days spent in each zone.
@@ -17,6 +22,7 @@
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  */
+
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -915,3 +921,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file zone-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

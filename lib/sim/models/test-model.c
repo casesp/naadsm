@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file test-model.c
  * Module that encapsulates knowledge about a test for disease.
  * <ul>
@@ -169,7 +174,7 @@ handle_new_day_event (struct naadsm_model_t_ *self,
     {
       result = (EVT_event_t *) g_queue_pop_head (q);
 
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
       /* Double-check that the event is coming out on the correct day. */
       if (result->type == EVT_TestResult)
         g_assert (result->u.test_result.day == event->day);
@@ -814,3 +819,9 @@ new (scew_element * params, HRD_herd_list_t *herds, projPJ projection,
 }
 
 /* end of file test-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

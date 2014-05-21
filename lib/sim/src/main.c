@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file src/main.c
  * A simulator for animal disease outbreaks.
  *
@@ -29,6 +34,7 @@
  * @todo Create something to auto-generate all the boilerplate code for a new
  *   sub-model.
  */
+
 
 /** @mainpage
  * A simulator for animal disease outbreaks.  For background information,
@@ -752,6 +758,7 @@ the functions defined will all be NULL).
 
 #include "general.h"
 
+
 #define G_LOG_ALL_LEVELS (G_LOG_LEVEL_CRITICAL | \
                     G_LOG_LEVEL_DEBUG | \
                     G_LOG_LEVEL_ERROR | \
@@ -1086,7 +1093,7 @@ run_sim_main (const char *herd_file,
       g_log_set_handler ("zone", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
       g_log_set_handler ("gis", G_LOG_LEVEL_DEBUG, silent_log_handler, NULL);
     }
-  #ifdef WIN_DLL
+  #ifdef BUILD_FOR_WINDOWS
     #if DEBUG
       /* #define G_LOG_DOMAIN "debug_off" to disable logging for selected units,
        * or #define G_LOG_DOMAIN "debug_on" to enable logging only for selected units. */
@@ -1103,15 +1110,15 @@ run_sim_main (const char *herd_file,
       
       g_debug ("This will be the first debugging message reported to the GUI."); 
     #else
-      g_log_set_handler (NULL, G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("herd", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("prob_dist", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("rel_chart", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("reporting", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("zone", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("gis", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("debug_off", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
-      g_log_set_handler ("debug_on", G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL); 
+      g_log_set_handler (NULL, (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("herd", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("prob_dist", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("rel_chart",(GLogLevelFlags) G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("reporting", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("zone", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("gis", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("debug_off", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
+      g_log_set_handler ("debug_on", (GLogLevelFlags)G_LOG_ALERT_LEVELS, naadsm_log_handler, NULL);
     #endif    
   #endif
   
@@ -1268,6 +1275,10 @@ run_sim_main (const char *herd_file,
 #else
   rng = RAN_new_generator (seed);
 #endif
+
+  if( NULL != naadsm_set_rng )
+    naadsm_set_rng( rng );
+
   if (fixed_rng_value >= 0 && fixed_rng_value < 1)
     {
       RAN_fix (rng, fixed_rng_value);
@@ -1559,8 +1570,7 @@ run_sim_main (const char *herd_file,
 
           /* Build the daily output string.  Start with the special case
            * variable that tells whether to output the state of every unit. */
-#ifndef SILENT_MODE
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
           if (RPT_reporting_due (show_unit_states, day - 1)
               || (early_exit && show_unit_states->frequency != RPT_never))
             {
@@ -1569,7 +1579,6 @@ run_sim_main (const char *herd_file,
               g_free (summary);
             }
           else
-#endif
 #endif
             g_string_truncate (s, 0);
 
@@ -1587,13 +1596,11 @@ run_sim_main (const char *herd_file,
           g_ptr_array_foreach (reporting_vars, build_report, &build_report_args);
 
 /* The DLL shouldn't output anything directly to the console.  Strange things happen... */
-#ifndef SILENT_MODE
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
 #if HAVE_MPI && !CANCEL_MPI
           g_print ("node %i run %u\n%s\n", me.rank, run, s->str);
 #else
           g_print ("node 0 run %u\n%s\n", run, s->str);
-#endif
 #endif
 #endif
 
@@ -1721,7 +1728,7 @@ main (int argc, char *argv[])
   const char *output_file = NULL;
   double fixed_rng_value = -1;
   int seed = -1;
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
   /* The Windows version of POPT doesn't play nicely with POPT_AUTOHELP */
   struct poptOption tHelp[] = { POPT_AUTOHELP };
 #endif
@@ -1788,7 +1795,7 @@ main (int argc, char *argv[])
   options[i].argDescrip = "production-types";
 #endif
 
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
   /* The Windows version of POPT doesn't play nicely with POPT_AUTOHELP */
   options[++i] = tHelp[0];
 #endif
@@ -1838,6 +1845,10 @@ main (int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-
-
 /* end of file main.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

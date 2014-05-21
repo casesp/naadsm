@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file infection-monitor.c
  * Tracks the cause of infections.
  *
@@ -928,3 +933,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file infection-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

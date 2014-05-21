@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file disease-model.c
  * Module that encapsulates knowledge about a disease.
  *
@@ -701,3 +706,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file disease-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

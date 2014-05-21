@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file ring-vaccination-model.c
  * Module that simulates a policy of vaccinating herds within a certain
  * distance of a diseased herd.
@@ -815,3 +820,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file ring-vaccination-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

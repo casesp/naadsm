@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file economic-model.c
  * Module that tallies costs of an outbreak.
  *
@@ -1202,3 +1207,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file economic-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

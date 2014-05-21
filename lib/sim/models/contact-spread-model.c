@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file contact-spread-model.c
  * Module for contact spread.
  *
@@ -282,7 +287,7 @@ check_and_choose (int id, gpointer arg)
   double difference;
   ZON_zone_fragment_t *herd1_fragment, *herd2_fragment;
   gboolean contact_forbidden;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   unsigned long production_type;
   unsigned long index;
 
@@ -531,7 +536,7 @@ handle_new_day_event (struct naadsm_model_t_ *self, HRD_herd_list_t * herds,
       /* Remove the event from this model's internal queue and place it in the
        * simulation's event queue. */
       pending_event = (EVT_event_t *) g_queue_pop_head (q);
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
       /* Double-check that the event is coming out on the correct day. */
       if (pending_event->type == EVT_Exposure)
         g_assert (pending_event->u.exposure.day == event->day);
@@ -607,7 +612,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
   double rate;
   PDF_dist_t *poisson;
   unsigned int nherds;          /* number of herds */
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   param_block_t **contact_type_block;
   HRD_herd_t *herd1, *herd2;
   unsigned int nprod_types, i, j, k;
@@ -691,7 +696,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
 
       /*  How many contact types do we have?  */
       j = 0;
-      for ( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+      for ( contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++ )
         j++;
 
       /*  Begin building 1-dimension of the attempted exposure matrix */
@@ -706,7 +711,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
       if ( callback_data.contact_count > 0 )
       {        
         j = 0;
-        for ( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+        for ( contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++ )
         {
           _contacts[j] = g_new( GPtrArray *, nprod_types );
   
@@ -903,7 +908,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
           /*  Iterate over the results and reset "try_again" status based on each 
               match's status.  A re-search using the exhaustive method may be necessary... */
           j = 0;
-          for( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+          for( contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++ )
           {
             for( i = 0; i < nprod_types; i++ )
             {
@@ -939,7 +944,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
         /*  Iterate over the results and post exposure and infection events 
             when applicable, and simultaneously delete dynamic memory used */
         j = 0;
-        for( contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++ )
+        for( contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++ )
         {
           contact_type_block = local_data->param_block[contact_type][herd1->production_type];
   
@@ -1133,7 +1138,7 @@ void new_day_event_handler( gpointer key, gpointer value, gpointer user_data )
       else
       {
         /* Free memory */
-        for( j = 0, contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++, j++ )
+        for( j = 0, contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++, j++ )
         {
           for (i = 0; i < nprod_types; i++)
             g_ptr_array_free (_contacts[j][i], TRUE);
@@ -1335,7 +1340,7 @@ to_string (struct naadsm_model_t_ *self)
 {
   GString *s;
   local_data_t *local_data;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   param_block_t ***contact_type_block;
   REL_chart_t ***contact_type_chart;
   unsigned int nprod_types, nzones, i, j;
@@ -1350,7 +1355,7 @@ to_string (struct naadsm_model_t_ *self)
   /* Add the parameter block for each to-from combination of production
    * types. */
   nprod_types = local_data->production_types->len;
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       contact_type_block = local_data->param_block[contact_type];
       for (i = 0; i < nprod_types; i++)
@@ -1396,7 +1401,7 @@ to_string (struct naadsm_model_t_ *self)
   /* Add the movement control chart for each production type-zone
    * combination. */
   nzones = ZON_zone_list_length (local_data->zones);
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       contact_type_chart = local_data->movement_control[contact_type];
       for (i = 0; i < nzones; i++)
@@ -1485,7 +1490,7 @@ local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   unsigned int nprod_types, nzones, i, j;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   param_block_t ***contact_type_block;
   param_block_t *param_block;
   REL_chart_t ***contact_type_chart;
@@ -1499,7 +1504,7 @@ local_free (struct naadsm_model_t_ *self)
 
   /* Free each of the parameter blocks. */
   nprod_types = local_data->production_types->len;
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       contact_type_block = local_data->param_block[contact_type];
       for (i = 0; i < nprod_types; i++)
@@ -1525,7 +1530,7 @@ local_free (struct naadsm_model_t_ *self)
 
   /* Free the movement control charts for units inside zones. */
   nzones = ZON_zone_list_length (local_data->zones);
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       contact_type_chart = local_data->movement_control[contact_type];
       for (i = 0; i < nzones; i++)
@@ -1949,3 +1954,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file contact-spread-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

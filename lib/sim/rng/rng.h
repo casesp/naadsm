@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file rng.h
  * Random numbers.
  *
@@ -18,6 +23,8 @@
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  */
+
+
 #ifndef RNG_H
 #define RNG_H
 
@@ -32,7 +39,6 @@
 
 #include <glib.h>
 #include <gsl/gsl_rng.h>
-
 
 
 /** A random number generator object. */
@@ -52,6 +58,7 @@ RAN_gen_t;
 
 RAN_gen_t *RAN_new_generator (int seed);
 double RAN_num (RAN_gen_t *);
+int RAN_int( RAN_gen_t* rng, int min, int max );
 gsl_rng *RAN_generator_as_gsl (RAN_gen_t *);
 void RAN_fix (RAN_gen_t *, double);
 void RAN_unfix (RAN_gen_t *);
@@ -63,7 +70,7 @@ void RAN_free_generator (RAN_gen_t *);
 typedef void (*TRngVoid_1_Int) (int);
 
 /* FIX ME: Someone should write this comment... */
-TRngVoid_1_Int rng_read_seed;
+extern TRngVoid_1_Int rng_read_seed;
 
 DLL_API void set_rng_read_seed (TRngVoid_1_Int fn);
 
@@ -73,3 +80,12 @@ void clear_rng_fns (void);
 
 
 #endif /* !RNG_H */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+
+
+
+

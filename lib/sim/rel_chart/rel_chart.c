@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file rel_chart.c
  * Functions for creating, destroying, printing, and getting values from
  * relationship charts.
@@ -701,3 +706,9 @@ REL_clone_chart (REL_chart_t * chart)
 }
 
 /* end of file rel_chart.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

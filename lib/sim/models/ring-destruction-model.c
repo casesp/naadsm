@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file ring-destruction-model.c
  * Module that simulates a policy of destroying units within a certain
  * distance of a diseased unit.
@@ -587,3 +592,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file ring-destruction-model.c */
+
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+

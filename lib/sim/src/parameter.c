@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file parameter.c
  * Functions for retrieving simulation control parameters.
  *
@@ -1249,3 +1254,9 @@ PAR_get_text (PAR_parameter_t * param)
 }
 
 /* end of file parameter.c */
+
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+

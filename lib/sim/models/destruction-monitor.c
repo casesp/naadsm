@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file destruction-monitor.c
  * Tracks the number of and reasons for destructions.
  *
@@ -800,3 +805,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file destruction-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

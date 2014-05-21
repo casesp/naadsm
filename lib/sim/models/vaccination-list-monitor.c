@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file vaccination-list-monitor.c
  * Tracks the number of units waiting to be vaccinated.
  *
@@ -303,7 +308,7 @@ handle_vaccination_canceled_event (struct naadsm_model_t_ *self,
   update.herd_index = herd->index;
   update.day_commitment_made = event->day_commitment_made;
   update.reason = 0; /* This is unused for "vaccination canceled" events */
-  
+
 #ifdef USE_SC_GUILIB
   sc_cancel_herd_vaccination( event->day, herd, update );
 #else  
@@ -739,3 +744,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file vaccination-list-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

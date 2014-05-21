@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file gis.c
  * Functions for geographical calculations.
  *
@@ -419,3 +424,9 @@ end:
 }
 
 /* end of file gis.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file event_manager.c
  * Functions for managing communication among sub-models.
  *
@@ -38,7 +43,7 @@ build_listener_list (GSList ** list, naadsm_model_t ** models, int nmodels)
 {
   GSList *model_list;
   naadsm_model_t *model;
-  EVT_event_type_t event_type;
+  int /*EVT_event_type_t*/ event_type;
   int i;                        /* loop counter */
 #if DEBUG
   GString *s;
@@ -48,7 +53,7 @@ build_listener_list (GSList ** list, naadsm_model_t ** models, int nmodels)
   g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, "----- ENTER build_listener_list");
 #endif
 
-  for (event_type = 0; event_type < EVT_NEVENT_TYPES; event_type++)
+  for (event_type = 0; event_type < (int)EVT_NEVENT_TYPES; event_type++)
     {
 #if DEBUG
       s = g_string_new (NULL);
@@ -138,7 +143,7 @@ naadsm_new_event_manager (naadsm_model_t ** models, int nmodels)
 void
 naadsm_free_event_manager (naadsm_event_manager_t * manager)
 {
-  EVT_event_type_t event_type;
+  int /*EVT_event_type_t*/ event_type;
 
 #if DEBUG
   g_debug ("----- ENTER naadsm_free_event_manager");
@@ -148,7 +153,7 @@ naadsm_free_event_manager (naadsm_event_manager_t * manager)
     return;
 
   EVT_free_event_queue (manager->queue);
-  for (event_type = 0; event_type < EVT_NEVENT_TYPES; event_type++)
+  for (event_type = 0; event_type < (int)EVT_NEVENT_TYPES; event_type++)
     g_slist_free (manager->listeners[event_type]);
   g_free (manager);
 
@@ -244,3 +249,9 @@ naadsm_create_event (naadsm_event_manager_t * manager, EVT_event_t * new_event,
 }
 
 /* end of file event_manager.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

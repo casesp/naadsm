@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file prob_dist.c
  * Functions for creating, destroying, printing, and getting values and
  * variates from probability distributions.
@@ -451,7 +456,7 @@ triangular_inverse_cdf (double area, PDF_triangular_dist_t * dist)
   return x;
 }
 
-#ifdef WIN_DLL
+
 /**
  * Computes the probability density p(x) at x for a triangular distribution.
  * This form of the function is primarily intended to be called from a
@@ -523,7 +528,7 @@ aphi_triangular_inverse_cdf( double area, double min, double mode, double max )
   PDF_free_dist (dist);
   return result;
 }
-#endif
+
 
 
 /**
@@ -545,7 +550,7 @@ ran_triangular (PDF_triangular_dist_t * dist, RAN_gen_t * rng)
 }
 
 
-#ifdef WIN_DLL
+
 /**
  * Generates random variates from a triangular distribution.
  * This form of the function is primarily intended to be called from a 
@@ -569,7 +574,6 @@ aphi_triangular_rand( int unsigned rng, double min, double mode, double max )
   return result;
 }
 
-#endif
 
 /**
  * Fills in the cumulative distribution at each x-coordinate for a
@@ -1355,7 +1359,6 @@ inverse_gaussian_inverse_cdf (double area, PDF_inverse_gaussian_dist_t * dist)
 }
 
 
-#ifdef WIN_DLL
 /**
  * Computes the probability density p(x) at x for an inverse Gaussian
  * distribution.  This form of the function is primarily intended to
@@ -1425,7 +1428,6 @@ aphi_inverse_gaussian_inverse_cdf (double area, double mu, double lambda)
   PDF_free_dist (dist);
   return result;
 }
-#endif
 
 
 /**
@@ -1556,7 +1558,6 @@ poisson_cdf (double x, PDF_poisson_dist_t * dist)
 }
 
 
-#ifdef WIN_DLL
 /**
  * Computes the probability density p(x) at x for a Poisson distribution.
  * This form of the function is primarily intended to be called from a
@@ -1594,7 +1595,6 @@ aphi_poisson_cdf( double x, double mean )
   PDF_free_dist (dist);
   return result;
 }
-#endif
 
 
 /**
@@ -1803,7 +1803,6 @@ beta_inverse_cdf (double area, PDF_beta_dist_t * dist)
 }
 
 
-#ifdef WIN_DLL
 /**
  * Computes the probability density p(x) at x for a beta distribution.
  * This form of the function is primarily intended to be called from a
@@ -2023,7 +2022,6 @@ aphi_beta_pert_rand( int unsigned rng, double min, double mode, double max )
   return result;
 }
 
-#endif
 
 /**
  * Creates a new gamma distribution with parameters as illustrated below.
@@ -2403,7 +2401,6 @@ pearson5_inverse_cdf (double area, PDF_pearson5_dist_t * dist)
 }
 
 
-#ifdef WIN_DLL
 /**
  * Computes the probability density p(x) at x for a Pearson Type V
  * distribution.
@@ -2499,7 +2496,7 @@ aphi_pearson5_rand( int unsigned rng, double alpha, double beta )
   PDF_free_dist( dist );
   return result;
 }
-#endif
+
 
 /**
  * Creates a new logistic distribution with parameters as illustrated below.
@@ -2717,7 +2714,7 @@ ran_loglogistic (PDF_loglogistic_dist_t * dist, RAN_gen_t * rng)
 }
 
 
-#ifdef WIN_DLL
+
 /**
  * Computes the probability density p(x) at x for a loglogistic distribution.
  * This form of the function is primarily intended to be called from a
@@ -2814,7 +2811,7 @@ aphi_loglogistic_rand( int unsigned rng, double location, double scale, double s
   PDF_free_dist( dist );
   return result;
 }
-#endif
+
 
 /**
  * Creates a new lognormal distribution with parameters as illustrated below.
@@ -3642,8 +3639,6 @@ unsigned int * ran_multivariate_hypergeometric (unsigned int m[],
 
 
 
-#ifdef WIN_DLL
-
 /* Histogram PDF */
 
 DLL_API gsl_histogram* 
@@ -3729,7 +3724,6 @@ aphi_histogram_mean( int unsigned hist ) {
   return gsl_histogram_mean( (gsl_histogram*)hist );   
 } 
 
-#endif
 
 /**
  * Deletes a distribution from memory.
@@ -5573,3 +5567,9 @@ PDF_variance (PDF_dist_t * dist)
 }
 
 /* end of file prob_dist.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

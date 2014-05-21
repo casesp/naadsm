@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file test-monitor.c
  * Records information on diagnostic testing: how many units are tested, for
  * reasons, and how many true positives, false positives, etc. occur.
@@ -649,3 +654,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file test-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

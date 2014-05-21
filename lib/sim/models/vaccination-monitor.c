@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file vaccination-monitor.c
  * Tracks the number of and reasons for vaccinations.
  *
@@ -250,7 +255,7 @@ handle_vaccination_event (struct naadsm_model_t_ *self, EVT_vaccination_event_t 
       g_error( "Unrecognized reason for vaccination (%s) in handle_vaccination_event", event->reason );
       update.reason = 0;  
     }
-  
+
 #ifdef USE_SC_GUILIB
   sc_vaccinate_herd( event->day, herd, update );
 #else  
@@ -792,3 +797,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file vaccination-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

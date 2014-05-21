@@ -13,22 +13,37 @@
 # Public License as published by the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 
+## Disable warnings about comparison between signed and unsigned integers, unused parameters, and set but unused variables.
+## Legacy NAADSM code does it EVERYHWERE, which is incredibly annoying.
+CONFIG += warn_on
+QMAKE_CFLAGS_WARN_ON += -Wno-sign-compare -Wno-unused-parameter -Wno-unused-but-set-variable
 
-QT       -= core gui
 
 DEFINES += \
-  HAVE_CONFIG_H \
-  DLL_EXPORTS \
-  WIN_DLL \
-  NO_PRAGMA_COMMENT_WARNINGS
+  HAVE_CONFIG_H \              ## Required, evidently.
+  CPPOUTPUT \                  ## Optional.  Use if building a version with CPP/Linux/Qt/Database outputs.
+  #DLL_EXPORTS \               ## Optional. Use if building a DLL on Windows.
+  BUILD_FOR_WINDOWS \          ## Required on Windows. Removes nonessential code that causes errors when executed on Windows.
+  NO_PRAGMA_COMMENT_WARNINGS   ## ???
+
   
 ## The following definitions are used to select experimental versions.
+## A maximum of one should be defined at a time.
 ## For the base version of NAADSM, none of these symbols should be defined.
 DEFINES += \
 #  CHEYENNE
 #  LARAMIE
 #  RIVERTON
 
+
+contains( DEFINES, CPPOUTPUT ) {
+  QMAKE_CFLAGS_WARN_ON += -fpermissive -Wno-write-strings ## Let the compiler get by without explicitly casting everything everywhere.
+  QMAKE_CC = g++  ## Treat C code as C++ to enable compiling.
+  QT -= gui
+  QT += core
+} else {
+  QT -= core gui
+}
 
 ## Change the name of the target, depending on the defined symbols.
 contains( DEFINES, CHEYENNE ) {
@@ -45,8 +60,11 @@ contains( DEFINES, CHEYENNE ) {
   }
 }
 
-TEMPLATE = lib
-
+contains( DEFINES, DLL_EXPORTS ) {
+  TEMPLATE = lib
+} else {
+  TEMPLATE = app
+}
 
 INCLUDEPATH += \
     C:/libs/C_libs/glib-2.22.2/include/glib-2.0 \
@@ -75,6 +93,12 @@ INCLUDEPATH += \
     ../../spatial_search \
     ../../wml \
     ../../replace
+
+contains( DEFINES, CPPOUTPUT ) {
+  INCLUDEPATH += \
+    ../../cppoutputs \
+    C:/libs/Qt_libs
+}
 
 LIBS += \
     C:/libs/C_libs/glib-2.22.2/lib/glib-2.0.lib \
@@ -146,7 +170,14 @@ SOURCES += \
     ../../src/event_manager.c \
     ../../src/herd_zone_updater.c \
     ../../zone/zone.c \
-    ../../wml/wml.c
+    ../../wml/wml.c \
+    ../../cppoutputs/csmdatabase.cpp \
+    ../../cppoutputs/csmsimulation.cpp \
+    ../../cppoutputs/naadsmlibrary.cpp \
+    ../../cppoutputs/czone.cpp \
+    ../../cppoutputs/cprodtype.cpp \
+    ../../cppoutputs/csmptoutput.cpp \
+    C:/libs/Qt_libs/ar_general_purpose/qmath.cpp
 
 HEADERS +=\
     ../../models/zone-model.h \
@@ -206,7 +237,14 @@ HEADERS +=\
     ../../src/herd_zone_updater.h \
     ../../zone/zone.h \
     ../config.h \
-    ../../wml/wml.h
+    ../../wml/wml.h \
+    ../../cppoutputs/csmdatabase.h \
+    ../../cppoutputs/csmsimulation.h \
+    ../../cppoutputs/naadsmlibrary.h \
+    ../../cppoutputs/czone.h \
+    ../../cppoutputs/cprodtype.h \
+    ../../cppoutputs/csmptoutput.h \
+    C:/libs/Qt_libs/ar_general_purpose/qmath.h
 
 win32:RC_FILE = ../naadsm_private.rc
 

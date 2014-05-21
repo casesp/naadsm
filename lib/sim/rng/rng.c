@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file rng.c
  * Functions for getting random numbers.
  *
@@ -17,15 +22,17 @@
  * any later version.
  */
 
+
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
 
 #include "rng.h"
+
 #include <sprng.h>
+#include <math.h>
 
-#include "naadsm.h"
-
+TRngVoid_1_Int rng_read_seed = NULL;
 
 
 /**
@@ -48,6 +55,10 @@ sprng_as_get_double (void *state)
 unsigned long int
 sprng_as_get (void *dummy)
 {
+  if( NULL != dummy ) {
+    /* Avoid compiler warning */
+  }
+
   return isprng ();
 }
 
@@ -64,7 +75,6 @@ RAN_gen_t *
 RAN_new_generator (int seed)
 {
   RAN_gen_t *self;
-  char s[1024];
 
   if (seed == -1)
     seed = make_sprng_seed ();
@@ -89,11 +99,6 @@ RAN_new_generator (int seed)
   self->as_gsl_rng.type = &(self->as_gsl_rng_type);
   self->as_gsl_rng.state = self;
 
-  if( NULL != naadsm_debug ) {
-    sprintf( s, "RNG seed set to %d", seed );
-    naadsm_debug( s );
-  }
-
   return self;
 }
 
@@ -114,6 +119,48 @@ RAN_num (RAN_gen_t * gen)
     return sprng ();
 }
 
+
+/**
+ * Generates a random number between min and max.
+ *
+ * @param min lower bound of random number generation range
+ * @param max upper bound of random number range
+ * @return a whole number (r) where min <= r <= max
+ */
+int RAN_int( RAN_gen_t* rng, int min, int max ){
+  int range;
+  double d;
+  int adj;
+  int maxPlusOne;
+  int temp;
+  int result;
+
+  if( min > max ) {
+    temp = min;
+    min = max;
+    max = temp;
+  }
+
+  if( min == max )
+    result =  min;
+  else {
+    maxPlusOne = max + 1;
+
+    if( 0 > min ) {
+      adj = -1 * min;
+      min = min + adj;
+      maxPlusOne = maxPlusOne + adj;
+    }
+    else
+      adj = 0;
+
+    range = maxPlusOne - min;
+    d = RAN_num( rng );
+    result = (int)(trunc( d * range + min )) - adj;
+  }
+
+  return result;
+}
 
 
 /**
@@ -188,3 +235,9 @@ clear_rng_fns (void)
 
 
 /* end of file rng.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

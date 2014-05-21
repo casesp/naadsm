@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file herd.c
  * Functions for creating, destroying, printing, and manipulating herds.
  *
@@ -81,11 +86,9 @@ double trunc (double);
 
 
 
-#ifndef WIN_DLL
-#ifndef COGRID
+#ifndef BUILD_FOR_WINDOWS
 /* This line causes problems on Windows, but seems to be unnecessary. */
 extern FILE *stdin;
-#endif
 #endif
 
 
@@ -733,31 +736,12 @@ HRD_new_herd (HRD_production_type_t production_type,
   herd->days_left_in_initial_status = 0;
   herd->quarantined = FALSE;
   herd->prevalence = 0;
+  herd->zone_level = -1;
 
   herd->in_vaccine_cycle = FALSE;
   herd->in_disease_cycle = FALSE;
   herd->prevalence_curve = NULL;
   herd->change_requests = NULL;
-  
-#ifdef USE_SC_GUILIB
-  herd->production_types = NULL;
-  herd->ever_infected = FALSE;
-  herd->day_first_infected = 0;
-  herd->zone = NULL;
-#endif
-
-#ifdef USE_SC_GUILIB
-  herd->production_types = NULL;
-  herd->ever_infected = FALSE;
-  herd->day_first_infected = 0;
-  herd->zone = NULL;
-  herd->cum_infected = 0;
-  herd->cum_detected = 0;
-  herd->cum_destroyed = 0;
-  herd->cum_vaccinated = 0;
-  herd->apparent_status = asUnknown;
-  herd->apparent_status_day = 0;
-#endif
 
 #ifdef USE_SC_GUILIB
   herd->production_types = NULL;
@@ -2123,6 +2107,8 @@ HRD_reset (HRD_herd_t * herd)
   herd->quarantined = FALSE;
   herd->in_vaccine_cycle = FALSE;
   herd->in_disease_cycle = FALSE;
+  herd->zone_level = -1;
+
 #ifdef USE_SC_GUILIB
   herd->ever_infected = FALSE;
   herd->day_first_infected = 0;
@@ -2130,6 +2116,7 @@ HRD_reset (HRD_herd_t * herd)
   herd->apparent_status = asUnknown;
   herd->apparent_status_day = 0;
 #endif
+
   HRD_herd_clear_change_requests (herd);
 }
 
@@ -2488,3 +2475,9 @@ HRD_herd_list_get_by_initial_status (HRD_herd_list_t * herds, HRD_status_t statu
 }
 
 /* end of file herd.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

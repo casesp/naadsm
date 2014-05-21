@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file event.c
  * Functions for creating, destroying, printing, and manipulating events.
  *
@@ -1836,3 +1841,9 @@ EVT_fprintf_event_queue (FILE * stream, EVT_event_queue_t * queue)
 }
 
 /* end of file event.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file spatial_search.c
  * Functions for finding objects in a spatial arrangement.
  *
@@ -707,3 +712,9 @@ free_spatial_search (spatial_search_t *searcher)
 }
 
 /* end of file spatial_search.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

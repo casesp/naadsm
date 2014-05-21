@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file resources-and-implementation-of-controls-model.c
  * Module that simulates the actions and resources of government authorities in
  * an outbreak.
@@ -413,7 +418,7 @@ cancel_vaccination (HRD_herd_t * herd, int day,
 #if DEBUG
   g_debug ("----- ENTER cancel_vaccination (%s)", MODEL_NAME);
 #endif
-    
+
   /* If the unit is on the vaccination waiting list, remove it. */
   locations_in_queue = (GQueue *) g_hash_table_lookup (vaccination_status, herd);
   if (locations_in_queue != NULL)
@@ -2163,3 +2168,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file resources-and-implementation-of-controls-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -133,3 +133,4 @@ RPT_type_t RPT_reporting_get_type (RPT_reporting_t *);
 RPT_reporting_t *RPT_clone_reporting (RPT_reporting_t *);
 
 #endif /* !REPORTING_H */
+

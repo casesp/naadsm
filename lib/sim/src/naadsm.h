@@ -18,8 +18,8 @@
  * any later version.
  */
 
-#ifndef naadsm_H
-#define naadsm_H
+#ifndef NAADSM_TYPES_AND_ENUMS_H
+#define NAADSM_TYPES_AND_ENUMS_H
 
 #if defined(DLL_EXPORTS)
 # define DLL_API __declspec( dllexport )
@@ -33,6 +33,7 @@
 
 #include "herd.h"
 #include "zone.h"
+#include "rng.h"
 
 
 /*  Defines for premature stopping of the simulation  */
@@ -256,63 +257,67 @@ typedef void (*TFnVoid_1_THRDZone) (HRD_zone_t);
 typedef void (*TFnVoid_0) (void);
 typedef int (*TFnInt_0) (void);
 typedef void (*TFnVoid_1_THRDPerimeterList) (ZON_zone_list_t *);
+typedef void (*TFNVoid_1_Rng) (RAN_gen_t*);
 typedef void (*TFnVoid_2_Int_Double) (int, double);
 typedef void (*TFnVoid_5_Int_Int_Int_Int_Int) (int, int, int, int, int);
 
 /* Function pointers */
 /*-------------------*/
 /* For the display of debugging information in the GUI */
-TFnVoid_1_CharP naadsm_printf;
-TFnVoid_1_CharP naadsm_debug;
+extern TFnVoid_1_CharP naadsm_printf;
+extern TFnVoid_1_CharP naadsm_debug;
 
 /* For key simulation- and iteration-level events */
-TFnVoid_0 naadsm_sim_start;
-TFnVoid_1_Int naadsm_iteration_start;
-TFnVoid_1_Int naadsm_day_start;
-TFnVoid_1_Int naadsm_day_complete;
-TFnVoid_1_Int naadsm_disease_end;
-TFnVoid_1_Int naadsm_outbreak_end;
-TFnVoid_1_Int naadsm_iteration_complete;
-TFnVoid_1_Int naadsm_sim_complete;
+extern TFNVoid_1_Rng naadsm_set_rng;
+extern TFnVoid_0 naadsm_sim_start;
+extern TFnVoid_1_Int naadsm_iteration_start;
+extern TFnVoid_1_Int naadsm_day_start;
+extern TFnVoid_1_Int naadsm_day_complete;
+extern TFnVoid_1_Int naadsm_disease_end;
+extern TFnVoid_1_Int naadsm_outbreak_end;
+extern TFnVoid_1_Int naadsm_iteration_complete;
+extern TFnVoid_1_Int naadsm_sim_complete;
 
 /* Used to determine whether the user wants to interrupt a running simulation */
-TFnInt_0 naadsm_simulation_stop;
+extern TFnInt_0 naadsm_simulation_stop;
 
 /* Used to update herd status and related events as an iteration runs */
-TFnVoid_1_THRDUpdate naadsm_change_herd_state;
-TFnVoid_1_THRDInfect naadsm_infect_herd;
-TFnVoid_1_THRDDetect naadsm_detect_herd;
-TFnVoid_1_THRDExpose naadsm_expose_herd;
-TFnVoid_1_THRDTrace naadsm_trace_herd;
-TFnVoid_1_THRDExam naadsm_examine_herd;
-TFnVoid_1_THRDTest naadsm_test_herd;
-TFnVoid_1_Int naadsm_queue_herd_for_destruction;
-TFnVoid_1_THRDControl naadsm_destroy_herd;
-TFnVoid_1_Int naadsm_queue_herd_for_vaccination;
-TFnVoid_1_THRDControl naadsm_vaccinate_herd;
-TFnVoid_1_THRDControl naadsm_cancel_herd_vaccination;
-TFnVoid_1_Int naadsm_make_zone_focus;
-TFnVoid_1_THRDZone naadsm_record_zone_change;
-TFnVoid_2_Int_Double naadsm_record_zone_area;
-TFnVoid_2_Int_Double naadsm_record_zone_perimeter;
+extern TFnVoid_1_THRDUpdate naadsm_change_herd_state;
+extern TFnVoid_1_THRDInfect naadsm_infect_herd;
+extern TFnVoid_1_THRDDetect naadsm_detect_herd;
+extern TFnVoid_1_THRDExpose naadsm_expose_herd;
+extern TFnVoid_1_THRDTrace naadsm_trace_herd;
+extern TFnVoid_1_THRDExam naadsm_examine_herd;
+extern TFnVoid_1_THRDTest naadsm_test_herd;
+extern TFnVoid_1_Int naadsm_queue_herd_for_destruction;
+extern TFnVoid_1_THRDControl naadsm_destroy_herd;
+extern TFnVoid_1_Int naadsm_queue_herd_for_vaccination;
+extern TFnVoid_1_THRDControl naadsm_vaccinate_herd;
+extern TFnVoid_1_THRDControl naadsm_cancel_herd_vaccination;
+extern TFnVoid_1_Int naadsm_make_zone_focus;
+extern TFnVoid_1_THRDZone naadsm_record_zone_change;
+
+/* Used to record zone outputs */
+extern TFnVoid_2_Int_Double naadsm_record_zone_area;
+extern TFnVoid_2_Int_Double naadsm_record_zone_perimeter;
 
 /* Used by the GUI to access zone information during a running simulation */
-TFnVoid_1_THRDPerimeterList naadsm_set_zone_perimeters;
+extern TFnVoid_1_THRDPerimeterList naadsm_set_zone_perimeters;
 
 /* Used to write daily herd state output, when desired */
-TFnVoid_1_CharP naadsm_show_all_states;
+extern TFnVoid_1_CharP naadsm_show_all_states;
 
 /* Used to write daily herd prevalence output, when desired */
-TFnVoid_1_CharP naadsm_show_all_prevalences;
+extern TFnVoid_1_CharP naadsm_show_all_prevalences;
 
 /* Used to display g_warnings, etc., in the GUI */
-TFnVoid_1_CharP naadsm_display_g_message;
+extern TFnVoid_1_CharP naadsm_display_g_message;
 
 /* Used to write daily herd zone output, when desired */
 /* This function will need to be re-implemented if it is ever needed again. */
 /* TFnVoid_1_CharP naadsm_show_all_zones; */
 
-TFnVoid_5_Int_Int_Int_Int_Int naadsm_report_search_hits;
+extern TFnVoid_5_Int_Int_Int_Int_Int naadsm_report_search_hits;
 
 
 /* Functions used to set the function pointers */
@@ -320,6 +325,7 @@ TFnVoid_5_Int_Int_Int_Int_Int naadsm_report_search_hits;
 DLL_API void set_printf (TFnVoid_1_CharP fn);
 DLL_API void set_debug (TFnVoid_1_CharP fn);
 
+DLL_API void set_set_rng (TFNVoid_1_Rng fn);
 DLL_API void set_sim_start (TFnVoid_0 fn);
 DLL_API void set_iteration_start (TFnVoid_1_Int fn);
 DLL_API void set_day_start (TFnVoid_1_Int fn);
@@ -368,4 +374,4 @@ DLL_API void set_report_search_hits (TFnVoid_5_Int_Int_Int_Int_Int fn);
 void clear_naadsm_fns (void);
 void naadsm_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
 
-#endif /* naadsm_H */
+#endif /* NAADSM_TYPES_AND_ENUMS_H */

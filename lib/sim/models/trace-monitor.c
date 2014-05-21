@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file trace-monitor.c
  * Tracks the number of attempted and successful traces.
  *
@@ -869,3 +874,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projections,
 }
 
 /* end of file trace-monitor.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

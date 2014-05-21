@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file ch2d.c
  * Two-dimensional convex hull algorithm.
  * 
@@ -104,3 +109,9 @@ ch2d (double **P, int n)
 }
 
 /* end of file ch2d.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

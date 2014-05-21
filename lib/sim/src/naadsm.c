@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file naadsm.c
  *
  * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
@@ -25,6 +30,63 @@
 #include "gis.h"
 #include "rng.h"
 
+/* Function pointers */
+/*-------------------*/
+/* For the display of debugging information in the GUI */
+TFnVoid_1_CharP naadsm_printf = NULL;
+TFnVoid_1_CharP naadsm_debug = NULL;
+
+/* For key simulation- and iteration-level events */
+TFNVoid_1_Rng naadsm_set_rng = NULL;
+TFnVoid_0 naadsm_sim_start = NULL;
+TFnVoid_1_Int naadsm_iteration_start = NULL;
+TFnVoid_1_Int naadsm_day_start = NULL;
+TFnVoid_1_Int naadsm_day_complete = NULL;
+TFnVoid_1_Int naadsm_disease_end = NULL;
+TFnVoid_1_Int naadsm_outbreak_end = NULL;
+TFnVoid_1_Int naadsm_iteration_complete = NULL;
+TFnVoid_1_Int naadsm_sim_complete = NULL;
+
+/* Used to determine whether the user wants to interrupt a running simulation */
+TFnInt_0 naadsm_simulation_stop = NULL;
+
+/* Used to update herd status and related events as an iteration runs */
+TFnVoid_1_THRDUpdate naadsm_change_herd_state = NULL;
+TFnVoid_1_THRDInfect naadsm_infect_herd = NULL;
+TFnVoid_1_THRDDetect naadsm_detect_herd = NULL;
+TFnVoid_1_THRDExpose naadsm_expose_herd = NULL;
+TFnVoid_1_THRDTrace naadsm_trace_herd = NULL;
+TFnVoid_1_THRDExam naadsm_examine_herd = NULL;
+TFnVoid_1_THRDTest naadsm_test_herd = NULL;
+TFnVoid_1_Int naadsm_queue_herd_for_destruction = NULL;
+TFnVoid_1_THRDControl naadsm_destroy_herd = NULL;
+TFnVoid_1_Int naadsm_queue_herd_for_vaccination = NULL;
+TFnVoid_1_THRDControl naadsm_vaccinate_herd = NULL;
+TFnVoid_1_THRDControl naadsm_cancel_herd_vaccination = NULL;
+TFnVoid_1_Int naadsm_make_zone_focus = NULL;
+TFnVoid_1_THRDZone naadsm_record_zone_change = NULL;
+TFnVoid_2_Int_Double naadsm_record_zone_area = NULL;
+TFnVoid_2_Int_Double naadsm_record_zone_perimeter = NULL;
+
+/* Used by the GUI to access zone information during a running simulation */
+TFnVoid_1_THRDPerimeterList naadsm_set_zone_perimeters = NULL;
+
+/* Used to write daily herd state output, when desired */
+TFnVoid_1_CharP naadsm_show_all_states = NULL;
+
+/* Used to write daily herd prevalence output, when desired */
+TFnVoid_1_CharP naadsm_show_all_prevalences = NULL;
+
+/* Used to display g_warnings, etc., in the GUI */
+TFnVoid_1_CharP naadsm_display_g_message = NULL;
+
+/* Used to write daily herd zone output, when desired */
+/* This function will need to be re-implemented if it is ever needed again. */
+/* TFnVoid_1_CharP naadsm_show_all_zones = NULL; */
+
+TFnVoid_5_Int_Int_Int_Int_Int naadsm_report_search_hits = NULL;
+
+
 /*-----------------------------------------------------------------------------
  * Required for the Windows DLL version of the NAADSM core library
  *
@@ -38,6 +100,10 @@ DllMain (HINSTANCE hInst /* Library instance handle. */ ,
          DWORD reason /* Reason this function is being called. */ ,
          LPVOID reserved /* Not used. */ )
 {
+  if( ( 0 != hInst ) || ( 0 == reason ) || ( 0 == reserved ) ) {
+    /* Avoid compiler warning */
+  }
+
   switch (reason)
     {
     case DLL_PROCESS_ATTACH:
@@ -140,6 +206,13 @@ set_debug (TFnVoid_1_CharP fn)
 
 
 /* For key simulation- and iteration-level events */
+DLL_API void
+set_set_rng( TFNVoid_1_Rng fn)
+{
+  naadsm_set_rng = fn;
+}
+
+
 DLL_API void
 set_sim_start (TFnVoid_0 fn)
 {
@@ -396,6 +469,7 @@ clear_naadsm_fns (void)
   set_printf (NULL);
   set_debug (NULL);
 
+  set_set_rng (NULL);
   set_sim_start (NULL);
   set_iteration_start (NULL);
   set_day_start (NULL);
@@ -437,6 +511,10 @@ clear_naadsm_fns (void)
 void
 naadsm_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
 {
+  if( ( NULL != log_domain ) || ( 0 == log_level ) || ( NULL == user_data ) ) {
+    /* Avoid compiler warning */
+  }
+
   if( NULL != naadsm_display_g_message )
     naadsm_display_g_message( (gchar*) message ); 
 }
@@ -479,3 +557,9 @@ const char *NAADSM_control_reason_abbrev[] = {
 };
 
 /*---------------------------------------------------------------------------*/
+
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+

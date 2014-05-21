@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file conflict-resolver.c
  * A special module, always loaded, that encapsulates the list of units.  It
  * gathers requests for changes to units and disambiguates the results of
@@ -64,18 +69,7 @@
 #include "general.h"
 #include "conflict-resolver.h"
 
-#ifdef COGRID
-double trunc ( double x )
-{
-  return floor( x );
-}
-#else
-/* Temporary fix -- missing from math header file? */
-double trunc (double);
-#endif
-
 #define MODEL_NAME "conflict-resolver"
-
 
 
 #define NEVENTS_LISTENED_FOR 7
@@ -786,3 +780,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file conflict-resolver.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

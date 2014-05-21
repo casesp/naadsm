@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file trace-exam-model.c
  * Module that simulates a visual inspection of a unit that has been found
  * through trace forward or trace back.
@@ -118,7 +123,7 @@ handle_detection_event (struct naadsm_model_t_ *self,
 
   local_data = (local_data_t *) (self->model_data);
   herd = event->herd;
-  details = g_hash_table_lookup (local_data->detected_or_examined, herd);
+  details = (detection_exam_day_t*)g_hash_table_lookup (local_data->detected_or_examined, herd);
   if (details == NULL)
     {
       /* This unit has never been detected or examined before. */    	
@@ -562,3 +567,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file trace-exam-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

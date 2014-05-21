@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file mpix.c
  * Terry Moreland-like extensions for MPI.
  *
@@ -111,3 +116,9 @@ MPI_Bcastd (void **buffer, int count, MPI_Datatype datatype, int rank, MPI_Comm 
 }
 
 /* end of file mpix.c */
+
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+

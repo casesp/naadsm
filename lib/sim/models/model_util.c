@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file model_util.c
  * Helper functions for sub-models.
  *
@@ -333,3 +338,9 @@ g_queue_free_as_GDestroyNotify (gpointer data)
 }
 
 /* end of file model_util.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file replace.c
  * This file provides copies of functions that may not be available on specific
  * systems.
@@ -193,3 +198,9 @@ strtoi (const char *nptr, char **endptr)
 #endif
 
 /* end of file replace.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

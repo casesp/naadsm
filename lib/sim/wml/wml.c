@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file wml.c
  * Functions from the Wild Magic Library (WML).
  *
@@ -1549,3 +1554,9 @@ WML_MinBoxOrderNSqr (int iQuantity, WML_Vector2 * akPoint)
 }
 
 /* end of file wml.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

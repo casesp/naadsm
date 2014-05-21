@@ -59,7 +59,7 @@
  */
 typedef unsigned int HRD_production_type_t;
 
-
+int ranfoo();
 
 /**
  * Number of possible states (with respect to a disease) for a herd.
@@ -200,6 +200,7 @@ typedef struct
   int days_in_initial_status;
   int days_left_in_initial_status;
   double prevalence;
+  int zone_level;
 
   /* Remaining fields should be considered private. */
 

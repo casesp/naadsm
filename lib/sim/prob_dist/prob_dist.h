@@ -445,9 +445,7 @@ unsigned int * ran_multivariate_hypergeometric
  RAN_gen_t *rng);
 
 
-#ifdef WIN_DLL  /* These are not needed in the SC versions of code, and could generate errors because of pointer conversion issues... */
-
-/* These functions are called from a library to calculate various values from different distributions */
+/* These functions can be called from a library to calculate various values from different distributions */
 DLL_API double aphi_inverse_gaussian_pdf (double x, double mu, double lambda);
 DLL_API double aphi_inverse_gaussian_cdf (double x, double mu, double lambda);
 DLL_API double aphi_inverse_gaussian_inverse_cdf (double area, double mu, double lambda);
@@ -487,6 +485,6 @@ DLL_API double aphi_histogram_cdf( double x, int unsigned hist );
 DLL_API double aphi_histogram_inverse_cdf( double area, int unsigned hist );
 DLL_API double aphi_histogram_rand( int unsigned rng, int unsigned hist ); 
 DLL_API double aphi_histogram_mean( int unsigned hist ); 
-#endif
+
 
 #endif /* !PROB_DIST_H */

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file zone-model.c
  * Parameters that describe a zone.  Specifically,
  * <ul>
@@ -236,7 +241,8 @@ check_circle_and_rezone (int id, gpointer arg)
 
                   zone_update.herd_index = herd->index;
                   zone_update.zone_level = zone->level;
-				  
+                  herd->zone_level = zone->level;
+
 #ifdef USE_SC_GUILIB
                   sc_record_zone_change( herd, zone );
 #else				  
@@ -1055,3 +1061,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file zone-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

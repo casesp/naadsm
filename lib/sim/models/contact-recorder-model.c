@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file contact-recorder-model.c
  * Module that records direct and indirect contacts, and carries out traces
  * when requested.  This module would correspond in the real world to paper
@@ -387,7 +392,7 @@ handle_new_day_event (struct naadsm_model_t_ *self,
       /* Remove the event from this model's internal queue and place it in the
        * simulation's event queue. */
       pending_event = (EVT_event_t *) g_queue_pop_head (q);
-#ifndef WIN_DLL
+#ifndef BUILD_FOR_WINDOWS
       /* Double-check that the event is coming out on the correct day. */
       g_assert (pending_event->u.trace_result.day == event->day);
 #endif
@@ -561,7 +566,7 @@ to_string (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
   GString *s;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   unsigned int nprod_types, i;
   double p;
   PDF_dist_t *delay;
@@ -578,7 +583,7 @@ to_string (struct naadsm_model_t_ *self)
    * source production type. */
   g_string_sprintfa (s, "\n  trace-success=");
   nprod_types = local_data->production_types->len;
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     for (i = 0; i < nprod_types; i++)
       {
         p = local_data->trace_success[contact_type][i];
@@ -590,7 +595,7 @@ to_string (struct naadsm_model_t_ *self)
   /* Add the trace delay parameter for each combination of contact type and
    * source production type. */
   g_string_sprintfa (s, "\n  trace-delay=");
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     for (i = 0; i < nprod_types; i++)
       {
         delay = local_data->trace_delay[contact_type][i];
@@ -665,7 +670,7 @@ void
 local_free (struct naadsm_model_t_ *self)
 {
   local_data_t *local_data;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   unsigned int nprod_types, i;
   GQueue *q;
 
@@ -677,12 +682,12 @@ local_free (struct naadsm_model_t_ *self)
   local_data = (local_data_t *) (self->model_data);
 
   nprod_types = local_data->production_types->len;
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       g_free (local_data->trace_success[contact_type]);
     }
 
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       for (i = 0; i < nprod_types; i++)
         PDF_free_dist (local_data->trace_delay[contact_type][i]);
@@ -845,7 +850,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
   naadsm_model_t *self;
   local_data_t *local_data;
   unsigned int nprod_types;
-  NAADSM_contact_type contact_type;
+  int /*NAADSM_contact_type*/ contact_type;
   unsigned int i;
 
 #if DEBUG
@@ -879,7 +884,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
    * type. */
   local_data->production_types = herds->production_type_names;
   nprod_types = herds->production_type_names->len;
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       local_data->trace_success[contact_type] = g_new (double, nprod_types);
       for (i = 0; i < nprod_types; i++)
@@ -890,7 +895,7 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 
   /* Create an array to hold trace delays.  The array is 2-dimensional because
    * it is indexed by contact type and source production type. */
-  for (contact_type = NAADSM_DirectContact; contact_type <= NAADSM_IndirectContact; contact_type++)
+  for (contact_type = (int)NAADSM_DirectContact; contact_type <= (int)NAADSM_IndirectContact; contact_type++)
     {
       local_data->trace_delay[contact_type] = g_new0 (PDF_dist_t *, nprod_types);
     }
@@ -928,3 +933,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file contact-recorder-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

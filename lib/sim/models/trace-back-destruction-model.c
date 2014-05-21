@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file trace-back-destruction-model.c
  * Module that simulates a policy of destroying units that have had contact
  * with a diseased unit. DEPRECATED: maintained ONLY for backward compatibility!
@@ -821,3 +826,9 @@ new (scew_element * params, HRD_herd_list_t * herds, projPJ projection,
 }
 
 /* end of file trace-back-destruction-model.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file reporting.c
  * Functions for creating, destroying, printing, and manipulating reporting
  * variables.
@@ -16,6 +21,7 @@
  * Software Foundation; either version 2 of the License, or (at your option)
  * any later version.
  */
+
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -1623,11 +1629,11 @@ RPT_reporting_zero (RPT_reporting_t * reporting)
 RPT_frequency_t
 RPT_string_to_frequency (const char *s)
 {
-  RPT_frequency_t type;
+  int type;
 
-  for (type = RPT_once; type < RPT_NFREQUENCIES; type++)
+  for (type = (int)RPT_once; type < (int)RPT_NFREQUENCIES; type++)
     if (strcmp (RPT_frequency_name[type], s) == 0)
-      return type;
+      return (RPT_frequency_t)type;
 
   return RPT_never;
 }
@@ -1810,4 +1816,11 @@ RPT_clone_reporting (RPT_reporting_t * original)
   return copy;
 }
 
+
 /* end of file reporting.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+

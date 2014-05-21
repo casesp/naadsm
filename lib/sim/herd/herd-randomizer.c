@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file herd-randomizer.c
  *
  * @author Aaron Reeves <Aaron.Reeves@ucalgary.ca><br>
@@ -160,4 +165,10 @@ randomize_initial_states( HRD_herd_list_t *herds, int n_states, int *initial_sta
   g_free( eligible_herds );
   g_free( selected_herds );
 }
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+
 

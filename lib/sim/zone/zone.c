@@ -1,3 +1,8 @@
+#ifdef CPPOUTPUT
+extern "C"
+{
+#endif //CPPOUTPUT
+
 /** @file zone.c
  * Functions for creating, destroying, printing, and manipulating zones.
  *
@@ -1350,3 +1355,9 @@ if ( _zone == NULL )
 #endif
 
 /* end of file zone.c */
+
+#ifdef CPPOUTPUT
+}
+#endif //CPPOUTPUT
+
+
