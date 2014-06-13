@@ -249,7 +249,7 @@ interface
       procedure setCumulRecordsFrom( const src: TSMIterationOutput );
 
       procedure addToDestrQueue( const herdSize: integer; const day: integer );
-      procedure processDestruction( const nAnimals, day, queueDay: integer; const inVaccQueue: boolean );
+      procedure processDestruction( const nAnimals, day, queueDay: integer );
 
       procedure addToVaccQueue( const herdSize: integer; const day: integer );
       procedure removeFromVaccQueue( const herdSize: integer ); // if vaccination is canceled
@@ -1119,7 +1119,7 @@ implementation
   ;
 
 
-  procedure TSMIterationOutput.processDestruction( const nAnimals, day, queueDay: integer; const inVaccQueue: boolean );
+  procedure TSMIterationOutput.processDestruction( const nAnimals, day, queueDay: integer );
     var
       unitDaysDestr, animalDaysDestr: integer;
     begin

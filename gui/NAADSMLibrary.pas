@@ -2353,7 +2353,7 @@ implementation
           begin
             h := _herdsInZones.itemAtIndex( i ) as THerd;
             z := _smSim.zoneList.findByLevel( h.zoneLevel );
-            z.addToZoneTotals( h.prodTypeID, h.initialSize, _simDay );
+            z.addToZoneTotals( h.prodTypeID, h.initialSize );
           end
         ;
 

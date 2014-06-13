@@ -2228,7 +2228,7 @@ implementation
       //----------------------------
       if( NAADSMControlInitialState <> c.reason ) then
         begin
-          _outputs.processDestruction( h.initialSize, day, c.dayCommitmentMade, h.ctrlActivities.isQueuedForVacc );
+          _outputs.processDestruction( h.initialSize, day, c.dayCommitmentMade );
           if( nil = _myList ) then
             raise exception.Create( '_myList is nil in TProductionType.addDestructionEvent()' )
           else

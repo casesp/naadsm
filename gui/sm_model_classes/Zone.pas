@@ -131,7 +131,7 @@ interface
       function getAnimalDaysById( prodTypeId: integer ): integer;
 
       // Outputs
-      procedure addToZoneTotals( const prodTypeID: integer; const herdAnimalCount: integer; const day: integer ); // Called at the end of every day
+      procedure addToZoneTotals( const prodTypeID: integer; const herdAnimalCount: integer ); // Called at the end of every day
       procedure setArea( const val: double; const simDay: integer );
       procedure setPerimeter( const val: double; const simDay: integer );
 
@@ -706,7 +706,7 @@ implementation
   ;
 
 
-  procedure TZone.addToZoneTotals( const prodTypeID: integer; const herdAnimalCount: integer; const day: integer );  // On each sim day
+  procedure TZone.addToZoneTotals( const prodTypeID: integer; const herdAnimalCount: integer );  // On each sim day
     begin
       // Update the running totals
       //--------------------------
