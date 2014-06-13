@@ -260,6 +260,7 @@ typedef void (*TFnVoid_1_THRDPerimeterList) (ZON_zone_list_t *);
 typedef void (*TFNVoid_1_Rng) (RAN_gen_t*);
 typedef void (*TFnVoid_2_Int_Double) (int, double);
 typedef void (*TFnVoid_5_Int_Int_Int_Int_Int) (int, int, int, int, int);
+typedef void (*TFnVoid_3_THRDListP_TZONListP_CharP) (HRD_herd_list_t*, ZON_zone_list_t*, char* );
 
 /* Function pointers */
 /*-------------------*/
@@ -268,6 +269,8 @@ extern TFnVoid_1_CharP naadsm_printf;
 extern TFnVoid_1_CharP naadsm_debug;
 
 /* For key simulation- and iteration-level events */
+extern TFnVoid_3_THRDListP_TZONListP_CharP naadsm_cpp_initialize;
+extern TFnVoid_0 naadsm_cpp_finalize;
 extern TFNVoid_1_Rng naadsm_set_rng;
 extern TFnVoid_0 naadsm_sim_start;
 extern TFnVoid_1_Int naadsm_iteration_start;
@@ -324,6 +327,9 @@ extern TFnVoid_5_Int_Int_Int_Int_Int naadsm_report_search_hits;
 /*---------------------------------------------*/
 DLL_API void set_printf (TFnVoid_1_CharP fn);
 DLL_API void set_debug (TFnVoid_1_CharP fn);
+
+DLL_API void set_cpp_initialize( TFnVoid_3_THRDListP_TZONListP_CharP fn );
+DLL_API void set_cpp_finalize( TFnVoid_0 fn );
 
 DLL_API void set_set_rng (TFNVoid_1_Rng fn);
 DLL_API void set_sim_start (TFnVoid_0 fn);

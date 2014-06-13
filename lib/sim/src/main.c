@@ -1000,11 +1000,15 @@ build_report (gpointer data, gpointer user_data)
 }
 
 
-#ifdef USE_SC_GUILIB
+#if defined( USE_SC_GUILIB )
 DLL_API void
 run_sim_main (const char *herd_file,
               const char *parameter_file,
               const char *output_file, double fixed_rng_value, int verbosity, int seed, char *production_type_file)
+#elif defined( CPPOUTPUT )
+run_sim_main (const char *herd_file,
+              const char *parameter_file,
+              const char *output_file, double fixed_rng_value, int verbosity, int seed, char *dbScenarioSpecificationFile)
 #else
 DLL_API void
 run_sim_main (const char *herd_file,
@@ -1294,24 +1298,15 @@ run_sim_main (const char *herd_file,
   m_total_time = total_processor_time = 0.0;
   total_runs = 0;
 
+  if( NULL != naadsm_cpp_initialize )
+    naadsm_cpp_initialize( herds, zones, dbScenarioSpecificationFile );
+
 #ifdef USE_SC_GUILIB
   sc_sim_start( herds, production_types, zones );
 #else
   if (NULL != naadsm_sim_start)
     naadsm_sim_start ();
 #endif
-
-
-/*
-#ifdef USE_SC_GUILIB
-  write_scenario_SQL();
-  write_job_SQL();
-  write_production_types_SQL( production_types );
-  write_zones_SQL( zones );
-  fflush(NULL);
-#endif
-*/
-
 
   /* Begin the loop over the specified number of iterations. */
   naadsm_create_event (manager, EVT_new_before_any_simulations_event(), herds, zones, rng);
@@ -1689,6 +1684,9 @@ run_sim_main (const char *herd_file,
     }
 #endif
 
+  if( NULL != naadsm_cpp_finalize )
+    naadsm_cpp_finalize();
+
   /* Clean up. */
   RPT_free_reporting (show_unit_states);
   RPT_free_reporting (num_units_in_state);
@@ -1728,6 +1726,10 @@ main (int argc, char *argv[])
   const char *output_file = NULL;
   double fixed_rng_value = -1;
   int seed = -1;
+#ifdef CPPOUTPUT
+  const char *db_specification_file = NULL;
+#endif
+
 #ifndef BUILD_FOR_WINDOWS
   /* The Windows version of POPT doesn't play nicely with POPT_AUTOHELP */
   struct poptOption tHelp[] = { POPT_AUTOHELP };
@@ -1795,6 +1797,16 @@ main (int argc, char *argv[])
   options[i].argDescrip = "production-types";
 #endif
 
+#ifdef CPPOUTPUT
+  options[++i].longName = "db-spec-file";
+  options[i].shortName = 'b';
+  options[i].argInfo = POPT_ARG_STRING;
+  options[i].arg = &db_specification_file;
+  options[i].val = 0;
+  options[i].descrip = "File containing database specification and scenario description";
+  options[i].argDescrip = "db-spec-file";
+#endif
+
 #ifndef BUILD_FOR_WINDOWS
   /* The Windows version of POPT doesn't play nicely with POPT_AUTOHELP */
   options[++i] = tHelp[0];
@@ -1832,8 +1844,10 @@ main (int argc, char *argv[])
   parameter_file = poptGetArg (option);
   poptFreeContext (option);
 
-#ifdef USE_SC_GUILIB
+#if defined( USE_SC_GUILIB )
   run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed, production_type_file);
+#elif defined( CPPOUTPUT )
+  run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed, db_specification_file);
 #else
   run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed);
 #endif

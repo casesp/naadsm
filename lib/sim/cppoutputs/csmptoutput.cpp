@@ -3,6 +3,10 @@
 #include <ar_general_purpose/qmath.h>
 
 #include <QDebug>
+#include <QSqlError>
+#include <QSqlRecord>
+
+#include "naadsmlibrary.h"
 
 //------------------------------------------------------------------------------
 // CSMIterationOutput
@@ -651,6 +655,7 @@ void CSMIterationOutput::processVaccination( const int nAnimals, const int day, 
 //------------------------------------------------------------------------------
 CSMDailyOutput::CSMDailyOutput() : CSMIterationOutput() {
   initialize();
+  prepQueries();
 }
 
 
@@ -661,7 +666,697 @@ void CSMDailyOutput::initialize() {
 
 
 CSMDailyOutput::~CSMDailyOutput() {
-  // Nothing to do here
+  freeQueries();
+}
+
+
+void CSMDailyOutput::prepQueries() {
+  qOutDailyByProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutDailyByProductionType->prepare(
+    QString(
+      "INSERT INTO outDailyByProductionType("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " productionTypeID,"
+
+        " day,"
+
+      // Daily numbers for each disease state
+        " tsdUSusc,"
+        " tsdASusc,"
+        " tsdULat,"
+        " tsdALat,"
+        " tsdUSubc,"
+        " tsdASubc,"
+        " tsdUClin,"
+        " tsdAClin,"
+        " tsdUNImm,"
+        " tsdANImm,"
+        " tsdUVImm,"
+        " tsdAVImm,"
+        " tsdUDest,"
+        " tsdADest,"
+
+      // New daily counts for cause of infection
+        " infnUAir,"
+        " infnAAir,"
+        " infnUDir,"
+        " infnADir,"
+        " infnUInd,"
+        " infnAInd,"
+
+      // New daily counts for detection
+        " detnUClin,"
+        " detnAClin,"
+        " detnUTest,"
+        " detnATest,"
+
+      // New daily counts for herd exams
+        " exmnUAll,"
+        " exmnAAll,"
+
+      // New daily counts for testing
+        " tstnUTruePos,"
+        " tstnATruePos,"
+        " tstnUTrueNeg,"
+        " tstnATrueNeg,"
+        " tstnUFalsePos,"
+        " tstnAFalsePos,"
+        " tstnUFalseNeg,"
+        " tstnAFalseNeg,"
+
+      // New daily counts for tracing
+        " trnUDirFwd,"
+        " trnADirFwd,"
+        " trnUIndFwd,"
+        " trnAIndFwd,"
+        " trnUDirBack,"
+        " trnADirBack,"
+        " trnUIndBack,"
+        " trnAIndBack,"
+
+      // new daily counts for trace origins
+        " tonUDirFwd,"
+        " tonUIndFwd,"
+        " tonUDirBack,"
+        " tonUIndBack,"
+
+      // New daily counts for destruction for any reason
+        " desnUAll,"
+        " desnAAll,"
+
+      // Length of the destruction queue
+        " deswUAll,"
+        " deswAAll,"
+
+      // New daily counts for vaccination for any reason
+        " vacnUAll,"
+        " vacnAAll,"
+
+      // Length of the vaccination queue
+        " vacwUAll,"
+        " vacwAAll,"
+
+      // New daily counts for zone foci
+        " zonnFoci,"
+
+      // Number of apparently infectious units on this day
+        " appdUInfectious,"
+
+      // Running totals for each disease state
+        " tscUSusc,"
+        " tscASusc,"
+        " tscULat,"
+        " tscALat,"
+        " tscUSubc,"
+        " tscASubc,"
+        " tscUClin,"
+        " tscAClin,"
+        " tscUNImm,"
+        " tscANImm,"
+        " tscUVImm,"
+        " tscAVImm,"
+        " tscUDest,"
+        " tscADest,"
+
+      // Running totals for cause of infection
+        " infcUIni,"
+        " infcAIni,"
+        " infcUAir,"
+        " infcAAir,"
+        " infcUDir,"
+        " infcADir,"
+        " infcUInd,"
+        " infcAInd,"
+
+      // Running totals for exposures
+        " expcUDir,"
+        " expcADir,"
+        " expcUInd,"
+        " expcAInd,"
+
+      // Running totals for traces
+        " trcUDirFwd,"
+        " trcADirFwd,"
+        " trcUIndFwd,"
+        " trcAIndFwd,"
+        " trcUDirpFwd,"
+        " trcADirpFwd,"
+        " trcUIndpFwd,"
+        " trcAIndpFwd,"
+        " trcUDirBack,"
+        " trcADirBack,"
+        " trcUIndBack,"
+        " trcAIndBack,"
+        " trcUDirpBack,"
+        " trcADirpBack,"
+        " trcUIndpBack,"
+        " trcAIndpBack,"
+
+      // Running totals for trace origins
+        " tocUDirFwd,"
+        " tocUIndFwd,"
+        " tocUDirBack,"
+        " tocUIndBack,"
+
+      // Running totals for detection
+        " detcUClin,"
+        " detcAClin,"
+        " detcUTest,"
+        " detcATest,"
+
+      // Running totals for destruction
+        " descUIni,"
+        " descAIni,"
+        " descUDet,"
+        " descADet,"
+        " descUDirFwd,"
+        " descADirFwd,"
+        " descUIndFwd,"
+        " descAIndFwd,"
+        " descUDirBack,"
+        " descADirBack,"
+        " descUIndBack,"
+        " descAIndBack,"
+        " descURing,"
+        " descARing,"
+
+      // Running totals for vaccination
+        " vaccUIni,"
+        " vaccAIni,"
+        " vaccURing,"
+        " vaccARing,"
+
+      // Running totals for herd exams
+        " exmcUDirFwd,"
+        " exmcADirFwd,"
+        " exmcUIndFwd,"
+        " exmcAIndFwd,"
+        " exmcUDirBack,"
+        " exmcADirBack,"
+        " exmcUIndBack,"
+        " exmcAIndBack,"
+
+      // Running totals for diagnostic testing
+        " tstcUDirFwd,"
+        " tstcADirFwd,"
+        " tstcUIndFwd,"
+        " tstcAIndFwd,"
+        " tstcUDirBack,"
+        " tstcADirBack,"
+        " tstcUIndBack,"
+        " tstcAIndBack,"
+        " tstcUTruePos,"
+        " tstcATruePos,"
+        " tstcUTrueNeg,"
+        " tstcATrueNeg,"
+        " tstcUFalsePos,"
+        " tstcAFalsePos,"
+        " tstcUFalseNeg,"
+        " tstcAFalseNeg,"
+
+      // Running totals for zone foci
+        " zoncFoci"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :productionTypeID,"
+
+        " :day,"
+
+        " :tsdUSusc,"
+        " :tsdASusc,"
+        " :tsdULat,"
+        " :tsdALat,"
+        " :tsdUSubc,"
+        " :tsdASubc,"
+        " :tsdUClin,"
+        " :tsdAClin,"
+        " :tsdUNImm,"
+        " :tsdANImm,"
+        " :tsdUVImm,"
+        " :tsdAVImm,"
+        " :tsdUDest,"
+        " :tsdADest,"
+
+        " :infnUAir,"
+        " :infnAAir,"
+        " :infnUDir,"
+        " :infnADir,"
+        " :infnUInd,"
+        " :infnAInd,"
+
+        " :detnUClin,"
+        " :detnAClin,"
+        " :detnUTest,"
+        " :detnATest,"
+
+        " :exmnUAll,"
+        " :exmnAAll,"
+
+        " :tstnUTruePos,"
+        " :tstnATruePos,"
+        " :tstnUTrueNeg,"
+        " :tstnATrueNeg,"
+        " :tstnUFalsePos,"
+        " :tstnAFalsePos,"
+        " :tstnUFalseNeg,"
+        " :tstnAFalseNeg,"
+
+        " :trnUDirFwd,"
+        " :trnADirFwd,"
+        " :trnUIndFwd,"
+        " :trnAIndFwd,"
+        " :trnUDirBack,"
+        " :trnADirBack,"
+        " :trnUIndBack,"
+        " :trnAIndBack,"
+
+        " :tonUDirFwd,"
+        " :tonUIndFwd,"
+        " :tonUDirBack,"
+        " :tonUIndBack,"
+
+        " :desnUAll,"
+        " :desnAAll,"
+
+        " :deswUAll,"
+        " :deswAAll,"
+
+        " :vacnUAll,"
+        " :vacnAAll,"
+
+        " :vacwUAll,"
+        " :vacwAAll,"
+
+        " :zonnFoci,"
+
+        " :appdUInfectious,"
+
+        " :tscUSusc,"
+        " :tscASusc,"
+        " :tscULat,"
+        " :tscALat,"
+        " :tscUSubc,"
+        " :tscASubc,"
+        " :tscUClin,"
+        " :tscAClin,"
+        " :tscUNImm,"
+        " :tscANImm,"
+        " :tscUVImm,"
+        " :tscAVImm,"
+        " :tscUDest,"
+        " :tscADest,"
+
+        " :infcUIni,"
+        " :infcAIni,"
+        " :infcUAir,"
+        " :infcAAir,"
+        " :infcUDir,"
+        " :infcADir,"
+        " :infcUInd,"
+        " :infcAInd,"
+
+        " :expcUDir,"
+        " :expcADir,"
+        " :expcUInd,"
+        " :expcAInd,"
+
+        " :trcUDirFwd,"
+        " :trcADirFwd,"
+        " :trcUIndFwd,"
+        " :trcAIndFwd,"
+        " :trcUDirpFwd,"
+        " :trcADirpFwd,"
+        " :trcUIndpFwd,"
+        " :trcAIndpFwd,"
+        " :trcUDirBack,"
+        " :trcADirBack,"
+        " :trcUIndBack,"
+        " :trcAIndBack,"
+        " :trcUDirpBack,"
+        " :trcADirpBack,"
+        " :trcUIndpBack,"
+        " :trcAIndpBack,"
+
+        " :tocUDirFwd,"
+        " :tocUIndFwd,"
+        " :tocUDirBack,"
+        " :tocUIndBack,"
+
+        " :detcUClin,"
+        " :detcAClin,"
+        " :detcUTest,"
+        " :detcATest,"
+
+        " :descUIni,"
+        " :descAIni,"
+        " :descUDet,"
+        " :descADet,"
+        " :descUDirFwd,"
+        " :descADirFwd,"
+        " :descUIndFwd,"
+        " :descAIndFwd,"
+        " :descUDirBack,"
+        " :descADirBack,"
+        " :descUIndBack,"
+        " :descAIndBack,"
+        " :descURing,"
+        " :descARing,"
+
+        " :vaccUIni,"
+        " :vaccAIni,"
+        " :vaccURing,"
+        " :vaccARing,"
+
+        " :exmcUDirFwd,"
+        " :exmcADirFwd,"
+        " :exmcUIndFwd,"
+        " :exmcAIndFwd,"
+        " :exmcUDirBack,"
+        " :exmcADirBack,"
+        " :exmcUIndBack,"
+        " :exmcAIndBack,"
+
+        " :tstcUDirFwd,"
+        " :tstcADirFwd,"
+        " :tstcUIndFwd,"
+        " :tstcAIndFwd,"
+        " :tstcUDirBack,"
+        " :tstcADirBack,"
+        " :tstcUIndBack,"
+        " :tstcAIndBack,"
+        " :tstcUTruePos,"
+        " :tstcATruePos,"
+        " :tstcUTrueNeg,"
+        " :tstcATrueNeg,"
+        " :tstcUFalsePos,"
+        " :tstcAFalsePos,"
+        " :tstcUFalseNeg,"
+        " :tstcAFalseNeg,"
+
+        " :zoncFoci"
+      " )"
+    )
+  );
+
+
+  qOutIterationByProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByProductionType->prepare(
+    QString(
+      "INSERT INTO outIterationByProductionType("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " productionTypeID,"
+
+      // Destruction queue outputs
+        " deswUMax,"
+        " deswAMax,"
+        " deswUMaxDay,"
+        " deswAMaxDay,"
+        " deswUTimeMax,"
+        " deswUTimeAvg,"
+        " deswUDaysInQueue,"
+        " deswADaysInQueue,"
+
+      // Vaccination queue outputs
+        " vacwUMax,"
+        " vacwAMax,"
+        " vacwUMaxDay,"
+        " vacwAMaxDay,"
+        " vacwUTimeMax,"
+        " vacwUTimeAvg,"
+
+      // First events
+        " firstDetection,"
+        " firstDetUInf,"
+        " firstDetAInf,"
+
+        " firstDestruction,"
+        " firstVaccination,"
+        " lastDetection,"
+
+      // Running totals for each disease state
+        " tscUSusc,"
+        " tscASusc,"
+        " tscULat,"
+        " tscALat,"
+        " tscUSubc,"
+        " tscASubc,"
+        " tscUClin,"
+        " tscAClin,"
+        " tscUNImm,"
+        " tscANImm,"
+        " tscUVImm,"
+        " tscAVImm,"
+        " tscUDest,"
+        " tscADest,"
+
+      // Running totals for cause of infection
+        " infcUIni,"
+        " infcAIni,"
+        " infcUAir,"
+        " infcAAir,"
+        " infcUDir,"
+        " infcADir,"
+        " infcUInd,"
+        " infcAInd,"
+
+      // Running totals for exposures
+        " expcUDir,"
+        " expcADir,"
+        " expcUInd,"
+        " expcAInd,"
+
+      // Running totals for traces
+        " trcUDirFwd,"
+        " trcADirFwd,"
+        " trcUIndFwd,"
+        " trcAIndFwd,"
+        " trcUDirpFwd,"
+        " trcADirpFwd,"
+        " trcUIndpFwd,"
+        " trcAIndpFwd,"
+        " trcUDirBack,"
+        " trcADirBack,"
+        " trcUIndBack,"
+        " trcAIndBack,"
+        " trcUDirpBack,"
+        " trcADirpBack,"
+        " trcUIndpBack,"
+        " trcAIndpBack,"
+
+      // Running totals for trace origins
+        " tocUDirFwd,"
+        " tocUIndFwd,"
+        " tocUDirBack,"
+        " tocUIndBack,"
+
+      // Running totals for detection
+        " detcUClin,"
+        " detcAClin,"
+        " detcUTest,"
+        " detcATest,"
+
+      // Running totals for destruction
+        " descUIni,"
+        " descAIni,"
+        " descUDet,"
+        " descADet,"
+        " descUDirFwd,"
+        " descADirFwd,"
+        " descUIndFwd,"
+        " descAIndFwd,"
+        " descUDirBack,"
+        " descADirBack,"
+        " descUIndBack,"
+        " descAIndBack,"
+        " descURing,"
+        " descARing,"
+
+      // Running totals for vaccination
+        " vaccUIni,"
+        " vaccAIni,"
+        " vaccURing,"
+        " vaccARing,"
+
+      // Running totals for herd exams
+        " exmcUDirFwd,"
+        " exmcADirFwd,"
+        " exmcUIndFwd,"
+        " exmcAIndFwd,"
+        " exmcUDirBack,"
+        " exmcADirBack,"
+        " exmcUIndBack,"
+        " exmcAIndBack,"
+
+      // Running totals for diagnostic testing
+        " tstcUDirFwd,"
+        " tstcADirFwd,"
+        " tstcUIndFwd,"
+        " tstcAIndFwd,"
+        " tstcUDirBack,"
+        " tstcADirBack,"
+        " tstcUIndBack,"
+        " tstcAIndBack,"
+        " tstcUTruePos,"
+        " tstcATruePos,"
+        " tstcUTrueNeg,"
+        " tstcATrueNeg,"
+        " tstcUFalsePos,"
+        " tstcAFalsePos,"
+        " tstcUFalseNeg,"
+        " tstcAFalseNeg,"
+
+      // Running totals for zone foci
+        " zoncFoci"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :productionTypeID,"
+
+        " :deswUMax,"
+        " :deswAMax,"
+        " :deswUMaxDay,"
+        " :deswAMaxDay,"
+        " :deswUTimeMax,"
+        " :deswUTimeAvg,"
+        " :deswUDaysInQueue,"
+        " :deswADaysInQueue,"
+
+        " :vacwUMax,"
+        " :vacwAMax,"
+        " :vacwUMaxDay,"
+        " :vacwAMaxDay,"
+        " :vacwUTimeMax,"
+        " :vacwUTimeAvg,"
+
+        " :firstDetection,"
+        " :firstDetUInf,"
+        " :firstDetAInf,"
+
+        " :firstDestruction,"
+        " :firstVaccination,"
+        " :lastDetection,"
+
+        " :tscUSusc,"
+        " :tscASusc,"
+        " :tscULat,"
+        " :tscALat,"
+        " :tscUSubc,"
+        " :tscASubc,"
+        " :tscUClin,"
+        " :tscAClin,"
+        " :tscUNImm,"
+        " :tscANImm,"
+        " :tscUVImm,"
+        " :tscAVImm,"
+        " :tscUDest,"
+        " :tscADest,"
+
+        " :infcUIni,"
+        " :infcAIni,"
+        " :infcUAir,"
+        " :infcAAir,"
+        " :infcUDir,"
+        " :infcADir,"
+        " :infcUInd,"
+        " :infcAInd,"
+
+        " :expcUDir,"
+        " :expcADir,"
+        " :expcUInd,"
+        " :expcAInd,"
+
+        " :trcUDirFwd,"
+        " :trcADirFwd,"
+        " :trcUIndFwd,"
+        " :trcAIndFwd,"
+        " :trcUDirpFwd,"
+        " :trcADirpFwd,"
+        " :trcUIndpFwd,"
+        " :trcAIndpFwd,"
+        " :trcUDirBack,"
+        " :trcADirBack,"
+        " :trcUIndBack,"
+        " :trcAIndBack,"
+        " :trcUDirpBack,"
+        " :trcADirpBack,"
+        " :trcUIndpBack,"
+        " :trcAIndpBack,"
+
+        " :tocUDirFwd,"
+        " :tocUIndFwd,"
+        " :tocUDirBack,"
+        " :tocUIndBack,"
+
+        " :detcUClin,"
+        " :detcAClin,"
+        " :detcUTest,"
+        " :detcATest,"
+
+        " :descUIni,"
+        " :descAIni,"
+        " :descUDet,"
+        " :descADet,"
+        " :descUDirFwd,"
+        " :descADirFwd,"
+        " :descUIndFwd,"
+        " :descAIndFwd,"
+        " :descUDirBack,"
+        " :descADirBack,"
+        " :descUIndBack,"
+        " :descAIndBack,"
+        " :descURing,"
+        " :descARing,"
+
+        " :vaccUIni,"
+        " :vaccAIni,"
+        " :vaccURing,"
+        " :vaccARing,"
+
+        " :exmcUDirFwd,"
+        " :exmcADirFwd,"
+        " :exmcUIndFwd,"
+        " :exmcAIndFwd,"
+        " :exmcUDirBack,"
+        " :exmcADirBack,"
+        " :exmcUIndBack,"
+        " :exmcAIndBack,"
+
+        " :tstcUDirFwd,"
+        " :tstcADirFwd,"
+        " :tstcUIndFwd,"
+        " :tstcAIndFwd,"
+        " :tstcUDirBack,"
+        " :tstcADirBack,"
+        " :tstcUIndBack,"
+        " :tstcAIndBack,"
+        " :tstcUTruePos,"
+        " :tstcATruePos,"
+        " :tstcUTrueNeg,"
+        " :tstcATrueNeg,"
+        " :tstcUFalsePos,"
+        " :tstcAFalsePos,"
+        " :tstcUFalseNeg,"
+        " :tstcAFalseNeg,"
+
+        " :zoncFoci"
+      " )"
+    )
+  );
+}
+
+
+void CSMDailyOutput::freeQueries() {
+  delete qOutDailyByProductionType;
+  delete qOutIterationByProductionType;
 }
 
 
@@ -990,11 +1685,362 @@ void CSMDailyOutput::decrementDailyCounts( const int herdAnimalCount, const NAAD
 void CSMDailyOutput::insertDatabaseOutputs(
   const NAADSM_output_type drt,
   CSMDatabase* db,
-  const int ptiD,
+  const int ptID,
   const int iteration,
   const int day /* = 0 */
 ) {
-  qDebug() << "FIXME: Do database stuff in CSMDailyOutput::insertDatabaseOutputs";
+  if( DRTDaily == drt ) {
+    qOutDailyByProductionType->bindValue( ":scenarioID", db->scenarioID() );
+    qOutDailyByProductionType->bindValue( ":threadNo", THREAD_NUMBER );
+    qOutDailyByProductionType->bindValue( ":iteration", iteration );
+    qOutDailyByProductionType->bindValue( ":productionTypeID", ptID );
+
+    qOutDailyByProductionType->bindValue( ":day", day );
+
+    qOutDailyByProductionType->bindValue( ":tsdUSusc", tsdUSusc );
+    qOutDailyByProductionType->bindValue( ":tsdASusc", tsdASusc );
+    qOutDailyByProductionType->bindValue( ":tsdULat", tsdULat );
+    qOutDailyByProductionType->bindValue( ":tsdALat", tsdALat );
+    qOutDailyByProductionType->bindValue( ":tsdUSubc", tsdUSubc );
+    qOutDailyByProductionType->bindValue( ":tsdASubc", tsdASubc );
+    qOutDailyByProductionType->bindValue( ":tsdUClin", tsdUClin );
+    qOutDailyByProductionType->bindValue( ":tsdAClin", tsdAClin );
+    qOutDailyByProductionType->bindValue( ":tsdUNImm", tsdUNImm );
+    qOutDailyByProductionType->bindValue( ":tsdANImm", tsdANImm );
+    qOutDailyByProductionType->bindValue( ":tsdUVImm", tsdUVImm );
+    qOutDailyByProductionType->bindValue( ":tsdAVImm", tsdAVImm );
+    qOutDailyByProductionType->bindValue( ":tsdUDest", tsdUDest );
+    qOutDailyByProductionType->bindValue( ":tsdADest", tsdADest );
+
+    qOutDailyByProductionType->bindValue( ":infnUAir", infnUAir );
+    qOutDailyByProductionType->bindValue( ":infnAAir", infnAAir );
+    qOutDailyByProductionType->bindValue( ":infnUDir", infnUDir );
+    qOutDailyByProductionType->bindValue( ":infnADir", infnADir );
+    qOutDailyByProductionType->bindValue( ":infnUInd", infnUInd );
+    qOutDailyByProductionType->bindValue( ":infnAInd", infnAInd );
+
+    qOutDailyByProductionType->bindValue( ":detnUClin", detnUClin );
+    qOutDailyByProductionType->bindValue( ":detnAClin", detnAClin );
+    qOutDailyByProductionType->bindValue( ":detnUTest", detnUTest );
+    qOutDailyByProductionType->bindValue( ":detnATest", detnATest );
+
+    qOutDailyByProductionType->bindValue( ":exmnUAll", exmnUAll );
+    qOutDailyByProductionType->bindValue( ":exmnAAll", exmnAAll );
+
+    qOutDailyByProductionType->bindValue( ":tstnUTruePos", tstnUTruePos );
+    qOutDailyByProductionType->bindValue( ":tstnATruePos", tstnATruePos );
+    qOutDailyByProductionType->bindValue( ":tstnUTrueNeg", tstnUTrueNeg );
+    qOutDailyByProductionType->bindValue( ":tstnATrueNeg", tstnATrueNeg );
+    qOutDailyByProductionType->bindValue( ":tstnUFalsePos", tstnUFalsePos );
+    qOutDailyByProductionType->bindValue( ":tstnAFalsePos", tstnAFalsePos );
+    qOutDailyByProductionType->bindValue( ":tstnUFalseNeg", tstnUFalseNeg );
+    qOutDailyByProductionType->bindValue( ":tstnAFalseNeg", tstnAFalseNeg );
+
+    qOutDailyByProductionType->bindValue( ":trnUDirFwd", trnUDirFwd );
+    qOutDailyByProductionType->bindValue( ":trnADirFwd", trnADirFwd );
+    qOutDailyByProductionType->bindValue( ":trnUIndFwd", trnUIndFwd );
+    qOutDailyByProductionType->bindValue( ":trnAIndFwd", trnAIndFwd );
+    qOutDailyByProductionType->bindValue( ":trnUDirBack", trnUDirBack );
+    qOutDailyByProductionType->bindValue( ":trnADirBack", trnADirBack );
+    qOutDailyByProductionType->bindValue( ":trnUIndBack", trnUIndBack );
+    qOutDailyByProductionType->bindValue( ":trnAIndBack", trnAIndBack );
+
+    qOutDailyByProductionType->bindValue( ":tonUDirFwd", tonUDirFwd );
+    qOutDailyByProductionType->bindValue( ":tonUIndFwd", tonUIndFwd );
+    qOutDailyByProductionType->bindValue( ":tonUDirBack", tonUDirBack );
+    qOutDailyByProductionType->bindValue( ":tonUIndBack", tonUIndBack );
+
+    qOutDailyByProductionType->bindValue( ":desnUAll", desnUAll );
+    qOutDailyByProductionType->bindValue( ":desnAAll", desnAAll );
+
+    qOutDailyByProductionType->bindValue( ":deswUAll", _destrQueueLengthUnits );
+    qOutDailyByProductionType->bindValue( ":deswAAll", _destrQueueLengthAnimals );
+
+    qOutDailyByProductionType->bindValue( ":vacnUAll", vacnUAll );
+    qOutDailyByProductionType->bindValue( ":vacnAAll", vacnAAll );
+
+    qOutDailyByProductionType->bindValue( ":vacwUAll", _vaccQueueLengthUnits );
+    qOutDailyByProductionType->bindValue( ":vacwAAll", _vaccQueueLengthAnimals );
+
+    qOutDailyByProductionType->bindValue( ":zonnFoci", zonnFoci );
+
+    qOutDailyByProductionType->bindValue( ":appdUInfectious", appdUInfectious );
+
+    qOutDailyByProductionType->bindValue( ":tscUSusc", tscUSusc );
+    qOutDailyByProductionType->bindValue( ":tscASusc", tscASusc );
+    qOutDailyByProductionType->bindValue( ":tscULat", tscULat );
+    qOutDailyByProductionType->bindValue( ":tscALat", tscALat );
+    qOutDailyByProductionType->bindValue( ":tscUSubc", tscUSubc );
+    qOutDailyByProductionType->bindValue( ":tscASubc", tscASubc );
+    qOutDailyByProductionType->bindValue( ":tscUClin", tscUClin );
+    qOutDailyByProductionType->bindValue( ":tscAClin", tscAClin );
+    qOutDailyByProductionType->bindValue( ":tscUNImm", tscUNImm );
+    qOutDailyByProductionType->bindValue( ":tscANImm", tscANImm );
+    qOutDailyByProductionType->bindValue( ":tscUVImm", tscUVImm );
+    qOutDailyByProductionType->bindValue( ":tscAVImm", tscAVImm );
+    qOutDailyByProductionType->bindValue( ":tscUDest", tscUDest );
+    qOutDailyByProductionType->bindValue( ":tscADest", tscADest );
+
+    qOutDailyByProductionType->bindValue( ":infcUIni", infcUIni );
+    qOutDailyByProductionType->bindValue( ":infcAIni", infcAIni );
+    qOutDailyByProductionType->bindValue( ":infcUAir", infcUAir );
+    qOutDailyByProductionType->bindValue( ":infcAAir", infcAAir );
+    qOutDailyByProductionType->bindValue( ":infcUDir", infcUDir );
+    qOutDailyByProductionType->bindValue( ":infcADir", infcADir );
+    qOutDailyByProductionType->bindValue( ":infcUInd", infcUInd );
+    qOutDailyByProductionType->bindValue( ":infcAInd", infcAInd );
+
+    qOutDailyByProductionType->bindValue( ":expcUDir", expcUDir );
+    qOutDailyByProductionType->bindValue( ":expcADir", expcADir );
+    qOutDailyByProductionType->bindValue( ":expcUInd", expcUInd );
+    qOutDailyByProductionType->bindValue( ":expcAInd", expcAInd );
+
+    qOutDailyByProductionType->bindValue( ":trcUDirFwd", trcUDirFwd );
+    qOutDailyByProductionType->bindValue( ":trcADirFwd", trcADirFwd );
+    qOutDailyByProductionType->bindValue( ":trcUIndFwd", trcUIndFwd );
+    qOutDailyByProductionType->bindValue( ":trcAIndFwd", trcAIndFwd );
+    qOutDailyByProductionType->bindValue( ":trcUDirpFwd", trcUDirpFwd );
+    qOutDailyByProductionType->bindValue( ":trcADirpFwd", trcADirpFwd );
+    qOutDailyByProductionType->bindValue( ":trcUIndpFwd", trcUIndpFwd );
+    qOutDailyByProductionType->bindValue( ":trcAIndpFwd", trcAIndpFwd );
+    qOutDailyByProductionType->bindValue( ":trcUDirBack", trcUDirBack );
+    qOutDailyByProductionType->bindValue( ":trcADirBack", trcADirBack );
+    qOutDailyByProductionType->bindValue( ":trcUIndBack", trcUIndBack );
+    qOutDailyByProductionType->bindValue( ":trcAIndBack", trcAIndBack );
+    qOutDailyByProductionType->bindValue( ":trcUDirpBack", trcUDirpBack );
+    qOutDailyByProductionType->bindValue( ":trcADirpBack", trcADirpBack );
+    qOutDailyByProductionType->bindValue( ":trcUIndpBack", trcUIndpBack );
+    qOutDailyByProductionType->bindValue( ":trcAIndpBack", trcAIndpBack );
+
+    qOutDailyByProductionType->bindValue( ":tocUDirFwd", tocUDirFwd );
+    qOutDailyByProductionType->bindValue( ":tocUIndFwd", tocUIndFwd );
+    qOutDailyByProductionType->bindValue( ":tocUDirBack", tocUDirBack );
+    qOutDailyByProductionType->bindValue( ":tocUIndBack", tocUIndBack );
+
+    qOutDailyByProductionType->bindValue( ":detcUClin", detcUClin );
+    qOutDailyByProductionType->bindValue( ":detcAClin", detcAClin );
+    qOutDailyByProductionType->bindValue( ":detcUTest", detcUTest );
+    qOutDailyByProductionType->bindValue( ":detcATest", detcATest );
+
+    qOutDailyByProductionType->bindValue( ":descUIni", descUIni );
+    qOutDailyByProductionType->bindValue( ":descAIni", descAIni );
+    qOutDailyByProductionType->bindValue( ":descUDet", descUDet );
+    qOutDailyByProductionType->bindValue( ":descADet", descADet );
+    qOutDailyByProductionType->bindValue( ":descUDirFwd", descUDirFwd );
+    qOutDailyByProductionType->bindValue( ":descADirFwd", descADirFwd );
+    qOutDailyByProductionType->bindValue( ":descUIndFwd", descUIndFwd );
+    qOutDailyByProductionType->bindValue( ":descAIndFwd", descAIndFwd );
+    qOutDailyByProductionType->bindValue( ":descUDirBack", descUDirBack );
+    qOutDailyByProductionType->bindValue( ":descADirBack", descADirBack );
+    qOutDailyByProductionType->bindValue( ":descUIndBack", descUIndBack );
+    qOutDailyByProductionType->bindValue( ":descAIndBack", descAIndBack );
+    qOutDailyByProductionType->bindValue( ":descURing", descURing );
+    qOutDailyByProductionType->bindValue( ":descARing", descARing );
+
+    qOutDailyByProductionType->bindValue( ":vaccUIni", vaccUIni );
+    qOutDailyByProductionType->bindValue( ":vaccAIni", vaccAIni );
+    qOutDailyByProductionType->bindValue( ":vaccURing", vaccURing );
+    qOutDailyByProductionType->bindValue( ":vaccARing", vaccARing );
+
+    qOutDailyByProductionType->bindValue( ":exmcUDirFwd", exmcUDirFwd );
+    qOutDailyByProductionType->bindValue( ":exmcADirFwd", exmcADirFwd );
+    qOutDailyByProductionType->bindValue( ":exmcUIndFwd", exmcUIndFwd );
+    qOutDailyByProductionType->bindValue( ":exmcAIndFwd", exmcAIndFwd );
+    qOutDailyByProductionType->bindValue( ":exmcUDirBack", exmcUDirBack );
+    qOutDailyByProductionType->bindValue( ":exmcADirBack", exmcADirBack );
+    qOutDailyByProductionType->bindValue( ":exmcUIndBack", exmcUIndBack );
+    qOutDailyByProductionType->bindValue( ":exmcAIndBack", exmcAIndBack );
+
+    qOutDailyByProductionType->bindValue( ":tstcUDirFwd", tstcUDirFwd );
+    qOutDailyByProductionType->bindValue( ":tstcADirFwd", tstcADirFwd );
+    qOutDailyByProductionType->bindValue( ":tstcUIndFwd", tstcUIndFwd );
+    qOutDailyByProductionType->bindValue( ":tstcAIndFwd", tstcAIndFwd );
+    qOutDailyByProductionType->bindValue( ":tstcUDirBack", tstcUDirBack );
+    qOutDailyByProductionType->bindValue( ":tstcADirBack", tstcADirBack );
+    qOutDailyByProductionType->bindValue( ":tstcUIndBack", tstcUIndBack );
+    qOutDailyByProductionType->bindValue( ":tstcAIndBack", tstcAIndBack );
+    qOutDailyByProductionType->bindValue( ":tstcUTruePos", tstcUTruePos );
+    qOutDailyByProductionType->bindValue( ":tstcATruePos", tstcATruePos );
+    qOutDailyByProductionType->bindValue( ":tstcUTrueNeg", tstcUTrueNeg );
+    qOutDailyByProductionType->bindValue( ":tstcATrueNeg", tstcATrueNeg );
+    qOutDailyByProductionType->bindValue( ":tstcUFalsePos", tstcUFalsePos );
+    qOutDailyByProductionType->bindValue( ":tstcAFalsePos", tstcAFalsePos );
+    qOutDailyByProductionType->bindValue( ":tstcUFalseNeg", tstcUFalseNeg );
+    qOutDailyByProductionType->bindValue( ":tstcAFalseNeg", tstcAFalseNeg );
+
+    qOutDailyByProductionType->bindValue( ":zoncFoci", zoncFoci );
+
+    if( !qOutDailyByProductionType->exec() ) {
+      naadsmException(
+        QString( "Database records could not be saved.  Query failed: " ).append( qOutDailyByProductionType->lastQuery() ).append( " " ).append( qOutDailyByProductionType->lastError().text() )
+      );
+    }
+  }
+  else if( DRTIteration == drt ) {
+    qOutIterationByProductionType->bindValue( ":scenarioID", db->scenarioID() );
+    qOutIterationByProductionType->bindValue( ":threadNo", THREAD_NUMBER );
+    qOutIterationByProductionType->bindValue( ":iteration", iteration );
+    qOutIterationByProductionType->bindValue( ":productionTypeID", ptID );
+
+    qOutIterationByProductionType->bindValue( ":deswUMax", deswUMax );
+    qOutIterationByProductionType->bindValue( ":deswAMax", deswAMax );
+    qOutIterationByProductionType->bindValue( ":deswUMaxDay", deswUMaxDay );
+    qOutIterationByProductionType->bindValue( ":deswAMaxDay", deswAMaxDay );
+    qOutIterationByProductionType->bindValue( ":deswUTimeMax", deswUTimeMax );
+    qOutIterationByProductionType->bindValue( ":deswUTimeAvg", deswUTimeAvg() );
+    qOutIterationByProductionType->bindValue( ":deswUDaysInQueue", deswUDaysInQueue );
+    qOutIterationByProductionType->bindValue( ":deswADaysInQueue", deswADaysInQueue );
+
+    qOutIterationByProductionType->bindValue( ":vacwUMax", vacwUMax );
+    qOutIterationByProductionType->bindValue( ":vacwAMax", vacwAMax );
+    qOutIterationByProductionType->bindValue( ":vacwUMaxDay", vacwUMaxDay );
+    qOutIterationByProductionType->bindValue( ":vacwAMaxDay", vacwAMaxDay );
+    qOutIterationByProductionType->bindValue( ":vacwUTimeMax", vacwUTimeMax );
+    qOutIterationByProductionType->bindValue( ":vacwUTimeAvg", vacwUTimeAvg() );
+
+    if( -1 != firstDetection )
+      qOutIterationByProductionType->bindValue( ":firstDetection", firstDetection );
+    else
+      qOutIterationByProductionType->bindValue( ":firstDetection", QVariant( QVariant::Int ) );
+
+    if( -1 != firstDetUInf )
+      qOutIterationByProductionType->bindValue( ":firstDetUInf", firstDetUInf );
+    else
+      qOutIterationByProductionType->bindValue( ":firstDetUInf",  QVariant( QVariant::Int ) );
+
+    if( -1 != firstDetAInf )
+      qOutIterationByProductionType->bindValue( ":firstDetAInf", firstDetAInf );
+    else
+      qOutIterationByProductionType->bindValue( ":firstDetAInf", QVariant( QVariant::Int ) );
+
+    if( -1 != firstDestruction )
+      qOutIterationByProductionType->bindValue( ":firstDestruction", firstDestruction );
+    else
+      qOutIterationByProductionType->bindValue( ":firstDestruction", QVariant( QVariant::Int ) );
+
+    if( -1 != firstVaccination )
+      qOutIterationByProductionType->bindValue( ":firstVaccination", firstVaccination );
+    else
+      qOutIterationByProductionType->bindValue( ":firstVaccination", QVariant( QVariant::Int ) );
+
+    if( -1 != lastDetection )
+      qOutIterationByProductionType->bindValue( ":lastDetection", lastDetection );
+    else
+      qOutIterationByProductionType->bindValue( ":lastDetection", QVariant( QVariant::Int ) );
+
+    qOutIterationByProductionType->bindValue( ":tscUSusc", tscUSusc );
+    qOutIterationByProductionType->bindValue( ":tscASusc", tscASusc );
+    qOutIterationByProductionType->bindValue( ":tscULat", tscULat );
+    qOutIterationByProductionType->bindValue( ":tscALat", tscALat );
+    qOutIterationByProductionType->bindValue( ":tscUSubc", tscUSubc );
+    qOutIterationByProductionType->bindValue( ":tscASubc", tscASubc );
+    qOutIterationByProductionType->bindValue( ":tscUClin", tscUClin );
+    qOutIterationByProductionType->bindValue( ":tscAClin", tscAClin );
+    qOutIterationByProductionType->bindValue( ":tscUNImm", tscUNImm );
+    qOutIterationByProductionType->bindValue( ":tscANImm", tscANImm );
+    qOutIterationByProductionType->bindValue( ":tscUVImm", tscUVImm );
+    qOutIterationByProductionType->bindValue( ":tscAVImm", tscAVImm );
+    qOutIterationByProductionType->bindValue( ":tscUDest", tscUDest );
+    qOutIterationByProductionType->bindValue( ":tscADest", tscADest );
+
+    qOutIterationByProductionType->bindValue( ":infcUIni", infcUIni );
+    qOutIterationByProductionType->bindValue( ":infcAIni", infcAIni );
+    qOutIterationByProductionType->bindValue( ":infcUAir", infcUAir );
+    qOutIterationByProductionType->bindValue( ":infcAAir", infcAAir );
+    qOutIterationByProductionType->bindValue( ":infcUDir", infcUDir );
+    qOutIterationByProductionType->bindValue( ":infcADir", infcADir );
+    qOutIterationByProductionType->bindValue( ":infcUInd", infcUInd );
+    qOutIterationByProductionType->bindValue( ":infcAInd", infcAInd );
+
+    qOutIterationByProductionType->bindValue( ":expcUDir", expcUDir );
+    qOutIterationByProductionType->bindValue( ":expcADir", expcADir );
+    qOutIterationByProductionType->bindValue( ":expcUInd", expcUInd );
+    qOutIterationByProductionType->bindValue( ":expcAInd", expcAInd );
+
+    qOutIterationByProductionType->bindValue( ":trcUDirFwd", trcUDirFwd );
+    qOutIterationByProductionType->bindValue( ":trcADirFwd", trcADirFwd );
+    qOutIterationByProductionType->bindValue( ":trcUIndFwd", trcUIndFwd );
+    qOutIterationByProductionType->bindValue( ":trcAIndFwd", trcAIndFwd );
+    qOutIterationByProductionType->bindValue( ":trcUDirpFwd", trcUDirpFwd );
+    qOutIterationByProductionType->bindValue( ":trcADirpFwd", trcADirpFwd );
+    qOutIterationByProductionType->bindValue( ":trcUIndpFwd", trcUIndpFwd );
+    qOutIterationByProductionType->bindValue( ":trcAIndpFwd", trcAIndpFwd );
+    qOutIterationByProductionType->bindValue( ":trcUDirBack", trcUDirBack );
+    qOutIterationByProductionType->bindValue( ":trcADirBack", trcADirBack );
+    qOutIterationByProductionType->bindValue( ":trcUIndBack", trcUIndBack );
+    qOutIterationByProductionType->bindValue( ":trcAIndBack", trcAIndBack );
+    qOutIterationByProductionType->bindValue( ":trcUDirpBack", trcUDirpBack );
+    qOutIterationByProductionType->bindValue( ":trcADirpBack", trcADirpBack );
+    qOutIterationByProductionType->bindValue( ":trcUIndpBack", trcUIndpBack );
+    qOutIterationByProductionType->bindValue( ":trcAIndpBack", trcAIndpBack );
+
+    qOutIterationByProductionType->bindValue( ":tocUDirFwd", tocUDirFwd );
+    qOutIterationByProductionType->bindValue( ":tocUIndFwd", tocUIndFwd );
+    qOutIterationByProductionType->bindValue( ":tocUDirBack", tocUDirBack );
+    qOutIterationByProductionType->bindValue( ":tocUIndBack", tocUIndBack );
+
+    qOutIterationByProductionType->bindValue( ":detcUClin", detcUClin );
+    qOutIterationByProductionType->bindValue( ":detcAClin", detcAClin );
+    qOutIterationByProductionType->bindValue( ":detcUTest", detcUTest );
+    qOutIterationByProductionType->bindValue( ":detcATest", detcATest );
+
+    qOutIterationByProductionType->bindValue( ":descUIni", descUIni );
+    qOutIterationByProductionType->bindValue( ":descAIni", descAIni );
+    qOutIterationByProductionType->bindValue( ":descUDet", descUDet );
+    qOutIterationByProductionType->bindValue( ":descADet", descADet );
+    qOutIterationByProductionType->bindValue( ":descUDirFwd", descUDirFwd );
+    qOutIterationByProductionType->bindValue( ":descADirFwd", descADirFwd );
+    qOutIterationByProductionType->bindValue( ":descUIndFwd", descUIndFwd );
+    qOutIterationByProductionType->bindValue( ":descAIndFwd", descAIndFwd );
+    qOutIterationByProductionType->bindValue( ":descUDirBack", descUDirBack );
+    qOutIterationByProductionType->bindValue( ":descADirBack", descADirBack );
+    qOutIterationByProductionType->bindValue( ":descUIndBack", descUIndBack );
+    qOutIterationByProductionType->bindValue( ":descAIndBack", descAIndBack );
+    qOutIterationByProductionType->bindValue( ":descURing", descURing );
+    qOutIterationByProductionType->bindValue( ":descARing", descARing );
+
+    qOutIterationByProductionType->bindValue( ":vaccUIni", vaccUIni );
+    qOutIterationByProductionType->bindValue( ":vaccAIni", vaccAIni );
+    qOutIterationByProductionType->bindValue( ":vaccURing", vaccURing );
+    qOutIterationByProductionType->bindValue( ":vaccARing", vaccARing );
+
+    qOutIterationByProductionType->bindValue( ":exmcUDirFwd", exmcUDirFwd );
+    qOutIterationByProductionType->bindValue( ":exmcADirFwd", exmcADirFwd );
+    qOutIterationByProductionType->bindValue( ":exmcUIndFwd", exmcUIndFwd );
+    qOutIterationByProductionType->bindValue( ":exmcAIndFwd", exmcAIndFwd );
+    qOutIterationByProductionType->bindValue( ":exmcUDirBack", exmcUDirBack );
+    qOutIterationByProductionType->bindValue( ":exmcADirBack", exmcADirBack );
+    qOutIterationByProductionType->bindValue( ":exmcUIndBack", exmcUIndBack );
+    qOutIterationByProductionType->bindValue( ":exmcAIndBack", exmcAIndBack );
+
+    qOutIterationByProductionType->bindValue( ":tstcUDirFwd", tstcUDirFwd );
+    qOutIterationByProductionType->bindValue( ":tstcADirFwd", tstcADirFwd );
+    qOutIterationByProductionType->bindValue( ":tstcUIndFwd", tstcUIndFwd );
+    qOutIterationByProductionType->bindValue( ":tstcAIndFwd", tstcAIndFwd );
+    qOutIterationByProductionType->bindValue( ":tstcUDirBack", tstcUDirBack );
+    qOutIterationByProductionType->bindValue( ":tstcADirBack", tstcADirBack );
+    qOutIterationByProductionType->bindValue( ":tstcUIndBack", tstcUIndBack );
+    qOutIterationByProductionType->bindValue( ":tstcAIndBack", tstcAIndBack );
+    qOutIterationByProductionType->bindValue( ":tstcUTruePos", tstcUTruePos );
+    qOutIterationByProductionType->bindValue( ":tstcATruePos", tstcATruePos );
+    qOutIterationByProductionType->bindValue( ":tstcUTrueNeg", tstcUTrueNeg );
+    qOutIterationByProductionType->bindValue( ":tstcATrueNeg", tstcATrueNeg );
+    qOutIterationByProductionType->bindValue( ":tstcUFalsePos", tstcUFalsePos );
+    qOutIterationByProductionType->bindValue( ":tstcAFalsePos", tstcAFalsePos );
+    qOutIterationByProductionType->bindValue( ":tstcUFalseNeg", tstcUFalseNeg );
+    qOutIterationByProductionType->bindValue( ":tstcAFalseNeg", tstcAFalseNeg );
+
+    qOutIterationByProductionType->bindValue( ":zoncFoci", zoncFoci );
+
+    if( !qOutIterationByProductionType->exec() ) {
+      naadsmException(
+        QString( "Database records could not be saved.  Query failed: " ).append( qOutIterationByProductionType->lastQuery() ).append( " " ).append( qOutIterationByProductionType->lastError().text() )
+      );
+    }
+  }
+  else {
+    naadsmException( QString( "There is a problem in CSMDailyOutput::insertDatabaseOutputs()" ) );
+  }
 }
 
 

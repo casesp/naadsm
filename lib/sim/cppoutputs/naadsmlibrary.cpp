@@ -58,6 +58,12 @@ CNAADSM3Detect::~CNAADSM3Detect() {
 }
 
 
+void naadsmException( const QString& errMsg ) {
+  qDebug() << errMsg;
+  qFatal( "Died." );
+}
+
+
 void naadsm3ProcessDetections(){
   //CHerd* h;
   QList<CNAADSM3Detect*>* detections;
@@ -112,6 +118,18 @@ void naadsm3ProcessDetections(){
 //-----------------------------------------------------------------------------
 void naadsmSetRng( RAN_gen_t* rng ) {
   _rng = rng;
+}
+
+
+void naadsmCppInitialize( HRD_herd_list_t* herds, ZON_zone_list_t* zones, char* dbSpecFileName ) {
+  _smdb = new CSMDatabase( QString( dbSpecFileName ) );
+  _smSim = new CSMSimulation( herds, zones, _smdb );
+}
+
+
+void naadsmCppFinalize() {
+  delete _smSim;
+  delete _smdb;
 }
 
 

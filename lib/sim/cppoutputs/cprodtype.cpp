@@ -27,12 +27,17 @@ NAADSM_disease_state convertState( const HRD_status_t s ) {
 //------------------------------------------------------------------------------
 // CProdType
 //------------------------------------------------------------------------------
-CProdType::CProdType(){
+CProdType::CProdType( const QString& ptName, const int ptID ){
+  _ptID = ptID;
+  _descr = ptName;
+  _initialOutputs = new CSMDailyOutput();
+  _outputs = new CSMDailyOutput();
 }
 
 
 CProdType::~CProdType() {
-
+  delete _outputs;
+  delete _initialOutputs;
 }
 
 
@@ -75,7 +80,27 @@ void CProdType::recordInfectedAtFirstDetection(){
 // CProdTypeList
 //------------------------------------------------------------------------------
 CProdTypeList::CProdTypeList( HRD_herd_list_t* herds ): QMap<QString, CProdType*>() {
+  int nherds, i;
+  HRD_herd_t* h;
+  CProdType* pt;
+
+  int ptID;
+  QString ptName;
+
   _herds = herds;
+
+  nherds = HRD_herd_list_length( _herds );
+
+  for( i = 0; i < nherds; ++ i ) {
+    h = HRD_herd_list_get( _herds, i );
+    ptName = QString( h->production_type_name );
+    ptID = int(h->production_type);
+
+    if( ! this->contains( ptName ) ) {
+      pt = new CProdType( ptName, ptID );
+      this->insert( ptName, pt );
+    }
+  }
 }
 
 

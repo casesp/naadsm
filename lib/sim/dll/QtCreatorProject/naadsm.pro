@@ -40,7 +40,7 @@ contains( DEFINES, CPPOUTPUT ) {
   QMAKE_CFLAGS_WARN_ON += -fpermissive -Wno-write-strings ## Let the compiler get by without explicitly casting everything everywhere.
   QMAKE_CC = g++  ## Treat C code as C++ to enable compiling.
   QT -= gui
-  QT += core
+  QT += core sql
 } else {
   QT -= core gui
 }
@@ -97,7 +97,7 @@ INCLUDEPATH += \
 contains( DEFINES, CPPOUTPUT ) {
   INCLUDEPATH += \
     ../../cppoutputs \
-    C:/libs/Qt_libs
+   ../../
 }
 
 LIBS += \
@@ -177,7 +177,10 @@ SOURCES += \
     ../../cppoutputs/czone.cpp \
     ../../cppoutputs/cprodtype.cpp \
     ../../cppoutputs/csmptoutput.cpp \
-    C:/libs/Qt_libs/ar_general_purpose/qmath.cpp
+    ../../ar_general_purpose/cencryption.cpp \
+    ../../ar_general_purpose/qcout.cpp \
+    ../../ar_general_purpose/strutils.cpp \
+    ../../ar_general_purpose/qmath.cpp
 
 HEADERS +=\
     ../../models/zone-model.h \
@@ -244,7 +247,10 @@ HEADERS +=\
     ../../cppoutputs/czone.h \
     ../../cppoutputs/cprodtype.h \
     ../../cppoutputs/csmptoutput.h \
-    C:/libs/Qt_libs/ar_general_purpose/qmath.h
+    ../../ar_general_purpose/cencryption.h \
+    ../../ar_general_purpose/qcout.h \
+    ../../ar_general_purpose/strutils.h \
+    ../../ar_general_purpose/qmath.h
 
 win32:RC_FILE = ../naadsm_private.rc
 

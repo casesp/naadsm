@@ -3,13 +3,21 @@
 #include "czone.h"
 
 #include <QDebug>
+#include <QSqlError>
+#include <QSqlRecord>
+
+#include "naadsmlibrary.h"
+#include "csmsimulation.h"
 
 //------------------------------------------------------------------------------
 // CZone
 //------------------------------------------------------------------------------
-CZone::CZone() {
-  _level = -1;
-  _descr = "";
+CZone::CZone( const int level, const QString& descr, CSMSimulation* sim ) {
+  _level = level;
+  _descr = descr;
+  _id = -1;
+
+  _sim = sim;
 
   _area = 0.0;
   _maxArea = 0.0;
@@ -23,11 +31,133 @@ CZone::CZone() {
   _animalDays = NULL;
   _herdCount = NULL;
   _animalCount = NULL;
+
+  prepQueries();
 }
 
 
 CZone::~CZone() {
   freeAndNullMaps();
+  freeQueries();
+}
+
+void CZone::prepQueries() {
+  qOutDailyByZoneAndProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutDailyByZoneAndProductionType->prepare(
+    QString(
+      "INSERT INTO outDailyByZoneAndProductionType("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " day,"
+        " zoneID,"
+        " productionTypeID,"
+        " unitDaysInZone,"
+        " animalDaysInZone,"
+        " unitsInZone,"
+        " animalsInZone"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :day,"
+        " :zoneID,"
+        " :productionTypeID,"
+        " :unitDaysInZone,"
+        " :animalDaysInZone,"
+        " :unitsInZone,"
+        " :animalsInZone"
+      " )"
+    )
+  );
+
+  qOutDailyByZone = new QSqlQuery( QSqlDatabase::database() );
+  qOutDailyByZone->prepare(
+    QString(
+      "INSERT INTO outDailyByZone("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " day,"
+        " zoneID,"
+        " zoneArea,"
+        " zonePerimeter"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :day,"
+        " :zoneID,"
+        " :zoneArea,"
+        " :zonePerimeter"
+      " )"
+    )
+  );
+
+  qOutIterationByZoneAndProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByZoneAndProductionType->prepare(
+    QString(
+      "INSERT INTO outIterationByZoneAndProductionType("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " zoneID,"
+        " productionTypeID,"
+        " unitDaysInZone,"
+        " animalDaysInZone"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :zoneID,"
+        " :productionTypeID,"
+        " :unitDaysInZone,"
+        " :animalDaysInZone"
+      " )"
+    )
+  );
+
+
+  qOutIterationByZone = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByZone->prepare(
+    QString(
+      "INSERT INTO outIterationByZone("
+        " scenarioID,"
+        " threadNo,"
+        " iteration,"
+        " zoneID,"
+        " finalZoneArea,"
+        " maxZoneArea,"
+        " maxZoneAreaDay,"
+        " finalZonePerimeter,"
+        " maxZonePerimeter,"
+        " maxZonePerimeterDay"
+      " )"
+      " VALUES("
+        " :scenarioID,"
+        " :threadNo,"
+        " :iteration,"
+        " :zoneID,"
+        " :finalZoneArea,"
+        " :maxZoneArea,"
+        " :maxZoneAreaDay,"
+        " :finalZonePerimeter,"
+        " :maxZonePerimeter,"
+        " :maxZonePerimeterDay"
+      " )"
+    )
+  );
+}
+
+
+void CZone::freeQueries() {
+  delete qOutDailyByZoneAndProductionType;
+  delete qOutDailyByZone;
+  delete qOutIterationByZoneAndProductionType;
+  delete qOutIterationByZone;
 }
 
 
@@ -96,7 +226,7 @@ void CZone::setPerimeter( double val, int day ) {
 }
 
 
-void CZone::clearAllRecords( CSMDatabase* db ) {
+void CZone::clearAllRecords() {
   // Check for existing objects, just in case.
   // (They should never exist at this point.)
   freeAndNullMaps();
@@ -132,12 +262,115 @@ void CZone::prepareForDay() {
 
 
 void CZone::processDailyRecords( CSMDatabase* db, int iteration, int day ) {
-  qDebug() << "FIXME: do database stuff";
+  int prodTypeID;
+  CProdTypeList* ptList;
+
+  ptList = _sim->prodTypeList();
+  QMapIterator<QString, CProdType*> it(*ptList);
+  while( it.hasNext() ) {
+    prodTypeID = it.next().value()->id();
+
+    qOutDailyByZoneAndProductionType->bindValue( ":scenarioID", db->scenarioID() );
+    qOutDailyByZoneAndProductionType->bindValue( ":threadNo", THREAD_NUMBER );
+    qOutDailyByZoneAndProductionType->bindValue( ":iteration", iteration );
+    qOutDailyByZoneAndProductionType->bindValue( ":day", day );
+    qOutDailyByZoneAndProductionType->bindValue( ":zoneID", this->id() );
+    qOutDailyByZoneAndProductionType->bindValue( ":productionTypeID", prodTypeID );
+
+    if( _herdDays->contains( prodTypeID ) ) {
+      qOutDailyByZoneAndProductionType->bindValue( ":unitDaysInZone", _herdDays->value( prodTypeID ) );
+      qOutDailyByZoneAndProductionType->bindValue( ":animalDaysInZone", _animalDays->value( prodTypeID ) );
+      qOutDailyByZoneAndProductionType->bindValue( ":unitsInZone", _herdCount->value( prodTypeID ) );
+      qOutDailyByZoneAndProductionType->bindValue( ":animalsInZone", _animalCount->value( prodTypeID ) );
+    }
+    else {
+      qOutDailyByZoneAndProductionType->bindValue( ":unitDaysInZone", 0 );
+      qOutDailyByZoneAndProductionType->bindValue( ":animalDaysInZone", 0 );
+      qOutDailyByZoneAndProductionType->bindValue( ":unitsInZone", 0 );
+      qOutDailyByZoneAndProductionType->bindValue( ":animalsInZone", 0 );
+    }
+
+    if( !qOutDailyByZoneAndProductionType->exec() ) {
+      naadsmException(
+        QString( "Database records could not be saved.  Query failed: " ).append( qOutDailyByZoneAndProductionType->lastQuery() ).append( " " ).append( qOutDailyByZoneAndProductionType->lastError().text() )
+      );
+    }
+  }
+
+  qOutDailyByZone->bindValue( ":scenarioID", db->scenarioID() );
+  qOutDailyByZone->bindValue( ":threadNo", THREAD_NUMBER );
+  qOutDailyByZone->bindValue( ":iteration", iteration );
+  qOutDailyByZone->bindValue( ":day", day );
+  qOutDailyByZone->bindValue( ":zoneID", this->id() );
+  qOutDailyByZone->bindValue( ":zoneArea", this->_area );
+  qOutDailyByZone->bindValue( ":zonePerimeter", this->_perimeter );
+
+  if( !qOutDailyByZone->exec() ) {
+    naadsmException(
+      QString( "Database records could not be saved.  Query failed: " ).append( qOutDailyByZone->lastQuery() ).append( " " ).append( qOutDailyByZone->lastError().text() )
+    );
+  }
 }
 
 
 void CZone::processIterationRecords( CSMDatabase* db, int iteration, bool focusCreated ) {
-  qDebug() << "FIXME: do database stuff";
+  int prodTypeID;
+  CProdTypeList* ptList;
+
+  ptList = _sim->prodTypeList();
+  QMapIterator<QString, CProdType*> it(*ptList);
+  while( it.hasNext() ) {
+    prodTypeID = it.next().value()->id();
+
+    qOutIterationByZoneAndProductionType->bindValue( ":scenarioID", db->scenarioID() );
+    qOutIterationByZoneAndProductionType->bindValue( ":threadNo", THREAD_NUMBER );
+    qOutIterationByZoneAndProductionType->bindValue( ":iteration", iteration );
+    qOutIterationByZoneAndProductionType->bindValue( ":zoneID", this->id() );
+    qOutIterationByZoneAndProductionType->bindValue( ":productionTypeID", prodTypeID );
+
+    if( _herdDays->contains( prodTypeID ) ) {
+      qOutIterationByZoneAndProductionType->bindValue( ":unitDaysInZone", _herdDays->value( prodTypeID ) );
+      qOutIterationByZoneAndProductionType->bindValue( ":animalDaysInZone", _animalDays->value( prodTypeID ) );
+    }
+    else {
+      qOutIterationByZoneAndProductionType->bindValue( ":unitDaysInZone", 0 );
+      qOutIterationByZoneAndProductionType->bindValue( ":animalDaysInZone", 0 );
+    }
+
+    if( !qOutIterationByZoneAndProductionType->exec() ) {
+      naadsmException(
+        QString( "Database records could not be saved.  Query failed: " ).append( qOutIterationByZoneAndProductionType->lastQuery() ).append( " " ).append( qOutIterationByZoneAndProductionType->lastError().text() )
+      );
+    }
+  }
+
+  qOutIterationByZone->bindValue( ":scenarioID", db->scenarioID() );
+  qOutIterationByZone->bindValue( ":threadNo", THREAD_NUMBER );
+  qOutIterationByZone->bindValue( ":iteration", iteration );
+  qOutIterationByZone->bindValue( ":zoneID", this->id() );
+
+  if( focusCreated ) {
+    qOutIterationByZone->bindValue( ":finalZoneArea", this->_area );
+    qOutIterationByZone->bindValue( ":maxZoneArea", this->_maxArea );
+    qOutIterationByZone->bindValue( ":maxZoneAreaDay", this->_maxAreaDay  );
+    qOutIterationByZone->bindValue( ":finalZonePerimeter", this->_perimeter  );
+    qOutIterationByZone->bindValue( ":maxZonePerimeter", this->_maxPerimeter );
+    qOutIterationByZone->bindValue( ":maxZonePerimeterDay", this->_maxPerimeterDay );
+  }
+  else {
+    qOutIterationByZone->bindValue( ":finalZoneArea", QVariant( QVariant::Double ) );
+    qOutIterationByZone->bindValue( ":maxZoneArea", QVariant( QVariant::Double ) );
+    qOutIterationByZone->bindValue( ":maxZoneAreaDay", QVariant( QVariant::Int ) );
+    qOutIterationByZone->bindValue( ":finalZonePerimeter", QVariant( QVariant::Double ) );
+    qOutIterationByZone->bindValue( ":maxZonePerimeter", QVariant( QVariant::Double ) );
+    qOutIterationByZone->bindValue( ":maxZonePerimeterDay", QVariant( QVariant::Int ) );
+  }
+
+  if( !qOutIterationByZone->exec() ) {
+    naadsmException(
+      QString( "Database records could not be saved.  Query failed: " ).append( qOutIterationByZone->lastQuery() ).append( " " ).append( qOutIterationByZone->lastError().text() )
+    );
+  }
 }
 
 
@@ -151,8 +384,17 @@ void CZone::simComplete(){
 //------------------------------------------------------------------------------
 // CZoneList
 //------------------------------------------------------------------------------
-CZoneList::CZoneList() : QMap<int, CZone*>() {
+CZoneList::CZoneList( ZON_zone_list_t* zones, CSMSimulation* sim ) : QMap<int, CZone*>() {
+  ZON_zone_t* z;
+  int i, nZones;
+  CZone* cz;
 
+  nZones = ZON_zone_list_length( zones );
+  for( i = 0; i < nZones; ++i ) {
+    z = ZON_zone_list_get( zones, i );
+    cz = new CZone( z->level, QString( z->name ), sim );
+    this->insert( z->level, cz );
+  }
 }
 
 
@@ -164,11 +406,11 @@ CZoneList::~CZoneList() {
 }
 
 
-void CZoneList::clearAllRecords( CSMDatabase* db ) {
+void CZoneList::clearAllRecords() {
   QMapIterator<int, CZone*> it( *this );
 
   while( it.hasNext() )
-    it.next().value()->clearAllRecords( db );
+    it.next().value()->clearAllRecords();
 }
 
 

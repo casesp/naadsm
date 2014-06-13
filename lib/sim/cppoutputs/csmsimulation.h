@@ -3,13 +3,16 @@
 #ifndef CSMSIMULATION_H
 #define CSMSIMULATION_H
 
+#include "herd.h"
+#include "zone.h"
+
 #include "csmdatabase.h"
 #include "cprodtype.h"
 #include "czone.h"
 
 class CSMSimulation{
   public:
-    CSMSimulation();
+    CSMSimulation( HRD_herd_list_t* herds, ZON_zone_list_t* zones, CSMDatabase* db );
     ~CSMSimulation();
 
     void initializeAllOutputRecords();

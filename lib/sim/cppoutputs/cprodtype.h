@@ -3,12 +3,14 @@
 
 #include <QtCore>
 
+#include "herd.h"
+
 #include "csmptoutput.h"
 #include "csmdatabase.h"
 
 class CProdType{
   public:
-    CProdType();
+    CProdType( const QString& ptName, const int ptID );
     ~CProdType();
 
     void clearAllRecords();
@@ -43,11 +45,13 @@ class CProdType{
     void addZoneFocusEvent();
 
     int id() { return _ptID; }
+    QString description() { return _descr; }
 
   protected:
     CSMDailyOutput* _outputs;
     CSMDailyOutput* _initialOutputs;
 
+    QString _descr;
     int _ptID;
 };
 

@@ -4,6 +4,9 @@
 #include "csmdatabase.h"
 #include "naadsm.h"
 
+#include <QSqlQuery>
+
+
 /* Used to indicate the type of output record.  Not sure if this is still needed... */
 typedef enum {
   DRTUnspecified,
@@ -345,6 +348,11 @@ class CSMDailyOutput: public CSMIterationOutput {
     int appdUInfectious;
 
   protected:
+    void prepQueries();
+    void freeQueries();
+    QSqlQuery* qOutDailyByProductionType;
+    QSqlQuery* qOutIterationByProductionType;
+
     void initialize();
     void clearDailyTotals();
 

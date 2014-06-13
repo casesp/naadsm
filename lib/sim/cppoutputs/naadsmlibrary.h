@@ -9,8 +9,10 @@
 #include "csmdatabase.h"
 #include "csmsimulation.h"
 
+void naadsmException( const QString& errMsg );
 
 // For key simulation- and iteration-level events
+void naadsmCppInitialize( HRD_herd_list_t* herds, ZON_zone_list_t* zones, char* dbSpecFileName );
 void naadsmSetRng( RAN_gen_t* rng );
 void naadsmSimStart();
 void naadsmIterationStart( int it );
@@ -20,6 +22,7 @@ void naadsmDiseaseEnd( int val );
 void naadsmOutbreakEnd( int val );
 void naadsmIterationComplete( int it );
 void naadsmSimComplete( int val );
+void naadsmCppFinalize();
 
 // Used to update herd status and related events as an iteration runs
 void naadsmChangeHerdState( HRD_update_t c );

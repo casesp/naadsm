@@ -4,13 +4,19 @@
 
 
 
-CSMSimulation::CSMSimulation() {
+CSMSimulation::CSMSimulation( HRD_herd_list_t* herds, ZON_zone_list_t* zones, CSMDatabase* db ) {
+  _ptList = new CProdTypeList( herds );
+  _zoneList = new CZoneList( zones, this );
 
+  _db = db;
 }
 
 
 CSMSimulation::~CSMSimulation() {
+  delete _ptList;
+  delete _zoneList;
 
+  // Don't delete _db: it isn't owned by this object.
 }
 
 
@@ -28,7 +34,7 @@ void CSMSimulation::initializeAllOutputRecords() {
   _ptList->clearAllRecords();
 
   if( includeZonesGlobal() )
-    _zoneList->clearAllRecords( _db );
+    _zoneList->clearAllRecords();
 }
 
 
