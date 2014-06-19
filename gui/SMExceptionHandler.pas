@@ -8,7 +8,7 @@ Last revision: $Date: 2013-06-27 19:11:18 $ $Author: areeves $
 Version: $Revision: 1.5.4.2 $
 Project: APHI General Purpose Delphi Library
 Website: http://www.naadsm.org/opensource/delphi
-Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+Author: Aaron Reeves <aaron.reeves@naadsm.org>
 --------------------------------------------------
 Copyright (C) 2009 - 2011 Colorado State University
 

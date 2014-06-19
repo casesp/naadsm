@@ -5,7 +5,7 @@
 -- Version: $Revision: 1.1.2.1 $
 -- Project: NAADSM
 -- Website: http://www.naadsm.org
--- Author: Aaron Reeves <Aaron.Reeves@colostate.edu>
+-- Author: Aaron Reeves <aaron.reeves@naadsm.org>
 -- --------------------------------------------------
 -- Copyright (C) 2011 Animal Population Health Institute, Colorado State University
 -- 

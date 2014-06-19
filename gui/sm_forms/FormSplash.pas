@@ -8,7 +8,7 @@ Last revision: $Date: 2013-06-27 19:11:28 $ $Author: areeves $
 Version: $Revision: 1.19.6.5 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+Author: Aaron Reeves <aaron.reeves@naadsm.org>
 --------------------------------------------------
 Copyright (C) 2006 - 2012 Colorado State University
 

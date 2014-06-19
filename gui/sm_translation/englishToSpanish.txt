@@ -1,4 +1,4 @@
-Aaron.Reeves@colostate.edu	Aaron.Reeves@colostate.edu
+aaron.reeves@naadsm.org	aaron.reeves@naadsm.org
 Animal Population Health Institute	Animal Population Health Institute
 Colorado State University	Colorado State University
 Technical support (Parallel processing):	Apoyo técnico (procesamiento paralelo):

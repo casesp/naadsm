@@ -9,7 +9,7 @@ Version: $Revision: 1.23.4.6 $
 Project: NAADSM
 Website: http://www.naadsm.org
 Author: Shaun Case <Shaun.Case@colostate.edu>
-Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+Author: Aaron Reeves <aaron.reeves@naadsm.org>
 --------------------------------------------------
 Copyright (C) 2007 - 2009 Colorado State University
 

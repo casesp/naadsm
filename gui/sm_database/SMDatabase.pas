@@ -8,7 +8,7 @@ Last revision: $Date: 2013-06-27 19:11:23 $ $Author: areeves $
 Version: $Revision: 1.129.4.37 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@sruc.ac.uk>
+Author: Aaron Reeves <aaron.reeves@naadsm.org>
 --------------------------------------------------
 Copyright (C) 2005 - 2014 NAADSM Development Team
 
