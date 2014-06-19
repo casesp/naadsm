@@ -653,9 +653,9 @@ void CSMIterationOutput::processVaccination( const int nAnimals, const int day, 
 //------------------------------------------------------------------------------
 // CSMDailyOutput
 //------------------------------------------------------------------------------
-CSMDailyOutput::CSMDailyOutput() : CSMIterationOutput() {
+CSMDailyOutput::CSMDailyOutput( CSMDatabase* db ) : CSMIterationOutput() {
   initialize();
-  prepQueries();
+  prepQueries( db );
 }
 
 
@@ -670,11 +670,13 @@ CSMDailyOutput::~CSMDailyOutput() {
 }
 
 
-void CSMDailyOutput::prepQueries() {
-  qOutDailyByProductionType = new QSqlQuery( QSqlDatabase::database() );
+void CSMDailyOutput::prepQueries( CSMDatabase* db ) {
+  qDebug() << "CSMDailyOutput::prepQueries()";
+
+  qOutDailyByProductionType = new QSqlQuery( *(db->database()) );
   qOutDailyByProductionType->prepare(
     QString(
-      "INSERT INTO outDailyByProductionType("
+      "INSERT INTO %1.outDailyByProductionType("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -1060,14 +1062,14 @@ void CSMDailyOutput::prepQueries() {
 
         " :zoncFoci"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 
 
-  qOutIterationByProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByProductionType = new QSqlQuery( *(db->database()) );
   qOutIterationByProductionType->prepare(
     QString(
-      "INSERT INTO outIterationByProductionType("
+      "INSERT INTO %1.outIterationByProductionType("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -1349,7 +1351,7 @@ void CSMDailyOutput::prepQueries() {
 
         " :zoncFoci"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 }
 

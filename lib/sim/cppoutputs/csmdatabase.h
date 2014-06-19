@@ -32,8 +32,13 @@ class CSMDatabase {
     );
 
     // Database operations
-    void execute( const QString& query );
+    bool execute( const QString& query );
+
+    // Configuration settings
     int scenarioID() { return _scenarioID; }
+    QString herdsFile() { return _herdsFileName; }
+    QString scenarioFile() { return _scenarioFileName; }
+    int rngSeed() { return _rngSeed; }
 
     // Database configuration
     void debug();
@@ -60,22 +65,32 @@ class CSMDatabase {
     bool isValid( QString* errMsg = NULL );
     bool isOpen( QString* errMsg = NULL );
 
+    int returnValue() { return _returnValue; }
+
   protected:
     void initialize();
     int processFile( QFile* file );
     int processBlock( QStringList block );
     void processScenarioBlock( QStringList scenarioBlock );
     void processDatabaseBlock( QStringList configBlock );
+    QString processQuotes( const QString& val );
 
     void prepQueries();
     void freeQueries();
+    QSqlQuery* qScenario;
     QSqlQuery* qOutIteration;
     QSqlQuery* qOutEpidemicCurves;
 
+    void initiateScenario();
+
     // NAADSMy bits
     int _scenarioID;
+    QString _scenarioName;
     QString _scenarioDescr;
     QString _specificationFileName;
+    QString _scenarioFileName;
+    QString _herdsFileName;
+    int _rngSeed;
 
     // Databasey bits
     QSqlDatabase _db;
@@ -94,61 +109,5 @@ class CSMDatabase {
     int _returnValue;
 };
 
-
-
-/*
- * Exit codes returned by the application.  Use --help for definitions.
- * FIXME: These don't all apply to NAADSM.
- */
-class ReturnCode {
-  public:
-    enum returnCodes {
-      Success,
-      SuccessWithBadRows,  // Make sure that this is always the last "success" message.  Other bits of code rely on it!
-      BadArguments,
-      UnrecognizedFunction,
-      MissingConfigFile,
-      CannotOpenConfigFile,
-      BadConfiguration,
-      BadFunctionConfiguration,
-      BadDatabaseConfiguration,
-      BadDatabaseSchema,
-      MissingInstructions,
-      EmptyInputFile,
-      CannotOpenInputFile,
-      QueryDidNotExecute,
-      CannotOpenOutputFile,
-      BadFileFormat,
-      BadDataField,
-
-      // Insert any new codes here.
-
-      LastReturnCode // Not a real return code.  Used to easily iterate over all return codes.
-    };
-};
-
-/*
-class CConfigFile {
-  public:
-    CConfigFile( QStringList* args );
-    ~CConfigFile();
-
-    CConfigDatabase* dbConfig( void ) { return _dbConfigInfo; }
-
-    void debug( QTextStream* s = NULL );
-    int configResult() { return _returnValue; }
-    QString errorMessage() { return _errorMessage; }
-
-  protected:
-    int processBlock( QStringList block );
-    int processFile( QFile* file );
-
-    CConfigDatabase* _dbConfigInfo;
-
-    //bool _badConfig;
-    QString _errorMessage;
-    int _returnValue;
-};
-*/
 
 #endif // CSMDATABASE_H

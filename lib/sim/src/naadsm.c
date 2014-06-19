@@ -37,7 +37,7 @@ TFnVoid_1_CharP naadsm_printf = NULL;
 TFnVoid_1_CharP naadsm_debug = NULL;
 
 /* For key simulation- and iteration-level events */
-TFnVoid_3_THRDListP_TZONListP_CharP naadsm_cpp_initialize = NULL;
+TFnVoid_2_THRDListP_TZONListP naadsm_cpp_initialize = NULL;
 TFnVoid_0 naadsm_cpp_finalize = NULL;
 TFNVoid_1_Rng naadsm_set_rng = NULL;
 TFnVoid_0 naadsm_sim_start = NULL;
@@ -209,7 +209,7 @@ set_debug (TFnVoid_1_CharP fn)
 
 /* For key simulation- and iteration-level events */
 DLL_API void
-set_cpp_initialize( TFnVoid_3_THRDListP_TZONListP_CharP fn )
+set_cpp_initialize( TFnVoid_2_THRDListP_TZONListP fn )
 {
  naadsm_cpp_initialize = fn;
 }

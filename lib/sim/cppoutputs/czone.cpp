@@ -12,10 +12,10 @@
 //------------------------------------------------------------------------------
 // CZone
 //------------------------------------------------------------------------------
-CZone::CZone( const int level, const QString& descr, CSMSimulation* sim ) {
+CZone::CZone( const int level, const int id, const QString& descr, CSMSimulation* sim ) {
   _level = level;
   _descr = descr;
-  _id = -1;
+  _id = id;
 
   _sim = sim;
 
@@ -27,25 +27,32 @@ CZone::CZone( const int level, const QString& descr, CSMSimulation* sim ) {
   _maxPerimeter = 0.0;
   _maxAreaDay = 0;
 
-  _herdDays = NULL;
-  _animalDays = NULL;
-  _herdCount = NULL;
-  _animalCount = NULL;
+  _herdDays = new QMap<int, int>();
+  _animalDays = new QMap<int, int>();
 
-  prepQueries();
+  _herdCount = new QMap<int, int>();
+  _animalCount = new QMap<int, int>();
+
+  prepQueries( sim->database() );
 }
 
 
 CZone::~CZone() {
-  freeAndNullMaps();
+  delete _herdDays;
+  delete _animalDays;
+  delete _herdCount;
+  delete _animalCount;
+
   freeQueries();
 }
 
-void CZone::prepQueries() {
-  qOutDailyByZoneAndProductionType = new QSqlQuery( QSqlDatabase::database() );
+void CZone::prepQueries( CSMDatabase* db ) {
+  qDebug() << "CZone::prepQueries()";
+
+  qOutDailyByZoneAndProductionType = new QSqlQuery( *(db->database()) );
   qOutDailyByZoneAndProductionType->prepare(
     QString(
-      "INSERT INTO outDailyByZoneAndProductionType("
+      "INSERT INTO %1.outDailyByZoneAndProductionType("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -69,13 +76,13 @@ void CZone::prepQueries() {
         " :unitsInZone,"
         " :animalsInZone"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 
-  qOutDailyByZone = new QSqlQuery( QSqlDatabase::database() );
+  qOutDailyByZone = new QSqlQuery( *(db->database()) );
   qOutDailyByZone->prepare(
     QString(
-      "INSERT INTO outDailyByZone("
+      "INSERT INTO %1.outDailyByZone("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -93,13 +100,13 @@ void CZone::prepQueries() {
         " :zoneArea,"
         " :zonePerimeter"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 
-  qOutIterationByZoneAndProductionType = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByZoneAndProductionType = new QSqlQuery( *(db->database()) );
   qOutIterationByZoneAndProductionType->prepare(
     QString(
-      "INSERT INTO outIterationByZoneAndProductionType("
+      "INSERT INTO %1.outIterationByZoneAndProductionType("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -117,14 +124,14 @@ void CZone::prepQueries() {
         " :unitDaysInZone,"
         " :animalDaysInZone"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 
 
-  qOutIterationByZone = new QSqlQuery( QSqlDatabase::database() );
+  qOutIterationByZone = new QSqlQuery( *(db->database()) );
   qOutIterationByZone->prepare(
     QString(
-      "INSERT INTO outIterationByZone("
+      "INSERT INTO %1.outIterationByZone("
         " scenarioID,"
         " threadNo,"
         " iteration,"
@@ -148,7 +155,7 @@ void CZone::prepQueries() {
         " :maxZonePerimeter,"
         " :maxZonePerimeterDay"
       " )"
-    )
+    ).arg( db->dbSchema() )
   );
 }
 
@@ -161,29 +168,9 @@ void CZone::freeQueries() {
 }
 
 
-void CZone::freeAndNullMaps() {
-  if( NULL != _herdDays )
-    delete _herdDays;
-
-  if( NULL != _animalDays )
-    delete _animalDays;
-
-  if( NULL != _herdCount )
-    delete _herdCount;
-
-  if( NULL != _animalCount )
-    delete _animalCount;
-
-  _herdDays = NULL;
-  _animalDays = NULL;
-  _herdCount = NULL;
-  _animalCount = NULL;
-}
-
-
 void CZone::addToZoneTotals( int ptID, int herdSize ) {
   // Update running totals
-  if( _herdDays->contains( ptID) )
+  if( _herdDays->contains( ptID ) )
     _herdDays->insert( ptID, _herdDays->value( ptID ) + 1 );
   else
     _herdDays->insert( ptID, 1 );
@@ -227,15 +214,11 @@ void CZone::setPerimeter( double val, int day ) {
 
 
 void CZone::clearAllRecords() {
-  // Check for existing objects, just in case.
-  // (They should never exist at this point.)
-  freeAndNullMaps();
+  _herdDays->clear();
+  _animalDays->clear();
 
-  _herdDays = new QMap<int, int>();
-  _animalDays = new QMap<int, int>();
-
-  _herdCount = new QMap<int, int>();
-  _animalCount = new QMap<int, int>();
+  _herdCount->clear();
+  _animalCount->clear();
 
   _area = 0.0;
 }
@@ -375,7 +358,11 @@ void CZone::processIterationRecords( CSMDatabase* db, int iteration, bool focusC
 
 
 void CZone::simComplete(){
-  freeAndNullMaps();
+  _herdDays->clear();
+  _animalDays->clear();
+
+  _herdCount->clear();
+  _animalCount->clear();
 }
 //------------------------------------------------------------------------------
 
@@ -388,13 +375,43 @@ CZoneList::CZoneList( ZON_zone_list_t* zones, CSMSimulation* sim ) : QMap<int, C
   ZON_zone_t* z;
   int i, nZones;
   CZone* cz;
+  QSqlQuery* qInsertZone;
+
+  qInsertZone = new QSqlQuery( *(sim->database()->database()) );
+  qInsertZone->prepare(
+    QString(
+      "INSERT INTO %1.inZone ( zoneID, scenarioID, descr )"
+      "VALUES ( :zoneid, :scenarioid, :descr )"
+    ).arg( sim->database()->dbSchema() )
+  );
 
   nZones = ZON_zone_list_length( zones );
   for( i = 0; i < nZones; ++i ) {
     z = ZON_zone_list_get( zones, i );
-    cz = new CZone( z->level, QString( z->name ), sim );
-    this->insert( z->level, cz );
+
+    // All zones except the background zone should have an ID.  If they don't, it's a problem.
+    if( ( 0 != QString( "Background" ).compare( z->name ) ) && ( -1 == z->id ) ) {
+      naadsmException( QString( "Bad zone XML." ) );
+    }
+
+    // Don't add the background zone to the list.  We ignore it.
+    else if( 0 != QString( "Background" ).compare( z->name ) ) {
+      cz = new CZone( z->level, z->id, QString( z->name ), sim );
+      this->insert( z->level, cz );
+
+      qInsertZone->bindValue( ":zoneid", cz->id() );
+      qInsertZone->bindValue( ":scenarioid", sim->database()->scenarioID() );
+      qInsertZone->bindValue( ":descr", cz->descr() );
+
+      if( !qInsertZone->exec() ) {
+        naadsmException(
+          QString( "Database records could not be saved.  Query failed: " ).append( qInsertZone->lastQuery() ).append( " " ).append( qInsertZone->lastError().text() )
+        );
+      }
+    }
   }
+
+  delete qInsertZone;
 }
 
 

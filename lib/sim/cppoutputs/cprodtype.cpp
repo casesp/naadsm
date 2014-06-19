@@ -2,7 +2,11 @@
 
 #include "cprodtype.h"
 
+#include <QSqlError>
 #include <ar_general_purpose/qmath.h>
+
+#include "naadsmlibrary.h"
+
 
 NAADSM_disease_state convertState( const HRD_status_t s ) {
   if( s == Susceptible )
@@ -27,11 +31,11 @@ NAADSM_disease_state convertState( const HRD_status_t s ) {
 //------------------------------------------------------------------------------
 // CProdType
 //------------------------------------------------------------------------------
-CProdType::CProdType( const QString& ptName, const int ptID ){
+CProdType::CProdType( const QString& ptName, const int ptID, CSMDatabase* db ){
   _ptID = ptID;
   _descr = ptName;
-  _initialOutputs = new CSMDailyOutput();
-  _outputs = new CSMDailyOutput();
+  _initialOutputs = new CSMDailyOutput( db );
+  _outputs = new CSMDailyOutput( db );
 }
 
 
@@ -79,13 +83,22 @@ void CProdType::recordInfectedAtFirstDetection(){
 //------------------------------------------------------------------------------
 // CProdTypeList
 //------------------------------------------------------------------------------
-CProdTypeList::CProdTypeList( HRD_herd_list_t* herds ): QMap<QString, CProdType*>() {
+CProdTypeList::CProdTypeList( HRD_herd_list_t* herds, CSMDatabase* db ): QMap<QString, CProdType*>() {
   int nherds, i;
   HRD_herd_t* h;
   CProdType* pt;
+  QSqlQuery* qInsertPt;
 
   int ptID;
   QString ptName;
+
+  qInsertPt = new QSqlQuery( *(db->database()) );
+  qInsertPt->prepare(
+    QString(
+      "INSERT INTO %1.inProductionType ( productionTypeID, scenarioID, descr )"
+      "VALUES ( :ptid, :scenarioid, :descr )"
+    ).arg( db->dbSchema() )
+  );
 
   _herds = herds;
 
@@ -94,13 +107,29 @@ CProdTypeList::CProdTypeList( HRD_herd_list_t* herds ): QMap<QString, CProdType*
   for( i = 0; i < nherds; ++ i ) {
     h = HRD_herd_list_get( _herds, i );
     ptName = QString( h->production_type_name );
-    ptID = int(h->production_type);
+    ptID = h->production_type_id;
+
+    if( ptID < 1 ) {
+        naadsmException( QString( "Production type IDs are not assigned in this herds file.  Are you using the right version of NAADSM?" ) );
+    }
 
     if( ! this->contains( ptName ) ) {
-      pt = new CProdType( ptName, ptID );
+      pt = new CProdType( ptName, ptID, db );
       this->insert( ptName, pt );
+
+      qInsertPt->bindValue( ":ptid", pt->id() );
+      qInsertPt->bindValue( ":scenarioid", db->scenarioID() );
+      qInsertPt->bindValue( ":descr", pt->description() );
+
+      if( !qInsertPt->exec() ) {
+        naadsmException(
+          QString( "Database records could not be saved.  Query failed: " ).append( qInsertPt->lastQuery() ).append( " " ).append( qInsertPt->lastError().text() )
+        );
+      }
     }
   }
+
+  delete qInsertPt;
 }
 
 
@@ -187,8 +216,6 @@ void CProdTypeList::processIterationRecords( CSMDatabase* db, int iteration ) {
 
   while( it.hasNext())
     it.next().value()->processIterationRecords( db, iteration );
-
-  qDebug() << "FIXME: Do database stuff.";
 }
 //------------------------------------------------------------------------------
 
@@ -308,8 +335,6 @@ void CProdType::addExposureEvent( const int herdAnimalCount, const HRD_expose_t 
 
 
 void CProdTypeList::detectHerd( const HRD_detect_t d, const int simDay ) {
-  qDebug() << "CProdTypeList::detectHerd may need work";
-
   HRD_herd_t* h = HRD_herd_list_get( _herds, d.herd_index );
   CProdType* pt = this->find( h->production_type_name ).value();
 
@@ -472,7 +497,7 @@ void CProdTypeList::queueHerdForVaccination( int herdIdx, const int simDay ) {
   }
 
   if( _vaccQueueLengthAnimals > _vacwAMax ){
-    _vaccQueueLengthAnimals = _vacwAMax;
+    _vacwAMax = _vaccQueueLengthAnimals;
     _vacwAMaxDay = simDay;
   }
 }

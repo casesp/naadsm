@@ -10,7 +10,7 @@
 
 class CProdType{
   public:
-    CProdType( const QString& ptName, const int ptID );
+    CProdType( const QString& ptName, const int ptID, CSMDatabase* db );
     ~CProdType();
 
     void clearAllRecords();
@@ -60,7 +60,7 @@ class CProdType{
 // Key is production type name.
 class CProdTypeList : public QMap<QString, CProdType*> {
   public:
-    CProdTypeList( HRD_herd_list_t* herds );
+    CProdTypeList( HRD_herd_list_t* herds, CSMDatabase* db );
     ~CProdTypeList();
 
     void clearAllRecords();

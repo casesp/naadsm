@@ -6,13 +6,33 @@
 #include <naadsm.h>
 #include "rng.h"
 
-#include "csmdatabase.h"
-#include "csmsimulation.h"
+
+/*
+ * Exit codes returned by the application.  Use --help for definitions.
+ * FIXME: These don't all apply to NAADSM.
+ */
+class ReturnCode {
+  public:
+    enum returnCodes {
+      Success,
+      MissingConfigFile,
+      CannotOpenConfigFile,
+      BadConfiguration,
+      BadDatabaseConfiguration,
+      BadDatabaseSchema,
+      BadDatabaseQuery,
+      BadNAADSMConfiguration,
+      // Insert any new codes here.
+
+      LastReturnCode // Not a real return code.  Used to easily iterate over all return codes.
+    };
+};
+
 
 void naadsmException( const QString& errMsg );
 
 // For key simulation- and iteration-level events
-void naadsmCppInitialize( HRD_herd_list_t* herds, ZON_zone_list_t* zones, char* dbSpecFileName );
+void naadsmCppInitialize( HRD_herd_list_t* herds, ZON_zone_list_t* zones );
 void naadsmSetRng( RAN_gen_t* rng );
 void naadsmSimStart();
 void naadsmIterationStart( int it );
@@ -44,6 +64,10 @@ void naadsmRecordZoneChange( HRD_zone_t z );
 void naadsmRecordZonePerimeter( int zoneLevel, double perim );
 void naadsmRecordZoneArea( int zoneLevel, double area );
 
+
+#include "csmdatabase.h"
+#include "csmsimulation.h"
+
 /*
   A class needed for detection events in NAADSM 3.  See comments associated with NAADSMLibrary.naadsm_detect_herd.
    This class will not exist in NAADSM 4!
@@ -60,8 +84,8 @@ class CNAADSM3Detect {
 
 
 // Variables used for the running simulation
-//CSMSimulation* _smSim;
-//CSMDatabase* _smdb;
+// CSMSimulation* _smSim;
+// CSMDatabase* _smdb;
 
 // Additional variables used for the running simulation
 // (Declared in the implementation section, but
@@ -70,9 +94,11 @@ class CNAADSM3Detect {
 /*
 _diseaseEndDay: integer;
 _outbreakEnd: integer;
-_simDay: integer;
-_simIteration: integer;
+*/
+extern int _simDay;
+extern int _simIteration;
 
+/*
 _rngSeed: integer;
 
 _eventCounter: integer;

@@ -8,9 +8,9 @@ Last revision: $Date: 2013-06-27 19:11:23 $ $Author: areeves $
 Version: $Revision: 1.129.4.37 $
 Project: NAADSM and related applications
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+Author: Aaron Reeves <Aaron.Reeves@sruc.ac.uk>
 --------------------------------------------------
-Copyright (C) 2005 - 2013 NAADSM Development Team
+Copyright (C) 2005 - 2014 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -566,6 +566,10 @@ implementation
         end
 
       // There was no schema update for version 3.2.19
+
+      // There were no schema updates for versions 3.3.1 or 3.3.2
+
+      // There were no schema updates for version 3.4.0
 
       // The last entry here should be the current schema version.
       // This exception ensures that someone doesn't get too carried away with copy/paste
@@ -5117,6 +5121,13 @@ implementation
               //----------------------------
               else if
                 ( '3.3.2' = oldVersion )
+              then
+                result := VERSOK
+
+              // Make the jump here to 3.4.x
+              //----------------------------
+              else if
+                ( '3.4.0' = oldVersion )
               then
                 result := VERSOK
 

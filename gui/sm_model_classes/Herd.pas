@@ -922,6 +922,7 @@ implementation
         result := result + '  <herd>' + endl;
         result := result + '    <id>' + intToStr( id ) + '</id>' + endl;
         result := result + '    <production-type>' + xmlProdTypeName + '</production-type>' + endl;
+        result := result + '    <production-type-id>' + intToStr( prodTypeID ) + '</production-type-id>' + endl;
         result := result + '    <size>' + intToStr( initialSize ) + '</size>' + endl;
         result := result + '    <location>' + endl;
 

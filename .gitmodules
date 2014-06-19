@@ -7,3 +7,9 @@
 [submodule "gui/remoteDB"]
 	path = gui/remoteDB
 	url = https://github.com/naadsm/remoteDB
+[submodule "ar_general_purpose"]
+	path = ar_general_purpose
+	url = https://github.com/aaron-reeves/ar_general_purpose
+[submodule "lib/sim/ar_general_purpose"]
+	path = lib/sim/ar_general_purpose
+	url = https://github.com/aaron-reeves/ar_general_purpose

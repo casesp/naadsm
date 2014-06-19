@@ -504,7 +504,7 @@ ZON_zone_list_get_background (ZON_zone_list_t * zones)
  * @return a pointer to a newly-created, initialized ZON_zone_t structure.
  */
 ZON_zone_t *
-ZON_new_zone (char *name, int level, double radius)
+ZON_new_zone (char *name, int level, double radius, int id)
 {
   ZON_zone_t *z;
 
@@ -516,6 +516,7 @@ ZON_new_zone (char *name, int level, double radius)
   z->name = g_strdup (name);
   z->level = level;
   z->radius = radius;
+  z->id = id;
   z->radius_sq = radius * radius;
   z->epsilon_sq = (radius + EPSILON) * (radius + EPSILON) - z->radius_sq;
   z->foci = g_array_new (FALSE, FALSE, sizeof (gpc_vertex));

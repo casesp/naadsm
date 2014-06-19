@@ -27,6 +27,8 @@ class CSMSimulation{
     CZoneList* zoneList() { return _zoneList; }
     CProdTypeList* prodTypeList() { return _ptList; }
 
+    CSMDatabase* database() { return _db; }
+
   protected:
     int _currentIteration;
     int _lastCompleteIteration;

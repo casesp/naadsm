@@ -14,7 +14,7 @@ class CSMSimulation;
 
 class CZone {
   public:
-    CZone( const int level, const QString& descr, CSMSimulation* sim );
+    CZone( const int level, const int id, const QString& descr, CSMSimulation* sim );
     ~CZone();
 
     void addToZoneTotals( int ptID, int herdSize );
@@ -33,8 +33,7 @@ class CZone {
     QString descr() { return _descr; }
 
   protected:
-    void freeAndNullMaps();
-    void prepQueries();
+    void prepQueries( CSMDatabase* db );
     void freeQueries();
 
     QMap<int, int>* _herdDays;

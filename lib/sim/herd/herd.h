@@ -59,7 +59,6 @@
  */
 typedef unsigned int HRD_production_type_t;
 
-int ranfoo();
 
 /**
  * Number of possible states (with respect to a disease) for a herd.
@@ -189,6 +188,7 @@ typedef struct
   unsigned int index;           /**< position in a herd list */
   HRD_production_type_t production_type;  
   char *production_type_name;
+  int production_type_id;
   HRD_id_t official_id;         /**< arbitrary identifier string */
   unsigned int size;            /**< number of animals */
   double latitude, longitude;
@@ -309,7 +309,7 @@ char *HRD_herd_list_prevalence_to_string (HRD_herd_list_t *, unsigned int day);
 int HRD_printf_herd_list_summary (HRD_herd_list_t *);
 int HRD_fprintf_herd_list_summary (FILE *, HRD_herd_list_t *);
 
-HRD_herd_t *HRD_new_herd (HRD_production_type_t, char *production_type_name,
+HRD_herd_t *HRD_new_herd (HRD_production_type_t, char *production_type_name, int production_type_id,
                           unsigned int size, double x, double y);
 void HRD_free_herd (HRD_herd_t *, gboolean free_segment);
 char *HRD_herd_to_string (HRD_herd_t *);

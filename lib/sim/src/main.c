@@ -9,13 +9,15 @@ extern "C"
  * @author Neil Harvey <neilharvey@gmail.com><br>
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
- *   CANADA
- * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
- *   Animal Population Health Institute<br>
- *   Colorado State University<br>
- *   Fort Collins, CO 80523<br>
- *   USA
- * @author Shaun Case <ShaunCase@colostate.edu><br>
+ *   Canada
+ * @author Aaron Reeves <Aaron.Reeves@sruc.ac.uk.edu><br>
+ *   Epidemiology Research Unit<br>
+ *   SRUC<br>
+ *   Strattherick Road<br>
+ *   Drummondhill<br>
+ *   Inverness IV2 4JZ<br>
+ *   United Kingdom
+ * @author Shaun Case <Shaun.Case@colostate.edu><br>
  *   Animal Population Health Institute<br>
  *   College of Veterinary Medicine and Biomedical Sciences<br>
  *   Colorado State University<br>
@@ -712,7 +714,6 @@ node 0 run 0
 #include <unistd.h>
 #include <stdio.h>
 #include <popt.h>
-#include <time.h>
 #include "herd.h"
 #include "model_loader.h"
 #include "event_manager.h"
@@ -720,7 +721,7 @@ node 0 run 0
 #include "rng.h"
 
 #ifdef USE_SC_GUILIB
-#include "sc_naadsm_outputs.h"
+#  include "sc_naadsm_outputs.h"
 #endif
 
 #include "herd-randomizer.h"
@@ -1005,10 +1006,6 @@ DLL_API void
 run_sim_main (const char *herd_file,
               const char *parameter_file,
               const char *output_file, double fixed_rng_value, int verbosity, int seed, char *production_type_file)
-#elif defined( CPPOUTPUT )
-run_sim_main (const char *herd_file,
-              const char *parameter_file,
-              const char *output_file, double fixed_rng_value, int verbosity, int seed, char *dbScenarioSpecificationFile)
 #else
 DLL_API void
 run_sim_main (const char *herd_file,
@@ -1228,7 +1225,7 @@ run_sim_main (const char *herd_file,
 
   /* Pre-create a "background" zone. */
   zones = ZON_new_zone_list (nherds);
-  zone = ZON_new_zone ("", -1, 0.0);
+  zone = ZON_new_zone ("", -1, 0.0, -1);
 #ifdef USE_SC_GUILIB
   zone->_herdDays = NULL;
   zone->_animalDays = NULL;
@@ -1299,7 +1296,7 @@ run_sim_main (const char *herd_file,
   total_runs = 0;
 
   if( NULL != naadsm_cpp_initialize )
-    naadsm_cpp_initialize( herds, zones, dbScenarioSpecificationFile );
+    naadsm_cpp_initialize( herds, zones );
 
 #ifdef USE_SC_GUILIB
   sc_sim_start( herds, production_types, zones );
@@ -1671,16 +1668,20 @@ run_sim_main (const char *herd_file,
   /* Inform the GUI that the simulation has ended */
   if (NULL != naadsm_sim_complete)
     {
-      if (-1 == naadsm_simulation_stop ())
-        {
-          /* simulation was interrupted by the user and did not complete. */
-          naadsm_sim_complete (0);
+      if( NULL != naadsm_simulation_stop ) {
+        if (-1 == naadsm_simulation_stop ())
+          {
+            /* simulation was interrupted by the user and did not complete. */
+            naadsm_sim_complete (0);
+          }
+        else
+          {
+            /* Simulation ran to completion. */
+            naadsm_sim_complete (-1);
+          }
         }
       else
-        {
-          /* Simulation ran to completion. */
-          naadsm_sim_complete (-1);
-        }
+        naadsm_sim_complete (-1);
     }
 #endif
 
@@ -1712,6 +1713,7 @@ run_sim_main (const char *herd_file,
 }
 
 
+#ifndef CPPOUTPUT
 int
 main (int argc, char *argv[])
 {
@@ -1797,16 +1799,6 @@ main (int argc, char *argv[])
   options[i].argDescrip = "production-types";
 #endif
 
-#ifdef CPPOUTPUT
-  options[++i].longName = "db-spec-file";
-  options[i].shortName = 'b';
-  options[i].argInfo = POPT_ARG_STRING;
-  options[i].arg = &db_specification_file;
-  options[i].val = 0;
-  options[i].descrip = "File containing database specification and scenario description";
-  options[i].argDescrip = "db-spec-file";
-#endif
-
 #ifndef BUILD_FOR_WINDOWS
   /* The Windows version of POPT doesn't play nicely with POPT_AUTOHELP */
   options[++i] = tHelp[0];
@@ -1846,8 +1838,6 @@ main (int argc, char *argv[])
 
 #if defined( USE_SC_GUILIB )
   run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed, production_type_file);
-#elif defined( CPPOUTPUT )
-  run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed, db_specification_file);
 #else
   run_sim_main (herd_file, parameter_file, output_file, fixed_rng_value, verbosity, seed);
 #endif
@@ -1858,6 +1848,7 @@ main (int argc, char *argv[])
 
   return EXIT_SUCCESS;
 }
+#endif
 
 /* end of file main.c */
 

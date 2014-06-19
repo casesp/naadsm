@@ -703,6 +703,7 @@ HRD_herd_set_longitude (HRD_herd_t * herd, double lon)
  *
  * @param production_type type of animals.
  * @param production_type_name type of animals.
+ * @param production_type_id ID associated with the type of animals.
  * @param size number of animals.
  * @param x x-coordinate of the herd's location.
  * @param y y-coordinate of the herd's location.
@@ -710,7 +711,7 @@ HRD_herd_set_longitude (HRD_herd_t * herd, double lon)
  */
 HRD_herd_t *
 HRD_new_herd (HRD_production_type_t production_type,
-              char *production_type_name, unsigned int size, double x, double y)
+              char *production_type_name, int production_type_id, unsigned int size, double x, double y)
 {
   HRD_herd_t *herd;
 
@@ -719,6 +720,7 @@ HRD_new_herd (HRD_production_type_t production_type,
   herd->index = 0;
   herd->official_id = NULL;
   herd->production_type = production_type;
+  herd->production_type_id = production_type_id;
   herd->production_type_name = production_type_name;
   if (size < 1)
     {
@@ -908,7 +910,7 @@ startElement (void *userData, const char *name, const char **atts)
     }
   if (strcmp (name, "herd") == 0)
     {
-      partial->herd = HRD_new_herd (0, NULL, 1, 0, 0);
+      partial->herd = HRD_new_herd (0, NULL, -1, 1, 0, 0);
       partial->unit_has_lat = partial->unit_has_lon = FALSE;
       partial->unit_has_x = partial->unit_has_y = FALSE;
     }
@@ -920,7 +922,7 @@ startElement (void *userData, const char *name, const char **atts)
 /**
  * End element handler for an Expat herd file parser.
  *
- * When it encounters an \</id\>, \</production-type\>, \</size\>,
+ * When it encounters an \</id\>, \</production-type\>, \</production-type-id\>, \</size\>,
  * \</latitude\>, \</longitude\>, or \</status\> tag, it fills in the
  * corresponding field in the herd most recently created by startElement and
  * clears the character data buffer.  This function issues a warning and fills
@@ -1052,6 +1054,39 @@ endElement (void *userData, const char *name)
       partial->herd->production_types = partial->herds->production_types;
 #endif
       partial->herd->production_type_name = g_ptr_array_index (production_type_names, i);
+      g_string_truncate (partial->s, 0);
+    }
+
+  /* production-type-id tag */
+  else if( strcmp (name, "production-type-id") == 0 )
+    {
+      int ptid;
+      char *tmp, *endptr;
+
+      tmp = g_strdup (partial->s->str);
+      g_strstrip (tmp);
+
+      ptid = strtoi (tmp, &endptr);
+      if (tmp[0] == '\0')
+        {
+          g_warning ("production-type-id missing on line %lu of %s, setting to 1",
+                     (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          ptid = -1;
+        }
+      else if (*endptr != '\0')
+        {
+          g_warning ("production-type-id is not a number (\"%s\") on line %lu of %s, setting to 1",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          ptid = -1;
+        }
+      else if (ptid < 1)
+        {
+          g_warning ("production-type-id cannot be less than 1 (\"%s\") on line %lu of %s, setting to 1",
+                     tmp, (unsigned long) XML_GetCurrentLineNumber (parser), filename);
+          ptid = -1;
+        }
+      partial->herd->production_type_id = ptid;
+      g_free (tmp);
       g_string_truncate (partial->s, 0);
     }
 

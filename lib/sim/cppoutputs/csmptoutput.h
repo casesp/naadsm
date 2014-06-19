@@ -243,7 +243,7 @@ class CSMIterationOutput {
 
 class CSMDailyOutput: public CSMIterationOutput {
   public:
-    CSMDailyOutput();
+    CSMDailyOutput( CSMDatabase* db );
     ~CSMDailyOutput();
 
     void clear();
@@ -348,7 +348,7 @@ class CSMDailyOutput: public CSMIterationOutput {
     int appdUInfectious;
 
   protected:
-    void prepQueries();
+    void prepQueries( CSMDatabase* db );
     void freeQueries();
     QSqlQuery* qOutDailyByProductionType;
     QSqlQuery* qOutIterationByProductionType;

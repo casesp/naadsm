@@ -87,6 +87,7 @@ typedef struct
 {
   char *name;
   int level;
+  int id;
   double radius;
   double radius_sq; /* Comparing distance^2 to radius^2 saves us taking a
     square root. */
@@ -199,7 +200,7 @@ void ZON_free_zone_list (ZON_zone_list_t *);
 
 /* Functions for zone objects. */
 
-ZON_zone_t *ZON_new_zone (char *, int level, double radius);
+ZON_zone_t *ZON_new_zone (char *, int level, double radius, int id);
 void ZON_free_zone (ZON_zone_t *);
 char *ZON_zone_to_string (ZON_zone_t *);
 int ZON_fprintf_zone (FILE *, ZON_zone_t *);

@@ -15,10 +15,12 @@
 
 const QString APP_PASSWORD_KEY = "ds098Lju3K24";
 
+
 void appendToMessage( QString* message, QString newMessage ) {
   if( NULL != message )
     message->append( newMessage );
 }
+
 
 int CSMDatabase::processBlock( QStringList block ) {
   int result = ReturnCode::Success; // until shown otherwise
@@ -101,6 +103,8 @@ int CSMDatabase::processFile( QFile* file ) {
 CSMDatabase::CSMDatabase( const QString& specificationFileName ){
   QFile* file = NULL;
 
+  initialize();
+
   // Until shown otherwise...
   _returnValue = ReturnCode::Success;
   _errorMessage = "";
@@ -126,10 +130,22 @@ CSMDatabase::CSMDatabase( const QString& specificationFileName ){
       if( !result ) {
         _returnValue = ReturnCode::BadDatabaseConfiguration;
       }
-    }
+    }    
   }
 
-  prepQueries();
+  // Check the NAADSMy bits.
+  if( ReturnCode::Success == _returnValue ) {
+    if( !QFile::exists( _scenarioFileName ) || !QFile::exists( _herdsFileName ) )
+      _returnValue = ReturnCode::BadNAADSMConfiguration;
+    else if( _scenarioName.isEmpty() )
+      _returnValue = ReturnCode::BadNAADSMConfiguration;
+  }
+
+  // If everything is OK, get ready to run the model.
+  if( ReturnCode::Success == _returnValue ) {
+    prepQueries();
+    initiateScenario();
+  }
 }
 
 
@@ -143,8 +159,12 @@ CSMDatabase::~CSMDatabase() {
 
 void CSMDatabase::initialize() {
   _scenarioID = 0;
+  _scenarioName = "";
   _scenarioDescr = "";
   _specificationFileName = "";
+  _scenarioFileName = "";
+  _herdsFileName = "";
+  _rngSeed = -1;
 
   setDbHost( "" );
   setDbPort( 5432 );
@@ -158,8 +178,95 @@ void CSMDatabase::initialize() {
 }
 
 
+QString CSMDatabase::processQuotes( const QString& val ) {
+  enum State {Normal, Quote} state = Normal;
+  QString temp, result;
+
+  result = "";
+  temp = val.trimmed();
+
+  for (int i = 0; i < temp.size(); i++) {
+    QChar current = temp.at(i);
+
+    // Normal state
+    if (state == Normal) {
+      // One quote mark encountered.  Ignore commas until the matching quote mark is encountered.
+      if (current == '"') {
+        state = Quote;
+      }
+      // other character encountered
+      else {
+        result += current;
+      }
+    }
+    // Quote
+    else if (state == Quote) {
+      // double quote
+      if (current == '"') {
+        // End of line
+        if( ( temp.size() -1 ) == i ) {
+          state = Normal;
+        }
+        else {
+          int index = (i+1 < temp.size()) ? i+1 : temp.size();
+          QChar next = temp.at(index);
+          if (next == '"') {
+            result += '"';
+            i++;
+          } else {
+            state = Normal;
+          }
+        }
+      }
+      // other
+      else {
+        result += current;
+      }
+    }
+  }
+
+  return result;
+}
+
+
 void CSMDatabase::processScenarioBlock( QStringList scenarioBlock ) {
-  qDebug() << "FIXME: Fill this in.";
+  int i;
+  QStringList lineParts;
+  QString key, val;
+
+  for( i = 0; i < scenarioBlock.count(); ++i ) {
+    lineParts.clear();
+    lineParts = scenarioBlock.at(i).split( "<-" );
+
+    if( 2 != lineParts.count() ) {
+      initialize();
+      _returnValue = ReturnCode::BadDatabaseConfiguration;
+      return;
+    }
+
+    key = lineParts.at(0).trimmed().toLower();
+    val = lineParts.at(1).trimmed();
+
+    if( 0 == key.compare( "scenarioname" ) ) {
+      _scenarioName = val;
+    }
+    else if( 0 == key.compare( "scenariodescr" ) ) {
+      _scenarioDescr = processQuotes( val );
+    }
+    else if( 0 == key.compare( "scenariofile" ) ) {
+      _scenarioFileName = val;
+    }
+    else if( 0 == key.compare( "herdsfile" ) ) {
+      _herdsFileName = val;
+    }
+    else if( 0 == key.compare( "randomseed" ) ) {
+      _rngSeed = val.toInt();
+    }
+    else {
+      qDebug() << "Unsupported key value encountered in CConfigDatabase::CConfigDatabase:" << lineParts.at(0).trimmed();
+      _returnValue = ReturnCode::BadConfiguration;
+    }
+  }
 }
 
 
@@ -168,15 +275,13 @@ void CSMDatabase::processDatabaseBlock( QStringList configBlock ) {
   QStringList lineParts;
   QString key, val;
 
-  initialize();
-
   for( i = 0; i < configBlock.count(); ++i ) {
     lineParts.clear();
     lineParts = configBlock.at(i).split( "<-" );
 
     if( 2 != lineParts.count() ) {
       initialize();
-      // FIX ME: This should set an error flag.
+      _returnValue = ReturnCode::BadConfiguration;
       return;
     }
 
@@ -201,9 +306,9 @@ void CSMDatabase::processDatabaseBlock( QStringList configBlock ) {
     else if( 0 == key.compare( "databasepassword" ) ) {
       setDbPassword( val );
     }
-    else {
-      // FIX ME: Should this set an error flag?
+    else {    
       qDebug() << "Unsupported key value encountered in CConfigDatabase::CConfigDatabase:" << lineParts.at(0).trimmed();
+      _returnValue = ReturnCode::BadConfiguration;
     }
   }
 
@@ -329,57 +434,104 @@ void CSMDatabase::debug() {
   qDebug() << "  dbPassword:" << _dbPassword;
   qDebug() << "  dbSchema:" << _dbSchema;
   qDebug() << endl;
+  qDebug() << "Database is configured:" << this->isConfigured();
+  qDebug() << "Database is valid:" << this->isValid();
+  qDebug() << "Database is open:" << this->isOpen();
+  qDebug() << endl;
+  qDebug() << "Scenario configuration:";
+  qDebug() << "  scenarioID:" << _scenarioID;
+  qDebug() << "  scenarioName:" << _scenarioName;
+  qDebug() << "  scenarioDescr:" << _scenarioDescr;
+  qDebug() << "  specificationFileName:" << _specificationFileName;
+  qDebug() << "  scenarioFileName:" << _scenarioFileName;
+  qDebug() << "  herdsFileName:" << _herdsFileName;
 }
 
-void CSMDatabase::execute( const QString& query ) {
-  qDebug() << "FIXME: Return something useful here.";
+
+bool CSMDatabase::execute( const QString& query ) {
+  bool result = true; // Until shown otherwise.
+
   _db.exec( query );
 
-  if( !( QSqlError::NoError == _db.lastError().type() ) )
+  if( !( QSqlError::NoError == _db.lastError().type() ) ) {
     naadsmException(  QString( "Query failed: " ).append( query ).append( " " ).append( _db.lastError().text() ) );
+    result = false;
+  }
+
+  return result;
+}
+
+
+void CSMDatabase::initiateScenario() {
+  qDebug() << "++ CSMDatabase::initiateScenario";
+
+  qScenario->bindValue( ":name", this->_scenarioName );
+  qScenario->bindValue( ":descr", this->_scenarioDescr );
+
+  if( !qScenario->exec() ) {
+    qDebug() << qScenario->lastQuery();
+
+    naadsmException(
+      QString( "Database records could not be saved.  Query failed: " ).append( qScenario->lastQuery() ).append( " " ).append( qScenario->lastError().text() )
+    );
+
+    _returnValue = ReturnCode::BadDatabaseQuery;
+  }
+  else {
+    _scenarioID = qScenario->lastInsertId().toInt();
+    _returnValue = ReturnCode::Success;
+  }
 }
 
 
 void CSMDatabase::prepQueries() {
+  qDebug() << "CSMDatabase::prepQueries()";
+
+  qScenario = new QSqlQuery( _db );
+  qScenario->prepare(
+    QString( "INSERT INTO %1.inScenario ( name, descr ) VALUES ( :name, :descr )" ).arg( this->dbSchema() )
+  );
+
   qOutIteration = new QSqlQuery( _db );
   qOutIteration->prepare(
     QString(
-      "INSERT INTO outIteration ( scenarioID, threadNo, iteration, outbreakEnded, outbreakEndDay, diseaseEnded, diseaseEndDay, zoneFociCreated )"
+      "INSERT INTO %1.outIteration ( scenarioID, threadNo, iteration, outbreakEnded, outbreakEndDay, diseaseEnded, diseaseEndDay, zoneFociCreated )"
       " VALUES ( :scenarioID, :threadNo, :iteration, :outbreakEnded, :outbreakEndDay, :diseaseEnded, :diseaseEndDay, :zoneFociCreated )"
-    )
+    ).arg( this->dbSchema() )
   );
 
   qOutEpidemicCurves = new QSqlQuery( _db );
   qOutEpidemicCurves->prepare(
     QString(
-      "INSERT INTO outEpidemicCurves ( scenarioID, threadNo, iteration, day, productionTypeID, infectedUnits, infectedAnimals, detectedUnits, detectedAnimals, infectiousUnits, apparentInfectiousUnits )"
+      "INSERT INTO %1.outEpidemicCurves ( scenarioID, threadNo, iteration, day, productionTypeID, infectedUnits, infectedAnimals, detectedUnits, detectedAnimals, infectiousUnits, apparentInfectiousUnits )"
       " VALUES ( :scenarioID, :threadNo, :iteration, :day, :productionTypeID, :infectedUnits, :infectedAnimals, :detectedUnits, :detectedAnimals, :infectiousUnits, :apparentInfectiousUnits )"
-    )
+    ).arg( this->dbSchema() )
   );
 }
 
 
 void CSMDatabase::freeQueries() {
+  delete qScenario;
   delete qOutIteration;
   delete qOutEpidemicCurves;
 }
 
 
 void CSMDatabase::initializeAllOutputRecords() {  
-  execute( QString( "DELETE FROM outGeneral WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "DELETE FROM %3.outGeneral WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 
-  execute( QString( "DELETE FROM outDailyByProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
-  execute( QString( "DELETE FROM outDailyByZone WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
-  execute( QString( "DELETE FROM outDailyByZoneAndProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "DELETE FROM %3.outDailyByProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %3.outDailyByZone WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %3.outDailyByZoneAndProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 
-  execute( QString( "DELETE FROM outIteration WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
-  execute( QString( "DELETE FROM outIterationByProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
-  execute( QString( "DELETE FROM outIterationByZone WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
-  execute( QString( "DELETE FROM outIterationByZoneAndProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "DELETE FROM %3.outIteration WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %3.outIterationByProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %3.outIterationByZone WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %3.outIterationByZoneAndProductionType WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 
-  execute( QString( "DELETE FROM outEpidemicCurves WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "DELETE FROM %3.outEpidemicCurves WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 
-  execute( QString( "INSERT INTO outGeneral( scenarioID, threadNo, completedIterations, outGeneralID ) VALUES( %1, %2, 0, 'NAADSMXXXX' )" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "INSERT INTO %3.outGeneral( scenarioID, threadNo, completedIterations, outGeneralID ) VALUES( %1, %2, 0, 'NAADSMXXXX' )" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 }
 
 
@@ -387,29 +539,30 @@ void CSMDatabase::prepareForIteration( const int iteration ) {
   int leaveIterations = 3;
   int iterationsToDelete = iteration - leaveIterations;
 
-  execute( QString( "DELETE FROM outDailyByProductionType WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ) );
-  execute( QString( "DELETE FROM outDailyByZone WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ) );
-  execute( QString( "DELETE FROM outDailyByZoneAndProductionType WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ) );
+  execute( QString( "DELETE FROM %4.outDailyByProductionType WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %4.outDailyByZone WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ).arg( this->dbSchema() ) );
+  execute( QString( "DELETE FROM %4.outDailyByZoneAndProductionType WHERE iteration < %3 AND scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iterationsToDelete ).arg( this->dbSchema() ) );
 }
 
 
 void CSMDatabase::recordStartTime() {
   execute(
-    QString( "UPDATE outGeneral SET simulationStartTime = NOW(), version = '%3' WHERE scenarioID = %1 AND threadNo = %2" )
+    QString( "UPDATE %4.outGeneral SET simulationStartTime = NOW(), version = '%3' WHERE scenarioID = %1 AND threadNo = %2" )
     .arg( this->scenarioID() )
     .arg( THREAD_NUMBER )
     .arg( APP_VERSION )
+    .arg( this->dbSchema() )
    );
 }
 
 
 void CSMDatabase::incrementCompleteIterations() {
-  execute( QString( "UPDATE outGeneral SET completedIterations = completedIterations + 1 WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "UPDATE %3.outGeneral SET completedIterations = completedIterations + 1 WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 }
 
 
 void CSMDatabase::recordEndTime() {
-  execute( QString( "UPDATE outGeneral SET simulationEndTime = NOW() WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ) );
+  execute( QString( "UPDATE %3.outGeneral SET simulationEndTime = NOW() WHERE scenarioID = %1 AND threadNo = %2" ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( this->dbSchema() ) );
 }
 
 
@@ -460,10 +613,10 @@ void CSMDatabase::processIterationRecords(
     " infcAIni,"
     " tsdUSubc + tsdUClin AS infectiousUnits, "
     " productionTypeID"
-    " FROM outDailyByProductionType"
+    " FROM %4.outDailyByProductionType"
     " WHERE scenarioID = %1 AND threadNo = %2 AND iteration = %3"
     " AND day = 1"
-  ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iteration );
+  ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iteration ).arg( this->dbSchema() );
 
   QSqlQuery* sqlResult = new QSqlQuery( q, _db );
   QSqlRecord row;
@@ -495,8 +648,8 @@ void CSMDatabase::processIterationRecords(
   // Populate outEpidemicCurves for ALL OTHER DAYS of the iteration
   //---------------------------------------------------------------
   q = QString(
-      "INSERT INTO outEpidemicCurves ("
-        " iteration, day, productionTypeID,, scenarioID, threadNo"
+      "INSERT INTO %4.outEpidemicCurves ("
+        " iteration, day, productionTypeID, scenarioID, threadNo,"
         " infectedUnits,"
         " infectedAnimals,"
         " detectedUnits,"
@@ -505,18 +658,18 @@ void CSMDatabase::processIterationRecords(
         " apparentInfectiousUnits"
       " )"
       " SELECT"
-        " iteration, day, productionTypeID, scenarioID, threadNo"
+        " iteration, day, productionTypeID, scenarioID, threadNo,"
         " infnUDir + infnUInd + infnUAir,"
         " infnADir + infnAInd + infnAAir,"
         " detnUClin + detnUTest,"
         " detnAClin + detnATest,"
         " tsdUSubc + tsdUClin,"
         " appdUInfectious"
-      " FROM outDailyByProductionType"
+      " FROM %4.outDailyByProductionType"
       " WHERE "
         " scenarioID = %1 AND threadNo = %2 "
         " AND iteration = %3"
-  ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iteration );
+  ).arg( this->scenarioID() ).arg( THREAD_NUMBER ).arg( iteration ).arg( this->dbSchema() );
 
   execute( q );
 

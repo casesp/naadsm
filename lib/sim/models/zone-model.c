@@ -54,6 +54,8 @@ extern "C"
 #include "model.h"
 #include "gis.h"
 
+#include <replace.h>
+
 #if STDC_HEADERS
 #  include <string.h>
 #endif
@@ -349,7 +351,8 @@ check_poly_and_rezone (int id, gpointer arg)
 
               zone_update.herd_index = herd->index;
               zone_update.zone_level = zone->level;
-			  
+              herd->zone_level = zone->level;
+
 #ifdef USE_SC_GUILIB
 			  sc_record_zone_change( herd, zone );
 #else			  
@@ -874,6 +877,9 @@ set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
   char *tmp, *name;
   int level;
   double radius;
+  scew_attribute* idattr;
+  int id;
+  char* endptr;
 
 #if DEBUG
   g_debug ("----- ENTER set_params (%s)", MODEL_NAME);
@@ -881,6 +887,13 @@ set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
 
   /* Make sure the right XML subtree was sent. */
   g_assert (strcmp (scew_element_name (params), MODEL_NAME) == 0);
+
+  idattr = scew_attribute_by_name( params, "zone-id" );
+
+  if( NULL != idattr )
+    id = strtoi( scew_attribute_value( idattr ), &endptr );
+  else
+    id = -1;
 
   local_data = (local_data_t *) (self->model_data);
 
@@ -934,7 +947,7 @@ set_params (struct naadsm_model_t_ *self, PAR_parameter_t * params)
       radius = 0;
     }
 
-  param_block->zone = ZON_new_zone (name, level, radius);
+  param_block->zone = ZON_new_zone (name, level, radius, id);
 
   {
     GString * s = g_string_new (NULL);

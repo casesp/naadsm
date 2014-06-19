@@ -16,7 +16,7 @@ Public License as published by the Free Software Foundation; either version 2 of
 *)
 
 // Define the following symbol to display and use the debugging window.
-//{$DEFINE DEBUG}
+{$DEFINE DEBUG}
 
 // The following symbol must be defined for the PDF classes to have access to an SQL database.
 // (For NAADSM, it should ALWAYS be defined.)

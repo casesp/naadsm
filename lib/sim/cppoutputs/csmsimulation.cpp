@@ -5,10 +5,10 @@
 
 
 CSMSimulation::CSMSimulation( HRD_herd_list_t* herds, ZON_zone_list_t* zones, CSMDatabase* db ) {
-  _ptList = new CProdTypeList( herds );
-  _zoneList = new CZoneList( zones, this );
-
   _db = db;
+
+  _ptList = new CProdTypeList( herds, db );
+  _zoneList = new CZoneList( zones, this );
 }
 
 
@@ -67,6 +67,7 @@ void CSMSimulation::processDailyRecords( CSMDatabase* db, int day ) {
 
 void CSMSimulation::processIterationRecords( CSMDatabase* db, int it ) {
   _lastCompleteIteration = it;
+
   _ptList->processIterationRecords( db, _lastCompleteIteration );
 
   if( includeZonesGlobal() )
@@ -78,8 +79,7 @@ void CSMSimulation::simComplete() {
   // _ptList has nothing to do
 
   if( includeZonesGlobal() )
-    _zoneList->simComplete()
-  ;
+    _zoneList->simComplete();
 }
 
 

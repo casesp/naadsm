@@ -8,9 +8,9 @@ Last revision: $Date: 2013-06-27 19:11:19 $ $Author: areeves $
 Version: $Revision: 1.114.4.38 $
 Project: NAADSM
 Website: http://www.naadsm.org
-Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+Author: Aaron Reeves <Aaron.Reeves@sruc.ac.uk>
 --------------------------------------------------
-Copyright (C) 2005 - 2013 NAADSM Development Team
+Copyright (C) 2005 - 2014 NAADSM Development Team
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General
 Public License as published by the Free Software Foundation; either version 2 of the License, or
@@ -37,40 +37,40 @@ interface
   // It may or may not need to be altered.
 	const
     MAJORVERSION = '3';
-    MINORVERSION = '3';
-    RELEASENUMBER = '2';
+    MINORVERSION = '4';
+    RELEASENUMBER = '0';
     MAJORVERSIONNUMBER = MAJORVERSION + '.' + MINORVERSION;
     MINORVERSIONNUMBER = RELEASENUMBER;
 
     // Add new major version numbers here as they are released.
     // Any change in the XML schema warrants a change in the minor version number (i.e., 3.2 to 3.3).
-    const ALL_MAJOR_VERSIONS: array[ 0..1 ] of string = (
-      '3.2', '3.3'
+    const ALL_MAJOR_VERSIONS: array[ 0..2 ] of string = (
+      '3.2', '3.3', '3.4'
     );
 
     {$IF Defined( CHEYENNE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-CHEYENNE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.4.0-CHEYENNE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Cheyenne';
       BRANCHNAMEPARENS = ' (Cheyenne) ';
       SIM_DLL_NAME = 'cheyenne.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Cheyenne';
     {$ELSEIF Defined( LARAMIE ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-LARAMIE'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.4.0-LARAMIE'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Laramie';
       BRANCHNAMEPARENS = ' (Laramie) ';
       SIM_DLL_NAME = 'laramie.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Laramie';
     {$ELSEIF Defined( RIVERTON ) }
-      MIN_COMPATIBLE_DLL_VERSION = '3.3.2-RIVERTON'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.4.0-RIVERTON'; // Used to determine if the right version of the core model is present
       BRANCHNAME = 'Riverton';
       BRANCHNAMEPARENS = ' (Riverton) ';
       SIM_DLL_NAME = 'riverton.dll';
       IS_EXPERIMENTAL = true;
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + '-Riverton';
     {$ELSE}
-      MIN_COMPATIBLE_DLL_VERSION = '3.3.2'; // Used to determine if the right version of the core model is present
+      MIN_COMPATIBLE_DLL_VERSION = '3.4.0'; // Used to determine if the right version of the core model is present
       BRANCHNAME = '';
       BRANCHNAMEPARENS = ' ';
       SIM_DLL_NAME = 'naadsm.dll';
@@ -78,7 +78,7 @@ interface
       VERSIONFOROUTPUT = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER;
     {$IFEND}
 
-    BUILDNUMBER = '20130806';
+    BUILDNUMBER = '20140619';
 
     APPNAME = 'NAADSM';
     VERSIONNUMBER = MAJORVERSIONNUMBER + '.' + MINORVERSIONNUMBER + ' Build ' + BUILDNUMBER;
@@ -112,7 +112,7 @@ interface
     WEBSITE = 'http://www.naadsm.org';
     WEBSITE_SUPPORT_FORUMS = 'http://www.naadsm.org/forum';
     
-    COPYRIGHTDATES = '2003 - 2013';
+    COPYRIGHTDATES = '2003 - 2014';
 
   // Returns false if multiple experimental symbols are defined
   function experimentalVersionDefinitionsOK( var msg: string ): boolean;

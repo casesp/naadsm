@@ -41,6 +41,7 @@ contains( DEFINES, CPPOUTPUT ) {
   QMAKE_CC = g++  ## Treat C code as C++ to enable compiling.
   QT -= gui
   QT += core sql
+  CONFIG  += console
 } else {
   QT -= core gui
 }
@@ -180,7 +181,8 @@ SOURCES += \
     ../../ar_general_purpose/cencryption.cpp \
     ../../ar_general_purpose/qcout.cpp \
     ../../ar_general_purpose/strutils.cpp \
-    ../../ar_general_purpose/qmath.cpp
+    ../../ar_general_purpose/qmath.cpp \
+    ../../ar_general_purpose/ccmdline.cpp
 
 HEADERS +=\
     ../../models/zone-model.h \
@@ -250,7 +252,9 @@ HEADERS +=\
     ../../ar_general_purpose/cencryption.h \
     ../../ar_general_purpose/qcout.h \
     ../../ar_general_purpose/strutils.h \
-    ../../ar_general_purpose/qmath.h
+    ../../ar_general_purpose/qmath.h \
+    ../../ar_general_purpose/ccmdline.h \
+    ../../src/main.h
 
 win32:RC_FILE = ../naadsm_private.rc
 

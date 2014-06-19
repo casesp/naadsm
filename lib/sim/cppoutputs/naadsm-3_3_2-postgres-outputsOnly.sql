@@ -10,7 +10,8 @@ INSERT INTO DBSchemaVersion ( VersionNumber, VersionApplication, VersionDate, Ve
   VALUES ( '3.3.0', 'NAADSMXXXX', '2013-08-02 23:29:36', 1375507776 );
 
 CREATE TABLE inScenario (
-  scenarioID integer,
+  scenarioID serial,
+  name varchar(255),
   descr text
 );
 
