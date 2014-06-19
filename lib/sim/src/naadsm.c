@@ -5,7 +5,7 @@ extern "C"
 
 /** @file naadsm.c
  *
- * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
+ * @author Aaron Reeves <aaron.reeves@naadsm.org><br>
  *   Animal Population Health Institute<br>
  *   College of Veterinary Medicine and Biomedical Sciences<br>
  *   Colorado State University<br>

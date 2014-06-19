@@ -31,7 +31,7 @@
  *   Colorado State University<br>
  *   Fort Collins, CO 80523<br>
  *   USA
-  * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
+  * @author Aaron Reeves <aaron.reeves@naadsm.org><br>
  *   Animal Population Health Institute<br>
  *   Colorado State University<br>
  *   Fort Collins, CO 80523<br>

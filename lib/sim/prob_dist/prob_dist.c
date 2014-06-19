@@ -11,7 +11,7 @@ extern "C"
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   CANADA
- * @author Aaron Reeves <Aaron.Reeves@colostate.edu><br>
+ * @author Aaron Reeves <aaron.reeves@naadsm.org><br>
  *   Animal Population Health Institute<br>
  *   Colorado State University<br>
  *   Fort Collins, CO 80523<br>

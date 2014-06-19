@@ -5,7 +5,7 @@ extern "C"
 
 /** @file herd-randomizer.c
  *
- * @author Aaron Reeves <Aaron.Reeves@ucalgary.ca><br>
+ * @author Aaron Reeves <aaron.reeves@naadsm.org><br>
  *   Department of Production Animal Health<br>
  *   Faculty of Veterinary Medicine<br>
  *   University of Calgary<br>

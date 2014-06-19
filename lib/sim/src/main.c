@@ -10,7 +10,7 @@ extern "C"
  *   Department of Computing & Information Science, University of Guelph<br>
  *   Guelph, ON N1G 2W1<br>
  *   Canada
- * @author Aaron Reeves <Aaron.Reeves@sruc.ac.uk.edu><br>
+ * @author Aaron Reeves <aaron.reeves@naadsm.org.edu><br>
  *   Epidemiology Research Unit<br>
  *   SRUC<br>
  *   Strattherick Road<br>

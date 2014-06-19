@@ -5,7 +5,7 @@
 # Version: $Revision: 1.2.2.2 $
 # Project:NAADSM
 # Website: http://www.naadsm.org
-# Author: Aaron Reeves <Aaron.Reeves@ucalgary.ca>
+# Author: Aaron Reeves <aaron.reeves@naadsm.org>
 # --------------------------------------------------
 # Copyright (C) 2012 - 2013 NAADSM Development Team
 #
